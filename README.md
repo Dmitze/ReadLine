@@ -198,38 +198,7 @@
 - Економія часу адміністратора
 - Масштабованість без додаткових витрат
 
-## 🛠️ Встановлення та налаштування
 
-1. Клонуйте репозиторій:
-   ```bash
-   git clone https://github.com/your-username/military-library-bot.git
-   ```
-
-2. Встановіть залежності:
-   ```bash
-   npm install
-   ```
-
-3. Налаштуйте змінні середовища:
-   ```env
-   TELEGRAM_BOT_TOKEN=your_bot_token_here
-   ADMIN_CHAT_ID=your_chat_id_here
-   ```
-
-4. Запустіть бота:
-   ```bash
-   npm start
-   ```
-
-## 🤝 Внесок у проект
-
-Внески вітаються! Будь ласка, зробіть форк репозиторію та надішліть pull request.
-
-1. Зробіть форк
-2. Створіть гілку з новою функцією (`git checkout -b feature/AmazingFeature`)
-3. Зробіть коміт зі змінами (`git commit -m 'Add some AmazingFeature'`)
-4. Надішліть зміни на сервер (`git push origin feature/AmazingFeature`)
-5. Відкрийте pull request
 
 ## 📄 Ліцензія
 
