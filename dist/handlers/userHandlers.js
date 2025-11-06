@@ -18,12 +18,15 @@ exports.default = (bot) => {
     });
     bot.hears('🔍 Пошук книги', async (ctx) => {
         ctx.scene.enter('SEARCH_SCENE');
+        return;
     });
     bot.hears('👤 Мій профіль', async (ctx) => {
         ctx.scene.enter('PROFILE_SCENE');
+        return;
     });
     bot.hears('📋 Мої заявки', async (ctx) => {
         ctx.scene.enter('PROFILE_SCENE', { isMyRequests: true });
+        return;
     });
     bot.on('message', async (ctx) => {
         if (!ctx.message?.text)
@@ -34,7 +37,8 @@ exports.default = (bot) => {
             if (genres.includes(messageText)) {
                 const books = await (0, models_1.getBooksByGenre)(messageText);
                 if (books.length === 0) {
-                    return ctx.reply('📭 На жаль, в цьому жанрі ще немає книг.');
+                    await ctx.reply('📭 На жаль, в цьому жанрі ще немає книг.');
+                    return;
                 }
                 for (const book of books) {
                     await ctx.replyWithPhoto(book.photo_file_id, {
@@ -53,10 +57,12 @@ exports.default = (bot) => {
             console.error('Error getting books by genre:', error);
             await ctx.reply('❌ Виникла помилка при отриманні книг.');
         }
+        return;
     });
     bot.action(/order_(\d+)/, async (ctx) => {
         const bookId = ctx.match[1];
         ctx.scene.enter('REQUEST_BOOK_SCENE', { bookId });
+        return;
     });
 };
 //# sourceMappingURL=userHandlers.js.map
