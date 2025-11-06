@@ -27,6 +27,7 @@ exports.default = (bot) => {
             console.error('Error in admin command:', error);
             await ctx.reply('❌ Виникла помилка при отриманні даних адміністратора.');
         }
+        return;
     });
     bot.action('view_requests', async (ctx) => {
         try {
@@ -62,6 +63,7 @@ exports.default = (bot) => {
             console.error('Error getting pending requests:', error);
             await ctx.reply('❌ Виникла помилка при отриманні заявок.');
         }
+        return;
     });
     bot.action('add_book', async (ctx) => {
         try {
@@ -76,6 +78,7 @@ exports.default = (bot) => {
             console.error('Error entering add book scene:', error);
             await ctx.reply('❌ Виникла помилка при переході до додавання книги.');
         }
+        return;
     });
     bot.action('admin_stats', async (ctx) => {
         try {
@@ -91,6 +94,7 @@ exports.default = (bot) => {
             console.error('Error getting admin stats:', error);
             await ctx.reply('❌ Виникла помилка при отриманні статистики.');
         }
+        return;
     });
     bot.action(/approve_(\d+)/, async (ctx) => {
         try {
@@ -116,6 +120,7 @@ exports.default = (bot) => {
             console.error('Error approving request:', error);
             await ctx.reply('❌ Виникла помилка при підтвердженні заявки.');
         }
+        return;
     });
     bot.action(/reject_(\d+)/, async (ctx) => {
         try {
@@ -141,6 +146,7 @@ exports.default = (bot) => {
             console.error('Error rejecting request:', error);
             await ctx.reply('❌ Виникла помилка при відхиленні заявки.');
         }
+        return;
     });
 };
 //# sourceMappingURL=adminHandlers.js.map
