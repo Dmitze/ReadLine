@@ -1,83 +1,1223 @@
-import { Telegraf } from 'telegraf';
-import { getGenres, getBooksByGenre } from '../database/models';
-import { getGenreKeyboard, getBookOrderKeyboard } from '../keyboards/mainKeyboards';
+﻿import { Telegraf, Markup } from 'telegraf';
+import { 
+  Book,
+  getGenres, 
+  getBooksByGenre, 
+  getBooksByGenreWithPagination,
+  getTopBooks,
+  getNewestBooks,
+  getSavedBooks,
+  saveBook,
+  unsaveBook,
+  isBookSaved,
+  incrementDownloads,
+  getBookById,
+  getBookReviews,
+  getMostDownloadedBooks
+} from '../database/models';
+import {
+  getRandomBook,
+  getRecentlyViewedBooks,
+  getRecommendedBooks
+} from '../database/recommendationFunctions';
+import {
+  getAllTags,
+  searchBooksByTag
+} from '../database/tagFunctions';
+import {
+  getBooksWithFilters,
+  getBooksWithAudio,
+  getHighRatedBooks,
+  getBooksSortedByTitle
+} from '../database/catalogFunctions';
+import { 
+  getGenreKeyboard, 
+  getEnhancedBookKeyboard,
+  getMainMenuKeyboard
+} from '../keyboards/mainKeyboards';
+import { formatBookCaption } from '../utils/helpers';
+import { 
+  displayTopBooks, 
+  displayNewBooks, 
+  displaySavedBooks 
+} from '../utils/bookDisplay';
+import { logger } from '../utils/logger';
+import { BUTTONS, ERRORS, CONFIG } from '../constants';
+import { cache, CACHE_KEYS, CACHE_TTL } from '../utils/cache';
+import { BotContext } from '../types/telegraf';
 
 // Обробники для звичайних користувачів
-export default (bot: Telegraf<any>) => {
-  // Перегляд каталогу
-  bot.hears('📖 Перегляд каталогу', async (ctx) => {
+export default (bot: Telegraf<BotContext>) => {
+  console.log('✅ User handlers registering...');
+  
+  // Перегляд каталогу з фільтрами
+  bot.hears([BUTTONS.CATALOG_OLD, BUTTONS.CATALOG], async (ctx) => {
     try {
-      const genres = await getGenres();
-      const keyboard = getGenreKeyboard(genres);
+      await ctx.reply(
+        '📚 *КАТАЛОГ КНИГ*\n\n' +
+        'Оберіть спосіб перегляду:',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: Markup.inlineKeyboard([
+            [
+              Markup.button.callback('📖 За жанрами', 'catalog_genres'),
+              Markup.button.callback('⭐ За рейтингом', 'catalog_rating')
+            ],
+            [
+              Markup.button.callback('🆕 Новинки', 'catalog_new'),
+              Markup.button.callback('🔤 За алфавітом', 'catalog_alpha')
+            ],
+            [
+              Markup.button.callback('🎧 З аудіо', 'catalog_audio'),
+              Markup.button.callback('📥 За завантаженнями', 'catalog_downloads')
+            ],
+            [
+              Markup.button.callback('🏷️ За тегами', 'catalog_tags')
+            ],
+            [
+              Markup.button.callback('🤖 AI-підбір', 'catalog_ai')
+            ]
+          ]).reply_markup
+        }
+      );
       
-      await ctx.reply('📚 Оберіть жанр:', {
-        reply_markup: keyboard
-      });
+      logger.userAction(ctx.from!.id, 'view_catalog');
     } catch (error) {
-      console.error('Error getting genres:', error);
-      await ctx.reply('❌ Виникла помилка при отриманні жанрів.');
+      logger.error('Error showing catalog', error, { userId: ctx.from?.id });
+      await ctx.reply(ERRORS.GENERIC);
     }
   });
   
-  // Пошук книги
-  bot.hears('🔍 Пошук книги', async (ctx: any) => {
-    ctx.scene.enter('SEARCH_SCENE');
-    return;
+  // Обробка кнопки "Назад" з каталогу
+  bot.hears('⬅️ Назад', async (ctx) => {
+    await ctx.reply('👋 Повертаємось до головного меню', {
+      reply_markup: getMainMenuKeyboard()
+    });
+  });
+  
+
+  
+  // Топ книги
+  bot.hears(['🏆 Топ книги', BUTTONS.TOP_BOOKS], async (ctx) => {
+    try {
+      const topBooks = await cache.getOrSet(
+        CACHE_KEYS.TOP_BOOKS,
+        () => getTopBooks(CONFIG.MAX_TOP_BOOKS),
+        CACHE_TTL.MEDIUM
+      );
+      
+      await displayTopBooks(ctx, topBooks);
+      logger.userAction(ctx.from!.id, 'view_top_books');
+    } catch (error) {
+      logger.error('Error showing top books', error, { userId: ctx.from?.id });
+      await ctx.reply(ERRORS.NO_TOP_BOOKS);
+    }
+  });
+  
+  // Новинки - показуємо останні 5 книг
+  bot.hears(BUTTONS.NEW_BOOKS, async (ctx) => {
+    try {
+      const newBooks = await getNewestBooks(5);
+      
+      if (newBooks.length === 0) {
+        await ctx.reply('📭 В бібліотеці поки що немає книг.');
+        return;
+      }
+      
+      await displayNewBooks(ctx, newBooks, 5);
+      logger.userAction(ctx.from!.id, 'view_new_books');
+    } catch (error) {
+      logger.error('Error showing new books', error, { userId: ctx.from?.id });
+      await ctx.reply(ERRORS.NO_NEW_BOOKS);
+    }
+  });
+  
+  // Моя бібліотека
+  bot.hears(BUTTONS.MY_LIBRARY, async (ctx) => {
+    try {
+      const userId = ctx.from?.id;
+      
+      if (!userId) {
+        await ctx.reply(ERRORS.GENERIC);
+        return;
+      }
+      
+      const savedBooks = await getSavedBooks(userId);
+      await displaySavedBooks(ctx, savedBooks);
+      logger.userAction(userId, 'view_library');
+    } catch (error) {
+      logger.error('Error showing saved books', error, { userId: ctx.from?.id });
+      await ctx.reply(ERRORS.NO_SAVED_BOOKS);
+    }
   });
   
   // Профіль користувача
-  bot.hears('👤 Мій профіль', async (ctx: any) => {
-    ctx.scene.enter('PROFILE_SCENE');
+  bot.hears([BUTTONS.PROFILE_OLD, BUTTONS.PROFILE], async (ctx: BotContext) => {
+    ctx.scene?.enter('PROFILE_SCENE');
+    logger.userAction(ctx.from!.id, 'enter_profile');
     return;
   });
   
-  // Мої заявки
-  bot.hears('📋 Мої заявки', async (ctx: any) => {
-    ctx.scene.enter('PROFILE_SCENE', { isMyRequests: true });
+  // "Мої заявки" видалено - більше не використовуємо фізичні книги
+  
+  // Зворотній зв'язок
+  bot.hears(BUTTONS.FEEDBACK, async (ctx: BotContext) => {
+    ctx.scene?.enter('FEEDBACK_SCENE');
+    logger.userAction(ctx.from!.id, 'enter_feedback');
     return;
+  });
+  
+  // AI Помічник
+  bot.hears(BUTTONS.AI_ASSISTANT, async (ctx: BotContext) => {
+    ctx.scene?.enter('AI_SCENE');
+    logger.userAction(ctx.from!.id, 'enter_ai');
+    return;
+  });
+  
+  // Допомога
+  bot.hears(BUTTONS.HELP, async (ctx) => {
+    logger.userAction(ctx.from!.id, 'view_help');
+    // Викликаємо /help
+    return ctx.reply(
+      '📖 *ДОВІДКА ПО БОТУ*\n\n' +
+      
+      '🎯 *ОСНОВНІ ФУНКЦІЇ:*\n\n' +
+      
+      '📖 *Каталог* - перегляд книг за жанрами\n' +
+      '🔍 *Пошук* - швидкий пошук книг\n' +
+      '⭐ *Топ книги* - найкращі книги за рейтингом\n' +
+      '🆕 *Новинки* - останні додані книги\n' +
+      '💾 *Моя бібліотека* - збережені книги\n' +
+      '👤 *Профіль* - ваша статистика\n' +
+      '📞 *Зворотній зв\'язок* - зв\'язок з адміном\n\n' +
+      
+      '⚙️ *КОМАНДИ:*\n' +
+      '/start - Головне меню\n' +
+      '/help - Ця довідка\n' +
+      '/admin - Панель адміністратора\n\n' +
+      
+      '💡 Використовуйте кнопки для навігації!',
+      { parse_mode: 'Markdown' }
+    );
   });
   
   // Показ книг за жанром
-  bot.on('message', async (ctx: any) => {
+  bot.on('message', async (ctx: BotContext) => {
     // Перевіряємо чи є текст в повідомленні
-    if (!ctx.message?.text) return;
+    if (!ctx.message || !('text' in ctx.message)) return;
     
     const messageText = ctx.message.text;
+    
+    // Ігноруємо команди (текст що починається з /)
+    if (messageText.startsWith('/')) return;
     
     try {
       const genres = await getGenres();
       
       if (genres.includes(messageText)) {
-        const books = await getBooksByGenre(messageText);
+        // Використовуємо пагінацію щоб не флудити
+        const BOOKS_PER_PAGE = 5;
+        const { books, total } = await getBooksByGenreWithPagination(messageText, BOOKS_PER_PAGE, 0);
         
         if (books.length === 0) {
           await ctx.reply('📭 На жаль, в цьому жанрі ще немає книг.');
           return;
         }
         
+        // Повідомляємо користувача скільки книг знайдено
+        await ctx.reply(
+          `📚 Знайдено ${total} ${total === 1 ? 'книгу' : 'книг'} в жанрі "${messageText}".\n` +
+          `Показано перші ${books.length}:`
+        );
+        
         for (const book of books) {
-          await ctx.replyWithPhoto(book.photo_file_id, {
-            caption: `📖 *${book.title}*
+          const caption = `📖 *${book.title}*
 👤 Автор: ${book.author}
-📚 Жанр: ${book.genre}
-📝 Опис: ${book.description}
-📍 Статус: ${book.is_available ? 'Доступна' : 'Недоступна'}`,
-            parse_mode: 'Markdown',
-            reply_markup: getBookOrderKeyboard(book.id!)
-          });
+� Жванр: ${book.genre}
+� Опис:  ${book.description}
+� Статус: b${book.is_available ? 'Доступна' : 'Недоступна'}`;
+
+          // Перевіряємо чи є валідний photo_file_id
+          if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
+            try {
+              await ctx.replyWithPhoto(book.photo_file_id, {
+                caption,
+                parse_mode: 'Markdown',
+                reply_markup: getEnhancedBookKeyboard(book, false)
+              });
+            } catch (error) {
+              // Якщо помилка з фото - відправляємо текстом
+              await ctx.reply(caption, {
+                parse_mode: 'Markdown',
+                reply_markup: getEnhancedBookKeyboard(book, false)
+              });
+            }
+          } else {
+            // Якщо немає фото - відправляємо текстом
+            await ctx.reply(caption, {
+              parse_mode: 'Markdown',
+              reply_markup: getEnhancedBookKeyboard(book, false)
+            });
+          }
+        }
+        
+        // Якщо книг більше ніж показано, підказуємо використати пошук
+        if (total > BOOKS_PER_PAGE) {
+          await ctx.reply(
+            `ℹ️ Показано ${books.length} з ${total} книг.\n\n` +
+            `Для перегляду інших книг використайте:\n` +
+            `🔍 Пошук книги - пошук за назвою або автором`
+          );
         }
       }
     } catch (error) {
-      console.error('Error getting books by genre:', error);
+      logger.error('Error getting books by genre', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
       await ctx.reply('❌ Виникла помилка при отриманні книг.');
     }
     return;
   });
   
-  // Обробка кнопки "Замовити"
-  bot.action(/order_(\d+)/, async (ctx: any) => {
-    const bookId = ctx.match[1];
-    ctx.scene.enter('REQUEST_BOOK_SCENE', { bookId });
+  // Кнопка "Замовити" видалена - більше не використовуємо фізичні книги
+  
+  // Обробка кнопки "Зберегти"
+  bot.action(/save_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
+        return;
+      }
+      const bookId = parseInt(match[1]);
+      const userId = ctx.from?.id;
+      
+      if (!userId) {
+        await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача');
+        return;
+      }
+      
+      const isSaved = await isBookSaved(userId, bookId);
+      
+      if (isSaved) {
+        // Видаляємо зі збережених
+        await unsaveBook(userId, bookId);
+        await ctx.answerCbQuery('💔 Видалено зі збережених', { show_alert: false });
+      } else {
+        // Зберігаємо
+        await saveBook(userId, bookId);
+        await ctx.answerCbQuery('❤️ Збережено!', { show_alert: false });
+      }
+      
+      // Оновлюємо кнопки (опціонально)
+      // Можна оновити markup щоб змінити текст кнопки
+    } catch (error) {
+      logger.error('Error saving book', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка при збереженні');
+    }
     return;
   });
+  
+  // Обробка перегляду збереженої книги
+  bot.action(/view_saved_book_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
+        return;
+      }
+      const bookId = parseInt(match[1]);
+      const userId = ctx.from?.id;
+      
+      if (!userId) {
+        await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача');
+        return;
+      }
+      
+      await ctx.answerCbQuery('Завантаження...');
+      
+      const book = await getBookById(bookId);
+      
+      if (!book) {
+        await ctx.reply('❌ Книга не знайдена');
+        return;
+      }
+      
+      const caption = await formatBookCaption(book);
+      const isSaved = await isBookSaved(userId, bookId);
+      const keyboard = getEnhancedBookKeyboard(book, isSaved);
+      
+      if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
+        try {
+          await ctx.replyWithPhoto(book.photo_file_id, {
+            caption,
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        } catch (photoError) {
+          await ctx.reply(caption, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        }
+      } else {
+        await ctx.reply(caption, {
+          parse_mode: 'Markdown',
+          reply_markup: keyboard
+        });
+      }
+      
+      logger.userAction(userId, 'view_saved_book', { bookId });
+    } catch (error) {
+      logger.error('Error viewing saved book', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка при завантаженні');
+    }
+    return;
+  });
+  
+  // Обробка перегляду книги з компактного списку
+  bot.action(/view_book_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
+        return;
+      }
+      const bookId = parseInt(match[1]);
+      const userId = ctx.from?.id;
+      
+      await ctx.answerCbQuery('Завантаження...');
+      
+      const book = await getBookById(bookId);
+      
+      if (!book) {
+        await ctx.reply('❌ Книга не знайдена');
+        return;
+      }
+      
+      const caption = await formatBookCaption(book);
+      const isSaved = userId ? await isBookSaved(userId, bookId) : false;
+      const keyboard = getEnhancedBookKeyboard(book, isSaved);
+      
+      if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
+        try {
+          await ctx.replyWithPhoto(book.photo_file_id, {
+            caption,
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        } catch (photoError) {
+          await ctx.reply(caption, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        }
+      } else {
+        await ctx.reply(caption, {
+          parse_mode: 'Markdown',
+          reply_markup: keyboard
+        });
+      }
+      
+      logger.userAction(userId || 0, 'view_book_from_list', { bookId });
+    } catch (error) {
+      logger.error('Error viewing book from list', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка при завантаженні');
+    }
+    return;
+  });
+  
+  // Обробка кнопки "Завантажити PDF"
+  bot.action(/download_pdf_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
+        return;
+      }
+      const bookId = parseInt(match[1]);
+      
+      await incrementDownloads(bookId);
+      const book = await getBookById(bookId);
+      
+      if (!book) {
+        await ctx.answerCbQuery('❌ Книга не знайдена');
+        return;
+      }
+      
+      const pdfFileId = (book as any).pdf_file_id || (book.file_type === 'file' ? book.file_url : null);
+      
+      if (pdfFileId) {
+        // Відправляємо файл
+        await ctx.telegram.sendDocument(ctx.from!.id, pdfFileId, {
+          caption: `📥 ${book.title}\n👤 ${book.author}\n\n✅ PDF файл завантажено!`
+        });
+        await ctx.answerCbQuery('📥 PDF надіслано вам у приватні повідомлення');
+      } else {
+        await ctx.answerCbQuery('❌ PDF файл недоступний');
+      }
+    } catch (error) {
+      logger.error('Error downloading PDF', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка при завантаженні');
+    }
+    return;
+  });
+  
+  // Обробка кнопки "Завантажити Аудіо" - відкриває audio player
+  bot.action(/download_audio_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
+        return;
+      }
+      const bookId = parseInt(match[1]);
+      
+      await incrementDownloads(bookId);
+      const book = await getBookById(bookId);
+      
+      if (!book) {
+        await ctx.answerCbQuery('❌ Книга не знайдена');
+        return;
+      }
+      
+      if ((book as any).audio_file_id) {
+        // Відкриваємо audio player scene
+        await ctx.answerCbQuery('🎧 Завантаження аудіоплеєра...');
+        (ctx.scene as any).state = { bookId };
+        await ctx.scene?.enter('AUDIO_PLAYER_SCENE');
+      } else {
+        await ctx.answerCbQuery('❌ Аудіокнига недоступна');
+      }
+    } catch (error) {
+      logger.error('Error opening audio player', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка при завантаженні');
+    }
+    return;
+  });
+  
+  // Обробка кнопки "Відгуки"
+  bot.action(/reviews_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
+        return;
+      }
+      const bookId = parseInt(match[1]);
+      
+      const book = await getBookById(bookId);
+      const reviews = await getBookReviews(bookId);
+      
+      if (!book) {
+        await ctx.answerCbQuery('❌ Книга не знайдена');
+        return;
+      }
+      
+      if (reviews.length === 0) {
+        await ctx.answerCbQuery('📝 Поки що немає відгуків', { show_alert: true });
+        return;
+      }
+      
+      let reviewsText = `📊 *Відгуки про книгу*\n\n📖 ${book.title}\n👤 ${book.author}\n`;
+      reviewsText += `⭐ Середній рейтинг: ${book.rating?.toFixed(1) || 0}/5\n\n`;
+      
+      reviews.slice(0, 5).forEach((review, index) => {
+        reviewsText += `${index + 1}. ${'⭐'.repeat(review.rating)} - ${review.user_name || 'Користувач'}\n`;
+        if (review.comment) {
+          reviewsText += `   💬 "${review.comment}"\n`;
+        }
+        reviewsText += `\n`;
+      });
+      
+      if (reviews.length > 5) {
+        reviewsText += `\n...та ще ${reviews.length - 5} відгуків`;
+      }
+      
+      await ctx.reply(reviewsText, { parse_mode: 'Markdown' });
+      await ctx.answerCbQuery();
+    } catch (error) {
+      logger.error('Error showing reviews', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка при отриманні відгуків');
+    }
+    return;
+  });
+  
+  // Обробка кнопки "Схожі книги"
+  bot.action(/similar_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
+        return;
+      }
+      const bookId = parseInt(match[1]);
+      
+      const book = await getBookById(bookId);
+      if (!book) {
+        await ctx.answerCbQuery('❌ Книга не знайдена');
+        return;
+      }
+      
+      const similarBooks = await getBooksByGenre(book.genre);
+      const filtered = similarBooks.filter(b => b.id !== bookId).slice(0, 3);
+      
+      if (filtered.length === 0) {
+        await ctx.answerCbQuery('📭 Схожих книг не знайдено', { show_alert: true });
+        return;
+      }
+      
+      await ctx.reply(
+        `🔍 *Схожі книги* (жанр: ${book.genre}):\n\n` +
+        filtered.map((b, i) => `${i + 1}. 📖 ${b.title}\n   👤 ${b.author}`).join('\n\n'),
+        { parse_mode: 'Markdown' }
+      );
+      
+      await ctx.answerCbQuery();
+    } catch (error) {
+      logger.error('Error showing similar books', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка при пошуку схожих книг');
+    }
+    return;
+  });
+  
+  // Обробка кнопки "Оцінити"
+  bot.action(/rate_(\d+)/, async (ctx: BotContext) => {
+    const match = ctx.match;
+    if (!match || !match[1]) {
+      await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
+      return;
+    }
+    const bookId = parseInt(match[1]);
+    ctx.scene?.enter('RATE_BOOK_SCENE', { bookId });
+    await ctx.answerCbQuery();
+    return;
+  });
+
+ 
+ 
+  // ==================== ШВИДКІ ДІЇ ====================
+  
+  // Швидкий пошук - покращений з fuzzy matching
+  bot.hears('⚡ Швидкий пошук', async (ctx: BotContext) => {
+    try {
+      await ctx.reply(
+        '⚡ *ШВИДКИЙ ПОШУК*\n\n' +
+        '🔍 Введіть назву книги, автора або жанр:\n\n' +
+        '💡 *Приклади:*\n' +
+        '• Кобзар\n' +
+        '• Шевченко\n' +
+        '• Фантастика\n' +
+        '• Любовний роман\n\n' +
+        '✨ Пошук працює навіть з помилками в словах!\n' +
+        '🤖 Включає AI-рекомендації та розумний пошук',
+        { 
+          parse_mode: 'Markdown',
+          reply_markup: Markup.keyboard([['⬅️ Назад до меню']]).resize().reply_markup
+        }
+      );
+      
+      // Встановлюємо загальний пошук за замовчуванням
+      ctx.scene?.enter('SEARCH_SCENE', { searchType: 'general' });
+      logger.userAction(ctx.from!.id, 'quick_search');
+    } catch (error) {
+      logger.error('Error in quick search', error, { userId: ctx.from?.id });
+      await ctx.reply('❌ Виникла помилка. Спробуйте ще раз.');
+    }
+    return;
+  });
+  
+  // Пошук за тегами видалено за запитом користувача
+  
+  // Мої улюблені (збережені книги)
+  bot.hears('⭐ Мої улюблені', async (ctx) => {
+    try {
+      console.log('⭐ My favorites request from user:', ctx.from?.id);
+      
+      const userId = ctx.from?.id;
+      if (!userId) {
+        await ctx.reply('❌ Не вдалося ідентифікувати користувача');
+        return;
+      }
+      
+      const savedBooks = await getSavedBooks(userId);
+      console.log('📚 Saved books found:', savedBooks.length);
+      
+      if (savedBooks.length === 0) {
+        await ctx.reply(
+          '⭐ *Мої улюблені*\n\n' +
+          'У вас ще немає улюблених книг.\n\n' +
+          '💡 Зберігайте цікаві книги натискаючи кнопку 💾 ЗБЕРЕГТИ при перегляді книги.\n\n' +
+          '🔍 Спробуйте:\n' +
+          '• Перейти в каталог книг\n' +
+          '• Знайти цікаву книгу\n' +
+          '• Натиснути кнопку 💾 ЗБЕРЕГТИ',
+          { parse_mode: 'Markdown' }
+        );
+        return;
+      }
+      
+      await displaySavedBooks(ctx, savedBooks);
+      logger.userAction(userId, 'view_favorites', { booksCount: savedBooks.length });
+    } catch (error) {
+      console.error('❌ Error in favorites:', error);
+      logger.error('Error showing favorites', error, { userId: ctx.from?.id });
+      await ctx.reply('❌ Виникла помилка при отриманні улюблених книг.');
+    }
+    return;
+  });
+  
+
+  
+  // Випадкова книга
+  bot.hears('🎲 Випадкова книга', async (ctx) => {
+    try {
+      console.log('🎲 Random book request from user:', ctx.from?.id);
+      
+      const randomBook = await getRandomBook();
+      console.log('📖 Random book result:', randomBook ? `${randomBook.title} (ID: ${randomBook.id})` : 'null');
+      
+      if (!randomBook) {
+        console.log('⚠️ No random book found, trying fallback...');
+        
+        // Спробуємо показати топ книги як альтернативу
+        const topBooks = await getTopBooks(1);
+        console.log('🏆 Top books fallback:', topBooks.length);
+        
+        if (topBooks.length > 0) {
+          await ctx.reply(
+            '🎲 *Випадкова книга*\n\n' +
+            'Ось чудова книга з нашого каталогу:',
+            { parse_mode: 'Markdown' }
+          );
+          
+          const book = topBooks[0];
+          const userId = ctx.from?.id;
+          const isSaved = userId ? await isBookSaved(userId, book.id!) : false;
+          
+          const caption = await formatBookCaption(book);
+          const keyboard = getEnhancedBookKeyboard(book, isSaved);
+          
+          if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
+            try {
+              await ctx.replyWithPhoto(book.photo_file_id, {
+                caption,
+                parse_mode: 'Markdown',
+                reply_markup: keyboard
+              });
+            } catch (photoError) {
+              await ctx.reply(caption, {
+                parse_mode: 'Markdown',
+                reply_markup: keyboard
+              });
+            }
+          } else {
+            await ctx.reply(caption, {
+              parse_mode: 'Markdown',
+              reply_markup: keyboard
+            });
+          }
+          
+          logger.userAction(ctx.from!.id, 'random_book_fallback');
+          return;
+        }
+        
+        // Якщо взагалі немає книг
+        await ctx.reply(
+          '📭 *Бібліотека порожня*\n\n' +
+          'В каталозі поки що немає жодної книги.\n\n' +
+          '💡 Зверніться до адміністратора для додавання книг через /admin',
+          { parse_mode: 'Markdown' }
+        );
+        return;
+      }
+      
+      // Перевіряємо чи книга дійсно доступна
+      if (!randomBook.is_available) {
+        console.log('⚠️ Random book is not available:', randomBook.id);
+        await ctx.reply('❌ Вибрана книга наразі недоступна. Спробуйте ще раз.');
+        return;
+      }
+      
+      const userId = ctx.from?.id;
+      const isSaved = userId ? await isBookSaved(userId, randomBook.id!) : false;
+      
+      await ctx.reply('🎲 *Випадкова книга для вас:*', { parse_mode: 'Markdown' });
+      
+      const caption = await formatBookCaption(randomBook);
+      const keyboard = getEnhancedBookKeyboard(randomBook, isSaved);
+      
+      if (randomBook.photo_file_id && randomBook.photo_file_id !== 'default_book_cover' && randomBook.photo_file_id.length > 20) {
+        try {
+          await ctx.replyWithPhoto(randomBook.photo_file_id, {
+            caption,
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        } catch (photoError) {
+          console.log('⚠️ Photo error, sending as text');
+          await ctx.reply(caption, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        }
+      } else {
+        await ctx.reply(caption, {
+          parse_mode: 'Markdown',
+          reply_markup: keyboard
+        });
+      }
+      
+      logger.userAction(ctx.from!.id, 'random_book', { bookId: randomBook.id });
+    } catch (error) {
+      console.error('❌ Error in random book:', error);
+      logger.error('Error showing random book', error, { userId: ctx.from?.id });
+      await ctx.reply('❌ Виникла помилка при отриманні книги. Спробуйте пізніше.');
+    }
+    return;
+  });
+  
+  // Кнопка "На головну"
+  bot.hears('🏠 На головну', async (ctx) => {
+    await ctx.reply('🏠 Повертаємось на головну', {
+      reply_markup: getMainMenuKeyboard()
+    });
+    logger.userAction(ctx.from!.id, 'home');
+    return;
+  });
+  
+  // Callback для кнопки "На головну" (inline)
+  bot.action('home', async (ctx) => {
+    await ctx.answerCbQuery();
+    await ctx.reply('🏠 Повертаємось на головну', {
+      reply_markup: getMainMenuKeyboard()
+    });
+    logger.userAction(ctx.from!.id, 'home_inline');
+    return;
+  });
+  
+  // Обробники фільтрів каталогу
+  bot.action('catalog_genres', async (ctx: BotContext) => {
+    try {
+      await ctx.answerCbQuery();
+      const genres = await cache.getOrSet(
+        CACHE_KEYS.GENRES,
+        () => getGenres(),
+        CACHE_TTL.LONG // 15 хвилин - жанри рідко змінюються
+      );
+      const keyboard = getGenreKeyboard(genres);
+      
+      await ctx.reply('📚 Оберіть жанр:', {
+        reply_markup: keyboard
+      });
+    } catch (error) {
+      logger.error('Error showing genres', error);
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+  
+  bot.action('catalog_rating', async (ctx: BotContext) => {
+    try {
+      await ctx.answerCbQuery('⭐ Завантаження книг з високим рейтингом...');
+      
+      const books = await getHighRatedBooks(4, 10);
+      
+      if (books.length === 0) {
+        await ctx.reply('📭 Поки що немає книг з рейтингом 4+ зірки.');
+        return;
+      }
+      
+      await ctx.reply(
+        `⭐ *КНИГИ З ВИСОКИМ РЕЙТИНГОМ*\n\n` +
+        `Знайдено ${books.length} ${books.length === 1 ? 'книга' : 'книг'} з рейтингом 4+ зірки:`,
+        { parse_mode: 'Markdown' }
+      );
+      
+      for (const book of books) {
+        const caption = await formatBookCaption(book);
+        const userId = ctx.from?.id;
+        const isSaved = userId ? await isBookSaved(userId, book.id!) : false;
+        const keyboard = getEnhancedBookKeyboard(book, isSaved);
+        
+        if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
+          await ctx.replyWithPhoto(book.photo_file_id, {
+            caption,
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        } else {
+          await ctx.reply(caption, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        }
+      }
+      
+      logger.userAction(ctx.from!.id, 'catalog_rating');
+    } catch (error) {
+      logger.error('Error showing high rated books', error);
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+  
+  bot.action('catalog_new', async (ctx: BotContext) => {
+    try {
+      await ctx.answerCbQuery('🆕 Завантаження новинок...');
+      
+      const books = await cache.getOrSet(
+        CACHE_KEYS.NEW_BOOKS,
+        () => getNewestBooks(10),
+        CACHE_TTL.SHORT // 1 хвилина - новинки часто додаються
+      );
+      
+      if (books.length === 0) {
+        await ctx.reply('📭 Книг ще немає в бібліотеці.');
+        return;
+      }
+      
+      await ctx.reply(
+        `🆕 *НОВИНКИ БІБЛІОТЕКИ*\n\n` +
+        `Останні ${books.length} додані ${books.length === 1 ? 'книга' : 'книг'}:`,
+        { parse_mode: 'Markdown' }
+      );
+      
+      for (const book of books) {
+        const caption = await formatBookCaption(book);
+        const userId = ctx.from?.id;
+        const isSaved = userId ? await isBookSaved(userId, book.id!) : false;
+        const keyboard = getEnhancedBookKeyboard(book, isSaved);
+        
+        if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
+          await ctx.replyWithPhoto(book.photo_file_id, {
+            caption,
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        } else {
+          await ctx.reply(caption, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        }
+      }
+      
+      logger.userAction(ctx.from!.id, 'catalog_new');
+    } catch (error) {
+      logger.error('Error showing new books', error);
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+  
+  bot.action('catalog_tags', async (ctx: BotContext) => {
+    try {
+      await ctx.answerCbQuery();
+      const allTags = await getAllTags();
+      
+      if (allTags.length === 0) {
+        await ctx.reply('🏷️ Теги ще не додані до системи.');
+        return;
+      }
+      
+      // Створюємо кнопки з тегами (по 2 в рядок)
+      const tagButtons = [];
+      for (let i = 0; i < allTags.length; i += 2) {
+        const row = [
+          Markup.button.callback(allTags[i].name, `view_tag_${allTags[i].id}`)
+        ];
+        if (i + 1 < allTags.length) {
+          row.push(Markup.button.callback(allTags[i + 1].name, `view_tag_${allTags[i + 1].id}`));
+        }
+        tagButtons.push(row);
+      }
+      
+      await ctx.reply(
+        '🏷️ *КАТАЛОГ ЗА ТЕГАМИ*\n\n' +
+        'Оберіть тег для перегляду книг:',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: Markup.inlineKeyboard(tagButtons).reply_markup
+        }
+      );
+      
+      logger.userAction(ctx.from!.id, 'catalog_tags');
+    } catch (error) {
+      logger.error('Error showing tags catalog', error);
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+  
+  bot.action('catalog_alpha', async (ctx: BotContext) => {
+    try {
+      await ctx.answerCbQuery('🔤 Завантаження книг за алфавітом...');
+      
+      const { books, total } = await getBooksSortedByTitle(10, 0);
+      
+      if (books.length === 0) {
+        await ctx.reply('📭 Книг ще немає в бібліотеці.');
+        return;
+      }
+      
+      await ctx.reply(
+        `🔤 *КНИГИ ЗА АЛФАВІТОМ*\n\n` +
+        `Показано ${books.length} з ${total} ${total === 1 ? 'книги' : 'книг'}:`,
+        { parse_mode: 'Markdown' }
+      );
+      
+      for (const book of books) {
+        const caption = await formatBookCaption(book);
+        const userId = ctx.from?.id;
+        const isSaved = userId ? await isBookSaved(userId, book.id!) : false;
+        const keyboard = getEnhancedBookKeyboard(book, isSaved);
+        
+        if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
+          await ctx.replyWithPhoto(book.photo_file_id, {
+            caption,
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        } else {
+          await ctx.reply(caption, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        }
+      }
+      
+      if (total > 10) {
+        await ctx.reply(`ℹ️ Показано 10 з ${total} книг. Використовуйте пошук для інших книг.`);
+      }
+      
+      logger.userAction(ctx.from!.id, 'catalog_alpha');
+    } catch (error) {
+      logger.error('Error showing books by title', error);
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+  
+  bot.action('catalog_audio', async (ctx: BotContext) => {
+    try {
+      await ctx.answerCbQuery('🎧 Завантаження аудіокниг...');
+      
+      const books = await getBooksWithAudio(10);
+      
+      if (books.length === 0) {
+        await ctx.reply('📭 Поки що немає аудіокниг в бібліотеці.');
+        return;
+      }
+      
+      await ctx.reply(
+        `🎧 *АУДІОКНИГИ*\n\n` +
+        `Знайдено ${books.length} ${books.length === 1 ? 'аудіокнига' : 'аудіокниг'}:`,
+        { parse_mode: 'Markdown' }
+      );
+      
+      for (const book of books) {
+        const caption = await formatBookCaption(book);
+        const userId = ctx.from?.id;
+        const isSaved = userId ? await isBookSaved(userId, book.id!) : false;
+        const keyboard = getEnhancedBookKeyboard(book, isSaved);
+        
+        if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
+          await ctx.replyWithPhoto(book.photo_file_id, {
+            caption,
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        } else {
+          await ctx.reply(caption, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        }
+      }
+      
+      logger.userAction(ctx.from!.id, 'catalog_audio');
+    } catch (error) {
+      logger.error('Error showing audio books', error);
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+  
+  bot.action('catalog_downloads', async (ctx: BotContext) => {
+    try {
+      await ctx.answerCbQuery('📥 Завантаження популярних книг...');
+      
+      const books = await getMostDownloadedBooks(10);
+      
+      if (books.length === 0) {
+        await ctx.reply('📭 Поки що немає завантажених книг.');
+        return;
+      }
+      
+      await ctx.reply(
+        `📥 *НАЙПОПУЛЯРНІШІ КНИГИ*\n\n` +
+        `Топ ${books.length} найбільш завантажуваних ${books.length === 1 ? 'книга' : 'книг'}:`,
+        { parse_mode: 'Markdown' }
+      );
+      
+      for (const book of books) {
+        const caption = await formatBookCaption(book);
+        const userId = ctx.from?.id;
+        const isSaved = userId ? await isBookSaved(userId, book.id!) : false;
+        const keyboard = getEnhancedBookKeyboard(book, isSaved);
+        
+        if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
+          await ctx.replyWithPhoto(book.photo_file_id, {
+            caption,
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        } else {
+          await ctx.reply(caption, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        }
+      }
+      
+      logger.userAction(ctx.from!.id, 'catalog_downloads');
+    } catch (error) {
+      logger.error('Error showing most downloaded books', error);
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+  
+  // Обробка перегляду книг за тегом з каталогу
+  bot.action(/view_tag_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка');
+        return;
+      }
+      
+      const tagId = parseInt(match[1]);
+      const allTags = await getAllTags();
+      const tag = allTags.find(t => t.id === tagId);
+      
+      if (!tag) {
+        await ctx.answerCbQuery('❌ Тег не знайдено');
+        return;
+      }
+      
+      await ctx.answerCbQuery(`🏷️ Завантаження книг з тегом: ${tag.name}`);
+      
+      // Шукаємо книги за тегом
+      const books = await searchBooksByTag(tag.name, 10);
+      
+      if (books.length === 0) {
+        await ctx.reply(`🏷️ Книг з тегом "${tag.name}" поки що немає.`);
+        return;
+      }
+      
+      await ctx.reply(
+        `🏷️ *Книги з тегом "${tag.name}"*\n\n` +
+        `Знайдено ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}:`,
+        { parse_mode: 'Markdown' }
+      );
+      
+      for (const book of books) {
+        const caption = await formatBookCaption(book);
+        const userId = ctx.from?.id;
+        const isSaved = userId ? await isBookSaved(userId, book.id!) : false;
+        const keyboard = getEnhancedBookKeyboard(book, isSaved);
+        
+        if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
+          await ctx.replyWithPhoto(book.photo_file_id, {
+            caption,
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        } else {
+          await ctx.reply(caption, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        }
+      }
+      
+      logger.userAction(ctx.from!.id, 'view_tag', { tagId, tagName: tag.name });
+    } catch (error) {
+      logger.error('Error showing books by tag', error);
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+  
+  // Обробка пошуку за тегом
+  bot.action(/search_tag_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка');
+        return;
+      }
+      
+      const tagId = parseInt(match[1]);
+      const allTags = await getAllTags();
+      const tag = allTags.find(t => t.id === tagId);
+      
+      if (!tag) {
+        await ctx.answerCbQuery('❌ Тег не знайдено');
+        return;
+      }
+      
+      await ctx.answerCbQuery(`🔍 Шукаємо за тегом: ${tag.name}`);
+      
+      // Шукаємо книги за тегом
+      const books = await searchBooksByTag(tag.name, 10);
+      
+      if (books.length === 0) {
+        await ctx.reply(
+          `📭 *Книг з тегом "${tag.name}" не знайдено*\n\n` +
+          'Спробуйте інший тег або використайте звичайний пошук.',
+          { parse_mode: 'Markdown' }
+        );
+        return;
+      }
+      
+      await ctx.reply(
+        `🏷️ *Книги з тегом "${tag.name}"*\n\n` +
+        `Знайдено ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}:`,
+        { parse_mode: 'Markdown' }
+      );
+      
+      // Показуємо книги
+      for (const book of books) {
+        const caption = await formatBookCaption(book);
+        const userId = ctx.from?.id;
+        const isSaved = userId ? await isBookSaved(userId, book.id!) : false;
+        const keyboard = getEnhancedBookKeyboard(book, isSaved);
+        
+        if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
+          await ctx.replyWithPhoto(book.photo_file_id, {
+            caption,
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        } else {
+          await ctx.reply(caption, {
+            parse_mode: 'Markdown',
+            reply_markup: keyboard
+          });
+        }
+      }
+      
+      logger.userAction(ctx.from!.id, 'search_by_tag', { tagName: tag.name, resultsCount: books.length });
+    } catch (error) {
+      logger.error('Error searching by tag', error);
+      await ctx.answerCbQuery('❌ Помилка пошуку');
+      await ctx.reply(ERRORS.GENERIC);
+    }
+  });
+
+  // AI-підбір в каталозі (Завдання 32)
+  bot.action('catalog_ai', async (ctx: BotContext) => {
+    try {
+      await ctx.answerCbQuery('🤖 Запускаю AI-підбір...');
+      return ctx.scene.enter('AI_FILTER_SCENE');
+    } catch (error) {
+      logger.error('Error starting AI filter', error);
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  console.log('✅ User handlers registered (including AI features)');
 };

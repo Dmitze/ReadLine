@@ -1,9 +1,9 @@
 import sqlite3 from 'sqlite3';
-import dotenv from 'dotenv';
 import { Database } from 'sqlite3';
+import fs from 'fs';
+import path from 'path';
 
-// Initialize environment variables
-dotenv.config();
+// Environment variables are initialized in index.ts (entry point)
 
 declare var process : {
   env: {
@@ -19,23 +19,17 @@ export interface Book {
   genre: string;
   description: string;
   photo_file_id: string;
+  file_url?: string; // Посилання на файл
+  file_type?: string; // 'physical' | 'link' | 'file'
+  file_name?: string; // Назва файлу для завантаження
+  rating?: number; // Середній рейтинг 0-5
+  reviews_count?: number; // Кількість відгуків
+  downloads_count?: number; // Кількість завантажень
   is_available?: boolean;
   created_at?: string;
 }
 
-export interface Request {
-  id?: number;
-  user_id: number;
-  user_name?: string;
-  book_id: number;
-  full_name: string;
-  unit: string;
-  phone?: string;
-  status?: string;
-  created_at?: string;
-  updated_at?: string;
-  book_title?: string; // For joined queries
-}
+// Request interface removed - no longer using physical book requests
 
 export interface Admin {
   id?: number;
@@ -46,11 +40,69 @@ export interface Admin {
 
 export interface AdminStats {
   totalBooks: number;
-  pendingRequests: number;
+}
+
+export interface Review {
+  id?: number;
+  book_id: number;
+  user_id: number;
+  user_name?: string;
+  rating: number; // 1-5
+  comment?: string;
+  is_published?: boolean;
+  created_at?: string;
+}
+
+export interface SavedBook {
+  id?: number;
+  user_id: number;
+  book_id: number;
+  created_at?: string;
+}
+
+export interface FeedbackMessage {
+  id?: number;
+  user_id: number;
+  user_name?: string;
+  user_username?: string;
+  message: string;
+  status?: string; // 'pending' | 'read' | 'replied'
+  admin_reply?: string;
+  created_at?: string;
+  read_at?: string;
+}
+
+export interface AudioChapter {
+  id?: number;
+  book_id: number;
+  chapter_number: number;
+  title: string;
+  file_id: string;
+  duration: number;
+  created_at?: string;
+}
+
+export interface ListeningProgress {
+  id?: number;
+  user_id: number;
+  book_id: number;
+  chapter_id?: number;
+  position: number;
+  total_listened: number;
+  last_listened_at?: string;
+  created_at?: string;
 }
 
 // Initialize database
 const dbPath = process.env.DB_PATH || './database/library.db';
+
+// Створення директорії для БД якщо не існує (синхронно)
+const dbDir = path.dirname(dbPath);
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir, { recursive: true });
+  console.log(`📁 Створено директорію для БД: ${dbDir}`);
+}
+
 export const db = new sqlite3.Database(dbPath);
 
 // Create tables
@@ -64,27 +116,18 @@ export const initDatabase = (): void => {
         genre TEXT NOT NULL,
         description TEXT,
         photo_file_id TEXT NOT NULL,
+        file_url TEXT,
+        file_type TEXT DEFAULT 'physical',
+        file_name TEXT,
+        rating REAL DEFAULT 0,
+        reviews_count INTEGER DEFAULT 0,
+        downloads_count INTEGER DEFAULT 0,
         is_available BOOLEAN DEFAULT 1,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
   `;
 
-  // Create requests table
-  const createRequestsTable = `
-    CREATE TABLE IF NOT EXISTS requests (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        user_name TEXT,
-        book_id INTEGER NOT NULL,
-        full_name TEXT NOT NULL,
-        unit TEXT NOT NULL,
-        phone TEXT,
-        status TEXT DEFAULT 'pending',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (book_id) REFERENCES books (id)
-    );
-  `;
+  // Requests table removed - no longer using physical book requests
 
   // Create admins table
   const createAdminsTable = `
@@ -96,25 +139,84 @@ export const initDatabase = (): void => {
     );
   `;
 
+  // Create reviews table
+  const createReviewsTable = `
+    CREATE TABLE IF NOT EXISTS reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        book_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        user_name TEXT,
+        rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+        comment TEXT,
+        is_published BOOLEAN DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (book_id) REFERENCES books (id)
+    );
+  `;
+
+  // Create saved_books table (user's personal library)
+  const createSavedBooksTable = `
+    CREATE TABLE IF NOT EXISTS saved_books (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        book_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, book_id),
+        FOREIGN KEY (book_id) REFERENCES books (id)
+    );
+  `;
+
+  // Create feedback_messages table
+  const createFeedbackMessagesTable = `
+    CREATE TABLE IF NOT EXISTS feedback_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        user_name TEXT,
+        user_username TEXT,
+        message TEXT NOT NULL,
+        status TEXT DEFAULT 'pending',
+        admin_reply TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        read_at DATETIME
+    );
+  `;
+
   db.serialize(() => {
     db.run(createBooksTable);
-    db.run(createRequestsTable);
     db.run(createAdminsTable);
+    db.run(createReviewsTable);
+    db.run(createSavedBooksTable);
+    db.run(createFeedbackMessagesTable);
   });
 };
 
 // Book functions
 export const addBook = (bookData: Omit<Book, 'id' | 'is_available' | 'created_at'>): Promise<number> => {
   return new Promise((resolve, reject) => {
-    const { title, author, genre, description, photo_file_id } = bookData;
+    const { 
+      title, 
+      author, 
+      genre, 
+      description, 
+      photo_file_id, 
+      file_url, 
+      file_type = 'physical',
+      file_name 
+    } = bookData;
+    
     const query = `
-      INSERT INTO books (title, author, genre, description, photo_file_id)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO books (title, author, genre, description, photo_file_id, file_url, file_type, file_name)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `;
-    db.run(query, [title, author, genre, description, photo_file_id], function(err) {
-      if (err) reject(err);
-      else resolve(this.lastID);
-    });
+    
+    db.run(
+      query, 
+      [title, author, genre, description, photo_file_id, file_url, file_type, file_name], 
+      function(err) {
+        if (err) reject(err);
+        else resolve(this.lastID);
+      }
+    );
   });
 };
 
@@ -131,6 +233,17 @@ export const getBooksByGenre = (genre: string): Promise<Book[]> => {
 export const getAllBooks = (): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     const query = `SELECT * FROM books`;
+    db.all(query, [], (err, rows: Book[]) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+};
+
+// Get all available books (for AI search and recommendations)
+export const getAllAvailableBooks = (): Promise<Book[]> => {
+  return new Promise((resolve, reject) => {
+    const query = `SELECT * FROM books WHERE (is_available = 1 OR is_available IS NULL)`;
     db.all(query, [], (err, rows: Book[]) => {
       if (err) reject(err);
       else resolve(rows);
@@ -158,54 +271,7 @@ export const getGenres = (): Promise<string[]> => {
   });
 };
 
-// Request functions
-export const addRequest = (requestData: Omit<Request, 'id' | 'status' | 'created_at' | 'updated_at'>): Promise<number> => {
-  return new Promise((resolve, reject) => {
-    const { user_id, user_name, book_id, full_name, unit, phone } = requestData;
-    const query = `
-      INSERT INTO requests (user_id, user_name, book_id, full_name, unit, phone)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `;
-    db.run(query, [user_id, user_name, book_id, full_name, unit, phone], function(err) {
-      if (err) reject(err);
-      else resolve(this.lastID);
-    });
-  });
-};
-
-export const getPendingRequests = (): Promise<Request[]> => {
-  return new Promise((resolve, reject) => {
-    const query = `SELECT * FROM requests WHERE status = 'pending'`;
-    db.all(query, [], (err, rows: Request[]) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
-};
-
-export const updateRequestStatus = (requestId: number, status: string): Promise<number> => {
-  return new Promise((resolve, reject) => {
-    const query = `UPDATE requests SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
-    db.run(query, [status, requestId], function(err) {
-      if (err) reject(err);
-      else resolve(this.changes);
-    });
-  });
-};
-
-// Get user requests
-export const getUserRequests = (userId: number): Promise<Request[]> => {
-  return new Promise((resolve, reject) => {
-    const query = `SELECT r.*, b.title as book_title FROM requests r 
-                  LEFT JOIN books b ON r.book_id = b.id 
-                  WHERE r.user_id = ? 
-                  ORDER BY r.created_at DESC`;
-    db.all(query, [userId], (err, rows: Request[]) => {
-      if (err) reject(err);
-      else resolve(rows);
-    });
-  });
-};
+// Request functions removed - no longer using physical book requests
 
 // Admin functions
 export const addAdmin = (userId: number, username?: string): Promise<number> => {
@@ -226,10 +292,18 @@ export const addAdmin = (userId: number, username?: string): Promise<number> => 
 
 export const isAdmin = (userId: number): Promise<boolean> => {
   return new Promise((resolve, reject) => {
-    const query = `SELECT 1 FROM admins WHERE user_id = ?`;
-    db.get(query, [userId], (err, row) => {
+    db.get('SELECT * FROM admins WHERE user_id = ?', [userId], (err, row) => {
       if (err) reject(err);
       else resolve(!!row);
+    });
+  });
+};
+
+export const getAllAdmins = (): Promise<Admin[]> => {
+  return new Promise((resolve, reject) => {
+    db.all('SELECT * FROM admins', [], (err, rows: Admin[]) => {
+      if (err) reject(err);
+      else resolve(rows);
     });
   });
 };
@@ -239,8 +313,7 @@ export const getAdminStats = (): Promise<AdminStats> => {
   return new Promise((resolve, reject) => {
     const query = `
       SELECT 
-        (SELECT COUNT(*) FROM books) as totalBooks,
-        (SELECT COUNT(*) FROM requests WHERE status = 'pending') as pendingRequests
+        (SELECT COUNT(*) FROM books) as totalBooks
     `;
     db.get(query, [], (err, row: AdminStats) => {
       if (err) reject(err);
@@ -248,3 +321,401 @@ export const getAdminStats = (): Promise<AdminStats> => {
     });
   });
 };
+
+// Pagination functions
+export const getBooksByGenreWithPagination = (
+  genre: string,
+  limit: number = 5,
+  offset: number = 0
+): Promise<{ books: Book[], total: number }> => {
+  return new Promise((resolve, reject) => {
+    // Спочатку отримуємо загальну кількість
+    db.get(
+      'SELECT COUNT(*) as total FROM books WHERE genre = ?',
+      [genre],
+      (err, countRow: any) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        
+        // Потім отримуємо книги з пагінацією
+        db.all(
+          'SELECT * FROM books WHERE genre = ? LIMIT ? OFFSET ?',
+          [genre, limit, offset],
+          (err, books: Book[]) => {
+            if (err) reject(err);
+            else resolve({ books, total: countRow.total });
+          }
+        );
+      }
+    );
+  });
+};
+
+export const getBooksWithPagination = (
+  limit: number = 5,
+  offset: number = 0
+): Promise<{ books: Book[], total: number }> => {
+  return new Promise((resolve, reject) => {
+    // Спочатку отримуємо загальну кількість
+    db.get('SELECT COUNT(*) as total FROM books', [], (err, countRow: any) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      
+      // Потім отримуємо книги з пагінацією
+      db.all(
+        'SELECT * FROM books LIMIT ? OFFSET ?',
+        [limit, offset],
+        (err, books: Book[]) => {
+          if (err) reject(err);
+          else resolve({ books, total: countRow.total });
+        }
+      );
+    });
+  });
+};
+
+// Search books using SQL (much faster than JS filtering)
+export const searchBooks = (
+  searchTerm: string,
+  limit: number = 10
+): Promise<Book[]> => {
+  return new Promise((resolve, reject) => {
+    const pattern = `%${searchTerm}%`;
+    const query = `
+      SELECT * FROM books 
+      WHERE LOWER(title) LIKE LOWER(?) 
+         OR LOWER(author) LIKE LOWER(?)
+         OR LOWER(genre) LIKE LOWER(?)
+      LIMIT ?
+    `;
+    
+    db.all(query, [pattern, pattern, pattern, limit], (err, rows: Book[]) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+};
+
+// Update book (for admin editing)
+export const updateBook = (
+  bookId: number, 
+  updates: Partial<Omit<Book, 'id' | 'created_at'>>
+): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+    const values = Object.values(updates);
+    
+    const query = `UPDATE books SET ${fields} WHERE id = ?`;
+    
+    db.run(query, [...values, bookId], function(err) {
+      if (err) reject(err);
+      else resolve(this.changes);
+    });
+  });
+};
+
+// Delete book
+export const deleteBook = (bookId: number): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    db.run('DELETE FROM books WHERE id = ?', [bookId], function(err) {
+      if (err) reject(err);
+      else resolve(this.changes);
+    });
+  });
+};
+
+// Increment downloads count
+export const incrementDownloads = (bookId: number): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      'UPDATE books SET downloads_count = downloads_count + 1 WHERE id = ?',
+      [bookId],
+      (err) => {
+        if (err) reject(err);
+        else resolve();
+      }
+    );
+  });
+};
+
+// Review functions
+export const addReview = (reviewData: Omit<Review, 'id' | 'created_at'>): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const { book_id, user_id, user_name, rating, comment, is_published = false } = reviewData;
+    const query = `
+      INSERT INTO reviews (book_id, user_id, user_name, rating, comment, is_published)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `;
+    
+    db.run(query, [book_id, user_id, user_name, rating, comment, is_published ? 1 : 0], function(err) {
+      if (err) reject(err);
+      else {
+        // Оновлюємо рейтинг книги
+        updateBookRating(book_id);
+        resolve(this.lastID);
+      }
+    });
+  });
+};
+
+export const getBookReviews = (bookId: number): Promise<Review[]> => {
+  return new Promise((resolve, reject) => {
+    db.all(
+      'SELECT * FROM reviews WHERE book_id = ? AND is_published = 1 ORDER BY created_at DESC',
+      [bookId],
+      (err, rows: Review[]) => {
+        if (err) reject(err);
+        else resolve(rows);
+      }
+    );
+  });
+};
+
+export const getPendingReviews = (): Promise<Review[]> => {
+  return new Promise((resolve, reject) => {
+    db.all(
+      'SELECT * FROM reviews WHERE is_published = 0 ORDER BY created_at DESC',
+      [],
+      (err, rows: Review[]) => {
+        if (err) reject(err);
+        else resolve(rows);
+      }
+    );
+  });
+};
+
+export const publishReview = (reviewId: number): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      'UPDATE reviews SET is_published = 1 WHERE id = ?',
+      [reviewId],
+      function(err) {
+        if (err) reject(err);
+        else resolve(this.changes);
+      }
+    );
+  });
+};
+
+export const deleteReview = (reviewId: number): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    // Отримуємо book_id перед видаленням
+    db.get('SELECT book_id FROM reviews WHERE id = ?', [reviewId], (err, row: any) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      
+      db.run('DELETE FROM reviews WHERE id = ?', [reviewId], function(err) {
+        if (err) reject(err);
+        else {
+          // Оновлюємо рейтинг книги
+          if (row && row.book_id) updateBookRating(row.book_id);
+          resolve(this.changes);
+        }
+      });
+    });
+  });
+};
+
+// Update book rating based on reviews
+const updateBookRating = (bookId: number): void => {
+  db.get(
+    'SELECT AVG(rating) as avg_rating, COUNT(*) as count FROM reviews WHERE book_id = ? AND is_published = 1',
+    [bookId],
+    (err, row: any) => {
+      if (!err && row) {
+        db.run(
+          'UPDATE books SET rating = ?, reviews_count = ? WHERE id = ?',
+          [row.avg_rating || 0, row.count, bookId]
+        );
+      }
+    }
+  );
+};
+
+// SavedBooks functions
+export const saveBook = (userId: number, bookId: number): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      'INSERT OR IGNORE INTO saved_books (user_id, book_id) VALUES (?, ?)',
+      [userId, bookId],
+      function(err) {
+        if (err) reject(err);
+        else resolve(this.lastID);
+      }
+    );
+  });
+};
+
+export const unsaveBook = (userId: number, bookId: number): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      'DELETE FROM saved_books WHERE user_id = ? AND book_id = ?',
+      [userId, bookId],
+      function(err) {
+        if (err) reject(err);
+        else resolve(this.changes);
+      }
+    );
+  });
+};
+
+export const getSavedBooks = (userId: number): Promise<Book[]> => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT b.* FROM books b
+      INNER JOIN saved_books sb ON b.id = sb.book_id
+      WHERE sb.user_id = ?
+      ORDER BY sb.created_at DESC
+    `;
+    
+    db.all(query, [userId], (err, rows: Book[]) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+};
+
+export const isBookSaved = (userId: number, bookId: number): Promise<boolean> => {
+  return new Promise((resolve, reject) => {
+    db.get(
+      'SELECT 1 FROM saved_books WHERE user_id = ? AND book_id = ?',
+      [userId, bookId],
+      (err, row) => {
+        if (err) reject(err);
+        else resolve(!!row);
+      }
+    );
+  });
+};
+
+// Get top rated books
+export const getTopBooks = (limit: number = 10): Promise<Book[]> => {
+  return new Promise((resolve, reject) => {
+    db.all(
+      'SELECT * FROM books WHERE rating > 0 ORDER BY rating DESC, reviews_count DESC LIMIT ?',
+      [limit],
+      (err, rows: Book[]) => {
+        if (err) reject(err);
+        else resolve(rows);
+      }
+    );
+  });
+};
+
+// Get most downloaded books
+export const getMostDownloadedBooks = (limit: number = 10): Promise<Book[]> => {
+  return new Promise((resolve, reject) => {
+    db.all(
+      'SELECT * FROM books WHERE downloads_count > 0 ORDER BY downloads_count DESC LIMIT ?',
+      [limit],
+      (err, rows: Book[]) => {
+        if (err) reject(err);
+        else resolve(rows);
+      }
+    );
+  });
+};
+
+// Get newest books
+export const getNewestBooks = (limit: number = 10): Promise<Book[]> => {
+  return new Promise((resolve, reject) => {
+    db.all(
+      'SELECT * FROM books ORDER BY created_at DESC LIMIT ?',
+      [limit],
+      (err, rows: Book[]) => {
+        if (err) reject(err);
+        else resolve(rows);
+      }
+    );
+  });
+};
+
+// Feedback Messages functions
+export const addFeedbackMessage = (feedbackData: Omit<FeedbackMessage, 'id' | 'status' | 'created_at' | 'read_at'>): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const { user_id, user_name, user_username, message } = feedbackData;
+    const query = `
+      INSERT INTO feedback_messages (user_id, user_name, user_username, message)
+      VALUES (?, ?, ?, ?)
+    `;
+    db.run(query, [user_id, user_name, user_username, message], function(err) {
+      if (err) reject(err);
+      else resolve(this.lastID);
+    });
+  });
+};
+
+export const getPendingFeedbackMessages = (): Promise<FeedbackMessage[]> => {
+  return new Promise((resolve, reject) => {
+    db.all(
+      'SELECT * FROM feedback_messages WHERE status = ? ORDER BY created_at DESC',
+      ['pending'],
+      (err, rows: FeedbackMessage[]) => {
+        if (err) reject(err);
+        else resolve(rows);
+      }
+    );
+  });
+};
+
+export const getAllFeedbackMessages = (): Promise<FeedbackMessage[]> => {
+  return new Promise((resolve, reject) => {
+    db.all(
+      'SELECT * FROM feedback_messages ORDER BY created_at DESC',
+      [],
+      (err, rows: FeedbackMessage[]) => {
+        if (err) reject(err);
+
+        else resolve(rows);
+      }
+    );
+  });
+};
+
+export const markFeedbackAsRead = (feedbackId: number): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      'UPDATE feedback_messages SET read_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [feedbackId],
+      (err) => {
+        if (err) reject(err);
+        else resolve();
+      }
+    );
+  });
+};
+
+export const updateFeedbackStatus = (feedbackId: number, status: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      'UPDATE feedback_messages SET status = ? WHERE id = ?',
+      [status, feedbackId],
+      (err) => {
+        if (err) reject(err);
+        else resolve();
+      }
+    );
+  });
+};
+
+export const addAdminReply = (feedbackId: number, reply: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      'UPDATE feedback_messages SET admin_reply = ?, status = ? WHERE id = ?',
+      [reply, 'replied', feedbackId],
+      (err) => {
+        if (err) reject(err);
+        else resolve();
+      }
+    );
+  });
+};
+
+// Initialize database on module load
+initDatabase();

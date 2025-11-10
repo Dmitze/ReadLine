@@ -1,0 +1,323 @@
+/**
+ * Recommendation and personalization functions
+ */
+
+import { db, Book, getTopBooks } from './models';
+
+// Get random book - ВИПРАВЛЕНО
+export const getRandomBook = (): Promise<Book | null> => {
+  return new Promise((resolve, reject) => {
+    console.log('🎲 Getting random book...');
+    
+    // Спочатку перевіряємо чи є взагалі доступні книги
+    db.get(
+      'SELECT COUNT(*) as count FROM books WHERE is_available = 1 OR is_available IS NULL',
+      (err, result: any) => {
+        if (err) {
+          console.error('❌ Error counting available books:', err);
+          reject(err);
+          return;
+        }
+        
+        const count = result?.count || 0;
+        console.log(`📊 Available books count: ${count}`);
+        
+        if (count === 0) {
+          console.warn('⚠️ No available books in database');
+          resolve(null);
+          return;
+        }
+        
+        // Якщо є книги - вибираємо випадкову (включаючи книги без явного is_available)
+        db.get(
+          'SELECT * FROM books WHERE (is_available = 1 OR is_available IS NULL) ORDER BY RANDOM() LIMIT 1',
+          (err, row: Book) => {
+            if (err) {
+              console.error('❌ Error getting random book:', err);
+              reject(err);
+            } else {
+              if (row) {
+                console.log(`✅ Random book selected: "${row.title}" by ${row.author}`);
+                // Переконуємося що книга доступна
+                row.is_available = true;
+              } else {
+                console.warn('⚠️ No book returned from query');
+              }
+              resolve(row || null);
+            }
+          }
+        );
+      }
+    );
+  });
+};
+
+// Get recently viewed books (based on saved books)
+export const getRecentlyViewedBooks = (userId: number, limit: number = 5): Promise<Book[]> => {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT b.* FROM books b
+       INNER JOIN saved_books sb ON b.id = sb.book_id
+       WHERE sb.user_id = ?
+       ORDER BY sb.created_at DESC
+       LIMIT ?`,
+      [userId, limit],
+      (err, rows: Book[]) => {
+        if (err) reject(err);
+        else resolve(rows);
+      }
+    );
+  });
+};
+
+// Get user's favorite genres (based on saved books)
+export const getUserFavoriteGenres = (userId: number, limit: number = 3): Promise<string[]> => {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT b.genre, COUNT(*) as count
+       FROM books b
+       INNER JOIN saved_books sb ON b.id = sb.book_id
+       WHERE sb.user_id = ?
+       GROUP BY b.genre
+       ORDER BY count DESC
+       LIMIT ?`,
+      [userId, limit],
+      (err, rows: any[]) => {
+        if (err) reject(err);
+        else resolve(rows.map(r => r.genre));
+      }
+    );
+  });
+};
+
+// Get recommended books based on user's favorite genres
+export const getRecommendedBooks = (userId: number, limit: number = 5): Promise<Book[]> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const favoriteGenres = await getUserFavoriteGenres(userId, 3);
+      
+      if (favoriteGenres.length === 0) {
+        const topBooks = await getTopBooks(limit);
+        resolve(topBooks);
+        return;
+      }
+      
+      const placeholders = favoriteGenres.map(() => '?').join(',');
+      
+      db.all(
+        `SELECT * FROM books 
+         WHERE genre IN (${placeholders}) 
+         AND is_available = 1
+         AND id NOT IN (SELECT book_id FROM saved_books WHERE user_id = ?)
+         ORDER BY rating DESC, downloads_count DESC
+         LIMIT ?`,
+        [...favoriteGenres, userId, limit],
+        (err, rows: Book[]) => {
+          if (err) reject(err);
+          else resolve(rows);
+        }
+      );
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+
+/**
+ * Advanced recommendation functions based on user behavior
+ */
+
+// Get user's reading statistics
+export const getUserReadingStats = (userId: number): Promise<{
+  savedCount: number;
+  reviewsCount: number;
+  favoriteGenres: string[];
+}> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Count saved books
+      const savedCount = await new Promise<number>((res, rej) => {
+        db.get(
+          'SELECT COUNT(*) as count FROM saved_books WHERE user_id = ?',
+          [userId],
+          (err, row: any) => {
+            if (err) rej(err);
+            else res(row.count);
+          }
+        );
+      });
+
+      // Count reviews
+      const reviewsCount = await new Promise<number>((res, rej) => {
+        db.get(
+          'SELECT COUNT(*) as count FROM reviews WHERE user_id = ?',
+          [userId],
+          (err, row: any) => {
+            if (err) rej(err);
+            else res(row.count);
+          }
+        );
+      });
+
+      // Get favorite genres
+      const favoriteGenres = await getUserFavoriteGenres(userId, 5);
+
+      resolve({ savedCount, reviewsCount, favoriteGenres });
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+// Get books based on user behavior (saved + highly rated)
+export const getBooksBasedOnBehavior = (userId: number, limit: number = 10): Promise<Book[]> => {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT b.*, 
+              (SELECT COUNT(*) FROM saved_books WHERE book_id = b.id) as save_count,
+              (SELECT AVG(rating) FROM reviews WHERE book_id = b.id) as avg_rating
+       FROM books b
+       WHERE b.genre IN (
+         SELECT DISTINCT b2.genre 
+         FROM books b2
+         INNER JOIN saved_books sb ON b2.id = sb.book_id
+         WHERE sb.user_id = ?
+       )
+       AND b.is_available = 1
+       AND b.id NOT IN (SELECT book_id FROM saved_books WHERE user_id = ?)
+       ORDER BY save_count DESC, avg_rating DESC, b.downloads_count DESC
+       LIMIT ?`,
+      [userId, userId, limit],
+      (err, rows: Book[]) => {
+        if (err) reject(err);
+        else resolve(rows);
+      }
+    );
+  });
+};
+
+// Collaborative filtering - find similar users and their books
+export const getCollaborativeRecommendations = (userId: number, limit: number = 10): Promise<Book[]> => {
+  return new Promise((resolve, reject) => {
+    db.all(
+      `SELECT b.*, COUNT(DISTINCT sb2.user_id) as similar_users
+       FROM books b
+       INNER JOIN saved_books sb2 ON b.id = sb2.book_id
+       WHERE sb2.user_id IN (
+         -- Find users with similar taste
+         SELECT sb1.user_id
+         FROM saved_books sb1
+         WHERE sb1.book_id IN (
+           SELECT book_id FROM saved_books WHERE user_id = ?
+         )
+         AND sb1.user_id != ?
+         GROUP BY sb1.user_id
+         HAVING COUNT(*) >= 2
+       )
+       AND b.id NOT IN (SELECT book_id FROM saved_books WHERE user_id = ?)
+       AND b.is_available = 1
+       GROUP BY b.id
+       ORDER BY similar_users DESC, b.rating DESC
+       LIMIT ?`,
+      [userId, userId, userId, limit],
+      (err, rows: Book[]) => {
+        if (err) reject(err);
+        else resolve(rows);
+      }
+    );
+  });
+};
+
+// Get contextual recommendations based on time of day
+export const getContextualRecommendations = (userId: number, limit: number = 5): Promise<Book[]> => {
+  const hour = new Date().getHours();
+  let genrePreference: string[] = [];
+
+  // Morning (6-12): Motivational, Business, Self-help
+  if (hour >= 6 && hour < 12) {
+    genrePreference = ['Мотиваційна', 'Бізнес', 'Саморозвиток', 'Наукова'];
+  }
+  // Afternoon (12-18): Any genre
+  else if (hour >= 12 && hour < 18) {
+    genrePreference = ['Історична', 'Біографія', 'Пригоди', 'Детектив'];
+  }
+  // Evening (18-22): Light reading, Fiction
+  else if (hour >= 18 && hour < 22) {
+    genrePreference = ['Романтика', 'Комедія', 'Фентезі', 'Сучасна проза'];
+  }
+  // Night (22-6): Calm, relaxing books
+  else {
+    genrePreference = ['Поезія', 'Філософія', 'Класична література'];
+  }
+
+  return new Promise((resolve, reject) => {
+    const placeholders = genrePreference.map(() => '?').join(',');
+    
+    db.all(
+      `SELECT * FROM books 
+       WHERE genre IN (${placeholders})
+       AND is_available = 1
+       AND id NOT IN (SELECT book_id FROM saved_books WHERE user_id = ?)
+       ORDER BY rating DESC, downloads_count DESC
+       LIMIT ?`,
+      [...genrePreference, userId, limit],
+      (err, rows: Book[]) => {
+        if (err) reject(err);
+        else resolve(rows);
+      }
+    );
+  });
+};
+
+// Get smart recommendations combining all methods
+export const getSmartRecommendations = async (userId: number, limit: number = 10): Promise<Book[]> => {
+  try {
+    const allRecommendations: Book[] = [];
+    const seenIds = new Set<number>();
+
+    // 1. Get behavior-based recommendations (40%)
+    const behaviorBooks = await getBooksBasedOnBehavior(userId, Math.ceil(limit * 0.4));
+    for (const book of behaviorBooks) {
+      if (!seenIds.has(book.id!)) {
+        seenIds.add(book.id!);
+        allRecommendations.push(book);
+      }
+    }
+
+    // 2. Get collaborative recommendations (30%)
+    const collaborativeBooks = await getCollaborativeRecommendations(userId, Math.ceil(limit * 0.3));
+    for (const book of collaborativeBooks) {
+      if (!seenIds.has(book.id!)) {
+        seenIds.add(book.id!);
+        allRecommendations.push(book);
+      }
+    }
+
+    // 3. Get contextual recommendations (30%)
+    const contextualBooks = await getContextualRecommendations(userId, Math.ceil(limit * 0.3));
+    for (const book of contextualBooks) {
+      if (!seenIds.has(book.id!)) {
+        seenIds.add(book.id!);
+        allRecommendations.push(book);
+      }
+    }
+
+    // If not enough, fill with top books
+    if (allRecommendations.length < limit) {
+      const topBooks = await getTopBooks(limit - allRecommendations.length);
+      for (const book of topBooks) {
+        if (!seenIds.has(book.id!)) {
+          seenIds.add(book.id!);
+          allRecommendations.push(book);
+        }
+      }
+    }
+
+    return allRecommendations.slice(0, limit);
+  } catch (error) {
+    console.error('Error getting smart recommendations:', error);
+    // Fallback to simple recommendations
+    return getRecommendedBooks(userId, limit);
+  }
+};

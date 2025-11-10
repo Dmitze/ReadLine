@@ -1,0 +1,168 @@
+/**
+ * Rate Limiting - захист від spam/DDoS
+ */
+
+import { Context, Middleware } from 'telegraf';
+import { logger } from '../utils/logger';
+
+interface RateLimitRecord {
+  count: number;
+  resetAt: number;
+}
+
+class RateLimiter {
+  private records: Map<number, RateLimitRecord> = new Map();
+  private maxRequests: number;
+  private windowMs: number;
+
+  constructor(maxRequests: number = 20, windowMs: number = 60000) {
+    this.maxRequests = maxRequests;
+    this.windowMs = windowMs;
+
+    // Очищення старих записів кожні 5 хвилин
+    setInterval(() => {
+      this.cleanup();
+    }, 5 * 60 * 1000);
+  }
+
+  /**
+   * Перевірити чи користувач перевищив ліміт
+   */
+  check(userId: number): boolean {
+    const now = Date.now();
+    const record = this.records.get(userId);
+
+    // Якщо запису немає або window expired
+    if (!record || now > record.resetAt) {
+      this.records.set(userId, {
+        count: 1,
+        resetAt: now + this.windowMs,
+      });
+      return true;
+    }
+
+    // Перевіряємо ліміт
+    if (record.count >= this.maxRequests) {
+      logger.warn('Rate limit exceeded', {
+        userId,
+        count: record.count,
+        limit: this.maxRequests,
+      });
+      return false;
+    }
+
+    // Інкрементуємо лічильник
+    record.count++;
+    return true;
+  }
+
+  /**
+   * Очистити старі записи
+   */
+  private cleanup(): void {
+    const now = Date.now();
+    let removed = 0;
+
+    for (const [userId, record] of this.records.entries()) {
+      if (now > record.resetAt) {
+        this.records.delete(userId);
+        removed++;
+      }
+    }
+
+    if (removed > 0) {
+      logger.debug('Rate limit cleanup', { removed });
+    }
+  }
+
+  /**
+   * Скинути ліміт для користувача
+   */
+  reset(userId: number): void {
+    this.records.delete(userId);
+    logger.debug('Rate limit reset', { userId });
+  }
+
+  /**
+   * Отримати статистику
+   */
+  getStats() {
+    return {
+      totalUsers: this.records.size,
+      maxRequests: this.maxRequests,
+      windowMs: this.windowMs,
+    };
+  }
+}
+
+// Створюємо різні rate limiters для різних типів запитів
+export const messageLimiter = new RateLimiter(20, 60000); // 20 повідомлень за хвилину
+export const commandLimiter = new RateLimiter(10, 60000); // 10 команд за хвилину
+export const callbackLimiter = new RateLimiter(30, 60000); // 30 callback queries за хвилину
+
+/**
+ * Middleware для rate limiting повідомлень
+ */
+export const rateLimitMessage: Middleware<Context> = async (ctx, next) => {
+  const userId = ctx.from?.id;
+
+  if (!userId) {
+    return next();
+  }
+
+  if (!messageLimiter.check(userId)) {
+    await ctx.reply(
+      '⚠️ *Занадто багато запитів*\n\n' +
+      'Будь ласка, зачекайте хвилину перед наступним повідомленням.\n\n' +
+      '💡 Це захист від спаму.',
+      { parse_mode: 'Markdown' }
+    );
+    return;
+  }
+
+  return next();
+};
+
+/**
+ * Middleware для rate limiting команд
+ */
+export const rateLimitCommand: Middleware<Context> = async (ctx, next) => {
+  const userId = ctx.from?.id;
+
+  if (!userId) {
+    return next();
+  }
+
+  if (!commandLimiter.check(userId)) {
+    await ctx.reply(
+      '⚠️ *Занадто багато команд*\n\n' +
+      'Будь ласка, зачекайте хвилину.\n\n' +
+      '💡 Ліміт: 10 команд на хвилину.',
+      { parse_mode: 'Markdown' }
+    );
+    return;
+  }
+
+  return next();
+};
+
+/**
+ * Middleware для rate limiting callback queries
+ */
+export const rateLimitCallback: Middleware<Context> = async (ctx, next) => {
+  const userId = ctx.from?.id;
+
+  if (!userId) {
+    return next();
+  }
+
+  if (!callbackLimiter.check(userId)) {
+    await ctx.answerCbQuery(
+      '⚠️ Занадто багато дій. Зачекайте хвилину.',
+      { show_alert: true }
+    );
+    return;
+  }
+
+  return next();
+};

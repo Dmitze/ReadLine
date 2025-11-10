@@ -1,0 +1,89 @@
+/**
+ * Типізація для Telegraf - замінює any
+ */
+
+import { Context } from 'telegraf';
+import { Scenes } from 'telegraf';
+
+/**
+ * Розширений контекст бота
+ */
+export interface BotContext extends Context {
+  scene?: Scenes.SceneContextScene<BotContext, Scenes.WizardSessionData>;
+  wizard?: Scenes.WizardContextWizard<any>;
+  session?: SessionData;
+  match?: RegExpMatchArray;
+}
+
+/**
+ * Дані сесії
+ */
+export interface SessionData {
+  __scenes?: Scenes.WizardSessionData;
+  userId?: number;
+  isAdmin?: boolean;
+}
+
+/**
+ * Wizard Context для scenes
+ */
+export interface WizardState {
+  // AddBookScene
+  title?: string;
+  author?: string;
+  genre?: string;
+  description?: string;
+  photoFileId?: string;
+  bookType?: string;
+  fileUrl?: string;
+  fileName?: string;
+  selectedFormats?: string[];  // Multi-format support
+  pdfFileId?: string;
+  externalLink?: string;
+  audioFileId?: string;
+  audioDuration?: number;
+  narrator?: string;
+  selectedTags?: number[];  // Вибрані теги при додаванні книги
+  savedBookId?: number;     // ID збереженої книги для додавання тегів
+  
+  // AI Assistant (Завдання 29)
+  useAI?: boolean;          // Чи використовувати AI для розпізнавання
+  aiRecognized?: boolean;   // Чи була інформація розпізнана AI
+  awaitingDescriptionFix?: boolean;  // Чи очікуємо виправлення опису
+  aiSuggestedTags?: string[];  // Теги запропоновані AI
+  
+  // AI Filter & Assistant (Завдання 32, 35)
+  waitingForCustomMood?: boolean;  // Чи очікуємо кастомний настрій
+  aiInterest?: string;      // Інтерес користувача (fiction/nonfiction)
+  aiLength?: string;        // Бажана довжина книги
+  aiMood?: string;          // Настрій користувача
+  
+  // RequestBookScene
+  bookId?: number;
+  fullName?: string;
+  unit?: string;
+  phone?: string;
+  
+  // RateBookScene
+  rating?: number;
+  comment?: string;
+}
+
+/**
+ * Callback Query Data типи
+ */
+export type CallbackAction = 
+  | `order_${number}`
+  | `save_${number}`
+  | `download_${number}`
+  | `reviews_${number}`
+  | `similar_${number}`
+  | `rate_${number}`
+  | `approve_${number}`
+  | `reject_${number}`
+  | `publish_review_${number}`
+  | `delete_review_${number}`
+  | 'view_requests'
+  | 'add_book'
+  | 'admin_stats'
+  | 'moderate_reviews';

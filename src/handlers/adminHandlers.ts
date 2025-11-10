@@ -1,11 +1,27 @@
-import { Telegraf } from 'telegraf';
-import { isAdmin, getPendingRequests, getBookById, getAdminStats, updateRequestStatus } from '../database/models';
-import { getAdminMenuKeyboard, getRequestActionKeyboard } from '../keyboards/adminKeyboards';
+import { Telegraf, Markup } from 'telegraf';
+import { 
+  isAdmin, 
+  getBookById, 
+  getAdminStats, 
+  db, 
+  getPendingReviews, 
+  publishReview, 
+  deleteReview, 
+  getPendingFeedbackMessages, 
+  getAllFeedbackMessages, 
+  updateFeedbackStatus 
+} from '../database/models';
+import { getAdminMenuKeyboard, getReviewModerationKeyboard, getFeedbackActionKeyboard } from '../keyboards/adminKeyboards';
+import { logger } from '../utils/logger';
+import { BotContext } from '../types/telegraf';
 
 // Обробники для адміністратора
-export default (bot: Telegraf<any>) => {
+export default (bot: Telegraf<BotContext>) => {
+  console.log('✅ Admin handlers registered');
+  
   // Команда адміністратора
   bot.command('admin', async (ctx) => {
+    console.log('📝 /admin command received from user:', ctx.from?.id);
     try {
       // Перевіряємо чи є користувач
       if (!ctx.from?.id) {
@@ -22,64 +38,45 @@ export default (bot: Telegraf<any>) => {
       
       const stats = await getAdminStats();
       
-      await ctx.reply(`🛠️ Панель адміністратора
-
-📊 Статистика:
-📚 Книг: ${stats.totalBooks}
-⏳ Заявок: ${stats.pendingRequests}`, {
-        reply_markup: getAdminMenuKeyboard()
-      });
+      // Отримуємо кількість відгуків на модерацію
+      const pendingReviews = await getPendingReviews();
+      
+      // Отримуємо кількість непрочитаних повідомлень зворотного зв'язку
+      const pendingFeedback = await getPendingFeedbackMessages();
+        
+      const reviewsAlert = pendingReviews.length > 0
+        ? `📝 Відгуків на модерацію: *${pendingReviews.length}* 🔔`
+        : '✅ Всі відгуки оброблені';
+        
+      const feedbackAlert = pendingFeedback.length > 0
+        ? `📞 Нових повідомлень: *${pendingFeedback.length}* 🔔`
+        : '✅ Всі повідомлення прочитані';
+      
+      await ctx.reply(
+        `🛠️ *Панель адміністратора*\n\n` +
+        `📊 *Статистика:*\n` +
+        `📚 Книг в каталозі: ${stats.totalBooks}\n` +
+        `${reviewsAlert}\n` +
+        `${feedbackAlert}`,
+        {
+          parse_mode: 'Markdown',
+          reply_markup: getAdminMenuKeyboard(0, pendingReviews.length, pendingFeedback.length)
+        }
+      );
     } catch (error) {
-      console.error('Error in admin command:', error);
+      logger.error('Error in admin command', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
       await ctx.reply('❌ Виникла помилка при отриманні даних адміністратора.');
     }
     return;
   });
   
-  // Перегляд заявок
-  bot.action('view_requests', async (ctx) => {
-    try {
-      const requests = await getPendingRequests();
-      
-      if (requests.length === 0) {
-        await ctx.editMessageText('Немає активних заявок ✅');
-        return;
-      }
-      
-      for (const request of requests) {
-        try {
-          const book = await getBookById(request.book_id);
-          await ctx.reply(
-            `📋 Заявка #${request.id}
-📖 ${book?.title}
-👤 ${request.full_name}
-🎯 ${request.unit}
-📞 ${request.phone}`,
-            {
-              reply_markup: getRequestActionKeyboard(request.id!)
-            }
-          );
-        } catch (bookError) {
-          console.error('Error getting book for request:', bookError);
-          await ctx.reply(`📋 Заявка #${request.id}
-⚠️ Помилка отримання даних книги
-👤 ${request.full_name}
-🎯 ${request.unit}
-📞 ${request.phone}`, {
-            reply_markup: getRequestActionKeyboard(request.id!)
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error getting pending requests:', error);
-      await ctx.reply('❌ Виникла помилка при отриманні заявок.');
-    }
-    return;
-  });
+  // Перегляд заявок видалено - більше не використовуємо фізичні книги
   
   // Додати книгу
-  bot.action('add_book', async (ctx: any) => {
+  bot.action('add_book', async (ctx: BotContext) => {
     try {
+      await ctx.answerCbQuery('Відкриваємо форму додавання книги...');
+      
       const adminCheck = await isAdmin(ctx.from.id);
       if (!adminCheck) {
         await ctx.reply('❌ У вас немає доступу до цієї функції.');
@@ -88,8 +85,27 @@ export default (bot: Telegraf<any>) => {
       
       ctx.scene.enter('ADD_BOOK_SCENE');
     } catch (error) {
-      console.error('Error entering add book scene:', error);
+      logger.error('Error entering add book scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
       await ctx.reply('❌ Виникла помилка при переході до додавання книги.');
+    }
+    return;
+  });
+  
+  // Управління книгами
+  bot.action('manage_books', async (ctx: BotContext) => {
+    try {
+      await ctx.answerCbQuery('Завантаження списку книг...');
+      
+      const adminCheck = await isAdmin(ctx.from.id);
+      if (!adminCheck) {
+        await ctx.reply('❌ У вас немає доступу до цієї функції.');
+        return;
+      }
+      
+      ctx.scene.enter('MANAGE_BOOKS_SCENE');
+    } catch (error) {
+      logger.error('Error entering manage books scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.reply('❌ Виникла помилка при переході до управління книгами.');
     }
     return;
   });
@@ -97,6 +113,8 @@ export default (bot: Telegraf<any>) => {
   // Статистика
   bot.action('admin_stats', async (ctx) => {
     try {
+      await ctx.answerCbQuery('Завантаження статистики...');
+      
       const adminCheck = await isAdmin(ctx.from.id);
       if (!adminCheck) {
         await ctx.reply('❌ У вас немає доступу до цієї функції.');
@@ -104,70 +122,370 @@ export default (bot: Telegraf<any>) => {
       }
       
       const stats = await getAdminStats();
-      await ctx.reply(`📊 Статистика бібліотеки:\n\n📚 Всього книг: ${stats.totalBooks}\n⏳ Активних заявок: ${stats.pendingRequests}`);
+      const pendingReviews = await getPendingReviews();
+      
+      await ctx.reply(
+        `📊 *Статистика бібліотеки:*\n\n` +
+        `📚 Всього книг: ${stats.totalBooks}\n` +
+        `📝 Відгуків на модерацію: ${pendingReviews.length}`,
+        { parse_mode: 'Markdown' }
+      );
     } catch (error) {
-      console.error('Error getting admin stats:', error);
+      logger.error('Error getting admin stats', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
       await ctx.reply('❌ Виникла помилка при отриманні статистики.');
     }
     return;
   });
   
-  // Підтвердження заявки
-  bot.action(/approve_(\d+)/, async (ctx) => {
+  // Обробники approve/reject видалені - більше не використовуємо фізичні книги
+  
+  // Модерація відгуків
+  bot.action('moderate_reviews', async (ctx) => {
     try {
-      // Перевіряємо чи є користувач
-      if (!ctx.from?.id) {
-        await ctx.reply('❌ Не вдалося ідентифікувати користувача.');
-        return;
-      }
+      await ctx.answerCbQuery('Завантаження відгуків...');
       
-      const adminCheck = await isAdmin(ctx.from.id);
+      const adminCheck = await isAdmin(ctx.from!.id);
       if (!adminCheck) {
         await ctx.reply('❌ У вас немає доступу до цієї функції.');
         return;
       }
       
-      const requestId = parseInt(ctx.match[1]);
-      const result = await updateRequestStatus(requestId, 'approved');
+      const reviews = await getPendingReviews();
       
-      if (result > 0) {
-        await ctx.reply(`✅ Заявку #${requestId} підтверджено!`);
-      } else {
-        await ctx.reply(`⚠️ Заявку #${requestId} не знайдено або вже оброблено.`);
+      if (reviews.length === 0) {
+        await ctx.reply('✅ Немає відгуків на модерацію');
+        return;
+      }
+      
+      await ctx.reply(`📝 Відгуків на модерацію: ${reviews.length}`);
+      
+      for (const review of reviews) {
+        try {
+          const book = await getBookById(review.book_id);
+          
+          // Безпечне екранування для Markdown
+          const escapeMarkdown = (text: string) => {
+            return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+          };
+          
+          const safeTitle = escapeMarkdown(book?.title || 'Невідома');
+          const safeName = escapeMarkdown(review.user_name || 'Анонім');
+          const safeComment = review.comment ? escapeMarkdown(review.comment) : '';
+          
+          let reviewText = `📝 *Відгук на модерацію #${review.id}*\n\n`;
+          reviewText += `📖 Книга: *${safeTitle}*\n`;
+          reviewText += `👤 Користувач: ${safeName}\n`;
+          reviewText += `⭐ Оцінка: ${'⭐'.repeat(review.rating)} (${review.rating}/5)\n\n`;
+          
+          if (review.comment) {
+            reviewText += `💬 Коментар:\n"${safeComment}"\n\n`;
+          } else {
+            reviewText += `💬 Коментар: _(відсутній)_\n\n`;
+          }
+          
+          reviewText += `📅 Дата: ${review.created_at}`;
+          
+          await ctx.reply(reviewText, {
+            parse_mode: 'Markdown',
+            reply_markup: getReviewModerationKeyboard(review.id!)
+          });
+        } catch (bookError) {
+          logger.error('Error getting book for review', bookError instanceof Error ? bookError : new Error(String(bookError)), { reviewId: review.id });
+        }
       }
     } catch (error) {
-      console.error('Error approving request:', error);
-      await ctx.reply('❌ Виникла помилка при підтвердженні заявки.');
+      logger.error('Error showing pending reviews', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.reply('❌ Виникла помилка при отриманні відгуків.');
     }
     return;
   });
   
-  // Відхилення заявки
-  bot.action(/reject_(\d+)/, async (ctx) => {
+  // Публікація відгуку
+  bot.action(/publish_review_(\d+)/, async (ctx: BotContext) => {
     try {
-      // Перевіряємо чи є користувач
       if (!ctx.from?.id) {
-        await ctx.reply('❌ Не вдалося ідентифікувати користувача.');
+        await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача.');
+        return;
+      }
+      const adminCheck = await isAdmin(ctx.from.id);
+      if (!adminCheck) {
+        await ctx.answerCbQuery('❌ У вас немає доступу до цієї функції.');
         return;
       }
       
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID відгуку.');
+        return;
+      }
+      const reviewId = parseInt(match[1]);
+      const { publishReview } = await import('../database/models');
+      
+      const result = await publishReview(reviewId);
+      
+      if (result > 0) {
+        const message = ctx.callbackQuery?.message;
+        const messageText = message && 'text' in message ? message.text : 'Відгук';
+        await ctx.editMessageText(
+          messageText + '\n\n✅ *ОПУБЛІКОВАНО*',
+          { parse_mode: 'Markdown' }
+        );
+        await ctx.answerCbQuery('✅ Відгук опубліковано!');
+      } else {
+        await ctx.answerCbQuery('⚠️ Відгук не знайдено');
+      }
+    } catch (error) {
+      logger.error('Error publishing review', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка при публікації відгуку');
+    }
+    return;
+  });
+  
+  // Видалення відгуку
+  bot.action(/delete_review_(\d+)/, async (ctx: BotContext) => {
+    try {
+      if (!ctx.from?.id) {
+        await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача.');
+        return;
+      }
       const adminCheck = await isAdmin(ctx.from.id);
+      if (!adminCheck) {
+        await ctx.answerCbQuery('❌ У вас немає доступу до цієї функції.');
+        return;
+      }
+      
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID відгуку.');
+        return;
+      }
+      const reviewId = parseInt(match[1]);
+      const { deleteReview } = await import('../database/models');
+      
+      const result = await deleteReview(reviewId);
+      
+      if (result > 0) {
+        const message = ctx.callbackQuery?.message;
+        const messageText = message && 'text' in message ? message.text : 'Відгук';
+        await ctx.editMessageText(
+          messageText + '\n\n❌ *ВИДАЛЕНО*',
+          { parse_mode: 'Markdown' }
+        );
+        await ctx.answerCbQuery('✅ Відгук видалено!');
+      } else {
+        await ctx.answerCbQuery('⚠️ Відгук не знайдено');
+      }
+    } catch (error) {
+      logger.error('Error deleting review', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка при видаленні відгуку');
+    }
+    return;
+  });
+  
+  // Перегляд повідомлень зворотного зв'язку
+  bot.action('view_feedback', async (ctx) => {
+    try {
+      await ctx.answerCbQuery('Завантаження повідомлень...');
+      
+      const adminCheck = await isAdmin(ctx.from!.id);
       if (!adminCheck) {
         await ctx.reply('❌ У вас немає доступу до цієї функції.');
         return;
       }
       
-      const requestId = parseInt(ctx.match[1]);
-      const result = await updateRequestStatus(requestId, 'rejected');
+      const messages = await getAllFeedbackMessages();
       
-      if (result > 0) {
-        await ctx.reply(`❌ Заявку #${requestId} відхилено!`);
-      } else {
-        await ctx.reply(`⚠️ Заявку #${requestId} не знайдено або вже оброблено.`);
+      console.log(`📞 Feedback messages loaded: ${messages.length}`);
+      
+      if (messages.length === 0) {
+        await ctx.reply(
+          '✅ *Немає повідомлень*\n\n' +
+          'Всі повідомлення зворотного зв\'язку оброблені.\n\n' +
+          '💡 Користувачі можуть надіслати повідомлення через:\n' +
+          'Головне меню → 📞 Зворотній зв\'язок',
+          { parse_mode: 'Markdown' }
+        );
+        return;
       }
+      
+      await ctx.reply(
+        `📞 *Повідомлення зворотного зв'язку*\n\n` +
+        `Всього: ${messages.length}\n` +
+        `Нових: ${messages.filter(m => m.status === 'pending').length}`,
+        { parse_mode: 'Markdown' }
+      );
+      
+      for (const msg of messages) {
+        try {
+          // Перевіряємо чи є текст повідомлення
+          if (!msg.message || msg.message.trim() === '') {
+            console.warn(`⚠️ Empty feedback message #${msg.id}`);
+            await ctx.reply(
+              `⚠️ *Повідомлення #${msg.id}*\n\n` +
+              `❌ Текст повідомлення відсутній або пошкоджений.\n\n` +
+              `👤 Від: ${msg.user_name || 'Користувач'}\n` +
+              `🆔 User ID: \`${msg.user_id}\``,
+              { parse_mode: 'Markdown' }
+            );
+            continue;
+          }
+          
+          const statusEmoji = msg.status === 'pending' ? '🔔 НОВЕ' : 
+                             msg.status === 'read' ? '✅ Прочитано' : 
+                             '💬 Відповіли';
+          
+          // Екрануємо спецсимволи Markdown
+          const escapeMarkdown = (text: string) => {
+            return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+          };
+          
+          const safeName = escapeMarkdown(msg.user_name || 'Користувач');
+          const safeUsername = msg.user_username ? escapeMarkdown(msg.user_username) : '';
+          const safeMessage = escapeMarkdown(msg.message);
+          
+          let feedbackText = `📞 *Повідомлення #${msg.id}* ${statusEmoji}\n\n`;
+          feedbackText += `👤 Від: ${safeName}\n`;
+          feedbackText += `🆔 User ID: \`${msg.user_id}\`\n`;
+          
+          if (msg.user_username) {
+            feedbackText += `📱 Username: @${safeUsername}\n`;
+          }
+          
+          feedbackText += `\n💬 *Повідомлення:*\n"${safeMessage}"\n\n`;
+          feedbackText += `📅 Дата: ${escapeMarkdown(new Date(msg.created_at!).toLocaleString('uk-UA'))}`;
+          
+          if (msg.read_at) {
+            feedbackText += `\n👁️ Прочитано: ${escapeMarkdown(new Date(msg.read_at).toLocaleString('uk-UA'))}`;
+          }
+          
+          await ctx.reply(feedbackText, {
+            parse_mode: 'Markdown',
+            reply_markup: getFeedbackActionKeyboard(msg.id!, msg.user_id)
+          });
+          
+          // Невелика затримка щоб не флудити
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+        } catch (msgError) {
+          logger.error('Error displaying feedback message', msgError instanceof Error ? msgError : new Error(String(msgError)), { feedbackId: msg.id });
+          
+          // Показуємо помилку адміну
+          await ctx.reply(
+            `❌ Помилка при відображенні повідомлення #${msg.id}\n` +
+            `Деталі: ${msgError instanceof Error ? msgError.message : String(msgError)}`
+          );
+        }
+      }
+      
+      await ctx.reply(
+        '✅ Всі повідомлення завантажено',
+        {
+          reply_markup: Markup.inlineKeyboard([
+            [Markup.button.callback('🔄 Оновити', 'view_feedback')],
+            [Markup.button.callback('🏠 Головна', 'home')]
+          ]).reply_markup
+        }
+      );
+      
     } catch (error) {
-      console.error('Error rejecting request:', error);
-      await ctx.reply('❌ Виникла помилка при відхиленні заявки.');
+      logger.error('Error showing feedback messages', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.reply(
+        '❌ Виникла помилка при отриманні повідомлень.\n\n' +
+        `Деталі: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
+    return;
+  });
+  
+  // Відповісти на повідомлення
+  bot.action(/reply_feedback_(\d+)/, async (ctx: BotContext) => {
+    try {
+      if (!ctx.from?.id) {
+        await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача.');
+        return;
+      }
+      const adminCheck = await isAdmin(ctx.from.id);
+      if (!adminCheck) {
+        await ctx.answerCbQuery('❌ У вас немає доступу до цієї функції.');
+        return;
+      }
+      
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID повідомлення.');
+        return;
+      }
+      const feedbackId = parseInt(match[1]);
+      
+      // Отримуємо повідомлення з БД
+      const allMessages = await getAllFeedbackMessages();
+      const message = allMessages.find(m => m.id === feedbackId);
+      
+      if (!message) {
+        await ctx.answerCbQuery('❌ Повідомлення не знайдено');
+        return;
+      }
+      
+      await ctx.answerCbQuery('✉️ Відкриваю форму відповіді...');
+      
+      // Входимо в scene для відповіді
+      await ctx.scene.enter('REPLY_FEEDBACK_SCENE', {
+        feedbackId: message.id,
+        userId: message.user_id,
+        userName: message.user_name || 'Користувач',
+        originalMessage: message.message
+      });
+      
+    } catch (error) {
+      logger.error('Error opening reply form', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка при відкритті форми відповіді');
+    }
+    return;
+  });
+  
+  // Позначити повідомлення прочитаним
+  bot.action(/mark_feedback_read_(\d+)/, async (ctx: BotContext) => {
+    try {
+      if (!ctx.from?.id) {
+        await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача.');
+        return;
+      }
+      const adminCheck = await isAdmin(ctx.from.id);
+      if (!adminCheck) {
+        await ctx.answerCbQuery('❌ У вас немає доступу до цієї функції.');
+        return;
+      }
+      
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID повідомлення.');
+        return;
+      }
+      const feedbackId = parseInt(match[1]);
+      
+      await updateFeedbackStatus(feedbackId, 'read');
+      
+      // Безпечне оновлення повідомлення без Markdown
+      const message = ctx.callbackQuery?.message;
+      if (message && 'text' in message) {
+        try {
+          // Екрануємо спецсимволи для безпечного Markdown
+          const escapeMarkdown = (text: string) => {
+            return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+          };
+          
+          const safeText = escapeMarkdown(message.text.replace('🔔 НОВЕ', '✅ Прочитано'));
+          await ctx.editMessageText(safeText, { parse_mode: 'Markdown' });
+        } catch (editError) {
+          // Якщо не вдалося відредагувати - просто відповідаємо
+          console.log('Could not edit message, sending new one');
+        }
+      }
+      
+      await ctx.answerCbQuery('✅ Позначено прочитаним!');
+    } catch (error) {
+      logger.error('Error marking feedback as read', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка при оновленні статусу');
     }
     return;
   });

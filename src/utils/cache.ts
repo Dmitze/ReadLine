@@ -1,0 +1,157 @@
+/**
+ * Cache Service - in-memory кешування для швидкого доступу
+ */
+
+import { logger } from './logger';
+
+interface CacheItem<T> {
+  data: T;
+  expiresAt: number;
+}
+
+class CacheService {
+  private cache: Map<string, CacheItem<any>> = new Map();
+  private defaultTTL = 5 * 60 * 1000; // 5 хвилин за замовчуванням
+
+  /**
+   * Отримати значення з кешу
+   */
+  get<T>(key: string): T | null {
+    const item = this.cache.get(key);
+
+    if (!item) {
+      logger.debug('Cache miss', { key });
+      return null;
+    }
+
+    // Перевіряємо чи не expired
+    if (Date.now() > item.expiresAt) {
+      logger.debug('Cache expired', { key });
+      this.cache.delete(key);
+      return null;
+    }
+
+    logger.debug('Cache hit', { key });
+    return item.data as T;
+  }
+
+  /**
+   * Зберегти значення в кеш
+   */
+  set<T>(key: string, data: T, ttl?: number): void {
+    const expiresAt = Date.now() + (ttl || this.defaultTTL);
+
+    this.cache.set(key, {
+      data,
+      expiresAt,
+    });
+
+    logger.debug('Cache set', { key, ttl: ttl || this.defaultTTL });
+  }
+
+  /**
+   * Видалити значення з кешу
+   */
+  delete(key: string): void {
+    this.cache.delete(key);
+    logger.debug('Cache delete', { key });
+  }
+
+  /**
+   * Очистити весь кеш
+   */
+  clear(): void {
+    this.cache.clear();
+    logger.debug('Cache cleared');
+  }
+
+  /**
+   * Видалити всі expired записи
+   */
+  cleanup(): void {
+    const now = Date.now();
+    let removed = 0;
+
+    for (const [key, item] of this.cache.entries()) {
+      if (now > item.expiresAt) {
+        this.cache.delete(key);
+        removed++;
+      }
+    }
+
+    logger.debug('Cache cleanup', { removed });
+  }
+
+  /**
+   * Отримати або встановити значення
+   */
+  async getOrSet<T>(
+    key: string,
+    fetcher: () => Promise<T>,
+    ttl?: number
+  ): Promise<T> {
+    const cached = this.get<T>(key);
+
+    if (cached !== null) {
+      return cached;
+    }
+
+    logger.debug('Cache fetch', { key });
+    const data = await fetcher();
+    this.set(key, data, ttl);
+
+    return data;
+  }
+
+  /**
+   * Отримати статистику кешу
+   */
+  getStats() {
+    const now = Date.now();
+    let expired = 0;
+    let active = 0;
+
+    for (const item of this.cache.values()) {
+      if (now > item.expiresAt) {
+        expired++;
+      } else {
+        active++;
+      }
+    }
+
+    return {
+      total: this.cache.size,
+      active,
+      expired,
+    };
+  }
+}
+
+// Singleton instance
+export const cache = new CacheService();
+
+// Періодична очистка expired записів (кожні 10 хвилин)
+setInterval(() => {
+  cache.cleanup();
+}, 10 * 60 * 1000);
+
+// Cache keys для різних типів даних
+export const CACHE_KEYS = {
+  GENRES: 'genres',
+  TOP_BOOKS: 'top_books',
+  NEW_BOOKS: 'new_books',
+  ADMIN_STATS: 'admin_stats',
+  PENDING_REQUESTS: 'pending_requests',
+  PENDING_REVIEWS: 'pending_reviews',
+  BOOK: (id: number) => `book_${id}`,
+  BOOKS_BY_GENRE: (genre: string) => `books_genre_${genre}`,
+  USER_SAVED_BOOKS: (userId: number) => `user_saved_${userId}`,
+} as const;
+
+// TTL для різних типів даних (в мілісекундах)
+export const CACHE_TTL = {
+  SHORT: 1 * 60 * 1000, // 1 хвилина
+  MEDIUM: 5 * 60 * 1000, // 5 хвилин
+  LONG: 15 * 60 * 1000, // 15 хвилин
+  VERY_LONG: 60 * 60 * 1000, // 1 година
+} as const;
