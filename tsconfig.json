@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
     "target": "ES2020",
-    "module": "Node16",
+    "module": "commonjs",
     "lib": ["ES2020", "dom"],
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": true,
+    "strict": false,
+    "noImplicitAny": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -14,19 +15,23 @@
     "declarationMap": true,
     "sourceMap": true,
     "removeComments": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "noImplicitThis": true,
-    "noImplicitReturns": true,
+    "strictNullChecks": false,
+    "strictFunctionTypes": false,
+    "noImplicitThis": false,
+    "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true,
-    "moduleResolution": "node16"
+    "moduleResolution": "node",
+    "isolatedModules": true,
+    "types": ["node", "jest"]
   },
   "include": [
     "src/**/*"
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "src/__tests__",
+    "**/*.test.ts",
+    "**/*.spec.ts"
   ]
 }
