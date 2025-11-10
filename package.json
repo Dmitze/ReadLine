@@ -4,10 +4,19 @@
   "description": "Telegram bot for military library management",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --project tsconfig.build.json",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
-    "init-admin": "node dist/init-admin.js"
+    "dev:watch": "nodemon",
+    "init-admin": "node dist/init-admin.js",
+    "backup": "node scripts/backup-db.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
   },
   "dependencies": {
     "dotenv": "^16.4.5",
@@ -16,8 +25,10 @@
     "telegraf": "^4.16.3"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.19.24",
     "@types/sqlite3": "^3.1.8",
+    "ts-jest": "^29.4.5",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.2"
   }
