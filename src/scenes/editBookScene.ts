@@ -44,9 +44,10 @@ const editBookScene = new Scenes.WizardScene(
           [Markup.button.callback('✏️ Автор', 'edit_author')],
           [Markup.button.callback('✏️ Жанр', 'edit_genre')],
           [Markup.button.callback('✏️ Опис', 'edit_description')],
-          [Markup.button.callback('🖼️ Фото', 'edit_photo')],
+          [Markup.button.callback('🖼️ Обкладинка', 'edit_photo')],
           [Markup.button.callback('✅ Доступність', 'edit_availability')],
-          [Markup.button.callback('💾 Зберегти зміни', 'save_changes')],
+          [Markup.button.callback('💾 Зберегти', 'save_changes')],
+          [Markup.button.callback('⬅️ Назад до списку', 'back_to_list')],
           [Markup.button.callback('❌ Скасувати', 'cancel_edit')]
         ]).reply_markup
       });
@@ -73,6 +74,13 @@ const editBookScene = new Scenes.WizardScene(
       await ctx.answerCbQuery('Скасовано');
       await ctx.reply('❌ Редагування скасовано');
       return ctx.scene.leave();
+    }
+    
+    if (action === 'back_to_list') {
+      await ctx.answerCbQuery('Повертаємось до списку книг');
+      await ctx.reply('⬅️ Повертаємось до списку книг');
+      // Повертаємось до сцени управління книгами
+      return ctx.scene.enter('MANAGE_BOOKS_SCENE');
     }
     
     if (action === 'save_changes') {

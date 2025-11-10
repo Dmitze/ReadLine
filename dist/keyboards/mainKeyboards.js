@@ -53,8 +53,6 @@ const getAdaptiveMainMenuKeyboard = (ctx, withQuickActions = true) => {
     const config = (0, exports.getKeyboardConfig)(deviceType);
     const allButtons = withQuickActions ? [
         '⚡ Швидкий пошук',
-        '⭐ Мої улюблені',
-        '🎲 Випадкова книга',
         '📖 Каталог',
         '🏆 Топ книги',
         '🆕 Новинки',
@@ -90,8 +88,7 @@ const getAdaptiveMainMenuKeyboard = (ctx, withQuickActions = true) => {
 exports.getAdaptiveMainMenuKeyboard = getAdaptiveMainMenuKeyboard;
 const getMainMenuKeyboard = (withQuickActions = true) => {
     const buttons = withQuickActions ? [
-        ['⚡ Швидкий пошук', '⭐ Мої улюблені'],
-        ['🎲 Випадкова книга', '📖 Каталог'],
+        ['⚡ Швидкий пошук', '📖 Каталог'],
         ['🏆 Топ книги', '🆕 Новинки'],
         ['💾 Моя бібліотека', '👤 Профіль'],
         ['🤖 AI Помічник', 'ℹ️ Допомога'],

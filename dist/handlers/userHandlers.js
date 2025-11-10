@@ -2,7 +2,6 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const telegraf_1 = require("telegraf");
 const models_1 = require("../database/models");
-const recommendationFunctions_1 = require("../database/recommendationFunctions");
 const tagFunctions_1 = require("../database/tagFunctions");
 const catalogFunctions_1 = require("../database/catalogFunctions");
 const mainKeyboards_1 = require("../keyboards/mainKeyboards");
@@ -469,123 +468,6 @@ exports.default = (bot) => {
         catch (error) {
             logger_1.logger.error('Error in quick search', error, { userId: ctx.from?.id });
             await ctx.reply('❌ Виникла помилка. Спробуйте ще раз.');
-        }
-        return;
-    });
-    bot.hears('⭐ Мої улюблені', async (ctx) => {
-        try {
-            console.log('⭐ My favorites request from user:', ctx.from?.id);
-            const userId = ctx.from?.id;
-            if (!userId) {
-                await ctx.reply('❌ Не вдалося ідентифікувати користувача');
-                return;
-            }
-            const savedBooks = await (0, models_1.getSavedBooks)(userId);
-            console.log('📚 Saved books found:', savedBooks.length);
-            if (savedBooks.length === 0) {
-                await ctx.reply('⭐ *Мої улюблені*\n\n' +
-                    'У вас ще немає улюблених книг.\n\n' +
-                    '💡 Зберігайте цікаві книги натискаючи кнопку 💾 ЗБЕРЕГТИ при перегляді книги.\n\n' +
-                    '🔍 Спробуйте:\n' +
-                    '• Перейти в каталог книг\n' +
-                    '• Знайти цікаву книгу\n' +
-                    '• Натиснути кнопку 💾 ЗБЕРЕГТИ', { parse_mode: 'Markdown' });
-                return;
-            }
-            await (0, bookDisplay_1.displaySavedBooks)(ctx, savedBooks);
-            logger_1.logger.userAction(userId, 'view_favorites', { booksCount: savedBooks.length });
-        }
-        catch (error) {
-            console.error('❌ Error in favorites:', error);
-            logger_1.logger.error('Error showing favorites', error, { userId: ctx.from?.id });
-            await ctx.reply('❌ Виникла помилка при отриманні улюблених книг.');
-        }
-        return;
-    });
-    bot.hears('🎲 Випадкова книга', async (ctx) => {
-        try {
-            console.log('🎲 Random book request from user:', ctx.from?.id);
-            const randomBook = await (0, recommendationFunctions_1.getRandomBook)();
-            console.log('📖 Random book result:', randomBook ? `${randomBook.title} (ID: ${randomBook.id})` : 'null');
-            if (!randomBook) {
-                console.log('⚠️ No random book found, trying fallback...');
-                const topBooks = await (0, models_1.getTopBooks)(1);
-                console.log('🏆 Top books fallback:', topBooks.length);
-                if (topBooks.length > 0) {
-                    await ctx.reply('🎲 *Випадкова книга*\n\n' +
-                        'Ось чудова книга з нашого каталогу:', { parse_mode: 'Markdown' });
-                    const book = topBooks[0];
-                    const userId = ctx.from?.id;
-                    const isSaved = userId ? await (0, models_1.isBookSaved)(userId, book.id) : false;
-                    const caption = await (0, helpers_1.formatBookCaption)(book);
-                    const keyboard = (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved);
-                    if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
-                        try {
-                            await ctx.replyWithPhoto(book.photo_file_id, {
-                                caption,
-                                parse_mode: 'Markdown',
-                                reply_markup: keyboard
-                            });
-                        }
-                        catch (photoError) {
-                            await ctx.reply(caption, {
-                                parse_mode: 'Markdown',
-                                reply_markup: keyboard
-                            });
-                        }
-                    }
-                    else {
-                        await ctx.reply(caption, {
-                            parse_mode: 'Markdown',
-                            reply_markup: keyboard
-                        });
-                    }
-                    logger_1.logger.userAction(ctx.from.id, 'random_book_fallback');
-                    return;
-                }
-                await ctx.reply('📭 *Бібліотека порожня*\n\n' +
-                    'В каталозі поки що немає жодної книги.\n\n' +
-                    '💡 Зверніться до адміністратора для додавання книг через /admin', { parse_mode: 'Markdown' });
-                return;
-            }
-            if (!randomBook.is_available) {
-                console.log('⚠️ Random book is not available:', randomBook.id);
-                await ctx.reply('❌ Вибрана книга наразі недоступна. Спробуйте ще раз.');
-                return;
-            }
-            const userId = ctx.from?.id;
-            const isSaved = userId ? await (0, models_1.isBookSaved)(userId, randomBook.id) : false;
-            await ctx.reply('🎲 *Випадкова книга для вас:*', { parse_mode: 'Markdown' });
-            const caption = await (0, helpers_1.formatBookCaption)(randomBook);
-            const keyboard = (0, mainKeyboards_1.getEnhancedBookKeyboard)(randomBook, isSaved);
-            if (randomBook.photo_file_id && randomBook.photo_file_id !== 'default_book_cover' && randomBook.photo_file_id.length > 20) {
-                try {
-                    await ctx.replyWithPhoto(randomBook.photo_file_id, {
-                        caption,
-                        parse_mode: 'Markdown',
-                        reply_markup: keyboard
-                    });
-                }
-                catch (photoError) {
-                    console.log('⚠️ Photo error, sending as text');
-                    await ctx.reply(caption, {
-                        parse_mode: 'Markdown',
-                        reply_markup: keyboard
-                    });
-                }
-            }
-            else {
-                await ctx.reply(caption, {
-                    parse_mode: 'Markdown',
-                    reply_markup: keyboard
-                });
-            }
-            logger_1.logger.userAction(ctx.from.id, 'random_book', { bookId: randomBook.id });
-        }
-        catch (error) {
-            console.error('❌ Error in random book:', error);
-            logger_1.logger.error('Error showing random book', error, { userId: ctx.from?.id });
-            await ctx.reply('❌ Виникла помилка при отриманні книги. Спробуйте пізніше.');
         }
         return;
     });

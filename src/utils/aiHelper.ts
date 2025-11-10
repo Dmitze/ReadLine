@@ -312,13 +312,17 @@ export async function generateTagsFromDescription(description: string, title: st
  */
 export async function askAI(question: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
+  const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash-exp';
   
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY не налаштований');
   }
   
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+    // Використовуємо правильний endpoint для Gemini 2.0
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -326,14 +330,20 @@ export async function askAI(question: string): Promise<string> {
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: `Ти - помічник бібліотеки ReadLine. Відповідай українською мовою коротко та корисно на питання про книги, літературу та читання. Питання: ${question}`
+            text: `Ти - помічник бібліотеки ReadLine. Відповідай українською мовою коротко та корисно на питання про книги, літературу та читання. Можеш використовувати свої знання про світову літературу. Питання: ${question}`
           }]
-        }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 500,
+        }
       })
     });
 
     if (!response.ok) {
-      throw new Error(`Gemini API помилка: ${response.status}`);
+      const errorText = await response.text();
+      console.error('❌ Gemini API error response:', errorText);
+      throw new Error(`Gemini API помилка: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();

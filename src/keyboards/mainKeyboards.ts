@@ -71,8 +71,6 @@ export const getAdaptiveMainMenuKeyboard = (ctx: Context, withQuickActions: bool
   // Всі доступні кнопки
   const allButtons = withQuickActions ? [
     '⚡ Швидкий пошук',
-    '⭐ Мої улюблені',
-    '🎲 Випадкова книга',
     '📖 Каталог',
     '🏆 Топ книги',
     '🆕 Новинки',
@@ -117,8 +115,7 @@ export const getAdaptiveMainMenuKeyboard = (ctx: Context, withQuickActions: bool
 // Стара версія для зворотної сумісності
 export const getMainMenuKeyboard = (withQuickActions: boolean = true) => {
   const buttons = withQuickActions ? [
-    ['⚡ Швидкий пошук', '⭐ Мої улюблені'],
-    ['🎲 Випадкова книга', '📖 Каталог'],
+    ['⚡ Швидкий пошук', '📖 Каталог'],
     ['🏆 Топ книги', '🆕 Новинки'],
     ['💾 Моя бібліотека', '👤 Профіль'],
     ['🤖 AI Помічник', 'ℹ️ Допомога'],
