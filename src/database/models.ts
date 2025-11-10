@@ -181,12 +181,29 @@ export const initDatabase = (): void => {
     );
   `;
 
+  // Create users table
+  const createUsersTable = `
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER UNIQUE NOT NULL,
+        username TEXT,
+        first_name TEXT,
+        last_name TEXT,
+        favorite_genres TEXT,
+        keyboard_type TEXT DEFAULT 'mobile',
+        has_completed_onboarding BOOLEAN DEFAULT 0,
+        last_notification_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
   db.serialize(() => {
     db.run(createBooksTable);
     db.run(createAdminsTable);
     db.run(createReviewsTable);
     db.run(createSavedBooksTable);
     db.run(createFeedbackMessagesTable);
+    db.run(createUsersTable);
   });
 };
 

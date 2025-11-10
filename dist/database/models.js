@@ -77,12 +77,27 @@ const initDatabase = () => {
         read_at DATETIME
     );
   `;
+    const createUsersTable = `
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER UNIQUE NOT NULL,
+        username TEXT,
+        first_name TEXT,
+        last_name TEXT,
+        favorite_genres TEXT,
+        keyboard_type TEXT DEFAULT 'mobile',
+        has_completed_onboarding BOOLEAN DEFAULT 0,
+        last_notification_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
     exports.db.serialize(() => {
         exports.db.run(createBooksTable);
         exports.db.run(createAdminsTable);
         exports.db.run(createReviewsTable);
         exports.db.run(createSavedBooksTable);
         exports.db.run(createFeedbackMessagesTable);
+        exports.db.run(createUsersTable);
     });
 };
 exports.initDatabase = initDatabase;

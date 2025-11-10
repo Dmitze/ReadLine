@@ -312,7 +312,7 @@ export async function generateTagsFromDescription(description: string, title: st
  */
 export async function askAI(question: string): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
-  const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash-exp';
+  const model = process.env.GEMINI_MODEL || 'gemini-flash-latest';
   
   if (!apiKey) {
     throw new Error('GEMINI_API_KEY не налаштований');
