@@ -1,2 +1,2 @@
-import './config/database';
+export {};
 //# sourceMappingURL=index.d.ts.map

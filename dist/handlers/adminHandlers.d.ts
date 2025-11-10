@@ -1,4 +1,5 @@
 import { Telegraf } from 'telegraf';
-declare const _default: (bot: Telegraf<any>) => void;
+import { BotContext } from '../types/telegraf';
+declare const _default: (bot: Telegraf<BotContext>) => void;
 export default _default;
 //# sourceMappingURL=adminHandlers.d.ts.map
