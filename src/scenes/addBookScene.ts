@@ -6,9 +6,7 @@ import { logger } from '../utils/logger';
 import { BotContext, WizardState } from '../types/telegraf';
 import { validateBookData } from '../utils/validation';
 import { 
-  detectGenreFromDescription, 
   generateTagsFromDescription,
-  checkDescriptionQuality,
   isAIEnabled 
 } from '../utils/aiHelper';
 
@@ -47,13 +45,14 @@ const addBookScene = new Scenes.WizardScene(
     const title = ctx.message.text.trim();
     
     // Валідація
-    if (title.length < 2) {
-      await ctx.reply('❌ Назва занадто коротка. Мінімум 2 символи.');
+    const { VALIDATION } = await import('../constants');
+    if (title.length < VALIDATION.TITLE_MIN) {
+      await ctx.reply(`❌ Назва занадто коротка. Мінімум ${VALIDATION.TITLE_MIN} символи.`);
       return;
     }
     
-    if (title.length > 200) {
-      await ctx.reply('❌ Назва занадто довга. Максимум 200 символів.');
+    if (title.length > VALIDATION.TITLE_MAX) {
+      await ctx.reply(`❌ Назва занадто довга. Максимум ${VALIDATION.TITLE_MAX} символів.`);
       return;
     }
     
@@ -89,8 +88,9 @@ const addBookScene = new Scenes.WizardScene(
     const author = ctx.message.text.trim();
     
     // Валідація
-    if (author.length < 2) {
-      await ctx.reply('❌ Ім\'я автора занадто коротке. Мінімум 2 символи.');
+    const { VALIDATION } = await import('../constants');
+    if (author.length < VALIDATION.AUTHOR_MIN) {
+      await ctx.reply(`❌ Ім\'я автора занадто коротке. Мінімум ${VALIDATION.AUTHOR_MIN} символи.`);
       return;
     }
     
@@ -168,13 +168,14 @@ const addBookScene = new Scenes.WizardScene(
     
     const description = ctx.message.text.trim();
     
-    if (description.length < 10) {
-      await ctx.reply('❌ Опис занадто короткий. Мінімум 10 символів.');
+    const { VALIDATION } = await import('../constants');
+    if (description.length < VALIDATION.DESCRIPTION_MIN) {
+      await ctx.reply(`❌ Опис занадто короткий. Мінімум ${VALIDATION.DESCRIPTION_MIN} символів.`);
       return;
     }
     
-    if (description.length > 1000) {
-      await ctx.reply('❌ Опис занадто довгий. Максимум 1000 символів. Спробуйте ще раз:');
+    if (description.length > VALIDATION.DESCRIPTION_MAX) {
+      await ctx.reply(`❌ Опис занадто довгий. Максимум ${VALIDATION.DESCRIPTION_MAX} символів. Спробуйте ще раз:`);
       return;
     }
     
