@@ -428,5 +428,70 @@ exports.default = (bot) => {
         }
         return;
     });
+    bot.action('admin_back', async (ctx) => {
+        try {
+            await ctx.answerCbQuery();
+            const adminCheck = await (0, models_1.isAdmin)(ctx.from.id);
+            if (!adminCheck) {
+                await ctx.reply('❌ У вас немає доступу до адмін-панелі.');
+                return;
+            }
+            const stats = await (0, models_1.getAdminStats)();
+            const pendingReviews = await (0, models_1.getPendingReviews)();
+            const pendingFeedback = await (0, models_1.getPendingFeedbackMessages)();
+            const reviewsAlert = pendingReviews.length > 0
+                ? `📝 Відгуків на модерацію: *${pendingReviews.length}* 🔔`
+                : '✅ Всі відгуки оброблені';
+            const feedbackAlert = pendingFeedback.length > 0
+                ? `📞 Нових повідомлень: *${pendingFeedback.length}* 🔔`
+                : '✅ Всі повідомлення прочитані';
+            await ctx.editMessageText(`🛠️ *Панель адміністратора*\n\n` +
+                `📊 *Статистика:*\n` +
+                `📚 Книг в каталозі: ${stats.totalBooks}\n` +
+                `${reviewsAlert}\n` +
+                `${feedbackAlert}`, {
+                parse_mode: 'Markdown',
+                reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(0, pendingReviews.length, pendingFeedback.length)
+            });
+        }
+        catch (error) {
+            logger_1.logger.error('Error returning to admin panel', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+            await ctx.answerCbQuery('❌ Помилка');
+        }
+        return;
+    });
+    bot.action('promo_back', async (ctx) => {
+        try {
+            await ctx.answerCbQuery();
+            await ctx.scene.leave();
+            const adminCheck = await (0, models_1.isAdmin)(ctx.from.id);
+            if (!adminCheck) {
+                await ctx.reply('❌ У вас немає доступу до адмін-панелі.');
+                return;
+            }
+            const stats = await (0, models_1.getAdminStats)();
+            const pendingReviews = await (0, models_1.getPendingReviews)();
+            const pendingFeedback = await (0, models_1.getPendingFeedbackMessages)();
+            const reviewsAlert = pendingReviews.length > 0
+                ? `📝 Відгуків на модерацію: *${pendingReviews.length}* 🔔`
+                : '✅ Всі відгуки оброблені';
+            const feedbackAlert = pendingFeedback.length > 0
+                ? `📞 Нових повідомлень: *${pendingFeedback.length}* 🔔`
+                : '✅ Всі повідомлення прочитані';
+            await ctx.reply(`🛠️ *Панель адміністратора*\n\n` +
+                `📊 *Статистика:*\n` +
+                `📚 Книг в каталозі: ${stats.totalBooks}\n` +
+                `${reviewsAlert}\n` +
+                `${feedbackAlert}`, {
+                parse_mode: 'Markdown',
+                reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(0, pendingReviews.length, pendingFeedback.length)
+            });
+        }
+        catch (error) {
+            logger_1.logger.error('Error returning to admin panel from promo', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+            await ctx.answerCbQuery('❌ Помилка');
+        }
+        return;
+    });
 };
 //# sourceMappingURL=adminHandlers.js.map
