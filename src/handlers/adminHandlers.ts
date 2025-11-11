@@ -14,11 +14,11 @@ import { BotContext } from '../types/telegraf';
 
 // Обробники для адміністратора
 export default (bot: Telegraf<BotContext>) => {
-  console.log('✅ Admin handlers registered');
+  logger.info('Admin handlers registered');
   
   // Команда адміністратора
   bot.command('admin', async (ctx) => {
-    console.log('📝 /admin command received from user:', ctx.from?.id);
+    logger.info('/admin command received', { userId: ctx.from?.id });
     try {
       // Перевіряємо чи є користувач
       if (!ctx.from?.id) {
@@ -315,7 +315,7 @@ export default (bot: Telegraf<BotContext>) => {
       
       const messages = await getAllFeedbackMessages();
       
-      console.log(`📞 Feedback messages loaded: ${messages.length}`);
+      logger.info('Feedback messages loaded', { count: messages.length });
       
       if (messages.length === 0) {
         await ctx.reply(
@@ -505,7 +505,7 @@ export default (bot: Telegraf<BotContext>) => {
           await ctx.editMessageText(safeText, { parse_mode: 'Markdown' });
         } catch (editError) {
           // Якщо не вдалося відредагувати - просто відповідаємо
-          console.log('Could not edit message, sending new one');
+          logger.debug('Could not edit message, sending new one');
         }
       }
       
