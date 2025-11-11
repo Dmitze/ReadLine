@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getFeedbackActionKeyboard = exports.getReviewModerationKeyboard = exports.getGenresKeyboard = exports.getAdminMenuKeyboard = void 0;
 const telegraf_1 = require("telegraf");
-const getAdminMenuKeyboard = (pendingCount = 0, pendingReviews = 0, pendingFeedback = 0) => {
+const getAdminMenuKeyboard = (pendingReviews = 0, pendingFeedback = 0) => {
     const reviewsButtonText = pendingReviews > 0
         ? `📝 Відгуки (${pendingReviews}) 🔔`
         : '📝 Модерація';
