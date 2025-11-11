@@ -1,6 +1,5 @@
 // src/index.ts - Основний файл бота
-import { Telegraf, Scenes, session, Markup } from 'telegraf';
-import { message } from 'telegraf/filters';
+import { Telegraf, Scenes, session } from 'telegraf';
 import dotenv from 'dotenv';
 
 // Ініціалізація змінних оточення
@@ -31,15 +30,49 @@ import aiFilterScene from './scenes/aiFilterScene';
 import aiAssistantScene from './scenes/aiAssistantScene';
 import promoAdminScene from './scenes/promoAdminScene';
 
-// Перевірка наявності BOT_TOKEN
-if (!process.env.BOT_TOKEN) {
-  logger.error(ERRORS.BOT_TOKEN_MISSING);
-  console.error('📝 Створіть .env файл в корені проекту та додайте:');
-  console.error('   BOT_TOKEN=your_telegram_bot_token_here');
-  console.error('');
-  console.error('💡 Токен можна отримати у @BotFather в Telegram');
-  process.exit(1);
+// ✅ ВИПРАВЛЕНО: Валідація критичних env variables при старті
+function validateEnvVariables() {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  
+  if (!process.env.BOT_TOKEN) {
+    errors.push('BOT_TOKEN is required');
+  } else if (process.env.BOT_TOKEN.length < 20) {
+    errors.push('BOT_TOKEN appears to be invalid (too short)');
+  }
+  
+  // ✅ НОВИЙ: Валідація GEMINI_API_KEY
+  if (!process.env.GEMINI_API_KEY) {
+    warnings.push('GEMINI_API_KEY is not set - AI features will be disabled');
+  } else if (process.env.GEMINI_API_KEY.length < 20) {
+    warnings.push('GEMINI_API_KEY appears to be invalid (too short) - AI features may not work');
+  }
+  
+  if (errors.length > 0) {
+    logger.error('Environment validation failed', new Error(errors.join(', ')));
+    console.error('❌ КРИТИЧНА ПОМИЛКА: Невірна конфігурація');
+    console.error('');
+    errors.forEach(err => console.error(`  • ${err}`));
+    console.error('');
+    console.error('📝 Створіть .env файл в корені проекту та додайте:');
+    console.error('   BOT_TOKEN=your_telegram_bot_token_here');
+    console.error('   GEMINI_API_KEY=your_gemini_api_key_here (optional)');
+    console.error('');
+    console.error('💡 Токен можна отримати у @BotFather в Telegram');
+    process.exit(1);
+  }
+  
+  if (warnings.length > 0) {
+    logger.warn('Environment validation warnings', { warnings });
+    console.warn('⚠️ ПОПЕРЕДЖЕННЯ:');
+    warnings.forEach(warn => console.warn(`  • ${warn}`));
+    console.warn('');
+  }
+  
+  logger.info('Environment variables validated successfully');
 }
+
+validateEnvVariables();
 
 // Ініціалізація бота
 const bot = new Telegraf<BotContext>(process.env.BOT_TOKEN);
@@ -168,7 +201,7 @@ bot.use(async (ctx, next) => {
     
     // Якщо натиснута кнопка головного меню і користувач в scene - виходимо
     if (menuButtons.includes(text) && ctx.scene) {
-      console.log(`🚪 User pressed menu button "${text}" while in scene, leaving...`);
+      logger.info('User pressed menu button while in scene', { text, userId: ctx.from?.id });
       
       try {
         await ctx.scene.leave();
@@ -176,9 +209,9 @@ bot.use(async (ctx, next) => {
         if (ctx.session) {
           ctx.session = {};
         }
-        console.log('✅ Successfully left scene');
+        logger.info('Successfully left scene', { userId: ctx.from?.id });
       } catch (error) {
-        console.error('❌ Error leaving scene:', error);
+        logger.error('Error leaving scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
       }
     }
   }
@@ -247,7 +280,7 @@ bot.start(async (ctx) => {
       '👇 *Оберіть дію з меню нижче:*';
       
     return ctx.reply(welcomeMessage, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: getMainMenuKeyboard()
     });
   } catch (error) {
@@ -328,7 +361,7 @@ bot.help((ctx) => {
     
     '❓ Питання? Звертайтеся до адміністратора!';
     
-  return ctx.reply(helpMessage, { parse_mode: 'Markdown' });
+  return ctx.reply(helpMessage, { parse_mode: 'HTML' });
 });
 
 // Команда /settings - налаштування бота (Завдання 30)
@@ -341,15 +374,15 @@ bot.command('settings', async (ctx) => {
 import userHandlers from './handlers/userHandlers';
 import adminHandlers from './handlers/adminHandlers';
 
-console.log('📝 Registering handlers...');
+logger.info('Registering handlers...');
 
 // Реєструємо adminHandlers ПЕРЕД userHandlers
 // щоб команди оброблялися першими
 adminHandlers(bot);
-console.log('✅ Admin handlers called');
+logger.info('Admin handlers registered');
 
 userHandlers(bot);
-console.log('✅ User handlers called');
+logger.info('User handlers registered');
 
 // Обробники для сповіщень (Завдання 31)
 bot.action('notification_settings', async (ctx) => {
@@ -377,12 +410,12 @@ bot.action('random_book', async (ctx) => {
     if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
       await ctx.replyWithPhoto(book.photo_file_id, {
         caption,
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_markup: getEnhancedBookKeyboard(book)
       });
     } else {
       await ctx.reply(caption, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_markup: getEnhancedBookKeyboard(book)
       });
     }
@@ -395,7 +428,7 @@ bot.action('random_book', async (ctx) => {
 let notificationScheduler: NodeJS.Timeout | null = null;
 
 const shutdown = (signal: string) => {
-  console.log(`Received ${signal}, shutting down gracefully`);
+  logger.info(`Received ${signal}, shutting down gracefully`);
   
   // Зупиняємо планувальник сповіщень
   if (notificationScheduler) {
@@ -411,36 +444,34 @@ process.once('SIGINT', () => shutdown('SIGINT'));
 process.once('SIGTERM', () => shutdown('SIGTERM'));
 
 // Запуск бота
-console.log('🚀 Starting bot launch...');
-console.log('✅ User handlers registered');
-console.log('✅ Admin handlers registered');
+logger.info('Starting bot launch');
+logger.info('User handlers registered');
+logger.info('Admin handlers registered');
 
 // Асинхронний запуск без блокування
 (async () => {
   try {
     // ✅ ВИПРАВЛЕНО #1: Ініціалізація БД перед запуском бота
-    console.log('🔄 Initializing database...');
+    logger.info('Initializing database...');
     const { initDatabase } = await import('./database/models');
     await initDatabase();
-    console.log('✅ Database initialized successfully');
+    logger.info('Database initialized successfully');
     
-    console.log('🔄 Launching bot...');
+    logger.info('Launching bot...');
     await bot.launch({
       dropPendingUpdates: true
     });
-    console.log('📚 Бібліотечний бот запущений!');
-    console.log('Bot username:', bot.botInfo?.username);
-    console.log('✅ Bot is ready to receive messages');
+    logger.info('Bot launched successfully', { username: bot.botInfo?.username });
     
     // Запускаємо планувальник сповіщень (Завдання 31)
     const { startNotificationScheduler } = require('./utils/notifications');
     notificationScheduler = startNotificationScheduler(bot);
-    console.log('🔔 Notification scheduler started');
+    logger.info('Notification scheduler started');
     
     // ✅ ВИПРАВЛЕНО #70: запускаємо автоматичний backup
     const { startAutoBackup } = require('./utils/autoBackup');
-    const backupScheduler = startAutoBackup();
-    console.log('💾 Automatic backup scheduler started');
+    startAutoBackup();
+    logger.info('Automatic backup scheduler started');
     
   } catch (error) {
     console.error('❌ Помилка запуску бота:', error);
