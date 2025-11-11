@@ -5,8 +5,17 @@
     "lib": ["ES2020", "dom"],
     "outDir": "./dist",
     "rootDir": "./src",
-    "strict": false,
-    "noImplicitAny": false,
+    // ✅ ПОСТУПОВО ВКЛЮЧАЄМО STRICT MODE
+    // Включено тільки безпечні checks, які не ламають існуючий код
+    "strict": false, // Поки false - повне включення потребує великого рефакторингу
+    "noImplicitAny": false, // Поки false - багато any в коді
+    "strictNullChecks": false, // Поки false - потребує великого рефакторингу
+    "strictFunctionTypes": false, // Поки false - конфлікти з Telegraf types
+    "noImplicitThis": true, // ✅ ВКЛЮЧЕНО - this має бути типізований
+    "noImplicitReturns": false, // Поки false - потребує рефакторингу
+    "noUnusedLocals": false, // Поки false - багато warnings
+    "noUnusedParameters": false, // Поки false - багато warnings
+    "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -15,11 +24,6 @@
     "declarationMap": true,
     "sourceMap": true,
     "removeComments": true,
-    "strictNullChecks": false,
-    "strictFunctionTypes": false,
-    "noImplicitThis": false,
-    "noImplicitReturns": false,
-    "noFallthroughCasesInSwitch": true,
     "moduleResolution": "node",
     "isolatedModules": true,
     "types": ["node", "jest"]
