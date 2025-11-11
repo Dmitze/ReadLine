@@ -1,6 +1,7 @@
 import sqlite3 from 'sqlite3';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '../utils/logger';
 
 // Environment variables are initialized in index.ts (entry point)
 
@@ -27,8 +28,6 @@ export interface Book {
   is_available?: boolean;
   created_at?: string;
 }
-
-// Request interface removed - no longer using physical book requests
 
 export interface Admin {
   id?: number;
@@ -99,7 +98,7 @@ const dbPath = process.env.DB_PATH || './database/library.db';
 const dbDir = path.dirname(dbPath);
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
-  console.log(`📁 Створено директорію для БД: ${dbDir}`);
+  logger.info('Created database directory', { path: dbDir });
 }
 
 export const db = new sqlite3.Database(dbPath);
@@ -126,8 +125,6 @@ export const initDatabase = (): Promise<void> => {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `;
-
-    // Requests table removed - no longer using physical book requests
 
     // Create admins table
     const createAdminsTable = `
@@ -332,8 +329,8 @@ export const addBook = (bookData: Omit<Book, 'id' | 'is_available' | 'created_at
     } = bookData;
     
     const query = `
-      INSERT INTO books (title, author, genre, description, photo_file_id, file_url, file_type, file_name)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO books (title, author, genre, description, photo_file_id, file_url, file_type, file_name, is_available)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
     `;
     
     db.run(
@@ -397,8 +394,6 @@ export const getGenres = (): Promise<string[]> => {
     });
   });
 };
-
-// Request functions removed - no longer using physical book requests
 
 // Admin functions
 export const addAdmin = (userId: number, username?: string): Promise<number> => {
