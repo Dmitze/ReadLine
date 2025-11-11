@@ -29,6 +29,7 @@ import onboardingScene from './scenes/onboardingScene';
 import settingsScene from './scenes/settingsScene';
 import aiFilterScene from './scenes/aiFilterScene';
 import aiAssistantScene from './scenes/aiAssistantScene';
+import promoAdminScene from './scenes/promoAdminScene';
 
 // Перевірка наявності BOT_TOKEN
 if (!process.env.BOT_TOKEN) {
@@ -131,7 +132,8 @@ const stage = new Scenes.Stage([
   onboardingScene as any,
   settingsScene as any,
   aiFilterScene as any,
-  aiAssistantScene as any
+  aiAssistantScene as any,
+  promoAdminScene as any
 ]);
 bot.use(session());
 bot.use(stage.middleware() as any);
@@ -370,6 +372,12 @@ console.log('✅ Admin handlers registered');
 // Асинхронний запуск без блокування
 (async () => {
   try {
+    // ✅ ВИПРАВЛЕНО #1: Ініціалізація БД перед запуском бота
+    console.log('🔄 Initializing database...');
+    const { initDatabase } = await import('./database/models');
+    await initDatabase();
+    console.log('✅ Database initialized successfully');
+    
     console.log('🔄 Launching bot...');
     await bot.launch({
       dropPendingUpdates: true
@@ -382,6 +390,11 @@ console.log('✅ Admin handlers registered');
     const { startNotificationScheduler } = require('./utils/notifications');
     notificationScheduler = startNotificationScheduler(bot);
     console.log('🔔 Notification scheduler started');
+    
+    // ✅ ВИПРАВЛЕНО #70: запускаємо автоматичний backup
+    const { startAutoBackup } = require('./utils/autoBackup');
+    const backupScheduler = startAutoBackup();
+    console.log('💾 Automatic backup scheduler started');
     
   } catch (error) {
     console.error('❌ Помилка запуску бота:', error);
