@@ -125,7 +125,7 @@ searchScene.on('text', async (ctx) => {
         return;
     }
     try {
-        console.log('🔍 Search request:', searchTerm, 'from user:', ctx.from?.id, 'type:', searchType);
+        logger_1.logger.info('Search request', { searchTerm, userId: ctx.from?.id, searchType });
         if (searchType === 'ai') {
             await ctx.reply('🤖 Аналізую ваш запит та шукаю книги...');
             const userId = ctx.from?.id;
@@ -228,7 +228,7 @@ searchScene.on('text', async (ctx) => {
                 aiMessage = searchResult.aiMessage || '';
                 searchTypeText = `🤖 розумний (${searchResult.searchStrategy})`;
         }
-        console.log('📚 Search results:', books.length, 'books found');
+        logger_1.logger.info('Search results', { booksFound: books.length });
         if (books.length === 0) {
             let noResultsMessage = '📭 *За вашим запитом нічого не знайдено*\n\n' +
                 `Пошуковий запит: "${searchTerm}"\n\n`;
