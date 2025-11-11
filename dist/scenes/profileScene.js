@@ -97,8 +97,7 @@ profileScene.enter(async (ctx) => {
         await ctx.reply(profileText, {
             parse_mode: 'HTML',
             reply_markup: Markup.inlineKeyboard([
-                [{ text: '💡 Вам може сподобатися', callback_data: 'show_recommendations' }],
-                [{ text: '📚 Персональна підбірка (AI)', callback_data: 'show_personal_collection' }],
+                [{ text: '🤖 Персональні рекомендації', callback_data: 'show_personal_collection' }],
                 [{ text: '📊 Моя статистика', callback_data: 'show_stats' }],
                 [{ text: '⬅️ Назад', callback_data: 'profile_back' }]
             ]).reply_markup
@@ -108,72 +107,6 @@ profileScene.enter(async (ctx) => {
     catch (error) {
         logger_1.logger.error('Error in profile scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
         await ctx.reply('❌ Виникла помилка при отриманні профілю.');
-    }
-});
-profileScene.action('show_recommendations', async (ctx) => {
-    try {
-        await ctx.answerCbQuery();
-        const userId = ctx.from?.id;
-        if (!userId)
-            return;
-        const { formatBookCaption } = await Promise.resolve().then(() => __importStar(require('../utils/helpers')));
-        const { isBookSaved, getTopBooks, getNewestBooks } = await Promise.resolve().then(() => __importStar(require('../database/models')));
-        let recommendations = await (0, recommendationFunctions_1.getSmartRecommendations)(userId, 5);
-        if (recommendations.length === 0) {
-            console.log('⚠️ No personal recommendations, showing top books');
-            const topBooks = await getTopBooks(5);
-            if (topBooks.length > 0) {
-                await ctx.reply('💡 *Рекомендації для вас*\n\n' +
-                    'У вас ще немає збережених книг, тому ми підібрали найкращі книги з нашого каталогу:\n\n' +
-                    '⭐ Топ книги за рейтингом', { parse_mode: 'Markdown' });
-                recommendations = topBooks;
-            }
-            else {
-                const newBooks = await getNewestBooks(5);
-                if (newBooks.length > 0) {
-                    await ctx.reply('💡 *Рекомендації для вас*\n\n' +
-                        'Ось найновіші книги в нашому каталозі:', { parse_mode: 'Markdown' });
-                    recommendations = newBooks;
-                }
-                else {
-                    await ctx.reply('💡 *Рекомендації для вас*\n\n' +
-                        'Поки що немає книг в каталозі.\n\n' +
-                        '💾 Зберігайте книги, щоб отримувати персоналізовані рекомендації!', { parse_mode: 'Markdown' });
-                    return;
-                }
-            }
-        }
-        const { getUserFavoriteGenres } = await Promise.resolve().then(() => __importStar(require('../database/recommendationFunctions')));
-        const favoriteGenres = await getUserFavoriteGenres(userId, 3);
-        let text = '💡 *Вам може сподобатися*\n\n';
-        if (favoriteGenres.length > 0) {
-            text += `На основі ваших улюблених жанрів: ${favoriteGenres.join(', ')}\n\n`;
-        }
-        text += `Знайдено ${recommendations.length} ${recommendations.length === 1 ? 'книга' : 'книг'}:`;
-        await ctx.reply(text, { parse_mode: 'Markdown' });
-        for (const book of recommendations) {
-            const caption = await formatBookCaption(book);
-            const isSaved = await isBookSaved(userId, book.id);
-            const keyboard = (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved);
-            if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
-                await ctx.replyWithPhoto(book.photo_file_id, {
-                    caption,
-                    parse_mode: 'Markdown',
-                    reply_markup: keyboard
-                });
-            }
-            else {
-                await ctx.reply(caption, {
-                    parse_mode: 'Markdown',
-                    reply_markup: keyboard
-                });
-            }
-        }
-        logger_1.logger.userAction(userId, 'view_recommendations');
-    }
-    catch (error) {
-        logger_1.logger.error('Error showing recommendations', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-        await ctx.answerCbQuery('❌ Помилка при отриманні рекомендацій');
     }
 });
 profileScene.action('show_stats', async (ctx) => {
@@ -201,7 +134,7 @@ profileScene.action('show_stats', async (ctx) => {
             statsText += `📚 *Улюблені жанри:* не встановлені\n\n`;
         }
         statsText += `💡 Продовжуйте читати та слухати!`;
-        await ctx.reply(statsText, { parse_mode: 'Markdown' });
+        await ctx.reply(statsText, { parse_mode: 'HTML' });
         logger_1.logger.userAction(userId, 'view_stats');
     }
     catch (error) {
@@ -226,31 +159,23 @@ profileScene.action('show_personal_collection', async (ctx) => {
             return;
         }
         await ctx.reply('🤖 Аналізую ваші вподобання та створюю персональну підбірку...');
-        const { getUserDetailedStats } = await Promise.resolve().then(() => __importStar(require('../database/userFunctions')));
-        const { getTopBooks, getNewestBooks, isBookSaved } = await Promise.resolve().then(() => __importStar(require('../database/models')));
-        console.log('📊 Getting user stats for personal collection...');
-        const stats = await getUserDetailedStats(userId);
-        console.log('📊 User stats:', stats);
+        const { isBookSaved, getTopBooks, getNewestBooks } = await Promise.resolve().then(() => __importStar(require('../database/models')));
         let collection = await (0, recommendationFunctions_1.getSmartRecommendations)(userId, 5);
-        console.log('🤖 Smart recommendations:', collection.length);
         if (collection.length === 0) {
-            console.log('⚠️ No smart recommendations, trying fallback...');
             const topBooks = await getTopBooks(3);
-            console.log('🏆 Top books fallback:', topBooks.length);
             if (topBooks.length > 0) {
                 collection = topBooks;
                 await ctx.reply('📚 *Персональна підбірка для вас*\n\n' +
                     '🤖 На основі найкращих книг каталогу\n' +
-                    `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`, { parse_mode: 'Markdown' });
+                    `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`, { parse_mode: 'HTML' });
             }
             else {
                 const newBooks = await getNewestBooks(3);
-                console.log('🆕 New books fallback:', newBooks.length);
                 if (newBooks.length > 0) {
                     collection = newBooks;
                     await ctx.reply('📚 *Персональна підбірка для вас*\n\n' +
                         '🤖 Найновіші книги каталогу\n' +
-                        `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`, { parse_mode: 'Markdown' });
+                        `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`, { parse_mode: 'HTML' });
                 }
                 else {
                     await ctx.reply('😔 Не вдалося створити персональну підбірку. В каталозі поки немає книг.');
@@ -260,8 +185,8 @@ profileScene.action('show_personal_collection', async (ctx) => {
         }
         else {
             await ctx.reply(`📚 *Персональна підбірка для вас*\n\n` +
-                `🤖 Створено на основі ваших вподобань\n` +
-                `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`, { parse_mode: 'Markdown' });
+                `🤖 Створено на основі ваших вподобань, тегів та рейтингів\n` +
+                `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`, { parse_mode: 'HTML' });
         }
         const { formatBookCaption } = await Promise.resolve().then(() => __importStar(require('../utils/helpers')));
         for (const book of collection) {
@@ -273,21 +198,21 @@ profileScene.action('show_personal_collection', async (ctx) => {
                     try {
                         await ctx.replyWithPhoto(book.photo_file_id, {
                             caption,
-                            parse_mode: 'Markdown',
+                            parse_mode: 'HTML',
                             reply_markup: keyboard
                         });
                     }
                     catch (photoError) {
-                        console.log('⚠️ Photo error, sending as text');
+                        logger_1.logger.debug('Photo error, sending as text');
                         await ctx.reply(caption, {
-                            parse_mode: 'Markdown',
+                            parse_mode: 'HTML',
                             reply_markup: keyboard
                         });
                     }
                 }
                 else {
                     await ctx.reply(caption, {
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
@@ -297,12 +222,15 @@ profileScene.action('show_personal_collection', async (ctx) => {
                 logger_1.logger.error('Error showing book', bookError instanceof Error ? bookError : new Error(String(bookError)));
             }
         }
-        logger_1.logger.userAction(userId, 'personal_collection', { booksFound: collection.length });
+        logger_1.logger.userAction(userId, 'ai_personal_collection', { booksFound: collection.length });
     }
     catch (error) {
         logger_1.logger.error('Error generating personal collection', error instanceof Error ? error : new Error(String(error)));
         await ctx.reply('😔 Не вдалося створити персональну підбірку. Спробуйте пізніше.');
     }
+});
+profileScene.leave((ctx) => {
+    logger_1.logger.debug('ProfileScene cleanup completed', { userId: ctx.from?.id });
 });
 exports.default = profileScene;
 //# sourceMappingURL=profileScene.js.map
