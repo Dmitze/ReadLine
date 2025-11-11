@@ -7,11 +7,12 @@ exports.addAdminReply = exports.updateFeedbackStatus = exports.markFeedbackAsRea
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
+const logger_1 = require("../utils/logger");
 const dbPath = process.env.DB_PATH || './database/library.db';
 const dbDir = path_1.default.dirname(dbPath);
 if (!fs_1.default.existsSync(dbDir)) {
     fs_1.default.mkdirSync(dbDir, { recursive: true });
-    console.log(`📁 Створено директорію для БД: ${dbDir}`);
+    logger_1.logger.info('Created database directory', { path: dbDir });
 }
 exports.db = new sqlite3_1.default.Database(dbPath);
 const initDatabase = () => {
@@ -191,8 +192,8 @@ const addBook = (bookData) => {
     return new Promise((resolve, reject) => {
         const { title, author, genre, description, photo_file_id, file_url, file_type = 'physical', file_name } = bookData;
         const query = `
-      INSERT INTO books (title, author, genre, description, photo_file_id, file_url, file_type, file_name)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO books (title, author, genre, description, photo_file_id, file_url, file_type, file_name, is_available)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
     `;
         exports.db.run(query, [title, author, genre, description, photo_file_id, file_url, file_type, file_name], function (err) {
             if (err)
@@ -643,11 +644,11 @@ const markFeedbackAsRead = (feedbackId) => {
 exports.markFeedbackAsRead = markFeedbackAsRead;
 const updateFeedbackStatus = (feedbackId, status) => {
     return new Promise((resolve, reject) => {
-        exports.db.run('UPDATE feedback_messages SET status = ? WHERE id = ?', [status, feedbackId], (err) => {
+        exports.db.run('UPDATE feedback_messages SET status = ?, read_at = CURRENT_TIMESTAMP WHERE id = ?', [status, feedbackId], function (err) {
             if (err)
                 reject(err);
             else
-                resolve();
+                resolve(this.changes);
         });
     });
 };
