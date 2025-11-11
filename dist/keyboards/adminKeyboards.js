@@ -13,6 +13,7 @@ const getAdminMenuKeyboard = (pendingCount = 0, pendingReviews = 0, pendingFeedb
         .inlineKeyboard([
         [telegraf_1.Markup.button.callback('➕ Додати книгу', 'add_book')],
         [telegraf_1.Markup.button.callback('📚 Управління книгами', 'manage_books')],
+        [telegraf_1.Markup.button.callback('🎁 Керування промокодами', 'manage_promo_codes')],
         [telegraf_1.Markup.button.callback(reviewsButtonText, 'moderate_reviews')],
         [telegraf_1.Markup.button.callback(feedbackButtonText, 'view_feedback')],
         [telegraf_1.Markup.button.callback('📊 Статистика', 'admin_stats')]
