@@ -110,4 +110,9 @@ aiScene.on('message', async (ctx) => {
   );
 });
 
+// Cleanup при виході зі сцени
+aiScene.leave((ctx: BotContext) => {
+  logger.debug('AIScene cleanup completed', { userId: ctx.from?.id });
+});
+
 export default aiScene;
