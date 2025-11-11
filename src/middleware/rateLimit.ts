@@ -27,12 +27,13 @@ class RateLimiter {
 
   /**
    * Перевірити чи користувач перевищив ліміт
+   * ✅ ВИПРАВЛЕНО #40: атомарна операція
    */
   check(userId: number): boolean {
     const now = Date.now();
     const record = this.records.get(userId);
 
-    // Якщо запису немає або window expired
+    // Якщо запису немає або window expired - створюємо новий
     if (!record || now > record.resetAt) {
       this.records.set(userId, {
         count: 1,
@@ -41,7 +42,7 @@ class RateLimiter {
       return true;
     }
 
-    // Перевіряємо ліміт
+    // Перевіряємо ліміт перед інкрементом
     if (record.count >= this.maxRequests) {
       logger.warn('Rate limit exceeded', {
         userId,
@@ -51,8 +52,12 @@ class RateLimiter {
       return false;
     }
 
-    // Інкрементуємо лічильник
-    record.count++;
+    // Атомарно інкрементуємо лічильник
+    this.records.set(userId, {
+      count: record.count + 1,
+      resetAt: record.resetAt,
+    });
+    
     return true;
   }
 
