@@ -185,8 +185,8 @@ export const getAdaptiveBookKeyboard = (ctx: Context, book: Book, isSaved: boole
     formatButtons.push(Markup.button.url(buttonText, book.file_url));
   }
   
-  // Аудіокнига
-  if ((book as any).audio_file_id) {
+  // Аудіокнига - перевіряємо file_type
+  if (book.file_type === 'audio' || (book as any).audio_file_id) {
     const buttonText = deviceType === 'mobile' ? '🎧 Аудіо' : '🎧 Слухати';
     formatButtons.push(Markup.button.callback(buttonText, `download_audio_${book.id}`));
   } else if ((book as any).audio_external_link) {
@@ -261,8 +261,8 @@ export const getEnhancedBookKeyboard = (book: Book, isSaved: boolean = false) =>
     formatRow.push(Markup.button.url('🌐 Читати онлайн', book.file_url));
   }
   
-  // Аудіокнига
-  if ((book as any).audio_file_id) {
+  // Аудіокнига - перевіряємо file_type
+  if (book.file_type === 'audio' || (book as any).audio_file_id) {
     formatRow.push(Markup.button.callback('🎧 Слухати', `download_audio_${book.id}`));
   } else if ((book as any).audio_external_link) {
     // Для великих аудіофайлів (> 50 МБ) - посилання
