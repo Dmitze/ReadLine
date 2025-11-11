@@ -245,4 +245,13 @@ promoAdminScene.command('cancel', async (ctx) => {
   await ctx.reply('❌ Керування промокодами закрито');
 });
 
+// Cleanup при виході зі сцени
+promoAdminScene.leave((ctx: BotContext) => {
+  const state = (ctx.scene as any).state;
+  if (state) {
+    delete state.waitingForPromoCode;
+  }
+  logger.debug('PromoAdminScene cleanup completed', { userId: ctx.from?.id });
+});
+
 export default promoAdminScene;
