@@ -68,6 +68,7 @@ export async function displayBookList(
 
 /**
  * Показати одну книгу
+ * ✅ ОПТИМІЗОВАНО: можна передати теги для batch loading
  */
 export async function displaySingleBook(
   ctx: Context,
@@ -76,17 +77,18 @@ export async function displaySingleBook(
     isSaved?: boolean;
     index?: number;
     indexPrefix?: string;
+    tags?: Array<{name: string}>;
   } = {}
 ): Promise<void> {
-  const { isSaved = false, index, indexPrefix = '' } = options;
+  const { isSaved = false, index, indexPrefix = '', tags } = options;
 
   try {
-    // Формуємо caption
+    // Формуємо caption з тегами якщо є
     let caption = '';
     if (index !== undefined) {
       caption = `${indexPrefix}#${index}\n\n`;
     }
-    caption += await formatBookCaption(book);
+    caption += await formatBookCaption(book, tags);
 
     // Формуємо keyboard
     const keyboard = getEnhancedBookKeyboard(book, isSaved);
