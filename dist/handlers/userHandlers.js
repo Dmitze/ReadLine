@@ -47,11 +47,11 @@ const userValidation_1 = require("../utils/userValidation");
 let handlersRegistered = false;
 exports.default = (bot) => {
     if (handlersRegistered) {
-        console.log('⚠️ User handlers already registered, skipping...');
+        logger_1.logger.warn('User handlers already registered, skipping');
         return;
     }
     handlersRegistered = true;
-    console.log('✅ User handlers registering...');
+    logger_1.logger.info('User handlers registering');
     bot.hears('🎁 Отримати промокод', async (ctx) => {
         try {
             logger_1.logger.info('Promo code button pressed', { userId: ctx.from?.id });
@@ -68,7 +68,7 @@ exports.default = (bot) => {
                 await ctx.reply('❌ *Ви вже отримували промокод*\n\n' +
                     'Кожен користувач може отримати промокод лише один раз.\n\n' +
                     '💡 Використайте отриманий промокод при замовленні на сайті Yakaboo.ua\n\n' +
-                    '🌐 https://www.yakaboo.ua', { parse_mode: 'Markdown' });
+                    '🌐 https://www.yakaboo.ua', { parse_mode: 'HTML' });
                 return;
             }
             logger_1.logger.info('Checking available promo codes count', { userId });
@@ -77,7 +77,7 @@ exports.default = (bot) => {
             if (availableCount === 0) {
                 await ctx.reply('😔 *Наразі промокодів немає в наявності*\n\n' +
                     '🔄 Будь ласка, спробуйте пізніше.\n\n' +
-                    '📚 А поки що можете ознайомитися з нашим каталогом книг!', { parse_mode: 'Markdown' });
+                    '📚 А поки що можете ознайомитися з нашим каталогом книг!', { parse_mode: 'HTML' });
                 return;
             }
             logger_1.logger.info('Getting available promo code for user', { userId });
@@ -94,7 +94,7 @@ exports.default = (bot) => {
                 `🎫 \`${promoCode.code}\`\n\n` +
                 `💾 *Збережіть цей код!* Використовуйте його при замовленні на сайті Yakaboo.ua\n\n` +
                 `🌐 *Посилання:* https://www.yakaboo.ua`, {
-                parse_mode: 'Markdown',
+                parse_mode: 'HTML',
                 reply_markup: {
                     inline_keyboard: [
                         [{ text: '🌐 Перейти на Yakaboo.ua', url: 'https://www.yakaboo.ua' }],
@@ -113,7 +113,7 @@ exports.default = (bot) => {
         try {
             await ctx.reply('📚 *КАТАЛОГ КНИГ*\n\n' +
                 'Оберіть спосіб перегляду:', {
-                parse_mode: 'Markdown',
+                parse_mode: 'HTML',
                 reply_markup: telegraf_1.Markup.inlineKeyboard([
                     [
                         telegraf_1.Markup.button.callback('📖 За жанрами', 'catalog_genres'),
@@ -129,9 +129,6 @@ exports.default = (bot) => {
                     ],
                     [
                         telegraf_1.Markup.button.callback('🏷️ За тегами', 'catalog_tags')
-                    ],
-                    [
-                        telegraf_1.Markup.button.callback('🤖 AI-підбір', 'catalog_ai')
                     ]
                 ]).reply_markup
             });
@@ -217,7 +214,7 @@ exports.default = (bot) => {
             '/start - Головне меню\n' +
             '/help - Ця довідка\n' +
             '/admin - Панель адміністратора\n\n' +
-            '💡 Використовуйте кнопки для навігації!', { parse_mode: 'Markdown' });
+            '💡 Використовуйте кнопки для навігації!', { parse_mode: 'HTML' });
     });
     bot.on('message', async (ctx) => {
         if (!ctx.message || !('text' in ctx.message))
@@ -246,20 +243,20 @@ exports.default = (bot) => {
                         try {
                             await ctx.replyWithPhoto(book.photo_file_id, {
                                 caption,
-                                parse_mode: 'Markdown',
+                                parse_mode: 'HTML',
                                 reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, false)
                             });
                         }
                         catch (error) {
                             await ctx.reply(caption, {
-                                parse_mode: 'Markdown',
+                                parse_mode: 'HTML',
                                 reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, false)
                             });
                         }
                     }
                     else {
                         await ctx.reply(caption, {
-                            parse_mode: 'Markdown',
+                            parse_mode: 'HTML',
                             reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, false)
                         });
                     }
@@ -345,20 +342,20 @@ exports.default = (bot) => {
                 try {
                     await ctx.replyWithPhoto(book.photo_file_id, {
                         caption,
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
                 catch (photoError) {
                     await ctx.reply(caption, {
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
             }
             else {
                 await ctx.reply(caption, {
-                    parse_mode: 'Markdown',
+                    parse_mode: 'HTML',
                     reply_markup: keyboard
                 });
             }
@@ -392,20 +389,20 @@ exports.default = (bot) => {
                 try {
                     await ctx.replyWithPhoto(book.photo_file_id, {
                         caption,
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
                 catch (photoError) {
                     await ctx.reply(caption, {
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
             }
             else {
                 await ctx.reply(caption, {
-                    parse_mode: 'Markdown',
+                    parse_mode: 'HTML',
                     reply_markup: keyboard
                 });
             }
@@ -465,18 +462,37 @@ exports.default = (bot) => {
                 await ctx.answerCbQuery('❌ Книга не знайдена');
                 return;
             }
-            if (book.audio_file_id) {
-                await ctx.answerCbQuery('🎧 Завантаження аудіоплеєра...');
-                ctx.scene.state = { bookId };
-                await ctx.scene?.enter('AUDIO_PLAYER_SCENE');
+            const audioFileId = book.audio_file_id || (book.file_type === 'audio' ? book.file_url : null);
+            if (audioFileId) {
+                await ctx.answerCbQuery('🎧 Відправляю аудіокнигу...');
+                let caption = `🎧 <b>${book.title}</b>\n`;
+                caption += `👤 ${book.author}\n`;
+                if (book.narrator) {
+                    caption += `🎙️ Читає: ${book.narrator}\n`;
+                }
+                if (book.audio_duration) {
+                    const hours = Math.floor(book.audio_duration / 3600);
+                    const minutes = Math.floor((book.audio_duration % 3600) / 60);
+                    if (hours > 0) {
+                        caption += `⏱️ Тривалість: ${hours}г ${minutes}хв\n`;
+                    }
+                    else {
+                        caption += `⏱️ Тривалість: ${minutes}хв\n`;
+                    }
+                }
+                await ctx.replyWithAudio(audioFileId, {
+                    caption,
+                    parse_mode: 'HTML'
+                });
+                logger_1.logger.userAction(ctx.from.id, 'listen_audiobook', { bookId, title: book.title });
             }
             else {
                 await ctx.answerCbQuery('❌ Аудіокнига недоступна');
             }
         }
         catch (error) {
-            logger_1.logger.error('Error opening audio player', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.answerCbQuery('❌ Помилка при завантаженні');
+            logger_1.logger.error('Error sending audio', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+            await ctx.answerCbQuery('❌ Помилка при відправці аудіо');
         }
         return;
     });
@@ -510,7 +526,7 @@ exports.default = (bot) => {
             if (reviews.length > 5) {
                 reviewsText += `\n...та ще ${reviews.length - 5} відгуків`;
             }
-            await ctx.reply(reviewsText, { parse_mode: 'Markdown' });
+            await ctx.reply(reviewsText, { parse_mode: 'HTML' });
             await ctx.answerCbQuery();
         }
         catch (error) {
@@ -539,7 +555,7 @@ exports.default = (bot) => {
                 return;
             }
             await ctx.reply(`🔍 *Схожі книги* (жанр: ${book.genre}):\n\n` +
-                filtered.map((b, i) => `${i + 1}. 📖 ${b.title}\n   👤 ${b.author}`).join('\n\n'), { parse_mode: 'Markdown' });
+                filtered.map((b, i) => `${i + 1}. 📖 ${b.title}\n   👤 ${b.author}`).join('\n\n'), { parse_mode: 'HTML' });
             await ctx.answerCbQuery();
         }
         catch (error) {
@@ -597,7 +613,7 @@ exports.default = (bot) => {
                 return;
             }
             await ctx.reply(`⭐ *КНИГИ З ВИСОКИМ РЕЙТИНГОМ*\n\n` +
-                `Знайдено ${books.length} ${books.length === 1 ? 'книга' : 'книг'} з рейтингом 4+ зірки:`, { parse_mode: 'Markdown' });
+                `Знайдено ${books.length} ${books.length === 1 ? 'книга' : 'книг'} з рейтингом 4+ зірки:`, { parse_mode: 'HTML' });
             for (const book of books) {
                 const caption = await (0, helpers_1.formatBookCaption)(book);
                 const userId = ctx.from?.id;
@@ -606,13 +622,13 @@ exports.default = (bot) => {
                 if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
                     await ctx.replyWithPhoto(book.photo_file_id, {
                         caption,
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
                 else {
                     await ctx.reply(caption, {
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
@@ -633,7 +649,7 @@ exports.default = (bot) => {
                 return;
             }
             await ctx.reply(`🆕 *НОВИНКИ БІБЛІОТЕКИ*\n\n` +
-                `Останні ${books.length} додані ${books.length === 1 ? 'книга' : 'книг'}:`, { parse_mode: 'Markdown' });
+                `Останні ${books.length} додані ${books.length === 1 ? 'книга' : 'книг'}:`, { parse_mode: 'HTML' });
             for (const book of books) {
                 const caption = await (0, helpers_1.formatBookCaption)(book);
                 const userId = ctx.from?.id;
@@ -642,13 +658,13 @@ exports.default = (bot) => {
                 if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
                     await ctx.replyWithPhoto(book.photo_file_id, {
                         caption,
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
                 else {
                     await ctx.reply(caption, {
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
@@ -680,7 +696,7 @@ exports.default = (bot) => {
             }
             await ctx.reply('🏷️ *КАТАЛОГ ЗА ТЕГАМИ*\n\n' +
                 'Оберіть тег для перегляду книг:', {
-                parse_mode: 'Markdown',
+                parse_mode: 'HTML',
                 reply_markup: telegraf_1.Markup.inlineKeyboard(tagButtons).reply_markup
             });
             logger_1.logger.userAction(ctx.from.id, 'catalog_tags');
@@ -699,7 +715,7 @@ exports.default = (bot) => {
                 return;
             }
             await ctx.reply(`🔤 *КНИГИ ЗА АЛФАВІТОМ*\n\n` +
-                `Показано ${books.length} з ${total} ${total === 1 ? 'книги' : 'книг'}:`, { parse_mode: 'Markdown' });
+                `Показано ${books.length} з ${total} ${total === 1 ? 'книги' : 'книг'}:`, { parse_mode: 'HTML' });
             for (const book of books) {
                 const caption = await (0, helpers_1.formatBookCaption)(book);
                 const userId = ctx.from?.id;
@@ -708,13 +724,13 @@ exports.default = (bot) => {
                 if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
                     await ctx.replyWithPhoto(book.photo_file_id, {
                         caption,
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
                 else {
                     await ctx.reply(caption, {
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
@@ -738,7 +754,7 @@ exports.default = (bot) => {
                 return;
             }
             await ctx.reply(`🎧 *АУДІОКНИГИ*\n\n` +
-                `Знайдено ${books.length} ${books.length === 1 ? 'аудіокнига' : 'аудіокниг'}:`, { parse_mode: 'Markdown' });
+                `Знайдено ${books.length} ${books.length === 1 ? 'аудіокнига' : 'аудіокниг'}:`, { parse_mode: 'HTML' });
             for (const book of books) {
                 const caption = await (0, helpers_1.formatBookCaption)(book);
                 const userId = ctx.from?.id;
@@ -747,13 +763,13 @@ exports.default = (bot) => {
                 if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
                     await ctx.replyWithPhoto(book.photo_file_id, {
                         caption,
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
                 else {
                     await ctx.reply(caption, {
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
@@ -774,7 +790,7 @@ exports.default = (bot) => {
                 return;
             }
             await ctx.reply(`📥 *НАЙПОПУЛЯРНІШІ КНИГИ*\n\n` +
-                `Топ ${books.length} найбільш завантажуваних ${books.length === 1 ? 'книга' : 'книг'}:`, { parse_mode: 'Markdown' });
+                `Топ ${books.length} найбільш завантажуваних ${books.length === 1 ? 'книга' : 'книг'}:`, { parse_mode: 'HTML' });
             for (const book of books) {
                 const caption = await (0, helpers_1.formatBookCaption)(book);
                 const userId = ctx.from?.id;
@@ -783,13 +799,13 @@ exports.default = (bot) => {
                 if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
                     await ctx.replyWithPhoto(book.photo_file_id, {
                         caption,
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
                 else {
                     await ctx.reply(caption, {
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
@@ -822,7 +838,7 @@ exports.default = (bot) => {
                 return;
             }
             await ctx.reply(`🏷️ *Книги з тегом "${tag.name}"*\n\n` +
-                `Знайдено ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}:`, { parse_mode: 'Markdown' });
+                `Знайдено ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}:`, { parse_mode: 'HTML' });
             for (const book of books) {
                 const caption = await (0, helpers_1.formatBookCaption)(book);
                 const userId = ctx.from?.id;
@@ -831,13 +847,13 @@ exports.default = (bot) => {
                 if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
                     await ctx.replyWithPhoto(book.photo_file_id, {
                         caption,
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
                 else {
                     await ctx.reply(caption, {
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
@@ -867,11 +883,11 @@ exports.default = (bot) => {
             const books = await (0, tagFunctions_1.searchBooksByTag)(tag.name, 10);
             if (books.length === 0) {
                 await ctx.reply(`📭 *Книг з тегом "${tag.name}" не знайдено*\n\n` +
-                    'Спробуйте інший тег або використайте звичайний пошук.', { parse_mode: 'Markdown' });
+                    'Спробуйте інший тег або використайте звичайний пошук.', { parse_mode: 'HTML' });
                 return;
             }
             await ctx.reply(`🏷️ *Книги з тегом "${tag.name}"*\n\n` +
-                `Знайдено ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}:`, { parse_mode: 'Markdown' });
+                `Знайдено ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}:`, { parse_mode: 'HTML' });
             for (const book of books) {
                 const caption = await (0, helpers_1.formatBookCaption)(book);
                 const userId = ctx.from?.id;
@@ -880,13 +896,13 @@ exports.default = (bot) => {
                 if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
                     await ctx.replyWithPhoto(book.photo_file_id, {
                         caption,
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
                 else {
                     await ctx.reply(caption, {
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: keyboard
                     });
                 }
@@ -899,16 +915,6 @@ exports.default = (bot) => {
             await ctx.reply(constants_1.ERRORS.GENERIC);
         }
     });
-    bot.action('catalog_ai', async (ctx) => {
-        try {
-            await ctx.answerCbQuery('🤖 Запускаю AI-підбір...');
-            return ctx.scene.enter('AI_FILTER_SCENE');
-        }
-        catch (error) {
-            logger_1.logger.error('Error starting AI filter', error);
-            await ctx.answerCbQuery('❌ Помилка');
-        }
-    });
-    console.log('✅ User handlers registered (including AI features and promo codes)');
+    logger_1.logger.info('User handlers registered (including AI features and promo codes)');
 };
 //# sourceMappingURL=userHandlers.js.map
