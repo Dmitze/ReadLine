@@ -3,10 +3,7 @@ import {
   isAdmin, 
   getBookById, 
   getAdminStats, 
-  db, 
   getPendingReviews, 
-  publishReview, 
-  deleteReview, 
   getPendingFeedbackMessages, 
   getAllFeedbackMessages, 
   updateFeedbackStatus 
@@ -60,7 +57,7 @@ export default (bot: Telegraf<BotContext>) => {
         `${feedbackAlert}`,
         {
           parse_mode: 'Markdown',
-          reply_markup: getAdminMenuKeyboard(0, pendingReviews.length, pendingFeedback.length)
+          reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
         }
       );
     } catch (error) {
@@ -69,8 +66,6 @@ export default (bot: Telegraf<BotContext>) => {
     }
     return;
   });
-  
-  // Перегляд заявок видалено - більше не використовуємо фізичні книги
   
   // Додати книгу
   bot.action('add_book', async (ctx: BotContext) => {
@@ -553,7 +548,7 @@ export default (bot: Telegraf<BotContext>) => {
         `${feedbackAlert}`,
         {
           parse_mode: 'Markdown',
-          reply_markup: getAdminMenuKeyboard(0, pendingReviews.length, pendingFeedback.length)
+          reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
         }
       );
     } catch (error) {
@@ -595,7 +590,7 @@ export default (bot: Telegraf<BotContext>) => {
         `${feedbackAlert}`,
         {
           parse_mode: 'Markdown',
-          reply_markup: getAdminMenuKeyboard(0, pendingReviews.length, pendingFeedback.length)
+          reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
         }
       );
     } catch (error) {
