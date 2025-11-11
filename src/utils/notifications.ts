@@ -168,12 +168,13 @@ export const getPersonalizedNotification = async (userId: number): Promise<strin
     
     // Перевіряємо чи є нові книги в улюблених жанрах
     if (favoriteGenres.length > 0) {
+      const NEW_BOOKS_DAYS = 7;
       const newBooks = await new Promise<{ count: number } | undefined>((resolve, reject) => {
         db.get(`
           SELECT COUNT(*) as count
           FROM books
           WHERE genre IN (${favoriteGenres.map(() => '?').join(',')})
-          AND created_at > datetime('now', '-7 days')
+          AND created_at > datetime('now', '-${NEW_BOOKS_DAYS} days')
           AND is_available = 1
         `, favoriteGenres, (err, row: any) => {
           if (err) reject(err);
@@ -214,11 +215,13 @@ export const getPersonalizedNotification = async (userId: number): Promise<strin
     }
     
     // Загальне нагадування
+    const DAYS_INACTIVE_THRESHOLD = 7;
+    const MS_PER_DAY = 1000 * 60 * 60 * 24;
     const daysSinceLastActive = lastActive 
-      ? Math.floor((Date.now() - lastActive.getTime()) / (1000 * 60 * 60 * 24))
+      ? Math.floor((Date.now() - lastActive.getTime()) / MS_PER_DAY)
       : 0;
     
-    if (daysSinceLastActive > 7) {
+    if (daysSinceLastActive > DAYS_INACTIVE_THRESHOLD) {
       return (
         `👋 Давно не бачилися, ${firstName}!\n\n` +
         `📚 У нас є багато цікавих книг.\n` +
