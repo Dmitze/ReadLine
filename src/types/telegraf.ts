@@ -45,6 +45,7 @@ export interface WizardState {
   narrator?: string;
   selectedTags?: number[];  // Вибрані теги при додаванні книги
   savedBookId?: number;     // ID збереженої книги для додавання тегів
+  editingField?: 'title' | 'author' | 'description';  // ✅ ВИПРАВЛЕНО #15: Поле що редагується
   
   // AI Assistant (Завдання 29)
   useAI?: boolean;          // Чи використовувати AI для розпізнавання
