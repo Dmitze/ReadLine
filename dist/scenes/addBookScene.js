@@ -168,7 +168,7 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
                 state.aiSuggestedTags = suggestedTags;
                 await ctx.reply(`🏷️ *AI запропонував теги:*\n\n` +
                     suggestedTags.map(tag => `• ${tag}`).join('\n') +
-                    `\n\nВи зможете додати їх після збереження книги.`, { parse_mode: 'Markdown' });
+                    `\n\nВи зможете додати їх після збереження книги.`, { parse_mode: 'HTML' });
             }
         }
         catch (error) {
@@ -190,8 +190,14 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
     }
     else if (ctx.message && 'photo' in ctx.message && ctx.message.photo && ctx.message.photo.length > 0) {
         const photo = ctx.message.photo[ctx.message.photo.length - 1];
+        const { validatePhoto } = await Promise.resolve().then(() => __importStar(require('../utils/fileValidation')));
+        const validation = validatePhoto(photo.file_size, undefined, undefined);
+        if (!validation.isValid) {
+            await ctx.reply(`❌ ${validation.error}\n\nСпробуйте завантажити інше фото або натисніть "Пропустити".`);
+            return;
+        }
         state.photoFileId = photo.file_id;
-        await ctx.reply('✅ Фото завантажено');
+        await ctx.reply(`✅ Фото завантажено${validation.fileSizeMB ? ` (${validation.fileSizeMB} MB)` : ''}`);
     }
     else {
         await ctx.reply('❌ Будь ласка, завантажте фото або натисніть "Пропустити".');
@@ -250,10 +256,17 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
     if (state.bookType === 'type_file') {
         if (ctx.message && 'document' in ctx.message && ctx.message.document) {
             const document = ctx.message.document;
+            const { validateDocument } = await Promise.resolve().then(() => __importStar(require('../utils/fileValidation')));
+            const validation = validateDocument(document.file_size, document.mime_type, document.file_name);
+            if (!validation.isValid) {
+                await ctx.reply(`❌ ${validation.error}\n\n` +
+                    '💡 Спробуйте інший файл або натисніть /cancel для скасування');
+                return;
+            }
             state.fileUrl = document.file_id;
             state.fileName = document.file_name || 'unknown.pdf';
-            const fileSizeMB = document.file_size ? (document.file_size / (1024 * 1024)).toFixed(2) : 'невідомо';
-            await ctx.reply(`✅ Файл завантажено: ${state.fileName}\nРозмір: ${fileSizeMB} MB`);
+            await ctx.reply(`✅ Файл завантажено: ${state.fileName}\n` +
+                `📦 Розмір: ${validation.fileSizeMB} MB`);
         }
         else {
             await ctx.reply('❌ Будь ласка, надішліть файл документа.\n\n' +
@@ -264,14 +277,27 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
     else if (state.bookType === 'type_audio') {
         if (ctx.message && 'audio' in ctx.message && ctx.message.audio) {
             const audio = ctx.message.audio;
+            const { validateAudio } = await Promise.resolve().then(() => __importStar(require('../utils/fileValidation')));
+            const validation = validateAudio(audio.file_size, audio.mime_type, audio.file_name);
+            if (!validation.isValid) {
+                await ctx.reply(`❌ ${validation.error}\n\n` +
+                    '💡 Спробуйте інший файл або натисніть /cancel для скасування');
+                return;
+            }
             state.fileUrl = audio.file_id;
             state.fileName = audio.file_name || 'audiobook.mp3';
-            const fileSizeMB = audio.file_size ? (audio.file_size / (1024 * 1024)).toFixed(2) : 'невідомо';
             const duration = audio.duration ? `${Math.floor(audio.duration / 60)}хв` : '';
-            await ctx.reply(`✅ Аудіофайл завантажено: ${state.fileName}\nРозмір: ${fileSizeMB} MB ${duration}`);
+            await ctx.reply(`✅ Аудіофайл завантажено: ${state.fileName}\n` +
+                `📦 Розмір: ${validation.fileSizeMB} MB ${duration}`);
         }
         else if (ctx.message && 'voice' in ctx.message && ctx.message.voice) {
             const voice = ctx.message.voice;
+            const { validateAudio } = await Promise.resolve().then(() => __importStar(require('../utils/fileValidation')));
+            const validation = validateAudio(voice.file_size, voice.mime_type, 'voice.ogg');
+            if (!validation.isValid) {
+                await ctx.reply(`❌ ${validation.error}`);
+                return;
+            }
             state.fileUrl = voice.file_id;
             state.fileName = 'voice_message.ogg';
             const duration = voice.duration ? `${Math.floor(voice.duration / 60)}хв` : '';
@@ -300,6 +326,45 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
             return;
         }
     }
+    const allTags = await (0, tagFunctions_1.getAllTags)();
+    if (allTags.length > 0) {
+        const tagButtons = [];
+        for (let i = 0; i < allTags.length; i += 2) {
+            const row = [
+                telegraf_1.Markup.button.callback(allTags[i].name, `preview_tag_${allTags[i].id}`)
+            ];
+            if (i + 1 < allTags.length) {
+                row.push(telegraf_1.Markup.button.callback(allTags[i + 1].name, `preview_tag_${allTags[i + 1].id}`));
+            }
+            tagButtons.push(row);
+        }
+        tagButtons.push([
+            telegraf_1.Markup.button.callback('✅ Далі (без тегів)', 'preview_skip_tags'),
+            telegraf_1.Markup.button.callback('❌ Скасувати', 'cancel_add')
+        ]);
+        state.selectedTags = [];
+        await ctx.reply('🏷️ *Додайте теги до книги (опціонально):*\n\n' +
+            'Оберіть один або кілька тегів, які підходять до цієї книги.\n' +
+            'Натисніть "Далі" коли закінчите або щоб пропустити цей крок.', {
+            parse_mode: 'HTML',
+            reply_markup: telegraf_1.Markup.inlineKeyboard(tagButtons).reply_markup
+        });
+        return ctx.wizard.next();
+    }
+    else {
+        state.selectedTags = [];
+        return ctx.wizard.next();
+    }
+}, async (ctx) => {
+    const state = ctx.wizard?.state;
+    if (ctx.callbackQuery && 'data' in ctx.callbackQuery && ctx.callbackQuery.data === 'cancel_add') {
+        await ctx.answerCbQuery('❌ Скасовано');
+        await ctx.reply('❌ Додавання книги скасовано');
+        return ctx.scene?.leave();
+    }
+    if (ctx.callbackQuery && 'data' in ctx.callbackQuery && ctx.callbackQuery.data === 'preview_skip_tags') {
+        await ctx.answerCbQuery('✅ Переходимо до підтвердження');
+    }
     const bookData = {
         title: state.title,
         author: state.author,
@@ -307,11 +372,20 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
         description: state.description,
         photo_file_id: state.photoFileId || 'default_book_cover'
     };
+    let tagsText = '';
+    if (state.selectedTags && state.selectedTags.length > 0) {
+        const allTags = await (0, tagFunctions_1.getAllTags)();
+        const selectedTagNames = state.selectedTags
+            .map(tagId => allTags.find(t => t.id === tagId)?.name)
+            .filter(Boolean)
+            .join(', ');
+        tagsText = `\n🏷️ Теги: ${selectedTagNames}`;
+    }
     const previewText = `
 📖 *${bookData.title}*
 👤 ${bookData.author}
 📚 ${bookData.genre}
-📝 ${bookData.description}
+📝 ${bookData.description}${tagsText}
 
 ${state.bookType === 'type_file' ? '📄 Доступна для завантаження' :
         state.bookType === 'type_link' ? '🔗 Доступна за посиланням' :
@@ -320,7 +394,7 @@ ${state.bookType === 'type_file' ? '📄 Доступна для заванта�
     if (bookData.photo_file_id && bookData.photo_file_id !== 'default_book_cover') {
         await ctx.replyWithPhoto(bookData.photo_file_id, {
             caption: previewText + '\n\n💡 Перевірте всі дані перед публікацією',
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: {
                 inline_keyboard: [
                     [{ text: '✅ Підтвердити і опублікувати', callback_data: 'confirm_book' }],
@@ -331,7 +405,7 @@ ${state.bookType === 'type_file' ? '📄 Доступна для заванта�
     }
     else {
         await ctx.reply(previewText + '\n\n💡 Перевірте всі дані перед публікацією', {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: {
                 inline_keyboard: [
                     [{ text: '✅ Підтвердити і опублікувати', callback_data: 'confirm_book' }],
@@ -366,7 +440,7 @@ ${state.bookType === 'type_file' ? '📄 Доступна для заванта�
             if (ctx.callbackQuery) {
                 await ctx.answerCbQuery('❌ Помилка валідації');
             }
-            await ctx.reply('❌ *Помилка валідації:*\n\n' + validation.errors.join('\n') + '\n\nСпробуйте додати книгу ще раз.', { parse_mode: 'Markdown' });
+            await ctx.reply('❌ *Помилка валідації:*\n\n' + validation.errors.join('\n') + '\n\nСпробуйте додати книгу ще раз.', { parse_mode: 'HTML' });
             return ctx.scene?.leave();
         }
         try {
@@ -374,43 +448,32 @@ ${state.bookType === 'type_file' ? '📄 Доступна для заванта�
             if (ctx.callbackQuery) {
                 await ctx.answerCbQuery('✅ Книга додається...');
             }
+            if (state.selectedTags && state.selectedTags.length > 0) {
+                for (const tagId of state.selectedTags) {
+                    try {
+                        await (0, tagFunctions_1.addBookTag)(bookId, tagId);
+                    }
+                    catch (error) {
+                        logger_1.logger.error('Error adding tag to book', error instanceof Error ? error : new Error(String(error)));
+                    }
+                }
+            }
             await ctx.reply('✅ Книга успішно додана до бібліотеки!');
             const finalCaption = await (0, helpers_1.formatBookCaption)({ ...bookData, id: bookId, is_available: true });
             if (bookData.photo_file_id && bookData.photo_file_id !== 'default_book_cover') {
                 await ctx.replyWithPhoto(bookData.photo_file_id, {
                     caption: finalCaption,
-                    parse_mode: 'Markdown'
+                    parse_mode: 'HTML'
                 });
             }
             else {
-                await ctx.reply(finalCaption, { parse_mode: 'Markdown' });
+                await ctx.reply(finalCaption, { parse_mode: 'HTML' });
             }
-            const allTags = await (0, tagFunctions_1.getAllTags)();
-            if (allTags.length > 0) {
-                state.savedBookId = bookId;
-                const tagButtons = [];
-                for (let i = 0; i < allTags.length; i += 2) {
-                    const row = [
-                        telegraf_1.Markup.button.callback(allTags[i].name, `tag_${allTags[i].id}`)
-                    ];
-                    if (i + 1 < allTags.length) {
-                        row.push(telegraf_1.Markup.button.callback(allTags[i + 1].name, `tag_${allTags[i + 1].id}`));
-                    }
-                    tagButtons.push(row);
-                }
-                tagButtons.push([
-                    telegraf_1.Markup.button.callback('✅ Готово', 'tags_done'),
-                    telegraf_1.Markup.button.callback('⏭️ Пропустити', 'tags_skip')
-                ]);
-                await ctx.reply('🏷️ *Додайте теги до книги:*\n\n' +
-                    'Оберіть один або кілька тегів, які підходять до цієї книги.\n' +
-                    'Натисніть "Готово" коли закінчите.', {
-                    parse_mode: 'Markdown',
-                    reply_markup: telegraf_1.Markup.inlineKeyboard(tagButtons).reply_markup
-                });
-                state.selectedTags = [];
-                return;
-            }
+            await ctx.reply('✅ Книга успішно опублікована!', {
+                reply_markup: telegraf_1.Markup.inlineKeyboard([
+                    [telegraf_1.Markup.button.callback('🏠 Назад до адмін-панелі', 'back_to_admin')]
+                ]).reply_markup
+            });
         }
         catch (error) {
             logger_1.logger.error('Error saving book', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
@@ -425,7 +488,7 @@ ${state.bookType === 'type_file' ? '📄 Доступна для заванта�
     }
     return ctx.scene?.leave();
 });
-addBookScene.action(/tag_(\d+)/, async (ctx) => {
+addBookScene.action(/preview_tag_(\d+)/, async (ctx) => {
     const state = ctx.wizard?.state;
     const tagId = parseInt(ctx.match[1]);
     if (!state.selectedTags) {
@@ -441,25 +504,50 @@ addBookScene.action(/tag_(\d+)/, async (ctx) => {
         await ctx.answerCbQuery('✅ Тег додано');
     }
 });
-addBookScene.action(['tags_done', 'tags_skip'], async (ctx) => {
+addBookScene.leave((ctx) => {
     const state = ctx.wizard?.state;
-    if (ctx.callbackQuery && 'data' in ctx.callbackQuery && ctx.callbackQuery.data === 'tags_done' && state.selectedTags && state.selectedTags.length > 0) {
-        for (const tagId of state.selectedTags) {
-            try {
-                await (0, tagFunctions_1.addBookTag)(state.savedBookId, tagId);
-            }
-            catch (error) {
-                logger_1.logger.error('Error adding tag to book', error instanceof Error ? error : new Error(String(error)));
-            }
-        }
-        await ctx.answerCbQuery('✅ Теги додано!');
-        await ctx.editMessageText(`✅ Додано ${state.selectedTags.length} ${state.selectedTags.length === 1 ? 'тег' : 'тегів'} до книги!`);
+    if (state) {
+        delete state.title;
+        delete state.author;
+        delete state.genre;
+        delete state.description;
+        delete state.photoFileId;
+        delete state.bookType;
+        delete state.fileUrl;
+        delete state.fileName;
+        delete state.selectedFormats;
+        delete state.selectedTags;
+        delete state.savedBookId;
+        delete state.aiSuggestedTags;
     }
-    else {
-        await ctx.answerCbQuery('⏭️ Пропущено');
-        await ctx.editMessageText('⏭️ Додавання тегів пропущено');
+    logger_1.logger.debug('AddBookScene cleanup completed', { userId: ctx.from?.id });
+});
+addBookScene.action('back_to_admin', async (ctx) => {
+    await ctx.answerCbQuery();
+    const { isAdmin, getAdminStats, getPendingReviews, getPendingFeedbackMessages } = await Promise.resolve().then(() => __importStar(require('../database/models')));
+    const { getAdminMenuKeyboard } = await Promise.resolve().then(() => __importStar(require('../keyboards/adminKeyboards')));
+    const adminCheck = await isAdmin(ctx.from.id);
+    if (!adminCheck) {
+        await ctx.reply('❌ У вас немає доступу до адмін-панелі.');
+        return;
     }
-    return ctx.scene?.leave();
+    const stats = await getAdminStats();
+    const pendingReviews = await getPendingReviews();
+    const pendingFeedback = await getPendingFeedbackMessages();
+    const reviewsAlert = pendingReviews.length > 0
+        ? `📝 Відгуків на модерацію: *${pendingReviews.length}* 🔔`
+        : '✅ Всі відгуки оброблені';
+    const feedbackAlert = pendingFeedback.length > 0
+        ? `📞 Нових повідомлень: *${pendingFeedback.length}* 🔔`
+        : '✅ Всі повідомлення прочитані';
+    await ctx.editMessageText(`🛠️ *Панель адміністратора*\n\n` +
+        `📊 *Статистика:*\n` +
+        `📚 Книг в каталозі: ${stats.totalBooks}\n` +
+        `${reviewsAlert}\n` +
+        `${feedbackAlert}`, {
+        parse_mode: 'HTML',
+        reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
+    });
 });
 exports.default = addBookScene;
 //# sourceMappingURL=addBookScene.js.map
