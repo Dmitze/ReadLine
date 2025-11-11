@@ -11,6 +11,8 @@ interface CacheItem<T> {
 
 class CacheService {
   private cache: Map<string, CacheItem<any>> = new Map();
+  // ✅ ВИПРАВЛЕНО #10: додано pending promises для уникнення race condition
+  private pending: Map<string, Promise<any>> = new Map();
   private defaultTTL = 5 * 60 * 1000; // 5 хвилин за замовчуванням
 
   /**
@@ -71,12 +73,18 @@ class CacheService {
   cleanup(): void {
     const now = Date.now();
     let removed = 0;
+    // ✅ ВИПРАВЛЕНО #34: збираємо keys перед видаленням
+    const keysToRemove: string[] = [];
 
     for (const [key, item] of this.cache.entries()) {
       if (now > item.expiresAt) {
-        this.cache.delete(key);
-        removed++;
+        keysToRemove.push(key);
       }
+    }
+
+    for (const key of keysToRemove) {
+      this.cache.delete(key);
+      removed++;
     }
 
     logger.debug('Cache cleanup', { removed });
@@ -84,6 +92,7 @@ class CacheService {
 
   /**
    * Отримати або встановити значення
+   * ✅ ВИПРАВЛЕНО #10: race condition - два паралельні запити не виконають fetcher двічі
    */
   async getOrSet<T>(
     key: string,
@@ -96,11 +105,28 @@ class CacheService {
       return cached;
     }
 
-    logger.debug('Cache fetch', { key });
-    const data = await fetcher();
-    this.set(key, data, ttl);
+    // Перевіряємо чи вже виконується запит
+    const pendingPromise = this.pending.get(key);
+    if (pendingPromise) {
+      logger.debug('Cache pending hit', { key });
+      return pendingPromise;
+    }
 
-    return data;
+    // Створюємо новий запит
+    logger.debug('Cache fetch', { key });
+    const promise = fetcher()
+      .then((data) => {
+        this.set(key, data, ttl);
+        this.pending.delete(key);
+        return data;
+      })
+      .catch((error) => {
+        this.pending.delete(key);
+        throw error;
+      });
+
+    this.pending.set(key, promise);
+    return promise;
   }
 
   /**
