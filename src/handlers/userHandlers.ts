@@ -1,4 +1,4 @@
-﻿import { Telegraf, Markup } from 'telegraf';
+import { Telegraf, Markup } from 'telegraf';
 import { 
   getGenres, 
   getBooksByGenre, 
@@ -52,11 +52,11 @@ let handlersRegistered = false;
 export default (bot: Telegraf<BotContext>) => {
   // Запобігаємо повторній реєстрації handlers
   if (handlersRegistered) {
-    console.log('⚠️ User handlers already registered, skipping...');
+    logger.warn('User handlers already registered, skipping');
     return;
   }
   handlersRegistered = true;
-  console.log('✅ User handlers registering...');
+  logger.info('User handlers registering');
   
   // ==================== ПРОМОКОДИ (ПРІОРИТЕТ) ====================
   bot.hears('🎁 Отримати промокод', async (ctx: BotContext) => {
@@ -87,7 +87,7 @@ export default (bot: Telegraf<BotContext>) => {
           'Кожен користувач може отримати промокод лише один раз.\n\n' +
           '💡 Використайте отриманий промокод при замовленні на сайті Yakaboo.ua\n\n' +
           '🌐 https://www.yakaboo.ua',
-          { parse_mode: 'Markdown' }
+          { parse_mode: 'HTML' }
         );
         return;
       }
@@ -102,7 +102,7 @@ export default (bot: Telegraf<BotContext>) => {
           '😔 *Наразі промокодів немає в наявності*\n\n' +
           '🔄 Будь ласка, спробуйте пізніше.\n\n' +
           '📚 А поки що можете ознайомитися з нашим каталогом книг!',
-          { parse_mode: 'Markdown' }
+          { parse_mode: 'HTML' }
         );
         return;
       }
@@ -129,7 +129,7 @@ export default (bot: Telegraf<BotContext>) => {
         `💾 *Збережіть цей код!* Використовуйте його при замовленні на сайті Yakaboo.ua\n\n` +
         `🌐 *Посилання:* https://www.yakaboo.ua`,
         {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           reply_markup: {
             inline_keyboard: [
               [{ text: '🌐 Перейти на Yakaboo.ua', url: 'https://www.yakaboo.ua' }],
@@ -154,7 +154,7 @@ export default (bot: Telegraf<BotContext>) => {
         '📚 *КАТАЛОГ КНИГ*\n\n' +
         'Оберіть спосіб перегляду:',
         {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           reply_markup: Markup.inlineKeyboard([
             [
               Markup.button.callback('📖 За жанрами', 'catalog_genres'),
@@ -170,9 +170,6 @@ export default (bot: Telegraf<BotContext>) => {
             ],
             [
               Markup.button.callback('🏷️ За тегами', 'catalog_tags')
-            ],
-            [
-              Markup.button.callback('🤖 AI-підбір', 'catalog_ai')
             ]
           ]).reply_markup
         }
@@ -291,7 +288,7 @@ export default (bot: Telegraf<BotContext>) => {
       '/admin - Панель адміністратора\n\n' +
       
       '💡 Використовуйте кнопки для навігації!',
-      { parse_mode: 'Markdown' }
+      { parse_mode: 'HTML' }
     );
   });
   
@@ -341,20 +338,20 @@ export default (bot: Telegraf<BotContext>) => {
             try {
               await ctx.replyWithPhoto(book.photo_file_id, {
                 caption,
-                parse_mode: 'Markdown',
+                parse_mode: 'HTML',
                 reply_markup: getEnhancedBookKeyboard(book, false)
               });
             } catch (error) {
               // Якщо помилка з фото - відправляємо текстом
               await ctx.reply(caption, {
-                parse_mode: 'Markdown',
+                parse_mode: 'HTML',
                 reply_markup: getEnhancedBookKeyboard(book, false)
               });
             }
           } else {
             // Якщо немає фото - відправляємо текстом
             await ctx.reply(caption, {
-              parse_mode: 'Markdown',
+              parse_mode: 'HTML',
               reply_markup: getEnhancedBookKeyboard(book, false)
             });
           }
@@ -463,18 +460,18 @@ export default (bot: Telegraf<BotContext>) => {
         try {
           await ctx.replyWithPhoto(book.photo_file_id, {
             caption,
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         } catch (photoError) {
           await ctx.reply(caption, {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         }
       } else {
         await ctx.reply(caption, {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           reply_markup: keyboard
         });
       }
@@ -515,18 +512,18 @@ export default (bot: Telegraf<BotContext>) => {
         try {
           await ctx.replyWithPhoto(book.photo_file_id, {
             caption,
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         } catch (photoError) {
           await ctx.reply(caption, {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         }
       } else {
         await ctx.reply(caption, {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           reply_markup: keyboard
         });
       }
@@ -580,7 +577,7 @@ export default (bot: Telegraf<BotContext>) => {
     return;
   });
   
-  // Обробка кнопки "Завантажити Аудіо" - відкриває audio player
+  // Обробка кнопки "Прослухати Аудіокнигу" - відправляє аудіофайл
   bot.action(/download_audio_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -598,17 +595,43 @@ export default (bot: Telegraf<BotContext>) => {
         return;
       }
       
-      if ((book as any).audio_file_id) {
-        // Відкриваємо audio player scene
-        await ctx.answerCbQuery('🎧 Завантаження аудіоплеєра...');
-        (ctx.scene as any).state = { bookId };
-        await ctx.scene?.enter('AUDIO_PLAYER_SCENE');
+      // Перевіряємо чи є аудіо (file_type === 'audio' або audio_file_id)
+      const audioFileId = (book as any).audio_file_id || (book.file_type === 'audio' ? book.file_url : null);
+      
+      if (audioFileId) {
+        await ctx.answerCbQuery('🎧 Відправляю аудіокнигу...');
+        
+        // Формуємо опис аудіокниги
+        let caption = `🎧 <b>${book.title}</b>\n`;
+        caption += `👤 ${book.author}\n`;
+        
+        if ((book as any).narrator) {
+          caption += `🎙️ Читає: ${(book as any).narrator}\n`;
+        }
+        
+        if ((book as any).audio_duration) {
+          const hours = Math.floor((book as any).audio_duration / 3600);
+          const minutes = Math.floor(((book as any).audio_duration % 3600) / 60);
+          if (hours > 0) {
+            caption += `⏱️ Тривалість: ${hours}г ${minutes}хв\n`;
+          } else {
+            caption += `⏱️ Тривалість: ${minutes}хв\n`;
+          }
+        }
+        
+        // Відправляємо аудіофайл
+        await ctx.replyWithAudio(audioFileId, {
+          caption,
+          parse_mode: 'HTML'
+        });
+        
+        logger.userAction(ctx.from!.id, 'listen_audiobook', { bookId, title: book.title });
       } else {
         await ctx.answerCbQuery('❌ Аудіокнига недоступна');
       }
     } catch (error) {
-      logger.error('Error opening audio player', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка при завантаженні');
+      logger.error('Error sending audio', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка при відправці аудіо');
     }
     return;
   });
@@ -651,7 +674,7 @@ export default (bot: Telegraf<BotContext>) => {
         reviewsText += `\n...та ще ${reviews.length - 5} відгуків`;
       }
       
-      await ctx.reply(reviewsText, { parse_mode: 'Markdown' });
+      await ctx.reply(reviewsText, { parse_mode: 'HTML' });
       await ctx.answerCbQuery();
     } catch (error) {
       logger.error('Error showing reviews', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
@@ -687,7 +710,7 @@ export default (bot: Telegraf<BotContext>) => {
       await ctx.reply(
         `🔍 *Схожі книги* (жанр: ${book.genre}):\n\n` +
         filtered.map((b, i) => `${i + 1}. 📖 ${b.title}\n   👤 ${b.author}`).join('\n\n'),
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
       
       await ctx.answerCbQuery();
@@ -766,7 +789,7 @@ export default (bot: Telegraf<BotContext>) => {
       await ctx.reply(
         `⭐ *КНИГИ З ВИСОКИМ РЕЙТИНГОМ*\n\n` +
         `Знайдено ${books.length} ${books.length === 1 ? 'книга' : 'книг'} з рейтингом 4+ зірки:`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
       
       for (const book of books) {
@@ -778,12 +801,12 @@ export default (bot: Telegraf<BotContext>) => {
         if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
           await ctx.replyWithPhoto(book.photo_file_id, {
             caption,
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         } else {
           await ctx.reply(caption, {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         }
@@ -814,7 +837,7 @@ export default (bot: Telegraf<BotContext>) => {
       await ctx.reply(
         `🆕 *НОВИНКИ БІБЛІОТЕКИ*\n\n` +
         `Останні ${books.length} додані ${books.length === 1 ? 'книга' : 'книг'}:`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
       
       for (const book of books) {
@@ -826,12 +849,12 @@ export default (bot: Telegraf<BotContext>) => {
         if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
           await ctx.replyWithPhoto(book.photo_file_id, {
             caption,
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         } else {
           await ctx.reply(caption, {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         }
@@ -870,7 +893,7 @@ export default (bot: Telegraf<BotContext>) => {
         '🏷️ *КАТАЛОГ ЗА ТЕГАМИ*\n\n' +
         'Оберіть тег для перегляду книг:',
         {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           reply_markup: Markup.inlineKeyboard(tagButtons).reply_markup
         }
       );
@@ -896,7 +919,7 @@ export default (bot: Telegraf<BotContext>) => {
       await ctx.reply(
         `🔤 *КНИГИ ЗА АЛФАВІТОМ*\n\n` +
         `Показано ${books.length} з ${total} ${total === 1 ? 'книги' : 'книг'}:`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
       
       for (const book of books) {
@@ -908,12 +931,12 @@ export default (bot: Telegraf<BotContext>) => {
         if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
           await ctx.replyWithPhoto(book.photo_file_id, {
             caption,
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         } else {
           await ctx.reply(caption, {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         }
@@ -944,7 +967,7 @@ export default (bot: Telegraf<BotContext>) => {
       await ctx.reply(
         `🎧 *АУДІОКНИГИ*\n\n` +
         `Знайдено ${books.length} ${books.length === 1 ? 'аудіокнига' : 'аудіокниг'}:`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
       
       for (const book of books) {
@@ -956,12 +979,12 @@ export default (bot: Telegraf<BotContext>) => {
         if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
           await ctx.replyWithPhoto(book.photo_file_id, {
             caption,
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         } else {
           await ctx.reply(caption, {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         }
@@ -988,7 +1011,7 @@ export default (bot: Telegraf<BotContext>) => {
       await ctx.reply(
         `📥 *НАЙПОПУЛЯРНІШІ КНИГИ*\n\n` +
         `Топ ${books.length} найбільш завантажуваних ${books.length === 1 ? 'книга' : 'книг'}:`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
       
       for (const book of books) {
@@ -1000,12 +1023,12 @@ export default (bot: Telegraf<BotContext>) => {
         if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
           await ctx.replyWithPhoto(book.photo_file_id, {
             caption,
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         } else {
           await ctx.reply(caption, {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         }
@@ -1049,7 +1072,7 @@ export default (bot: Telegraf<BotContext>) => {
       await ctx.reply(
         `🏷️ *Книги з тегом "${tag.name}"*\n\n` +
         `Знайдено ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}:`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
       
       for (const book of books) {
@@ -1061,12 +1084,12 @@ export default (bot: Telegraf<BotContext>) => {
         if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
           await ctx.replyWithPhoto(book.photo_file_id, {
             caption,
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         } else {
           await ctx.reply(caption, {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         }
@@ -1106,7 +1129,7 @@ export default (bot: Telegraf<BotContext>) => {
         await ctx.reply(
           `📭 *Книг з тегом "${tag.name}" не знайдено*\n\n` +
           'Спробуйте інший тег або використайте звичайний пошук.',
-          { parse_mode: 'Markdown' }
+          { parse_mode: 'HTML' }
         );
         return;
       }
@@ -1114,7 +1137,7 @@ export default (bot: Telegraf<BotContext>) => {
       await ctx.reply(
         `🏷️ *Книги з тегом "${tag.name}"*\n\n` +
         `Знайдено ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}:`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
       
       // Показуємо книги
@@ -1127,12 +1150,12 @@ export default (bot: Telegraf<BotContext>) => {
         if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
           await ctx.replyWithPhoto(book.photo_file_id, {
             caption,
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         } else {
           await ctx.reply(caption, {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         }
@@ -1146,17 +1169,5 @@ export default (bot: Telegraf<BotContext>) => {
     }
   });
 
-  // AI-підбір в каталозі (Завдання 32)
-  bot.action('catalog_ai', async (ctx: BotContext) => {
-    try {
-      await ctx.answerCbQuery('🤖 Запускаю AI-підбір...');
-      return ctx.scene.enter('AI_FILTER_SCENE');
-    } catch (error) {
-      logger.error('Error starting AI filter', error);
-      await ctx.answerCbQuery('❌ Помилка');
-    }
-  });
-
-
-  console.log('✅ User handlers registered (including AI features and promo codes)');
+  logger.info('User handlers registered (including AI features and promo codes)');
 };
