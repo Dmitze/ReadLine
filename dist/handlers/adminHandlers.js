@@ -38,9 +38,9 @@ const models_1 = require("../database/models");
 const adminKeyboards_1 = require("../keyboards/adminKeyboards");
 const logger_1 = require("../utils/logger");
 exports.default = (bot) => {
-    console.log('✅ Admin handlers registered');
+    logger_1.logger.info('Admin handlers registered');
     bot.command('admin', async (ctx) => {
-        console.log('📝 /admin command received from user:', ctx.from?.id);
+        logger_1.logger.info('/admin command received', { userId: ctx.from?.id });
         try {
             if (!ctx.from?.id) {
                 await ctx.reply('❌ Не вдалося ідентифікувати користувача.');
@@ -66,7 +66,7 @@ exports.default = (bot) => {
                 `${reviewsAlert}\n` +
                 `${feedbackAlert}`, {
                 parse_mode: 'Markdown',
-                reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(0, pendingReviews.length, pendingFeedback.length)
+                reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(pendingReviews.length, pendingFeedback.length)
             });
         }
         catch (error) {
@@ -278,7 +278,7 @@ exports.default = (bot) => {
                 return;
             }
             const messages = await (0, models_1.getAllFeedbackMessages)();
-            console.log(`📞 Feedback messages loaded: ${messages.length}`);
+            logger_1.logger.info('Feedback messages loaded', { count: messages.length });
             if (messages.length === 0) {
                 await ctx.reply('✅ *Немає повідомлень*\n\n' +
                     'Всі повідомлення зворотного зв\'язку оброблені.\n\n' +
@@ -417,7 +417,7 @@ exports.default = (bot) => {
                     await ctx.editMessageText(safeText, { parse_mode: 'Markdown' });
                 }
                 catch (editError) {
-                    console.log('Could not edit message, sending new one');
+                    logger_1.logger.debug('Could not edit message, sending new one');
                 }
             }
             await ctx.answerCbQuery('✅ Позначено прочитаним!');
@@ -451,7 +451,7 @@ exports.default = (bot) => {
                 `${reviewsAlert}\n` +
                 `${feedbackAlert}`, {
                 parse_mode: 'Markdown',
-                reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(0, pendingReviews.length, pendingFeedback.length)
+                reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(pendingReviews.length, pendingFeedback.length)
             });
         }
         catch (error) {
@@ -484,7 +484,7 @@ exports.default = (bot) => {
                 `${reviewsAlert}\n` +
                 `${feedbackAlert}`, {
                 parse_mode: 'Markdown',
-                reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(0, pendingReviews.length, pendingFeedback.length)
+                reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(pendingReviews.length, pendingFeedback.length)
             });
         }
         catch (error) {
