@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const telegraf_1 = require("telegraf");
 const models_1 = require("../database/models");
@@ -10,7 +43,14 @@ const bookDisplay_1 = require("../utils/bookDisplay");
 const logger_1 = require("../utils/logger");
 const constants_1 = require("../constants");
 const cache_1 = require("../utils/cache");
+const userValidation_1 = require("../utils/userValidation");
+let handlersRegistered = false;
 exports.default = (bot) => {
+    if (handlersRegistered) {
+        console.log('⚠️ User handlers already registered, skipping...');
+        return;
+    }
+    handlersRegistered = true;
     console.log('✅ User handlers registering...');
     bot.hears([constants_1.BUTTONS.CATALOG_OLD, constants_1.BUTTONS.CATALOG], async (ctx) => {
         try {
@@ -78,11 +118,9 @@ exports.default = (bot) => {
     });
     bot.hears(constants_1.BUTTONS.MY_LIBRARY, async (ctx) => {
         try {
-            const userId = ctx.from?.id;
-            if (!userId) {
-                await ctx.reply(constants_1.ERRORS.GENERIC);
+            if (!(await (0, userValidation_1.checkUserIdOrReply)(ctx)))
                 return;
-            }
+            const userId = (0, userValidation_1.validateUserId)(ctx);
             const savedBooks = await (0, models_1.getSavedBooks)(userId);
             await (0, bookDisplay_1.displaySavedBooks)(ctx, savedBooks);
             logger_1.logger.userAction(userId, 'view_library');
@@ -131,7 +169,7 @@ exports.default = (bot) => {
         if (messageText.startsWith('/'))
             return;
         try {
-            const genres = await (0, models_1.getGenres)();
+            const genres = await cache_1.cache.getOrSet(cache_1.CACHE_KEYS.GENRES, models_1.getGenres, cache_1.CACHE_TTL.LONG);
             if (genres.includes(messageText)) {
                 const BOOKS_PER_PAGE = 5;
                 const { books, total } = await (0, models_1.getBooksByGenreWithPagination)(messageText, BOOKS_PER_PAGE, 0);
@@ -821,6 +859,56 @@ exports.default = (bot) => {
             await ctx.answerCbQuery('❌ Помилка');
         }
     });
-    console.log('✅ User handlers registered (including AI features)');
+    bot.hears('🎁 Отримати промокод', async (ctx) => {
+        try {
+            const userId = ctx.from?.id;
+            if (!userId) {
+                await ctx.reply('❌ Не вдалося ідентифікувати користувача');
+                return;
+            }
+            const { hasUserReceivedPromoCode, getAvailablePromoCodesCount, getAvailablePromoCode, markPromoCodeAsUsed } = await Promise.resolve().then(() => __importStar(require('../database/promoCodeFunctions')));
+            const hasReceived = await hasUserReceivedPromoCode(userId);
+            if (hasReceived) {
+                await ctx.reply('❌ *Ви вже отримували промокод*\n\n' +
+                    'Кожен користувач може отримати промокод лише один раз.\n\n' +
+                    '💡 Використайте отриманий промокод при замовленні на сайті Yakaboo.ua\n\n' +
+                    '🌐 https://www.yakaboo.ua', { parse_mode: 'Markdown' });
+                return;
+            }
+            const availableCount = await getAvailablePromoCodesCount();
+            if (availableCount === 0) {
+                await ctx.reply('😔 *Наразі промокодів немає в наявності*\n\n' +
+                    '🔄 Будь ласка, спробуйте пізніше.\n\n' +
+                    '📚 А поки що можете ознайомитися з нашим каталогом книг!', { parse_mode: 'Markdown' });
+                return;
+            }
+            const promoCode = await getAvailablePromoCode(userId);
+            if (!promoCode) {
+                await ctx.reply('❌ Сталася помилка при отриманні промокоду. Спробуйте пізніше.');
+                return;
+            }
+            await markPromoCodeAsUsed(userId, promoCode.id);
+            await ctx.reply(`🎉 *ВІТАЄМО! ВАШ ПРОМОКОД:*\n\n` +
+                `🎫 \`${promoCode.code}\`\n\n` +
+                `📖 *Опис:* ${promoCode.description}\n\n` +
+                `💰 *Знижка:* ${promoCode.discount_value}${promoCode.discount_type === 'percentage' ? '%' : ' грн'}\n\n` +
+                `💾 *Збережіть цей код!* Використовуйте його при замовленні на сайті Yakaboo.ua\n\n` +
+                `🌐 *Посилання:* https://www.yakaboo.ua`, {
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: '🌐 Перейти на Yakaboo.ua', url: 'https://www.yakaboo.ua' }],
+                        [{ text: '🏠 На головну', callback_data: 'home' }]
+                    ]
+                }
+            });
+            logger_1.logger.userAction(userId, 'received_promo_code', { code: promoCode.code, promoId: promoCode.id });
+        }
+        catch (error) {
+            logger_1.logger.error('Error getting promo code', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+            await ctx.reply('❌ Виникла помилка. Спробуйте ще раз.');
+        }
+    });
+    console.log('✅ User handlers registered (including AI features and promo codes)');
 };
 //# sourceMappingURL=userHandlers.js.map
