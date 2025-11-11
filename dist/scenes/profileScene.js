@@ -61,14 +61,36 @@ profileScene.enter(async (ctx) => {
         const hours = Math.floor(stats.totalListeningTime / 3600);
         const minutes = Math.floor((stats.totalListeningTime % 3600) / 60);
         profileText += `🎧 Прослухано: ${hours}г ${minutes}хв\n`;
-        if (stats.favoriteGenres.length > 0) {
+        const { getSavedBooks } = await Promise.resolve().then(() => __importStar(require('../database/models')));
+        const { getBookTags } = await Promise.resolve().then(() => __importStar(require('../database/tagFunctions')));
+        const savedBooks = await getSavedBooks(userId);
+        const genresFromBooks = new Set();
+        savedBooks.forEach(book => {
+            if (book.genre) {
+                genresFromBooks.add(book.genre);
+            }
+        });
+        const allGenres = [...new Set([...stats.favoriteGenres, ...Array.from(genresFromBooks)])];
+        if (allGenres.length > 0) {
             profileText += `\n<b>📚 Улюблені жанри:</b>\n`;
-            stats.favoriteGenres.forEach((genre, i) => {
+            allGenres.slice(0, 5).forEach((genre, i) => {
                 profileText += `${i + 1}. ${genre}\n`;
             });
         }
         else {
             profileText += `\n<i>📚 Улюблені жанри ще не встановлені</i>\n`;
+        }
+        if (savedBooks.length > 0) {
+            const allUserTags = new Set();
+            for (const book of savedBooks) {
+                const bookTags = await getBookTags(book.id);
+                bookTags.forEach(tag => allUserTags.add(tag.name));
+            }
+            if (allUserTags.size > 0) {
+                profileText += `\n<b>🏷️ Ваші інтереси (теги):</b>\n`;
+                const tagsArray = Array.from(allUserTags).slice(0, 10);
+                profileText += tagsArray.map(tag => `#${tag}`).join(' ') + '\n';
+            }
         }
         profileText += '\n<i>💡 Продовжуйте читати та залишати відгуки!</i>';
         const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
