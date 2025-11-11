@@ -33,22 +33,33 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.escapeHtml = exports.formatRequestInfo = exports.formatBookCaption = void 0;
+exports.escapeHtml = exports.formatBookCaption = void 0;
 exports.showLoadingAnimation = showLoadingAnimation;
 exports.updateLoadingMessage = updateLoadingMessage;
 exports.createProgressBar = createProgressBar;
 exports.formatStepProgress = formatStepProgress;
 const formatBookCaption = async (book, tags) => {
+    const escapeHtml = (text) => {
+        return text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    };
+    const safeTitle = escapeHtml(book.title);
+    const safeAuthor = escapeHtml(book.author);
+    const safeGenre = escapeHtml(book.genre);
+    const safeDescription = escapeHtml(book.description);
     let caption = `╔═══════════════════════╗\n`;
-    caption += `📖 *${book.title}*\n`;
+    caption += `📖 <b>${safeTitle}</b>\n`;
     caption += `╚═══════════════════════╝\n\n`;
-    caption += `✍️ *Автор:* ${book.author}\n`;
+    caption += `✍️ <b>Автор:</b> ${safeAuthor}\n`;
     const genreEmoji = getGenreEmoji(book.genre);
-    caption += `${genreEmoji} *Жанр:* ${book.genre}\n`;
+    caption += `${genreEmoji} <b>Жанр:</b> ${safeGenre}\n`;
     if (tags) {
         if (tags.length > 0) {
-            const tagNames = tags.map(t => `#${t.name.replace(/\s+/g, '_')}`).join(' ');
-            caption += `🏷️ *Теги:* ${tagNames}\n`;
+            const tagNames = tags.map(t => `#${escapeHtml(t.name.replace(/\s+/g, '_'))}`).join(' ');
+            caption += `🏷️ <b>Теги:</b> ${tagNames}\n`;
         }
     }
     else if (book.id) {
@@ -56,8 +67,8 @@ const formatBookCaption = async (book, tags) => {
             const { getBookTags } = await Promise.resolve().then(() => __importStar(require('../database/tagFunctions')));
             const loadedTags = await getBookTags(book.id);
             if (loadedTags.length > 0) {
-                const tagNames = loadedTags.map(t => `#${t.name.replace(/\s+/g, '_')}`).join(' ');
-                caption += `🏷️ *Теги:* ${tagNames}\n`;
+                const tagNames = loadedTags.map(t => `#${escapeHtml(t.name.replace(/\s+/g, '_'))}`).join(' ');
+                caption += `🏷️ <b>Теги:</b> ${tagNames}\n`;
             }
         }
         catch (error) {
@@ -69,13 +80,13 @@ const formatBookCaption = async (book, tags) => {
         const halfStar = book.rating % 1 >= 0.5 ? '⭐' : '';
         const stars = '⭐'.repeat(fullStars) + halfStar;
         const emptyStars = '☆'.repeat(5 - Math.ceil(book.rating));
-        caption += `${stars}${emptyStars} *${book.rating.toFixed(1)}/5*`;
+        caption += `${stars}${emptyStars} <b>${book.rating.toFixed(1)}/5</b>`;
         if (book.reviews_count && book.reviews_count > 0) {
             caption += ` 💬 ${book.reviews_count} ${getReviewsWord(book.reviews_count)}`;
         }
         caption += `\n\n`;
     }
-    caption += `📝 *Опис:*\n${book.description}\n\n`;
+    caption += `📝 <b>Опис:</b>\n${safeDescription}\n\n`;
     caption += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
     const availableFormats = [];
     if (book.pdf_file_id || (book.file_type === 'file' && book.file_url)) {
@@ -99,19 +110,20 @@ const formatBookCaption = async (book, tags) => {
         availableFormats.push(audioText);
     }
     if (availableFormats.length > 0) {
-        caption += `📦 *Доступні формати:*\n`;
+        caption += `📦 <b>Доступні формати:</b>\n`;
         availableFormats.forEach(format => {
             caption += `   ${format}\n`;
         });
         caption += `\n`;
     }
     if (book.narrator) {
-        caption += `🎙️ *Читає:* ${book.narrator}\n\n`;
+        const safeNarrator = escapeHtml(book.narrator);
+        caption += `🎙️ <b>Читає:</b> ${safeNarrator}\n\n`;
     }
     if (book.downloads_count && book.downloads_count > 0) {
-        caption += `📊 *Популярність:* ${book.downloads_count} ${getDownloadsWord(book.downloads_count)}\n`;
+        caption += `📊 <b>Популярність:</b> ${book.downloads_count} ${getDownloadsWord(book.downloads_count)}\n`;
     }
-    caption += `\n${book.is_available ? '🟢 *Доступна*' : '🔴 *Недоступна*'}`;
+    caption += `\n${book.is_available ? '🟢 <b>Доступна</b>' : '🔴 <b>Недоступна</b>'}`;
     return caption;
 };
 exports.formatBookCaption = formatBookCaption;
@@ -149,16 +161,6 @@ function getDownloadsWord(count) {
         return 'завантаження';
     return 'завантажень';
 }
-const formatRequestInfo = (request, book) => {
-    let info = `📋 Заявка #${request.id}\n`;
-    info += `📖 Книга: ${book.title}\n`;
-    info += `👤 ПІБ: ${request.full_name}\n`;
-    info += `🎯 Підрозділ: ${request.unit}\n`;
-    info += `📞 Телефон: ${request.phone}\n`;
-    info += `📅 Дата: ${request.created_at}`;
-    return info;
-};
-exports.formatRequestInfo = formatRequestInfo;
 const escapeHtml = (text) => {
     return text
         .replace(/&/g, '&amp;')
