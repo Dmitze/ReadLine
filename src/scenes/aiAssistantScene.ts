@@ -192,4 +192,15 @@ const aiAssistantScene = new Scenes.WizardScene(
   }
 );
 
+// Cleanup при виході зі сцени
+aiAssistantScene.leave((ctx) => {
+  const state = ctx.wizard?.state as WizardState;
+  if (state) {
+    delete state.aiInterest;
+    delete state.aiLength;
+    delete state.aiMood;
+  }
+  logger.debug('AIAssistantScene cleanup completed', { userId: ctx.from?.id });
+});
+
 export default aiAssistantScene;
