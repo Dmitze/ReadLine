@@ -91,6 +91,7 @@ export async function updateLastActive(userId: number): Promise<void> {
 
 /**
  * Отримати або створити користувача
+ * ✅ ВИПРАВЛЕНО #7: race condition - використовуємо INSERT OR IGNORE для атомарності
  */
 export async function getOrCreateUser(
   userId: number,
@@ -98,22 +99,28 @@ export async function getOrCreateUser(
   firstName?: string,
   lastName?: string
 ): Promise<User> {
-  let user = await getUserByTelegramId(userId);
-  
-  if (!user) {
-    // Створюємо нового користувача
-    await createUser(userId, username, firstName, lastName);
-    user = await getUserByTelegramId(userId);
-  } else {
-    // Оновлюємо час останньої активності
-    await updateLastActive(userId);
+  // Спочатку намагаємось створити (атомарна операція)
+  try {
+    await dbWrapper.insert(
+      `INSERT OR IGNORE INTO users (user_id, username, first_name, last_name, has_completed_onboarding, last_active_at)
+       VALUES (?, ?, ?, ?, 0, CURRENT_TIMESTAMP)`,
+      [userId, username || null, firstName || null, lastName || null]
+    );
+  } catch (error) {
+    // Ігноруємо помилку якщо користувач вже існує
   }
   
+  // Оновлюємо час останньої активності
+  await updateLastActive(userId);
+  
+  // Отримуємо користувача
+  const user = await getUserByTelegramId(userId);
   return user!;
 }
 
 /**
  * Отримати улюблені жанри користувача
+ * ✅ ВИПРАВЛЕНО #24: валідація JSON parse
  */
 export async function getUserFavoriteGenres(userId: number): Promise<string[]> {
   const user = await getUserByTelegramId(userId);
@@ -123,7 +130,12 @@ export async function getUserFavoriteGenres(userId: number): Promise<string[]> {
   }
   
   try {
-    return JSON.parse(user.favorite_genres);
+    const parsed = JSON.parse(user.favorite_genres);
+    // Перевіряємо що це масив
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+    return [];
   } catch {
     return [];
   }
