@@ -59,24 +59,38 @@ bot.use(async (ctx, next) => {
   if (ctx.message && 'text' in ctx.message) {
     const text = ctx.message.text;
     
-    // Якщо команда /start або /cancel - виходимо зі scene
-    if (text === '/start' || text === '/cancel' || text === '❌ Скасувати') {
+    // Якщо команда /start - виходимо зі scene та обробляємо
+    if (text === '/start') {
       if (ctx.scene) {
         await ctx.scene.leave();
-        logger.info('User left scene via command', { userId: ctx.from?.id, command: text });
+        logger.info('User left scene via /start', { userId: ctx.from?.id });
+      }
+      return next();
+    }
+    
+    // Якщо команда /cancel або кнопка скасування - виходимо зі scene
+    if (text === '/cancel' || text === '❌ Скасувати') {
+      // Виходимо зі scene якщо в ньому
+      if (ctx.scene) {
+        try {
+          await ctx.scene.leave();
+          logger.info('User left scene via cancel', { userId: ctx.from?.id, command: text });
+        } catch (error) {
+          logger.error('Error leaving scene', error instanceof Error ? error : new Error(String(error)));
+        }
       }
       
-      if (text === '/start') {
-        // Обробка /start буде нижче
-        return next();
-      } else {
-        // /cancel або кнопка скасування
-        const { getMainMenuKeyboard } = await import('./keyboards/mainKeyboards');
-        await ctx.reply('❌ Операцію скасовано', {
-          reply_markup: getMainMenuKeyboard()
-        });
-        return;
+      // Очищаємо session state
+      if (ctx.session) {
+        ctx.session = {};
       }
+      
+      // Завжди показуємо головне меню після скасування
+      const { getMainMenuKeyboard } = await import('./keyboards/mainKeyboards');
+      await ctx.reply('❌ Операцію скасовано\n\nОберіть дію з меню:', {
+        reply_markup: getMainMenuKeyboard()
+      });
+      return; // Не викликаємо next() - зупиняємо обробку
     }
   }
   
@@ -135,11 +149,43 @@ const stage = new Scenes.Stage([
   aiAssistantScene as any,
   promoAdminScene as any
 ]);
-bot.use(session());
-bot.use(stage.middleware() as any);
 
-// Імпорт клавіатур
+// Імпорт клавіатур (потрібно для middleware)
 import { getMainMenuKeyboard } from './keyboards/mainKeyboards';
+
+bot.use(session());
+
+// КРИТИЧНО ВАЖЛИВО: Middleware для виходу зі scene ПЕРЕД stage.middleware()
+bot.use(async (ctx, next) => {
+  if (ctx.message && 'text' in ctx.message) {
+    const text = ctx.message.text;
+    const menuButtons = [
+      '📖 Каталог', '🏆 Топ книги', '🆕 Новинки', 
+      '💾 Моя бібліотека', '👤 Профіль', '🤖 AI Помічник',
+      '🎁 Отримати промокод', 'ℹ️ Допомога', '📞 Зворотній зв\'язок',
+      '🏠 На головну'
+    ];
+    
+    // Якщо натиснута кнопка головного меню і користувач в scene - виходимо
+    if (menuButtons.includes(text) && ctx.scene) {
+      console.log(`🚪 User pressed menu button "${text}" while in scene, leaving...`);
+      
+      try {
+        await ctx.scene.leave();
+        // Очищаємо session
+        if (ctx.session) {
+          ctx.session = {};
+        }
+        console.log('✅ Successfully left scene');
+      } catch (error) {
+        console.error('❌ Error leaving scene:', error);
+      }
+    }
+  }
+  return next();
+});
+
+bot.use(stage.middleware() as any);
 
 // Імпорт user functions
 import { getOrCreateUser, isNewUser } from './database/userFunctions';
