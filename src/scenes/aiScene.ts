@@ -59,6 +59,9 @@ aiScene.hears('⬅️ Назад до меню', async (ctx: BotContext) => {
 });
 
 aiScene.on('text', async (ctx: BotContext) => {
+  const { withTimeout, retryOperation, sendErrorToUser } = await import('../utils/errorHandler');
+  const { CONFIG } = await import('../constants');
+  
   try {
     if (!('text' in ctx.message)) {
       await ctx.reply('❌ Будь ласка, надішліть текстове повідомлення.');
@@ -71,42 +74,30 @@ aiScene.on('text', async (ctx: BotContext) => {
       return;
     }
     
-    // ✅ ВИПРАВЛЕНО #41: timeout для AI запиту
     const thinkingMsg = await ctx.reply('🤔 Думаю...');
     
-    // Timeout 25 секунд (Telegram має 30 секунд)
-    const timeoutPromise = new Promise<string>((_, reject) => 
-      setTimeout(() => reject(new Error('AI timeout')), 25000)
+    // Використовуємо withTimeout з константою
+    const answer = await withTimeout(
+      () => retryOperation(() => askAI(question), 2, 1000),
+      CONFIG.AI_TIMEOUT_MS,
+      'AI request timeout'
     );
-    
-    const aiResponse = await Promise.race([
-      askAI(question),
-      timeoutPromise
-    ]);
     
     // Видаляємо "думаю" повідомлення
     try {
       await ctx.deleteMessage(thinkingMsg.message_id);
     } catch {}
     
-    // Відправляємо відповідь
+    // Відправляємо відповідь (без parse_mode щоб уникнути помилок з спецсимволами)
     await ctx.reply(
-      `🤖 *AI-ПОМІЧНИК:*\n\n${aiResponse}\n\n` +
-      '❓ Задайте ще питання або натисніть "⬅️ Назад до меню"',
-      { parse_mode: 'Markdown' }
+      `🤖 AI-ПОМІЧНИК:\n\n${answer}\n\n` +
+      '❓ Задайте ще питання або натисніть "⬅️ Назад до меню"'
     );
     
   } catch (error) {
     logger.error('Error in AI scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    await ctx.reply(
-      '❌ *Помилка AI:*\n' +
-      `${errorMessage}\n\n` +
-      'Спробуйте:\n' +
-      '• Перефразувати питання\n' +
-      '• Зробити питання коротшим\n' +
-      '• Спробувати пізніше',
-      { parse_mode: 'Markdown' }
+    await sendErrorToUser(ctx, error, 
+      '❌ Помилка AI. Спробуйте перефразувати питання або спробуйте пізніше.'
     );
   }
 });
