@@ -858,14 +858,14 @@ export const markFeedbackAsRead = (feedbackId: number): Promise<void> => {
   });
 };
 
-export const updateFeedbackStatus = (feedbackId: number, status: string): Promise<void> => {
+export const updateFeedbackStatus = (feedbackId: number, status: string): Promise<number> => {
   return new Promise((resolve, reject) => {
     db.run(
-      'UPDATE feedback_messages SET status = ? WHERE id = ?',
+      'UPDATE feedback_messages SET status = ?, read_at = CURRENT_TIMESTAMP WHERE id = ?',
       [status, feedbackId],
-      (err) => {
+      function(err) {
         if (err) reject(err);
-        else resolve();
+        else resolve(this.changes);
       }
     );
   });
