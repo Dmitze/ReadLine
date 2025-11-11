@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addAdminReply = exports.updateFeedbackStatus = exports.markFeedbackAsRead = exports.getAllFeedbackMessages = exports.getPendingFeedbackMessages = exports.addFeedbackMessage = exports.getNewestBooks = exports.getMostDownloadedBooks = exports.getTopBooks = exports.isBookSaved = exports.getSavedBooks = exports.unsaveBook = exports.saveBook = exports.deleteReview = exports.publishReview = exports.getPendingReviews = exports.getBookReviews = exports.addReview = exports.incrementDownloads = exports.deleteBook = exports.updateBook = exports.searchBooks = exports.getBooksWithPagination = exports.getBooksByGenreWithPagination = exports.getAdminStats = exports.getAllAdmins = exports.isAdmin = exports.addAdmin = exports.getGenres = exports.getBookById = exports.getAllAvailableBooks = exports.getAllBooks = exports.getBooksByGenre = exports.addBook = exports.initDatabase = exports.db = void 0;
+exports.addAdminReply = exports.updateFeedbackStatus = exports.markFeedbackAsRead = exports.getAllFeedbackMessages = exports.getPendingFeedbackMessages = exports.addFeedbackMessage = exports.getNewestBooks = exports.getMostDownloadedBooks = exports.getTopBooks = exports.areBooksaved = exports.isBookSaved = exports.getSavedBooks = exports.unsaveBook = exports.saveBook = exports.deleteReview = exports.publishReview = exports.getPendingReviews = exports.getBookReviews = exports.addReview = exports.incrementDownloads = exports.deleteBook = exports.updateBook = exports.searchBooks = exports.getBooksWithPagination = exports.getBooksByGenreWithPagination = exports.getAdminStats = exports.getAllAdmins = exports.isAdmin = exports.addAdmin = exports.getGenres = exports.getBookById = exports.getAllAvailableBooks = exports.getAllBooks = exports.getBooksByGenre = exports.addBook = exports.initDatabase = exports.db = void 0;
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
@@ -15,89 +15,175 @@ if (!fs_1.default.existsSync(dbDir)) {
 }
 exports.db = new sqlite3_1.default.Database(dbPath);
 const initDatabase = () => {
-    const createBooksTable = `
-    CREATE TABLE IF NOT EXISTS books (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        author TEXT NOT NULL,
-        genre TEXT NOT NULL,
-        description TEXT,
-        photo_file_id TEXT NOT NULL,
-        file_url TEXT,
-        file_type TEXT DEFAULT 'physical',
-        file_name TEXT,
-        rating REAL DEFAULT 0,
-        reviews_count INTEGER DEFAULT 0,
-        downloads_count INTEGER DEFAULT 0,
-        is_available BOOLEAN DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
-    const createAdminsTable = `
-    CREATE TABLE IF NOT EXISTS admins (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER UNIQUE NOT NULL,
-        username TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
-    const createReviewsTable = `
-    CREATE TABLE IF NOT EXISTS reviews (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        book_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        user_name TEXT,
-        rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
-        comment TEXT,
-        is_published BOOLEAN DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (book_id) REFERENCES books (id)
-    );
-  `;
-    const createSavedBooksTable = `
-    CREATE TABLE IF NOT EXISTS saved_books (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        book_id INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, book_id),
-        FOREIGN KEY (book_id) REFERENCES books (id)
-    );
-  `;
-    const createFeedbackMessagesTable = `
-    CREATE TABLE IF NOT EXISTS feedback_messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        user_name TEXT,
-        user_username TEXT,
-        message TEXT NOT NULL,
-        status TEXT DEFAULT 'pending',
-        admin_reply TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        read_at DATETIME
-    );
-  `;
-    const createUsersTable = `
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER UNIQUE NOT NULL,
-        username TEXT,
-        first_name TEXT,
-        last_name TEXT,
-        favorite_genres TEXT,
-        keyboard_type TEXT DEFAULT 'mobile',
-        has_completed_onboarding BOOLEAN DEFAULT 0,
-        last_notification_at DATETIME,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
-    exports.db.serialize(() => {
-        exports.db.run(createBooksTable);
-        exports.db.run(createAdminsTable);
-        exports.db.run(createReviewsTable);
-        exports.db.run(createSavedBooksTable);
-        exports.db.run(createFeedbackMessagesTable);
-        exports.db.run(createUsersTable);
+    return new Promise((resolve, reject) => {
+        const createBooksTable = `
+      CREATE TABLE IF NOT EXISTS books (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          author TEXT NOT NULL,
+          genre TEXT NOT NULL,
+          description TEXT,
+          photo_file_id TEXT NOT NULL,
+          file_url TEXT,
+          file_type TEXT DEFAULT 'physical',
+          file_name TEXT,
+          rating REAL DEFAULT 0,
+          reviews_count INTEGER DEFAULT 0,
+          downloads_count INTEGER DEFAULT 0,
+          is_available BOOLEAN DEFAULT 1,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+        const createAdminsTable = `
+      CREATE TABLE IF NOT EXISTS admins (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER UNIQUE NOT NULL,
+          username TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+        const createReviewsTable = `
+      CREATE TABLE IF NOT EXISTS reviews (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          book_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL,
+          user_name TEXT,
+          rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+          comment TEXT,
+          is_published BOOLEAN DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (book_id) REFERENCES books (id)
+      );
+    `;
+        const createSavedBooksTable = `
+      CREATE TABLE IF NOT EXISTS saved_books (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          book_id INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id, book_id),
+          FOREIGN KEY (book_id) REFERENCES books (id)
+      );
+    `;
+        const createFeedbackMessagesTable = `
+      CREATE TABLE IF NOT EXISTS feedback_messages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          user_name TEXT,
+          user_username TEXT,
+          message TEXT NOT NULL,
+          status TEXT DEFAULT 'pending',
+          admin_reply TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          read_at DATETIME
+      );
+    `;
+        const createUsersTable = `
+      CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER UNIQUE NOT NULL,
+          username TEXT,
+          first_name TEXT,
+          last_name TEXT,
+          favorite_genres TEXT,
+          keyboard_type TEXT DEFAULT 'mobile',
+          has_completed_onboarding BOOLEAN DEFAULT 0,
+          last_notification_at DATETIME,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+        const createAiSelectionsTable = `
+      CREATE TABLE IF NOT EXISTS ai_selections (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          book_id INTEGER NOT NULL,
+          selection_type TEXT NOT NULL,
+          interest TEXT,
+          length TEXT,
+          mood TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users (user_id),
+          FOREIGN KEY (book_id) REFERENCES books (id)
+      );
+    `;
+        exports.db.serialize(() => {
+            exports.db.run(createBooksTable, (err) => {
+                if (err) {
+                    reject(new Error(`Failed to create books table: ${err.message}`));
+                    return;
+                }
+            });
+            exports.db.run(createAdminsTable, (err) => {
+                if (err) {
+                    reject(new Error(`Failed to create admins table: ${err.message}`));
+                    return;
+                }
+            });
+            exports.db.run(createReviewsTable, (err) => {
+                if (err) {
+                    reject(new Error(`Failed to create reviews table: ${err.message}`));
+                    return;
+                }
+            });
+            exports.db.run(createSavedBooksTable, (err) => {
+                if (err) {
+                    reject(new Error(`Failed to create saved_books table: ${err.message}`));
+                    return;
+                }
+            });
+            exports.db.run(createFeedbackMessagesTable, (err) => {
+                if (err) {
+                    reject(new Error(`Failed to create feedback_messages table: ${err.message}`));
+                    return;
+                }
+            });
+            exports.db.run(createUsersTable, (err) => {
+                if (err) {
+                    reject(new Error(`Failed to create users table: ${err.message}`));
+                    return;
+                }
+                exports.db.run(createAiSelectionsTable, (err) => {
+                    if (err) {
+                        console.warn(`Warning: Failed to create ai_selections table: ${err.message}`);
+                    }
+                });
+                const indexes = [
+                    'CREATE INDEX IF NOT EXISTS idx_books_genre ON books(genre)',
+                    'CREATE INDEX IF NOT EXISTS idx_books_rating ON books(rating DESC)',
+                    'CREATE INDEX IF NOT EXISTS idx_books_created_at ON books(created_at DESC)',
+                    'CREATE INDEX IF NOT EXISTS idx_books_available ON books(is_available)',
+                    'CREATE INDEX IF NOT EXISTS idx_books_genre_rating ON books(genre, rating DESC)',
+                    'CREATE INDEX IF NOT EXISTS idx_reviews_book_id ON reviews(book_id)',
+                    'CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id)',
+                    'CREATE INDEX IF NOT EXISTS idx_reviews_published ON reviews(is_published)',
+                    'CREATE INDEX IF NOT EXISTS idx_saved_books_user_id ON saved_books(user_id)',
+                    'CREATE INDEX IF NOT EXISTS idx_saved_books_book_id ON saved_books(book_id)',
+                    'CREATE INDEX IF NOT EXISTS idx_saved_books_user_book ON saved_books(user_id, book_id)',
+                    'CREATE INDEX IF NOT EXISTS idx_users_user_id ON users(user_id)',
+                    'CREATE INDEX IF NOT EXISTS idx_users_onboarding ON users(has_completed_onboarding)',
+                    'CREATE INDEX IF NOT EXISTS idx_feedback_status ON feedback_messages(status)',
+                    'CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON feedback_messages(user_id)',
+                    'CREATE INDEX IF NOT EXISTS idx_ai_selections_user_id ON ai_selections(user_id)',
+                    'CREATE INDEX IF NOT EXISTS idx_ai_selections_book_id ON ai_selections(book_id)',
+                    'CREATE INDEX IF NOT EXISTS idx_ai_selections_type ON ai_selections(selection_type)'
+                ];
+                let indexCount = 0;
+                const createNextIndex = () => {
+                    if (indexCount >= indexes.length) {
+                        resolve();
+                        return;
+                    }
+                    exports.db.run(indexes[indexCount], (indexErr) => {
+                        if (indexErr) {
+                            console.warn(`Warning: Failed to create index: ${indexErr.message}`);
+                        }
+                        indexCount++;
+                        createNextIndex();
+                    });
+                };
+                createNextIndex();
+            });
+        });
     });
 };
 exports.initDatabase = initDatabase;
@@ -237,11 +323,16 @@ const getBooksByGenreWithPagination = (genre, limit = 5, offset = 0) => {
                 reject(err);
                 return;
             }
+            if (!countRow) {
+                resolve({ books: [], total: 0 });
+                return;
+            }
             exports.db.all('SELECT * FROM books WHERE genre = ? LIMIT ? OFFSET ?', [genre, limit, offset], (err, books) => {
-                if (err)
+                if (err) {
                     reject(err);
-                else
-                    resolve({ books, total: countRow.total });
+                    return;
+                }
+                resolve({ books: books || [], total: countRow.total || 0 });
             });
         });
     });
@@ -254,11 +345,16 @@ const getBooksWithPagination = (limit = 5, offset = 0) => {
                 reject(err);
                 return;
             }
+            if (!countRow) {
+                resolve({ books: [], total: 0 });
+                return;
+            }
             exports.db.all('SELECT * FROM books LIMIT ? OFFSET ?', [limit, offset], (err, books) => {
-                if (err)
+                if (err) {
                     reject(err);
-                else
-                    resolve({ books, total: countRow.total });
+                    return;
+                }
+                resolve({ books: books || [], total: countRow.total || 0 });
             });
         });
     });
@@ -447,6 +543,22 @@ const isBookSaved = (userId, bookId) => {
     });
 };
 exports.isBookSaved = isBookSaved;
+const areBooksaved = (userId, bookIds) => {
+    return new Promise((resolve, reject) => {
+        if (bookIds.length === 0) {
+            resolve(new Set());
+            return;
+        }
+        const placeholders = bookIds.map(() => '?').join(',');
+        exports.db.all(`SELECT book_id FROM saved_books WHERE user_id = ? AND book_id IN (${placeholders})`, [userId, ...bookIds], (err, rows) => {
+            if (err)
+                reject(err);
+            else
+                resolve(new Set(rows.map(r => r.book_id)));
+        });
+    });
+};
+exports.areBooksaved = areBooksaved;
 const getTopBooks = (limit = 10) => {
     return new Promise((resolve, reject) => {
         exports.db.all('SELECT * FROM books WHERE rating > 0 ORDER BY rating DESC, reviews_count DESC LIMIT ?', [limit], (err, rows) => {
