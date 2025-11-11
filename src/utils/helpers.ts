@@ -3,31 +3,45 @@ import { Book } from '../database/models';
 // Format book caption for display with beautiful emojis
 // ✅ ОПТИМІЗОВАНО: можна передати теги щоб уникнути додаткового запиту
 export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>): Promise<string> => {
+  // Екрануємо HTML спецсимволи
+  const escapeHtml = (text: string) => {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  };
+  
+  const safeTitle = escapeHtml(book.title);
+  const safeAuthor = escapeHtml(book.author);
+  const safeGenre = escapeHtml(book.genre);
+  const safeDescription = escapeHtml(book.description);
+  
   // Заголовок з рамкою
   let caption = `╔═══════════════════════╗\n`;
-  caption += `📖 *${book.title}*\n`;
+  caption += `📖 <b>${safeTitle}</b>\n`;
   caption += `╚═══════════════════════╝\n\n`;
   
   // Автор з емодзі
-  caption += `✍️ *Автор:* ${book.author}\n`;
+  caption += `✍️ <b>Автор:</b> ${safeAuthor}\n`;
   
   // Жанр з кольоровим емодзі
   const genreEmoji = getGenreEmoji(book.genre);
-  caption += `${genreEmoji} *Жанр:* ${book.genre}\n`;
+  caption += `${genreEmoji} <b>Жанр:</b> ${safeGenre}\n`;
   
   // Теги - використовуємо передані або завантажуємо
   if (tags) {
     if (tags.length > 0) {
-      const tagNames = tags.map(t => `#${t.name.replace(/\s+/g, '_')}`).join(' ');
-      caption += `🏷️ *Теги:* ${tagNames}\n`;
+      const tagNames = tags.map(t => `#${escapeHtml(t.name.replace(/\s+/g, '_'))}`).join(' ');
+      caption += `🏷️ <b>Теги:</b> ${tagNames}\n`;
     }
   } else if (book.id) {
     try {
       const { getBookTags } = await import('../database/tagFunctions');
       const loadedTags = await getBookTags(book.id);
       if (loadedTags.length > 0) {
-        const tagNames = loadedTags.map(t => `#${t.name.replace(/\s+/g, '_')}`).join(' ');
-        caption += `🏷️ *Теги:* ${tagNames}\n`;
+        const tagNames = loadedTags.map(t => `#${escapeHtml(t.name.replace(/\s+/g, '_'))}`).join(' ');
+        caption += `🏷️ <b>Теги:</b> ${tagNames}\n`;
       }
     } catch (error) {
       // Ігноруємо помилки з тегами
@@ -41,7 +55,7 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
     const halfStar = book.rating % 1 >= 0.5 ? '⭐' : '';
     const stars = '⭐'.repeat(fullStars) + halfStar;
     const emptyStars = '☆'.repeat(5 - Math.ceil(book.rating));
-    caption += `${stars}${emptyStars} *${book.rating.toFixed(1)}/5*`;
+    caption += `${stars}${emptyStars} <b>${book.rating.toFixed(1)}/5</b>`;
     if (book.reviews_count && book.reviews_count > 0) {
       caption += ` 💬 ${book.reviews_count} ${getReviewsWord(book.reviews_count)}`;
     }
@@ -49,7 +63,7 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
   }
   
   // Опис
-  caption += `📝 *Опис:*\n${book.description}\n\n`;
+  caption += `📝 <b>Опис:</b>\n${safeDescription}\n\n`;
   
   // Розділювач
   caption += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
@@ -80,7 +94,7 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
   }
   
   if (availableFormats.length > 0) {
-    caption += `📦 *Доступні формати:*\n`;
+    caption += `📦 <b>Доступні формати:</b>\n`;
     availableFormats.forEach(format => {
       caption += `   ${format}\n`;
     });
@@ -89,16 +103,17 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
   
   // Диктор для аудіокниг
   if ((book as any).narrator) {
-    caption += `🎙️ *Читає:* ${(book as any).narrator}\n\n`;
+    const safeNarrator = escapeHtml((book as any).narrator);
+    caption += `🎙️ <b>Читає:</b> ${safeNarrator}\n\n`;
   }
   
   // Статистика
   if (book.downloads_count && book.downloads_count > 0) {
-    caption += `📊 *Популярність:* ${book.downloads_count} ${getDownloadsWord(book.downloads_count)}\n`;
+    caption += `📊 <b>Популярність:</b> ${book.downloads_count} ${getDownloadsWord(book.downloads_count)}\n`;
   }
   
   // Статус з кольоровим індикатором
-  caption += `\n${book.is_available ? '🟢 *Доступна*' : '🔴 *Недоступна*'}`;
+  caption += `\n${book.is_available ? '🟢 <b>Доступна</b>' : '🔴 <b>Недоступна</b>'}`;
   
   return caption;
 };
