@@ -134,7 +134,7 @@ searchScene.on('text', async (ctx: BotContext) => {
   }
   
   try {
-    console.log('🔍 Search request:', searchTerm, 'from user:', ctx.from?.id, 'type:', searchType);
+    logger.info('Search request', { searchTerm, userId: ctx.from?.id, searchType });
     
     // Якщо це AI пошук
     if (searchType === 'ai') {
@@ -272,7 +272,7 @@ searchScene.on('text', async (ctx: BotContext) => {
         searchTypeText = `🤖 розумний (${searchResult.searchStrategy})`;
     }
     
-    console.log('📚 Search results:', books.length, 'books found');
+    logger.info('Search results', { booksFound: books.length });
     
     if (books.length === 0) {
       let noResultsMessage = '📭 *За вашим запитом нічого не знайдено*\n\n' +
