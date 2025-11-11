@@ -164,6 +164,7 @@ async function addTestUsersAndReviews() {
   });
 }
 
+// ✅ ВИПРАВЛЕНО #9: закриваємо БД після завершення всіх операцій
 // Запуск
 addTestUsersAndReviews()
   .then(() => {
@@ -179,18 +180,22 @@ addTestUsersAndReviews()
         db.get('SELECT COUNT(*) as count FROM reviews', (err, reviewRow) => {
           if (!err) console.log(`⭐ Відгуків: ${reviewRow.count}`);
           
-          db.close((err) => {
-            if (err) {
-              console.error('❌ Помилка закриття БД:', err);
-            } else {
-              console.log('✅ База даних закрита');
-              console.log('🚀 Готово до повноцінного тестування!');
-            }
-          });
+          // Закриваємо БД тільки після завершення всіх запитів
+          setTimeout(() => {
+            db.close((err) => {
+              if (err) {
+                console.error('❌ Помилка закриття БД:', err);
+              } else {
+                console.log('✅ База даних закрита');
+                console.log('🚀 Готово до повноцінного тестування!');
+              }
+            });
+          }, 100); // Невелика затримка для завершення всіх операцій
         });
       });
     });
   })
   .catch((error) => {
     console.error('❌ Помилка:', error);
+    db.close();
   });
