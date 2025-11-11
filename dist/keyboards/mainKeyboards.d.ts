@@ -9,7 +9,7 @@ export declare const getKeyboardConfig: (deviceType: DeviceType) => {
     buttonSize: string;
 };
 export declare const getAdaptiveMainMenuKeyboard: (ctx: Context, withQuickActions?: boolean) => import("@telegraf/types").InlineKeyboardMarkup | import("@telegraf/types").ReplyKeyboardMarkup;
-export declare const getMainMenuKeyboard: (withQuickActions?: boolean) => import("@telegraf/types").ReplyKeyboardMarkup;
+export declare const getMainMenuKeyboard: () => import("@telegraf/types").ReplyKeyboardMarkup;
 export declare const getAdaptiveGenreKeyboard: (ctx: Context, genres: string[]) => import("@telegraf/types").InlineKeyboardMarkup | import("@telegraf/types").ReplyKeyboardMarkup;
 export declare const getGenreKeyboard: (genres: string[]) => import("@telegraf/types").ReplyKeyboardMarkup;
 export declare const getAdaptiveBookKeyboard: (ctx: Context, book: Book, isSaved?: boolean) => import("@telegraf/types").InlineKeyboardMarkup;
