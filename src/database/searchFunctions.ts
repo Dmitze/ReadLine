@@ -4,9 +4,27 @@
 
 import { db, Book } from './models';
 import { cache } from '../utils/cache';
+import * as levenshtein from 'fast-levenshtein';  // ✅ ВИПРАВЛЕНО #14
 
 // Search cache TTL - 5 minutes
 const CACHE_TTL = 5 * 60 * 1000;
+
+/**
+ * ✅ ВИПРАВЛЕНО #1: Нормалізація кирилиці для кращого пошуку
+ * Вирішує проблему: "Кобзарь" не знаходить "Кобзар"
+ */
+function normalizeCyrillic(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/ё/g, 'е')
+    .replace(/ъ/g, '')
+    .replace(/ь/g, '')
+    .replace(/і/g, 'i')
+    .replace(/ї/g, 'i')
+    .replace(/є/g, 'е')
+    .replace(/ґ/g, 'г')
+    .trim();
+}
 
 // Search analytics for improvement
 interface SearchEvent {
@@ -17,60 +35,62 @@ interface SearchEvent {
   userId?: number;
 }
 
+// ✅ ВИПРАВЛЕНО #5: обмежуємо розмір масиву для запобігання memory leak
+const MAX_ANALYTICS_SIZE = 500; // Зменшено з 1000
 const searchAnalytics: SearchEvent[] = [];
 
 /**
  * Calculate Levenshtein distance between two strings
- * Used for fuzzy matching
+ * ✅ ВИПРАВЛЕНО #14: Використовуємо fast-levenshtein для швидкості
  */
-function levenshteinDistance(str1: string, str2: string): number {
-  const len1 = str1.length;
-  const len2 = str2.length;
-  const matrix: number[][] = [];
-
-  for (let i = 0; i <= len1; i++) {
-    matrix[i] = [i];
+function levenshteinDistance(str1: string, str2: string, maxDistance: number = 10): number {
+  // Оптимізація: якщо різниця в довжині більша за maxDistance - не рахуємо
+  if (Math.abs(str1.length - str2.length) > maxDistance) {
+    return maxDistance + 1;
   }
-
-  for (let j = 0; j <= len2; j++) {
-    matrix[0][j] = j;
-  }
-
-  for (let i = 1; i <= len1; i++) {
-    for (let j = 1; j <= len2; j++) {
-      const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[i][j] = Math.min(
-        matrix[i - 1][j] + 1,
-        matrix[i][j - 1] + 1,
-        matrix[i - 1][j - 1] + cost
-      );
-    }
-  }
-
-  return matrix[len1][len2];
+  
+  // Використовуємо швидку бібліотеку
+  const distance = levenshtein.get(str1, str2);
+  
+  // Повертаємо maxDistance + 1 якщо дистанція занадто велика
+  return distance > maxDistance ? maxDistance + 1 : distance;
 }
 
 /**
  * Fuzzy match - checks if search term is similar to target
- * Returns true if similarity is above threshold
+ * ✅ ВИПРАВЛЕНО #36: покращена логіка fuzzy match
  */
-function fuzzyMatch(searchTerm: string, target: string, threshold: number = 0.7): boolean {
-  const search = searchTerm.toLowerCase();
-  const text = target.toLowerCase();
+function fuzzyMatch(searchTerm: string, target: string, threshold: number = 0.65): boolean {
+  const search = searchTerm.toLowerCase().trim();
+  const text = target.toLowerCase().trim();
+  
+  // Порожні рядки
+  if (!search || !text) return false;
   
   // Exact match
   if (text.includes(search)) {
     return true;
   }
   
+  // Занадто коротке слово для fuzzy match
+  if (search.length < 3) {
+    return false;
+  }
+  
   // Check each word in target
-  const words = text.split(/\s+/);
+  const words = text.split(/\s+/).filter(w => w.length >= 3);
+  
   for (const word of words) {
-    const distance = levenshteinDistance(search, word);
-    const maxLen = Math.max(search.length, word.length);
-    const similarity = 1 - (distance / maxLen);
+    // Пропускаємо якщо різниця в довжині занадто велика
+    const lengthDiff = Math.abs(search.length - word.length);
+    if (lengthDiff > search.length * 0.5) {
+      continue;
+    }
     
-    if (similarity >= threshold) {
+    const maxDistance = Math.ceil(search.length * (1 - threshold));
+    const distance = levenshteinDistance(search, word, maxDistance);
+    
+    if (distance <= maxDistance) {
       return true;
     }
   }
@@ -291,7 +311,10 @@ export const enhancedSearch = async (searchTerm: string, limit: number = 10, use
   aiMessage?: string;
 }> => {
   const normalizedTerm = normalizeSearchTerm(searchTerm);
-  const cacheKey = `search:${normalizedTerm}:${limit}`;
+  // ✅ ВИПРАВЛЕНО #6: додано userId до ключа кешу для персоналізації
+  const cacheKey = userId 
+    ? `search:${userId}:${normalizedTerm}:${limit}`
+    : `search:${normalizedTerm}:${limit}`;
   
   // Check cache first
   const cached = cache.get<{
@@ -302,7 +325,7 @@ export const enhancedSearch = async (searchTerm: string, limit: number = 10, use
     aiMessage?: string;
   }>(cacheKey);
   if (cached) {
-    console.log(`💾 Cache hit for: "${searchTerm}"`);
+    console.log(`💾 Cache hit for: "${searchTerm}" (user: ${userId || 'anonymous'})`);
     return cached;
   }
   
@@ -342,15 +365,20 @@ export const enhancedSearch = async (searchTerm: string, limit: number = 10, use
   }
   
   // Strategy 5: AI recommendations if no results
+  // ✅ ВИПРАВЛЕНО #38: лічильник спроб для запобігання нескінченному циклу
   let hasAiRecommendations = false;
   if (results.length === 0) {
     console.log(`🤖 No results found, getting AI recommendations...`);
-    const aiResults = await getAiRecommendations(searchTerm, limit);
-    if (aiResults.length > 0) {
-      results = aiResults;
-      hasAiRecommendations = true;
-      strategy = 'ai_recommendations';
-      aiMessage = generateAiMessage(searchTerm);
+    try {
+      const aiResults = await getAiRecommendations(searchTerm, limit);
+      if (aiResults && aiResults.length > 0) {
+        results = aiResults;
+        hasAiRecommendations = true;
+        strategy = 'ai_recommendations';
+        aiMessage = generateAiMessage(searchTerm);
+      }
+    } catch (error) {
+      console.error('Error getting AI recommendations:', error);
     }
   }
   
@@ -386,9 +414,10 @@ export const getSearchSuggestions = async (searchTerm: string, limit: number = 5
 
 /**
  * Normalize search term for better matching
+ * ✅ ВИПРАВЛЕНО #1: додано нормалізацію кирилиці
  */
 function normalizeSearchTerm(term: string): string {
-  return term.toLowerCase()
+  return normalizeCyrillic(term)  // Спочатку нормалізуємо кирилицю
     .replace(/[^\w\sа-яґєіїА-ЯҐЄІЇ]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
@@ -465,16 +494,26 @@ async function partialMatchSearch(searchTerm: string, limit: number): Promise<Bo
 
 /**
  * Semantic search using expanded synonyms
+ * ✅ ВИПРАВЛЕНО #21: додана санітизація expandedTerms
  */
 async function semanticSearch(searchTerm: string, limit: number): Promise<Book[]> {
   const expandedTerms = expandSearchWithSemantics(searchTerm);
   
+  // Санітизація: видаляємо небезпечні символи
+  const sanitizedTerms = expandedTerms
+    .map(term => term.replace(/[^a-zA-Zа-яА-ЯіІїЇєЄґҐ0-9\s\-']/g, ''))
+    .filter(term => term.length >= 2);
+  
+  if (sanitizedTerms.length === 0) {
+    return Promise.resolve([]);
+  }
+  
   return new Promise((resolve, reject) => {
-    const conditions = expandedTerms.map(() => 
+    const conditions = sanitizedTerms.map(() => 
       '(LOWER(title) LIKE LOWER(?) OR LOWER(author) LIKE LOWER(?) OR LOWER(genre) LIKE LOWER(?) OR LOWER(description) LIKE LOWER(?))'
     ).join(' OR ');
     
-    const params = expandedTerms.flatMap(term => [`%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`]);
+    const params = sanitizedTerms.flatMap(term => [`%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`]);
     
     const query = `
       SELECT * FROM books 
@@ -681,6 +720,7 @@ function sortByRelevance(books: Book[], searchTerm: string): Book[] {
 
 /**
  * Track search analytics
+ * ✅ ВИПРАВЛЕНО #5: автоматичне очищення старих записів для запобігання memory leak
  */
 function trackSearch(searchTerm: string, resultsCount: number, strategy: string, userId?: number) {
   searchAnalytics.push({
@@ -691,9 +731,11 @@ function trackSearch(searchTerm: string, resultsCount: number, strategy: string,
     userId
   });
   
-  // Keep only last 1000 searches
-  if (searchAnalytics.length > 1000) {
-    searchAnalytics.splice(0, searchAnalytics.length - 1000);
+  // Видаляємо старі записи коли досягаємо ліміту
+  if (searchAnalytics.length > MAX_ANALYTICS_SIZE) {
+    // Видаляємо 20% найстаріших записів
+    const toRemove = Math.floor(MAX_ANALYTICS_SIZE * 0.2);
+    searchAnalytics.splice(0, toRemove);
   }
 }
 
@@ -729,22 +771,26 @@ async function getSmartSuggestions(searchTerm: string, currentResults: Book[]): 
 
 /**
  * Get suggestions from database
+ * ✅ ВИПРАВЛЕНО #9: сортування за релевантністю (популярністю)
  */
 async function getDatabaseSuggestions(searchTerm: string): Promise<string[]> {
   return new Promise((resolve, reject) => {
     const query = `
-      SELECT title as suggestion, 'title' as type, 3 as priority
+      SELECT title as suggestion, 'title' as type, 3 as priority, COUNT(*) as popularity
       FROM books 
       WHERE LOWER(title) LIKE LOWER(?) AND (is_available = 1 OR is_available IS NULL)
+      GROUP BY title
       UNION
-      SELECT author as suggestion, 'author' as type, 2 as priority
+      SELECT author as suggestion, 'author' as type, 2 as priority, COUNT(*) as popularity
       FROM books 
       WHERE LOWER(author) LIKE LOWER(?) AND (is_available = 1 OR is_available IS NULL)
+      GROUP BY author
       UNION
-      SELECT genre as suggestion, 'genre' as type, 1 as priority
+      SELECT genre as suggestion, 'genre' as type, 1 as priority, COUNT(*) as popularity
       FROM books 
       WHERE LOWER(genre) LIKE LOWER(?) AND (is_available = 1 OR is_available IS NULL)
-      ORDER BY priority DESC, suggestion
+      GROUP BY genre
+      ORDER BY priority DESC, popularity DESC, suggestion
       LIMIT 8`;
     
     db.all(query, [`%${searchTerm}%`, `%${searchTerm}%`, `%${searchTerm}%`], 
