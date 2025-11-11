@@ -1,6 +1,5 @@
 ﻿import { Telegraf, Markup } from 'telegraf';
 import { 
-  Book,
   getGenres, 
   getBooksByGenre, 
   getBooksByGenreWithPagination,
@@ -25,7 +24,6 @@ import {
   searchBooksByTag
 } from '../database/tagFunctions';
 import {
-  getBooksWithFilters,
   getBooksWithAudio,
   getHighRatedBooks,
   getBooksSortedByTitle
@@ -382,6 +380,8 @@ export default (bot: Telegraf<BotContext>) => {
   
   // Обробка кнопки "Зберегти"
   bot.action(/save_(\d+)/, async (ctx: BotContext) => {
+    const { retryOperation, sendErrorToUser } = await import('../utils/errorHandler');
+    
     try {
       const match = ctx.match;
       if (!match || !match[1]) {
@@ -396,37 +396,36 @@ export default (bot: Telegraf<BotContext>) => {
         return;
       }
       
-      const isSaved = await isBookSaved(userId, bookId);
-      
-      if (isSaved) {
-        // Видаляємо зі збережених
-        await unsaveBook(userId, bookId);
-        await ctx.answerCbQuery('💔 Видалено зі збережених', { show_alert: false });
-      } else {
-        // Зберігаємо
-        await saveBook(userId, bookId);
+      // Використовуємо retry для надійності
+      await retryOperation(async () => {
+        const isSaved = await isBookSaved(userId, bookId);
         
-        // Додаємо жанр книги в улюблені жанри користувача
-        const book = await getBookById(bookId);
-        if (book && book.genre) {
-          const { getUserFavoriteGenres, updateUserFavoriteGenres } = await import('../database/userFunctions');
-          const currentGenres = await getUserFavoriteGenres(userId);
+        if (isSaved) {
+          await unsaveBook(userId, bookId);
+          await ctx.answerCbQuery('💔 Видалено зі збережених', { show_alert: false });
+        } else {
+          await saveBook(userId, bookId);
           
-          if (!currentGenres.includes(book.genre)) {
-            const updatedGenres = [...currentGenres, book.genre];
-            await updateUserFavoriteGenres(userId, updatedGenres);
-            logger.info('Added genre to user favorites', { userId, genre: book.genre });
+          // Додаємо жанр книги в улюблені жанри користувача
+          const book = await getBookById(bookId);
+          if (book && book.genre) {
+            const { getUserFavoriteGenres, updateUserFavoriteGenres } = await import('../database/userFunctions');
+            const currentGenres = await getUserFavoriteGenres(userId);
+            
+            if (!currentGenres.includes(book.genre)) {
+              const updatedGenres = [...currentGenres, book.genre];
+              await updateUserFavoriteGenres(userId, updatedGenres);
+              logger.info('Added genre to user favorites', { userId, genre: book.genre });
+            }
           }
+          
+          await ctx.answerCbQuery('❤️ Збережено!', { show_alert: false });
         }
-        
-        await ctx.answerCbQuery('❤️ Збережено!', { show_alert: false });
-      }
+      }, 2, 500);
       
-      // Оновлюємо кнопки (опціонально)
-      // Можна оновити markup щоб змінити текст кнопки
     } catch (error) {
       logger.error('Error saving book', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка при збереженні');
+      await sendErrorToUser(ctx, error, '❌ Помилка при збереженні. Спробуйте ще раз.');
     }
     return;
   });
@@ -542,6 +541,8 @@ export default (bot: Telegraf<BotContext>) => {
   
   // Обробка кнопки "Завантажити PDF"
   bot.action(/download_pdf_(\d+)/, async (ctx: BotContext) => {
+    const { withTimeout, ErrorType, sendErrorToUser } = await import('../utils/errorHandler');
+    
     try {
       const match = ctx.match;
       if (!match || !match[1]) {
@@ -550,28 +551,31 @@ export default (bot: Telegraf<BotContext>) => {
       }
       const bookId = parseInt(match[1]);
       
-      await incrementDownloads(bookId);
-      const book = await getBookById(bookId);
+      // Використовуємо timeout для запобігання зависанню
+      await withTimeout(async () => {
+        await incrementDownloads(bookId);
+        const book = await getBookById(bookId);
+        
+        if (!book) {
+          await ctx.answerCbQuery('❌ Книга не знайдена');
+          return;
+        }
+        
+        const pdfFileId = (book as any).pdf_file_id || (book.file_type === 'file' ? book.file_url : null);
+        
+        if (pdfFileId) {
+          await ctx.telegram.sendDocument(ctx.from!.id, pdfFileId, {
+            caption: `📥 ${book.title}\n👤 ${book.author}\n\n✅ PDF файл завантажено!`
+          });
+          await ctx.answerCbQuery('📥 PDF надіслано вам у приватні повідомлення');
+        } else {
+          await ctx.answerCbQuery('❌ PDF файл недоступний');
+        }
+      }, 30000, 'PDF download timeout');
       
-      if (!book) {
-        await ctx.answerCbQuery('❌ Книга не знайдена');
-        return;
-      }
-      
-      const pdfFileId = (book as any).pdf_file_id || (book.file_type === 'file' ? book.file_url : null);
-      
-      if (pdfFileId) {
-        // Відправляємо файл
-        await ctx.telegram.sendDocument(ctx.from!.id, pdfFileId, {
-          caption: `📥 ${book.title}\n👤 ${book.author}\n\n✅ PDF файл завантажено!`
-        });
-        await ctx.answerCbQuery('📥 PDF надіслано вам у приватні повідомлення');
-      } else {
-        await ctx.answerCbQuery('❌ PDF файл недоступний');
-      }
     } catch (error) {
       logger.error('Error downloading PDF', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка при завантаженні');
+      await sendErrorToUser(ctx, error, '❌ Помилка при завантаженні PDF. Спробуйте пізніше.');
     }
     return;
   });
