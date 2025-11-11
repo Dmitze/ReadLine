@@ -7,46 +7,26 @@ import { db, Book, getTopBooks } from './models';
 // Get random book - ВИПРАВЛЕНО
 export const getRandomBook = (): Promise<Book | null> => {
   return new Promise((resolve, reject) => {
+    // ✅ ВИПРАВЛЕНО #37: один запит замість двох
     console.log('🎲 Getting random book...');
     
-    // Спочатку перевіряємо чи є взагалі доступні книги
     db.get(
-      'SELECT COUNT(*) as count FROM books WHERE is_available = 1 OR is_available IS NULL',
-      (err, result: any) => {
+      'SELECT * FROM books WHERE (is_available = 1 OR is_available IS NULL) ORDER BY RANDOM() LIMIT 1',
+      (err, row: Book) => {
         if (err) {
-          console.error('❌ Error counting available books:', err);
+          console.error('❌ Error getting random book:', err);
           reject(err);
           return;
         }
         
-        const count = result?.count || 0;
-        console.log(`📊 Available books count: ${count}`);
-        
-        if (count === 0) {
+        if (row) {
+          console.log(`✅ Random book selected: "${row.title}" by ${row.author}`);
+          row.is_available = true;
+          resolve(row);
+        } else {
           console.warn('⚠️ No available books in database');
           resolve(null);
-          return;
         }
-        
-        // Якщо є книги - вибираємо випадкову (включаючи книги без явного is_available)
-        db.get(
-          'SELECT * FROM books WHERE (is_available = 1 OR is_available IS NULL) ORDER BY RANDOM() LIMIT 1',
-          (err, row: Book) => {
-            if (err) {
-              console.error('❌ Error getting random book:', err);
-              reject(err);
-            } else {
-              if (row) {
-                console.log(`✅ Random book selected: "${row.title}" by ${row.author}`);
-                // Переконуємося що книга доступна
-                row.is_available = true;
-              } else {
-                console.warn('⚠️ No book returned from query');
-              }
-              resolve(row || null);
-            }
-          }
-        );
       }
     );
   });
@@ -234,8 +214,14 @@ export const getContextualRecommendations = (userId: number, limit: number = 5):
   const hour = new Date().getHours();
   let genrePreference: string[] = [];
 
+  // ✅ ВИПРАВЛЕНО #42: константи замість magic numbers
+  const MORNING_START = 6;
+  const AFTERNOON_START = 12;
+  const EVENING_START = 18;
+  const NIGHT_START = 22;
+  
   // Morning (6-12): Motivational, Business, Self-help
-  if (hour >= 6 && hour < 12) {
+  if (hour >= MORNING_START && hour < AFTERNOON_START) {
     genrePreference = ['Мотиваційна', 'Бізнес', 'Саморозвиток', 'Наукова'];
   }
   // Afternoon (12-18): Any genre
