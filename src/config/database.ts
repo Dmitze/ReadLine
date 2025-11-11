@@ -5,24 +5,25 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+import { logger } from '../utils/logger';
+
 // ✅ ВИПРАВЛЕНО #13: async initialization
 const initializeDatabase = async () => {
   try {
-    console.log('Initializing database...');
+    logger.info('Initializing database');
     
-    // Створення директорії для БД якщо не існує
     const dbPath = process.env.DB_PATH || './database/library.db';
     const dbDir = path.dirname(dbPath);
     
     if (!fs.existsSync(dbDir)) {
       fs.mkdirSync(dbDir, { recursive: true });
-      console.log(`📁 Створено директорію для БД: ${dbDir}`);
+      logger.info('Created database directory', { path: dbDir });
     }
     
     await initDatabase();
-    console.log('✅ Database initialized successfully');
+    logger.info('Database initialized successfully');
   } catch (error) {
-    console.error('❌ Failed to initialize database:', error);
+    logger.error('Failed to initialize database', error instanceof Error ? error : new Error(String(error)));
     process.exit(1);
   }
 };
