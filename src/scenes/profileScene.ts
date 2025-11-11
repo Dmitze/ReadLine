@@ -78,10 +78,8 @@ profileScene.action('show_recommendations', async (ctx) => {
     
     const { formatBookCaption } = await import('../utils/helpers');
     const { isBookSaved, getTopBooks, getNewestBooks } = await import('../database/models');
-    const { getUserFavoriteGenres } = await import('../database/recommendationFunctions');
     
-    // Використовуємо розумні рекомендації
-    const favoriteGenres = await getUserFavoriteGenres(userId, 3);
+    // ✅ ВИПРАВЛЕНО #30: видалено дублювання - getUserFavoriteGenres викликається всередині getSmartRecommendations
     let recommendations = await getSmartRecommendations(userId, 5);
     
     // Якщо немає персональних рекомендацій - показуємо топ книги
@@ -121,6 +119,10 @@ profileScene.action('show_recommendations', async (ctx) => {
         }
       }
     }
+    
+    // Отримуємо улюблені жанри для відображення
+    const { getUserFavoriteGenres } = await import('../database/recommendationFunctions');
+    const favoriteGenres = await getUserFavoriteGenres(userId, 3);
     
     let text = '💡 *Вам може сподобатися*\n\n';
     if (favoriteGenres.length > 0) {
@@ -305,7 +307,8 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
         // Затримка між повідомленнями
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (bookError) {
-        console.error('❌ Error showing book:', bookError);
+        // ✅ ВИПРАВЛЕНО #43: logger замість console.error
+        logger.error('Error showing book', bookError instanceof Error ? bookError : new Error(String(bookError)));
         // Продовжуємо з наступною книгою
       }
     }
@@ -313,7 +316,7 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
     logger.userAction(userId, 'personal_collection', { booksFound: collection.length });
 
   } catch (error) {
-    console.error('❌ Error in personal collection:', error);
+    // ✅ ВИПРАВЛЕНО #43: вже є logger.error нижче, видаляємо дублювання
     logger.error('Error generating personal collection', error instanceof Error ? error : new Error(String(error)));
     await ctx.reply('😔 Не вдалося створити персональну підбірку. Спробуйте пізніше.');
   }
