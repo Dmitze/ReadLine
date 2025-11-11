@@ -75,21 +75,31 @@ bot.on('callback_query', rateLimit_1.rateLimitCallback);
 bot.use(async (ctx, next) => {
     if (ctx.message && 'text' in ctx.message) {
         const text = ctx.message.text;
-        if (text === '/start' || text === '/cancel' || text === '❌ Скасувати') {
+        if (text === '/start') {
             if (ctx.scene) {
                 await ctx.scene.leave();
-                logger_1.logger.info('User left scene via command', { userId: ctx.from?.id, command: text });
+                logger_1.logger.info('User left scene via /start', { userId: ctx.from?.id });
             }
-            if (text === '/start') {
-                return next();
+            return next();
+        }
+        if (text === '/cancel' || text === '❌ Скасувати') {
+            if (ctx.scene) {
+                try {
+                    await ctx.scene.leave();
+                    logger_1.logger.info('User left scene via cancel', { userId: ctx.from?.id, command: text });
+                }
+                catch (error) {
+                    logger_1.logger.error('Error leaving scene', error instanceof Error ? error : new Error(String(error)));
+                }
             }
-            else {
-                const { getMainMenuKeyboard } = await Promise.resolve().then(() => __importStar(require('./keyboards/mainKeyboards')));
-                await ctx.reply('❌ Операцію скасовано', {
-                    reply_markup: getMainMenuKeyboard()
-                });
-                return;
+            if (ctx.session) {
+                ctx.session = {};
             }
+            const { getMainMenuKeyboard } = await Promise.resolve().then(() => __importStar(require('./keyboards/mainKeyboards')));
+            await ctx.reply('❌ Операцію скасовано\n\nОберіть дію з меню:', {
+                reply_markup: getMainMenuKeyboard()
+            });
+            return;
         }
     }
     return next();
@@ -135,9 +145,34 @@ const stage = new telegraf_1.Scenes.Stage([
     aiAssistantScene_1.default,
     promoAdminScene_1.default
 ]);
-bot.use((0, telegraf_1.session)());
-bot.use(stage.middleware());
 const mainKeyboards_1 = require("./keyboards/mainKeyboards");
+bot.use((0, telegraf_1.session)());
+bot.use(async (ctx, next) => {
+    if (ctx.message && 'text' in ctx.message) {
+        const text = ctx.message.text;
+        const menuButtons = [
+            '📖 Каталог', '🏆 Топ книги', '🆕 Новинки',
+            '💾 Моя бібліотека', '👤 Профіль', '🤖 AI Помічник',
+            '🎁 Отримати промокод', 'ℹ️ Допомога', '📞 Зворотній зв\'язок',
+            '🏠 На головну'
+        ];
+        if (menuButtons.includes(text) && ctx.scene) {
+            console.log(`🚪 User pressed menu button "${text}" while in scene, leaving...`);
+            try {
+                await ctx.scene.leave();
+                if (ctx.session) {
+                    ctx.session = {};
+                }
+                console.log('✅ Successfully left scene');
+            }
+            catch (error) {
+                console.error('❌ Error leaving scene:', error);
+            }
+        }
+    }
+    return next();
+});
+bot.use(stage.middleware());
 const userFunctions_1 = require("./database/userFunctions");
 bot.start(async (ctx) => {
     const userId = ctx.from?.id;
