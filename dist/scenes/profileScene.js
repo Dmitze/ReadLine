@@ -96,8 +96,6 @@ profileScene.action('show_recommendations', async (ctx) => {
             return;
         const { formatBookCaption } = await Promise.resolve().then(() => __importStar(require('../utils/helpers')));
         const { isBookSaved, getTopBooks, getNewestBooks } = await Promise.resolve().then(() => __importStar(require('../database/models')));
-        const { getUserFavoriteGenres } = await Promise.resolve().then(() => __importStar(require('../database/recommendationFunctions')));
-        const favoriteGenres = await getUserFavoriteGenres(userId, 3);
         let recommendations = await (0, recommendationFunctions_1.getSmartRecommendations)(userId, 5);
         if (recommendations.length === 0) {
             console.log('⚠️ No personal recommendations, showing top books');
@@ -123,6 +121,8 @@ profileScene.action('show_recommendations', async (ctx) => {
                 }
             }
         }
+        const { getUserFavoriteGenres } = await Promise.resolve().then(() => __importStar(require('../database/recommendationFunctions')));
+        const favoriteGenres = await getUserFavoriteGenres(userId, 3);
         let text = '💡 *Вам може сподобатися*\n\n';
         if (favoriteGenres.length > 0) {
             text += `На основі ваших улюблених жанрів: ${favoriteGenres.join(', ')}\n\n`;
@@ -272,13 +272,12 @@ profileScene.action('show_personal_collection', async (ctx) => {
                 await new Promise(resolve => setTimeout(resolve, 500));
             }
             catch (bookError) {
-                console.error('❌ Error showing book:', bookError);
+                logger_1.logger.error('Error showing book', bookError instanceof Error ? bookError : new Error(String(bookError)));
             }
         }
         logger_1.logger.userAction(userId, 'personal_collection', { booksFound: collection.length });
     }
     catch (error) {
-        console.error('❌ Error in personal collection:', error);
         logger_1.logger.error('Error generating personal collection', error instanceof Error ? error : new Error(String(error)));
         await ctx.reply('😔 Не вдалося створити персональну підбірку. Спробуйте пізніше.');
     }
