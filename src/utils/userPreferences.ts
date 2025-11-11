@@ -6,8 +6,9 @@ import { logger } from './logger';
 // Отримати налаштування клавіатури користувача
 export const getUserKeyboardPreference = (userId: number): DeviceType => {
   try {
+    // ✅ ВИПРАВЛЕНО: telegram_id → user_id
     const result = db.prepare(`
-      SELECT keyboard_type FROM users WHERE telegram_id = ?
+      SELECT keyboard_type FROM users WHERE user_id = ?
     `).get(userId) as { keyboard_type?: string } | undefined;
     
     if (result && result.keyboard_type) {
@@ -25,21 +26,22 @@ export const getUserKeyboardPreference = (userId: number): DeviceType => {
 // Зберегти налаштування клавіатури користувача
 export const setUserKeyboardPreference = (userId: number, deviceType: DeviceType): boolean => {
   try {
+    // ✅ ВИПРАВЛЕНО: telegram_id → user_id
     // Спочатку перевіряємо чи існує користувач
     const user = db.prepare(`
-      SELECT id FROM users WHERE telegram_id = ?
+      SELECT id FROM users WHERE user_id = ?
     `).get(userId);
     
     if (!user) {
       // Створюємо користувача якщо не існує
       db.prepare(`
-        INSERT INTO users (telegram_id, keyboard_type, created_at)
+        INSERT INTO users (user_id, keyboard_type, created_at)
         VALUES (?, ?, datetime('now'))
       `).run(userId, deviceType);
     } else {
       // Оновлюємо налаштування
       db.prepare(`
-        UPDATE users SET keyboard_type = ? WHERE telegram_id = ?
+        UPDATE users SET keyboard_type = ? WHERE user_id = ?
       `).run(deviceType, userId);
     }
     
