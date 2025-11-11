@@ -9,6 +9,7 @@ import { ERRORS } from '../constants';
 
 /**
  * Middleware для перевірки чи користувач є адміном
+ * ✅ ВИПРАВЛЕНО #12: правильна блокування не-адмінів
  */
 export const requireAdmin: Middleware<Context> = async (ctx, next) => {
   try {
@@ -17,7 +18,7 @@ export const requireAdmin: Middleware<Context> = async (ctx, next) => {
     if (!userId) {
       await ctx.reply(ERRORS.NO_ADMIN_ACCESS);
       logger.warn('Auth attempt without user ID');
-      return;
+      return; // ✅ Блокуємо виконання, не викликаємо next()
     }
     
     const isUserAdmin = await isAdmin(userId);
@@ -25,14 +26,15 @@ export const requireAdmin: Middleware<Context> = async (ctx, next) => {
     if (!isUserAdmin) {
       await ctx.reply(ERRORS.NO_ADMIN_ACCESS);
       logger.warn('Unauthorized admin access attempt', { userId });
-      return;
+      return; // ✅ Блокуємо виконання, не викликаємо next()
     }
     
-    // Користувач є адміном - продовжуємо
+    // ✅ Тільки для адмінів викликаємо next()
     return next();
   } catch (error) {
     logger.error('Error in admin middleware', error, { userId: ctx.from?.id });
     await ctx.reply(ERRORS.GENERIC);
+    // ✅ Не викликаємо next() при помилці
   }
 };
 
