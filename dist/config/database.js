@@ -8,7 +8,7 @@ const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-const initializeDatabase = () => {
+const initializeDatabase = async () => {
     try {
         console.log('Initializing database...');
         const dbPath = process.env.DB_PATH || './database/library.db';
@@ -17,11 +17,11 @@ const initializeDatabase = () => {
             fs_1.default.mkdirSync(dbDir, { recursive: true });
             console.log(`📁 Створено директорію для БД: ${dbDir}`);
         }
-        (0, models_1.initDatabase)();
-        console.log('Database initialized successfully');
+        await (0, models_1.initDatabase)();
+        console.log('✅ Database initialized successfully');
     }
     catch (error) {
-        console.error('Failed to initialize database:', error);
+        console.error('❌ Failed to initialize database:', error);
         process.exit(1);
     }
 };
