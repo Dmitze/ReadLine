@@ -37,6 +37,7 @@ replyFeedbackScene.hears('❌ Скасувати', async (ctx: BotContext) => {
   return ctx.scene.leave();
 });
 
+// ✅ ВИПРАВЛЕНО #15: покращена обробка блокування бота
 replyFeedbackScene.on('text', async (ctx: BotContext) => {
   const state = ctx.scene.state as ReplyState;
   const replyText = 'text' in ctx.message ? ctx.message.text : '';
@@ -50,7 +51,7 @@ replyFeedbackScene.on('text', async (ctx: BotContext) => {
     // Зберігаємо відповідь в БД
     await addAdminReply(state.feedbackId!, replyText);
     
-    // Надсилаємо відповідь користувачу
+    // Намагаємось надіслати повідомлення користувачу
     try {
       await ctx.telegram.sendMessage(
         state.userId!,
@@ -74,12 +75,48 @@ replyFeedbackScene.on('text', async (ctx: BotContext) => {
         adminId: ctx.from?.id 
       });
       
-    } catch (sendError) {
-      logger.error('Error sending reply to user', sendError instanceof Error ? sendError : new Error(String(sendError)));
-      await ctx.reply(
-        `⚠️ Відповідь збережена в БД, але не вдалося надіслати користувачу.\n` +
-        `Можливо користувач заблокував бота.`
-      );
+    } catch (sendError: any) {
+      // Детальна обробка помилок Telegram API
+      const errorMessage = sendError?.message || String(sendError);
+      const errorCode = sendError?.response?.error_code;
+      
+      // Перевіряємо різні типи помилок
+      const isBotBlocked = errorMessage.includes('bot was blocked by the user') || 
+                          errorMessage.includes('user is deactivated') ||
+                          errorMessage.includes('chat not found') ||
+                          errorCode === 403;
+      
+      const isChatDeleted = errorMessage.includes('chat not found') || errorCode === 400;
+      
+      logger.error('Error sending reply to user', sendError instanceof Error ? sendError : new Error(String(sendError)), {
+        userId: state.userId,
+        isBotBlocked,
+        isChatDeleted,
+        errorCode
+      });
+      
+      if (isBotBlocked) {
+        await ctx.reply(
+          `⚠️ *Відповідь збережена в БД*\n\n` +
+          `❌ Користувач заблокував бота.\n` +
+          `Повідомлення не доставлено, але збережено в системі.`,
+          { parse_mode: 'Markdown' }
+        );
+      } else if (isChatDeleted) {
+        await ctx.reply(
+          `⚠️ *Відповідь збережена в БД*\n\n` +
+          `❌ Чат з користувачем не знайдено (можливо видалив акаунт).\n` +
+          `Повідомлення не доставлено.`,
+          { parse_mode: 'Markdown' }
+        );
+      } else {
+        await ctx.reply(
+          `⚠️ *Відповідь збережена в БД*\n\n` +
+          `❌ Помилка при надсиланні:\n` +
+          `${errorMessage.substring(0, 150)}`,
+          { parse_mode: 'Markdown' }
+        );
+      }
     }
     
     return ctx.scene.leave();
