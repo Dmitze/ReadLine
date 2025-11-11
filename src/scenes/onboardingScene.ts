@@ -208,11 +208,17 @@ onboardingScene.action('onboarding_genres_done', async (ctx: BotContext) => {
   
   await ctx.answerCbQuery('✅ Жанри збережено!');
   
-  // Зберігаємо улюблені жанри в БД
-  // ✅ ВИПРАВЛЕНО #39: завершуємо навіть без жанрів
+  // Зберігаємо улюблені жанри в БД та профіль
   if (userId) {
     try {
       await markOnboardingComplete(userId, state.selectedGenres || []);
+      
+      // Додатково оновлюємо улюблені жанри в профілі
+      const { updateUserFavoriteGenres } = await import('../database/userFunctions');
+      if (state.selectedGenres && state.selectedGenres.length > 0) {
+        await updateUserFavoriteGenres(userId, state.selectedGenres);
+      }
+      
       logger.info('User completed onboarding with genres', { 
         userId, 
         selectedGenres: state.selectedGenres 
