@@ -1,5 +1,4 @@
 import sqlite3 from 'sqlite3';
-import { Database } from 'sqlite3';
 import fs from 'fs';
 import path from 'path';
 
@@ -105,105 +104,216 @@ if (!fs.existsSync(dbDir)) {
 
 export const db = new sqlite3.Database(dbPath);
 
-// Create tables
-export const initDatabase = (): void => {
-  // Create books table
-  const createBooksTable = `
-    CREATE TABLE IF NOT EXISTS books (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        author TEXT NOT NULL,
-        genre TEXT NOT NULL,
-        description TEXT,
-        photo_file_id TEXT NOT NULL,
-        file_url TEXT,
-        file_type TEXT DEFAULT 'physical',
-        file_name TEXT,
-        rating REAL DEFAULT 0,
-        reviews_count INTEGER DEFAULT 0,
-        downloads_count INTEGER DEFAULT 0,
-        is_available BOOLEAN DEFAULT 1,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
+// ✅ ВИПРАВЛЕНО #13: async initialization з proper error handling
+export const initDatabase = (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    // Create books table
+    const createBooksTable = `
+      CREATE TABLE IF NOT EXISTS books (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT NOT NULL,
+          author TEXT NOT NULL,
+          genre TEXT NOT NULL,
+          description TEXT,
+          photo_file_id TEXT NOT NULL,
+          file_url TEXT,
+          file_type TEXT DEFAULT 'physical',
+          file_name TEXT,
+          rating REAL DEFAULT 0,
+          reviews_count INTEGER DEFAULT 0,
+          downloads_count INTEGER DEFAULT 0,
+          is_available BOOLEAN DEFAULT 1,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
 
-  // Requests table removed - no longer using physical book requests
+    // Requests table removed - no longer using physical book requests
 
-  // Create admins table
-  const createAdminsTable = `
-    CREATE TABLE IF NOT EXISTS admins (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER UNIQUE NOT NULL,
-        username TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
+    // Create admins table
+    const createAdminsTable = `
+      CREATE TABLE IF NOT EXISTS admins (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER UNIQUE NOT NULL,
+          username TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
 
-  // Create reviews table
-  const createReviewsTable = `
-    CREATE TABLE IF NOT EXISTS reviews (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        book_id INTEGER NOT NULL,
-        user_id INTEGER NOT NULL,
-        user_name TEXT,
-        rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
-        comment TEXT,
-        is_published BOOLEAN DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (book_id) REFERENCES books (id)
-    );
-  `;
+    // Create reviews table
+    const createReviewsTable = `
+      CREATE TABLE IF NOT EXISTS reviews (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          book_id INTEGER NOT NULL,
+          user_id INTEGER NOT NULL,
+          user_name TEXT,
+          rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+          comment TEXT,
+          is_published BOOLEAN DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (book_id) REFERENCES books (id)
+      );
+    `;
 
-  // Create saved_books table (user's personal library)
-  const createSavedBooksTable = `
-    CREATE TABLE IF NOT EXISTS saved_books (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        book_id INTEGER NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(user_id, book_id),
-        FOREIGN KEY (book_id) REFERENCES books (id)
-    );
-  `;
+    // Create saved_books table (user's personal library)
+    const createSavedBooksTable = `
+      CREATE TABLE IF NOT EXISTS saved_books (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          book_id INTEGER NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_id, book_id),
+          FOREIGN KEY (book_id) REFERENCES books (id)
+      );
+    `;
 
-  // Create feedback_messages table
-  const createFeedbackMessagesTable = `
-    CREATE TABLE IF NOT EXISTS feedback_messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER NOT NULL,
-        user_name TEXT,
-        user_username TEXT,
-        message TEXT NOT NULL,
-        status TEXT DEFAULT 'pending',
-        admin_reply TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        read_at DATETIME
-    );
-  `;
+    // Create feedback_messages table
+    const createFeedbackMessagesTable = `
+      CREATE TABLE IF NOT EXISTS feedback_messages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          user_name TEXT,
+          user_username TEXT,
+          message TEXT NOT NULL,
+          status TEXT DEFAULT 'pending',
+          admin_reply TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          read_at DATETIME
+      );
+    `;
 
-  // Create users table
-  const createUsersTable = `
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER UNIQUE NOT NULL,
-        username TEXT,
-        first_name TEXT,
-        last_name TEXT,
-        favorite_genres TEXT,
-        keyboard_type TEXT DEFAULT 'mobile',
-        has_completed_onboarding BOOLEAN DEFAULT 0,
-        last_notification_at DATETIME,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-  `;
+    // Create users table
+    const createUsersTable = `
+      CREATE TABLE IF NOT EXISTS users (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER UNIQUE NOT NULL,
+          username TEXT,
+          first_name TEXT,
+          last_name TEXT,
+          favorite_genres TEXT,
+          keyboard_type TEXT DEFAULT 'mobile',
+          has_completed_onboarding BOOLEAN DEFAULT 0,
+          last_notification_at DATETIME,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
 
-  db.serialize(() => {
-    db.run(createBooksTable);
-    db.run(createAdminsTable);
-    db.run(createReviewsTable);
-    db.run(createSavedBooksTable);
-    db.run(createFeedbackMessagesTable);
-    db.run(createUsersTable);
+    // ✅ ВИПРАВЛЕНО #8: таблиця для історії AI підборів
+    const createAiSelectionsTable = `
+      CREATE TABLE IF NOT EXISTS ai_selections (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          book_id INTEGER NOT NULL,
+          selection_type TEXT NOT NULL,
+          interest TEXT,
+          length TEXT,
+          mood TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users (user_id),
+          FOREIGN KEY (book_id) REFERENCES books (id)
+      );
+    `;
+
+    db.serialize(() => {
+      db.run(createBooksTable, (err) => {
+        if (err) {
+          reject(new Error(`Failed to create books table: ${err.message}`));
+          return;
+        }
+      });
+      
+      db.run(createAdminsTable, (err) => {
+        if (err) {
+          reject(new Error(`Failed to create admins table: ${err.message}`));
+          return;
+        }
+      });
+      
+      db.run(createReviewsTable, (err) => {
+        if (err) {
+          reject(new Error(`Failed to create reviews table: ${err.message}`));
+          return;
+        }
+      });
+      
+      db.run(createSavedBooksTable, (err) => {
+        if (err) {
+          reject(new Error(`Failed to create saved_books table: ${err.message}`));
+          return;
+        }
+      });
+      
+      db.run(createFeedbackMessagesTable, (err) => {
+        if (err) {
+          reject(new Error(`Failed to create feedback_messages table: ${err.message}`));
+          return;
+        }
+      });
+      
+      db.run(createUsersTable, (err) => {
+        if (err) {
+          reject(new Error(`Failed to create users table: ${err.message}`));
+          return;
+        }
+        
+        // Створюємо таблицю AI selections
+        db.run(createAiSelectionsTable, (err) => {
+          if (err) {
+            console.warn(`Warning: Failed to create ai_selections table: ${err.message}`);
+          }
+        });
+        
+        // ✅ ВИПРАВЛЕНО #32: додаємо індекси для оптимізації запитів
+        const indexes = [
+          // Індекси для books
+          'CREATE INDEX IF NOT EXISTS idx_books_genre ON books(genre)',
+          'CREATE INDEX IF NOT EXISTS idx_books_rating ON books(rating DESC)',
+          'CREATE INDEX IF NOT EXISTS idx_books_created_at ON books(created_at DESC)',
+          'CREATE INDEX IF NOT EXISTS idx_books_available ON books(is_available)',
+          'CREATE INDEX IF NOT EXISTS idx_books_genre_rating ON books(genre, rating DESC)',
+          
+          // Індекси для reviews
+          'CREATE INDEX IF NOT EXISTS idx_reviews_book_id ON reviews(book_id)',
+          'CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id)',
+          'CREATE INDEX IF NOT EXISTS idx_reviews_published ON reviews(is_published)',
+          
+          // Індекси для saved_books
+          'CREATE INDEX IF NOT EXISTS idx_saved_books_user_id ON saved_books(user_id)',
+          'CREATE INDEX IF NOT EXISTS idx_saved_books_book_id ON saved_books(book_id)',
+          'CREATE INDEX IF NOT EXISTS idx_saved_books_user_book ON saved_books(user_id, book_id)',
+          
+          // Індекси для users
+          'CREATE INDEX IF NOT EXISTS idx_users_user_id ON users(user_id)',
+          'CREATE INDEX IF NOT EXISTS idx_users_onboarding ON users(has_completed_onboarding)',
+          
+          // Індекси для feedback
+          'CREATE INDEX IF NOT EXISTS idx_feedback_status ON feedback_messages(status)',
+          'CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON feedback_messages(user_id)',
+          
+          // ✅ ВИПРАВЛЕНО #8: індекси для ai_selections
+          'CREATE INDEX IF NOT EXISTS idx_ai_selections_user_id ON ai_selections(user_id)',
+          'CREATE INDEX IF NOT EXISTS idx_ai_selections_book_id ON ai_selections(book_id)',
+          'CREATE INDEX IF NOT EXISTS idx_ai_selections_type ON ai_selections(selection_type)'
+        ];
+        
+        let indexCount = 0;
+        const createNextIndex = () => {
+          if (indexCount >= indexes.length) {
+            resolve();
+            return;
+          }
+          
+          db.run(indexes[indexCount], (indexErr) => {
+            if (indexErr) {
+              console.warn(`Warning: Failed to create index: ${indexErr.message}`);
+            }
+            indexCount++;
+            createNextIndex();
+          });
+        };
+        
+        createNextIndex();
+      });
+    });
   });
 };
 
@@ -340,6 +450,7 @@ export const getAdminStats = (): Promise<AdminStats> => {
 };
 
 // Pagination functions
+// ✅ ВИПРАВЛЕНО #20: proper error handling в pagination
 export const getBooksByGenreWithPagination = (
   genre: string,
   limit: number = 5,
@@ -356,13 +467,22 @@ export const getBooksByGenreWithPagination = (
           return;
         }
         
+        // Перевіряємо що countRow існує
+        if (!countRow) {
+          resolve({ books: [], total: 0 });
+          return;
+        }
+        
         // Потім отримуємо книги з пагінацією
         db.all(
           'SELECT * FROM books WHERE genre = ? LIMIT ? OFFSET ?',
           [genre, limit, offset],
           (err, books: Book[]) => {
-            if (err) reject(err);
-            else resolve({ books, total: countRow.total });
+            if (err) {
+              reject(err);
+              return;
+            }
+            resolve({ books: books || [], total: countRow.total || 0 });
           }
         );
       }
@@ -370,6 +490,7 @@ export const getBooksByGenreWithPagination = (
   });
 };
 
+// ✅ ВИПРАВЛЕНО #20: proper error handling в pagination
 export const getBooksWithPagination = (
   limit: number = 5,
   offset: number = 0
@@ -382,13 +503,22 @@ export const getBooksWithPagination = (
         return;
       }
       
+      // Перевіряємо що countRow існує
+      if (!countRow) {
+        resolve({ books: [], total: 0 });
+        return;
+      }
+      
       // Потім отримуємо книги з пагінацією
       db.all(
         'SELECT * FROM books LIMIT ? OFFSET ?',
         [limit, offset],
         (err, books: Book[]) => {
-          if (err) reject(err);
-          else resolve({ books, total: countRow.total });
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve({ books: books || [], total: countRow.total || 0 });
         }
       );
     });
@@ -606,6 +736,26 @@ export const isBookSaved = (userId: number, bookId: number): Promise<boolean> =>
       (err, row) => {
         if (err) reject(err);
         else resolve(!!row);
+      }
+    );
+  });
+};
+
+// ✅ ВИПРАВЛЕНО #26: batch версія для уникнення N+1 query
+export const areBooksaved = (userId: number, bookIds: number[]): Promise<Set<number>> => {
+  return new Promise((resolve, reject) => {
+    if (bookIds.length === 0) {
+      resolve(new Set());
+      return;
+    }
+    
+    const placeholders = bookIds.map(() => '?').join(',');
+    db.all(
+      `SELECT book_id FROM saved_books WHERE user_id = ? AND book_id IN (${placeholders})`,
+      [userId, ...bookIds],
+      (err, rows: Array<{ book_id: number }>) => {
+        if (err) reject(err);
+        else resolve(new Set(rows.map(r => r.book_id)));
       }
     );
   });
