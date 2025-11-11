@@ -13,6 +13,19 @@ import {
   isAIEnabled 
 } from '../utils/aiHelper';
 
+// ✅ ВИПРАВЛЕНО #18: helper функція для уникнення дублювання коду
+async function promptForBookTitle(ctx: BotContext): Promise<void> {
+  await ctx.reply(
+    '📖 Введіть назву книги:\n\n' +
+    '💡 Або натисніть /cancel для скасування',
+    {
+      reply_markup: Markup.keyboard([
+        ['❌ Скасувати']
+      ]).resize().reply_markup
+    }
+  );
+}
+
 const addBookScene = new Scenes.WizardScene(
   'ADD_BOOK_SCENE',
   // Крок 0: AI-асистент (опціонально)
@@ -242,48 +255,7 @@ const addBookScene = new Scenes.WizardScene(
     );
     return ctx.wizard.next();
   },
-  // Крок 2: Автор
-  async (ctx: BotContext) => {
-    // Перевірка на скасування
-    if (ctx.message && 'text' in ctx.message && ctx.message.text === '❌ Скасувати') {
-      await ctx.reply('❌ Додавання книги скасовано');
-      return ctx.scene?.leave();
-    }
-    
-    // Валідація типу повідомлення
-    if (!ctx.message || !('text' in ctx.message)) {
-      await ctx.reply(
-        '❌ Будь ласка, надішліть текст (назву книги).\n\n' +
-        '💡 Або натисніть /cancel для скасування'
-      );
-      return;
-    }
-    
-    const title = ctx.message.text.trim();
-    
-    // Валідація
-    if (title.length < 2) {
-      await ctx.reply('❌ Назва занадто коротка. Мінімум 2 символи.');
-      return;
-    }
-    
-    if (title.length > 200) {
-      await ctx.reply('❌ Назва занадто довга. Максимум 200 символів.');
-      return;
-    }
-    
-    (ctx.wizard?.state as WizardState).title = title;
-    await ctx.reply(
-      '👤 Введіть автора книги:\n\n' +
-      '💡 Або натисніть /cancel для скасування',
-      {
-        reply_markup: Markup.keyboard([
-          ['❌ Скасувати']
-        ]).resize().reply_markup
-      }
-    );
-    return ctx.wizard.next();
-  },
+  // ✅ ВИПРАВЛЕНО #18: видалено дублювання - крок 2 був ідентичний кроку 3
   // Крок 3: Автор
   async (ctx: BotContext) => {
     // Перевірка на скасування
@@ -401,7 +373,11 @@ const addBookScene = new Scenes.WizardScene(
       await ctx.reply('🤖 Перевіряю якість опису за допомогою AI...');
       
       try {
-        const quality = await checkDescriptionQuality(description);
+        // ✅ ВИПРАВЛЕНО #31: timeout для AI
+        const quality = await Promise.race([
+          checkDescriptionQuality(description),
+          new Promise<any>((resolve) => setTimeout(() => resolve({ score: 100 }), 5000))
+        ]);
         
         if (quality.score >= 70) {
           await ctx.reply(
@@ -520,6 +496,33 @@ const addBookScene = new Scenes.WizardScene(
     // Перевіряємо чи це фото
     else if (ctx.message && 'photo' in ctx.message && ctx.message.photo && ctx.message.photo.length > 0) {
       const photo = ctx.message.photo[ctx.message.photo.length - 1];
+      
+      // ✅ ВИПРАВЛЕНО #3: валідація фото
+      const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+      
+      // Перевірка розміру
+      if (photo.file_size && photo.file_size > MAX_SIZE) {
+        await ctx.reply(
+          `❌ Фото занадто велике!\n\n` +
+          `Розмір: ${(photo.file_size / (1024 * 1024)).toFixed(2)} MB\n` +
+          `Максимум: 5 MB\n\n` +
+          `Будь ласка, завантажте менше фото або використайте посилання на зображення.`
+        );
+        return;
+      }
+      
+      // Попередження про пропорції (обкладинки зазвичай 2:3)
+      if (photo.width && photo.height) {
+        const ratio = photo.width / photo.height;
+        if (ratio < 0.5 || ratio > 1) {
+          await ctx.reply(
+            '⚠️ *Рекомендація:* обкладинки книг зазвичай мають пропорції 2:3 (вертикальні)\n\n' +
+            'Але ми приймемо це фото. Продовжуємо...',
+            { parse_mode: 'Markdown' }
+          );
+        }
+      }
+      
       state.photoFileId = photo.file_id;
       await ctx.reply('✅ Фото завантажено');
     } 
@@ -594,9 +597,26 @@ const addBookScene = new Scenes.WizardScene(
     
     if (state.bookType === 'type_file') {
       if (ctx.message && 'document' in ctx.message && ctx.message.document) {
-        state.fileUrl = ctx.message.document.file_id;
-        state.fileName = ctx.message.document.file_name || 'unknown.pdf';
-        await ctx.reply(`✅ Файл завантажено: ${state.fileName}`);
+        const document = ctx.message.document;
+        
+        // ✅ ВИПРАВЛЕНО #23: валідація розміру файлу
+        const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50 MB
+        
+        if (document.file_size && document.file_size > MAX_FILE_SIZE) {
+          await ctx.reply(
+            `❌ Файл занадто великий!\n\n` +
+            `Розмір: ${(document.file_size / (1024 * 1024)).toFixed(2)} MB\n` +
+            `Максимум: 50 MB\n\n` +
+            `Будь ласка, завантажте менший файл або використайте посилання.`
+          );
+          return;
+        }
+        
+        state.fileUrl = document.file_id;
+        state.fileName = document.file_name || 'unknown.pdf';
+        
+        const fileSizeMB = document.file_size ? (document.file_size / (1024 * 1024)).toFixed(2) : 'невідомо';
+        await ctx.reply(`✅ Файл завантажено: ${state.fileName}\nРозмір: ${fileSizeMB} MB`);
       } else {
         await ctx.reply(
           '❌ Будь ласка, надішліть файл.\n\n' +
@@ -653,23 +673,30 @@ ${state.bookType === 'type_file' ? '📄 Доступна для заванта�
   '📖 Тільки фізична копія'}
     `.trim();
 
+    // ✅ ВИПРАВЛЕНО #15: Preview з можливістю редагування
     if (bookData.photo_file_id && bookData.photo_file_id !== 'default_book_cover') {
       await ctx.replyWithPhoto(bookData.photo_file_id, {
-        caption: previewText,
+        caption: previewText + '\n\n💡 Перевірте всі дані перед публікацією',
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
-            [{ text: '✅ Підтвердити', callback_data: 'confirm_book' }],
+            [{ text: '✅ Підтвердити і опублікувати', callback_data: 'confirm_book' }],
+            [{ text: '✏️ Редагувати назву', callback_data: 'edit_title' }],
+            [{ text: '✏️ Редагувати автора', callback_data: 'edit_author' }],
+            [{ text: '✏️ Редагувати опис', callback_data: 'edit_description' }],
             [{ text: '❌ Скасувати', callback_data: 'cancel_book' }]
           ]
         }
       });
     } else {
-      await ctx.reply(previewText, {
+      await ctx.reply(previewText + '\n\n💡 Перевірте всі дані перед публікацією', {
         parse_mode: 'Markdown',
         reply_markup: {
           inline_keyboard: [
-            [{ text: '✅ Підтвердити', callback_data: 'confirm_book' }],
+            [{ text: '✅ Підтвердити і опублікувати', callback_data: 'confirm_book' }],
+            [{ text: '✏️ Редагувати назву', callback_data: 'edit_title' }],
+            [{ text: '✏️ Редагувати автора', callback_data: 'edit_author' }],
+            [{ text: '✏️ Редагувати опис', callback_data: 'edit_description' }],
             [{ text: '❌ Скасувати', callback_data: 'cancel_book' }]
           ]
         }
@@ -801,19 +828,11 @@ addBookScene.action('ai_continue', async (ctx: BotContext) => {
   return ctx.wizard.selectStep(5); // Переходимо до опису
 });
 
+// ✅ ВИПРАВЛЕНО #18: використання helper функції
 addBookScene.action('ai_manual_fix', async (ctx: BotContext) => {
   await ctx.answerCbQuery('✏️ Ручне виправлення');
   await ctx.editMessageText('✏️ Введіть виправлення або натисніть "Продовжити"');
-  
-  await ctx.reply(
-    '📖 Введіть назву книги:\n\n' +
-    '💡 Або натисніть /cancel для скасування',
-    {
-      reply_markup: Markup.keyboard([
-        ['❌ Скасувати']
-      ]).resize().reply_markup
-    }
-  );
+  await promptForBookTitle(ctx);
   return ctx.wizard.selectStep(2);
 });
 
@@ -830,15 +849,7 @@ addBookScene.action('ai_manual', async (ctx: BotContext) => {
   const state = ctx.wizard?.state as WizardState;
   state.useAI = false;
   
-  await ctx.reply(
-    '📖 Введіть назву книги:\n\n' +
-    '💡 Або натисніть /cancel для скасування',
-    {
-      reply_markup: Markup.keyboard([
-        ['❌ Скасувати']
-      ]).resize().reply_markup
-    }
-  );
+  await promptForBookTitle(ctx);
   return ctx.wizard.selectStep(2);
 });
 
@@ -963,6 +974,40 @@ addBookScene.action('tags_skip', async (ctx: BotContext) => {
   await ctx.answerCbQuery('⏭️ Пропущено');
   await ctx.editMessageText('⏭️ Книга створена без тегів');
   return ctx.scene?.leave();
+});
+
+// ✅ ВИПРАВЛЕНО #15: Обробники редагування в preview
+addBookScene.action('edit_title', async (ctx: BotContext) => {
+  await ctx.answerCbQuery('✏️ Редагування назви');
+  await ctx.reply('📝 Введіть нову назву книги:');
+  
+  const state = ctx.wizard?.state as WizardState;
+  state.editingField = 'title';
+  
+  // Повертаємось на крок введення назви
+  return ctx.wizard?.selectStep(1);
+});
+
+addBookScene.action('edit_author', async (ctx: BotContext) => {
+  await ctx.answerCbQuery('✏️ Редагування автора');
+  await ctx.reply('👤 Введіть нового автора:');
+  
+  const state = ctx.wizard?.state as WizardState;
+  state.editingField = 'author';
+  
+  // Повертаємось на крок введення автора
+  return ctx.wizard?.selectStep(2);
+});
+
+addBookScene.action('edit_description', async (ctx: BotContext) => {
+  await ctx.answerCbQuery('✏️ Редагування опису');
+  await ctx.reply('📝 Введіть новий опис книги:');
+  
+  const state = ctx.wizard?.state as WizardState;
+  state.editingField = 'description';
+  
+  // Повертаємось на крок введення опису
+  return ctx.wizard?.selectStep(4);
 });
 
 export default addBookScene;
