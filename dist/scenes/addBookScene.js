@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 const telegraf_1 = require("telegraf");
 const models_1 = require("../database/models");
@@ -26,12 +59,13 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
         return;
     }
     const title = ctx.message.text.trim();
-    if (title.length < 2) {
-        await ctx.reply('❌ Назва занадто коротка. Мінімум 2 символи.');
+    const { VALIDATION } = await Promise.resolve().then(() => __importStar(require('../constants')));
+    if (title.length < VALIDATION.TITLE_MIN) {
+        await ctx.reply(`❌ Назва занадто коротка. Мінімум ${VALIDATION.TITLE_MIN} символи.`);
         return;
     }
-    if (title.length > 200) {
-        await ctx.reply('❌ Назва занадто довга. Максимум 200 символів.');
+    if (title.length > VALIDATION.TITLE_MAX) {
+        await ctx.reply(`❌ Назва занадто довга. Максимум ${VALIDATION.TITLE_MAX} символів.`);
         return;
     }
     (ctx.wizard?.state).title = title;
@@ -53,8 +87,9 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
         return;
     }
     const author = ctx.message.text.trim();
-    if (author.length < 2) {
-        await ctx.reply('❌ Ім\'я автора занадто коротке. Мінімум 2 символи.');
+    const { VALIDATION } = await Promise.resolve().then(() => __importStar(require('../constants')));
+    if (author.length < VALIDATION.AUTHOR_MIN) {
+        await ctx.reply(`❌ Ім\'я автора занадто коротке. Мінімум ${VALIDATION.AUTHOR_MIN} символи.`);
         return;
     }
     (ctx.wizard?.state).author = author;
@@ -114,12 +149,13 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
         return;
     }
     const description = ctx.message.text.trim();
-    if (description.length < 10) {
-        await ctx.reply('❌ Опис занадто короткий. Мінімум 10 символів.');
+    const { VALIDATION } = await Promise.resolve().then(() => __importStar(require('../constants')));
+    if (description.length < VALIDATION.DESCRIPTION_MIN) {
+        await ctx.reply(`❌ Опис занадто короткий. Мінімум ${VALIDATION.DESCRIPTION_MIN} символів.`);
         return;
     }
-    if (description.length > 1000) {
-        await ctx.reply('❌ Опис занадто довгий. Максимум 1000 символів. Спробуйте ще раз:');
+    if (description.length > VALIDATION.DESCRIPTION_MAX) {
+        await ctx.reply(`❌ Опис занадто довгий. Максимум ${VALIDATION.DESCRIPTION_MAX} символів. Спробуйте ще раз:`);
         return;
     }
     const state = ctx.wizard?.state;
