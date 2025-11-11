@@ -118,15 +118,16 @@ searchScene.on('text', async (ctx: BotContext) => {
     return ctx.scene?.leave();
   }
   
-  // ✅ ВИПРАВЛЕНО #4: валідація довжини пошукового запиту
-  if (searchTerm.length < 2) {
-    await ctx.reply('❌ Пошуковий запит занадто короткий. Введіть мінімум 2 символи.');
+  // ✅ ВИПРАВЛЕНО #4: валідація довжини пошукового запиту з константами
+  const { CONFIG } = await import('../constants');
+  if (searchTerm.length < CONFIG.MIN_SEARCH_LENGTH) {
+    await ctx.reply(`❌ Пошуковий запит занадто короткий. Введіть мінімум ${CONFIG.MIN_SEARCH_LENGTH} символи.`);
     return;
   }
   
-  if (searchTerm.length > 100) {
+  if (searchTerm.length > CONFIG.MAX_SEARCH_LENGTH) {
     await ctx.reply(
-      '❌ Пошуковий запит занадто довгий. Максимум 100 символів.\n\n' +
+      `❌ Пошуковий запит занадто довгий. Максимум ${CONFIG.MAX_SEARCH_LENGTH} символів.\n\n` +
       'Спробуйте скоротити запит або використати ключові слова.'
     );
     return;
@@ -146,10 +147,11 @@ searchScene.on('text', async (ctx: BotContext) => {
         const { naturalLanguageSearch } = await import('../utils/aiHelper');
         const { db } = await import('../database/models');
         
-        // ✅ ВИПРАВЛЕНО #2: обмежуємо кількість книг для AI пошуку (запобігання memory leak)
+        // ✅ ВИПРАВЛЕНО #2: використовуємо константу для ліміту
+        const { CONFIG } = await import('../constants');
         const allBooks = await new Promise<Book[]>((resolve, reject) => {
           db.all(
-            'SELECT * FROM books WHERE is_available = 1 ORDER BY rating DESC, downloads_count DESC LIMIT 1000',
+            `SELECT * FROM books WHERE is_available = 1 ORDER BY rating DESC, downloads_count DESC LIMIT ${CONFIG.AI_MAX_BOOKS}`,
             [],
             (err, rows: Book[]) => {
               if (err) reject(err);
@@ -164,8 +166,8 @@ searchScene.on('text', async (ctx: BotContext) => {
         }
         
         // Попереджаємо якщо обмежили
-        if (allBooks.length === 1000) {
-          await ctx.reply('⚠️ Пошук обмежено першими 1000 найпопулярніших книг для швидкості');
+        if (allBooks.length === CONFIG.AI_MAX_BOOKS) {
+          await ctx.reply(`⚠️ Пошук обмежено першими ${CONFIG.AI_MAX_BOOKS} найпопулярніших книг для швидкості`);
         }
         
         // ✅ ВИПРАВЛЕНО #13: AI пошук з персоналізацією
