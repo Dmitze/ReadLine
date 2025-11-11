@@ -41,8 +41,14 @@ manageBooksScene.enter(async (ctx: BotContext) => {
 manageBooksScene.action('filter_by_genre', async (ctx: BotContext) => {
   try {
     await ctx.answerCbQuery();
+    // ✅ ВИПРАВЛЕНО #27: кешування жанрів
     const { getGenres } = await import('../database/models');
-    const genres = await getGenres();
+    const { cache, CACHE_KEYS, CACHE_TTL } = await import('../utils/cache');
+    const genres = await cache.getOrSet(
+      CACHE_KEYS.GENRES,
+      getGenres,
+      CACHE_TTL.LONG
+    );
     
     if (genres.length === 0) {
       await ctx.reply('📭 Немає жанрів');
@@ -445,6 +451,7 @@ manageBooksScene.action('bulk_edit_actions', async (ctx: BotContext) => {
           [Markup.button.callback('✅ Зробити доступними', 'bulk_make_available')],
           [Markup.button.callback('❌ Зробити недоступними', 'bulk_make_unavailable')],
           [Markup.button.callback('🏷️ Додати теги', 'bulk_add_tags')],
+          [Markup.button.callback('🗑️ Видалити книги', 'bulk_delete')],
           [Markup.button.callback('⬅️ Назад', 'bulk_edit')]
         ]).reply_markup
       }
@@ -459,15 +466,51 @@ manageBooksScene.action('bulk_edit_actions', async (ctx: BotContext) => {
 manageBooksScene.action('bulk_make_available', async (ctx: BotContext) => {
   try {
     const state = ctx.scene.state as any;
+    
+    // ✅ ВИПРАВЛЕНО #7: додано підтвердження перед bulk edit
+    await ctx.answerCbQuery();
+    await ctx.reply(
+      `⚠️ *ПІДТВЕРДЖЕННЯ*\n\n` +
+      `Ви впевнені, що хочете зробити доступними ${state.selectedBooks.length} ${state.selectedBooks.length === 1 ? 'книгу' : 'книг'}?\n\n` +
+      `Ця дія змінить статус всіх обраних книг.`,
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '✅ Так, підтверджую', callback_data: 'confirm_bulk_available' }],
+            [{ text: '❌ Ні, скасувати', callback_data: 'bulk_edit_actions' }]
+          ]
+        }
+      }
+    );
+
+  } catch (error) {
+    logger.error('Error showing bulk confirmation', error instanceof Error ? error : new Error(String(error)));
+    await ctx.reply('❌ Помилка');
+  }
+});
+
+// Підтвердження bulk_make_available
+manageBooksScene.action('confirm_bulk_available', async (ctx: BotContext) => {
+  try {
+    const state = ctx.scene.state as any;
     await ctx.answerCbQuery('⏳ Оновлюю...');
     
-    const { updateBook } = await import('../database/models');
+    const { db } = await import('../database/models');
+    const placeholders = state.selectedBooks.map(() => '?').join(',');
     
-    for (const bookId of state.selectedBooks) {
-      await updateBook(bookId, { is_available: true });
-    }
+    await new Promise<void>((resolve, reject) => {
+      db.run(
+        `UPDATE books SET is_available = 1 WHERE id IN (${placeholders})`,
+        state.selectedBooks,
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
     
-    await ctx.reply(
+    await ctx.editMessageText(
       `✅ *Успішно оновлено!*\n\n` +
       `${state.selectedBooks.length} ${state.selectedBooks.length === 1 ? 'книга' : 'книг'} тепер доступні`,
       { parse_mode: 'Markdown' }
@@ -490,15 +533,51 @@ manageBooksScene.action('bulk_make_available', async (ctx: BotContext) => {
 manageBooksScene.action('bulk_make_unavailable', async (ctx: BotContext) => {
   try {
     const state = ctx.scene.state as any;
+    
+    // ✅ ВИПРАВЛЕНО #7: додано підтвердження
+    await ctx.answerCbQuery();
+    await ctx.reply(
+      `⚠️ *ПІДТВЕРДЖЕННЯ*\n\n` +
+      `Ви впевнені, що хочете зробити НЕДОСТУПНИМИ ${state.selectedBooks.length} ${state.selectedBooks.length === 1 ? 'книгу' : 'книг'}?\n\n` +
+      `⚠️ Користувачі не зможуть їх знайти та завантажити!`,
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '✅ Так, підтверджую', callback_data: 'confirm_bulk_unavailable' }],
+            [{ text: '❌ Ні, скасувати', callback_data: 'bulk_edit_actions' }]
+          ]
+        }
+      }
+    );
+    
+  } catch (error) {
+    logger.error('Error showing bulk confirmation', error instanceof Error ? error : new Error(String(error)));
+    await ctx.reply('❌ Помилка');
+  }
+});
+
+// Підтвердження bulk_make_unavailable
+manageBooksScene.action('confirm_bulk_unavailable', async (ctx: BotContext) => {
+  try {
+    const state = ctx.scene.state as any;
     await ctx.answerCbQuery('⏳ Оновлюю...');
     
-    const { updateBook } = await import('../database/models');
+    const { db } = await import('../database/models');
+    const placeholders = state.selectedBooks.map(() => '?').join(',');
     
-    for (const bookId of state.selectedBooks) {
-      await updateBook(bookId, { is_available: false });
-    }
+    await new Promise<void>((resolve, reject) => {
+      db.run(
+        `UPDATE books SET is_available = 0 WHERE id IN (${placeholders})`,
+        state.selectedBooks,
+        (err) => {
+          if (err) reject(err);
+          else resolve();
+        }
+      );
+    });
     
-    await ctx.reply(
+    await ctx.editMessageText(
       `✅ *Успішно оновлено!*\n\n` +
       `${state.selectedBooks.length} ${state.selectedBooks.length === 1 ? 'книга' : 'книг'} тепер недоступні`,
       { parse_mode: 'Markdown' }
@@ -662,6 +741,128 @@ manageBooksScene.action('bulk_apply_tags', async (ctx: BotContext) => {
   } catch (error) {
     logger.error('Error applying tags', error instanceof Error ? error : new Error(String(error)));
     await ctx.reply('❌ Помилка при додаванні тегів');
+  }
+});
+
+// ✅ ВИПРАВЛЕНО #22: cleanup при виході зі сцени для запобігання memory leak
+manageBooksScene.leave((ctx: BotContext) => {
+  const state = ctx.scene.state as any;
+  
+  // Очищаємо всі тимчасові дані
+  if (state) {
+    delete state.selectedBooks;
+    delete state.selectedTags;
+    delete state.currentFilter;
+    delete state.searchQuery;
+  }
+  
+  logger.debug('Manage books scene cleanup completed', { userId: ctx.from?.id });
+});
+
+// ✅ ВИПРАВЛЕНО #12: Масове видалення книг
+manageBooksScene.action('bulk_delete', async (ctx: BotContext) => {
+  try {
+    const state = ctx.scene.state as any;
+    
+    if (!state.selectedBooks || state.selectedBooks.length === 0) {
+      await ctx.answerCbQuery('⚠️ Оберіть хоча б одну книгу');
+      return;
+    }
+    
+    await ctx.answerCbQuery();
+    
+    // Отримуємо назви книг для підтвердження
+    const bookNames = await Promise.all(
+      state.selectedBooks.map(async (id: number) => {
+        const book = await getBookById(id);
+        return book ? `• ${book.title}` : `• Книга #${id}`;
+      })
+    );
+    
+    await ctx.reply(
+      `⚠️ *УВАГА! ВИДАЛЕННЯ КНИГ*\n\n` +
+      `Ви збираєтесь видалити ${state.selectedBooks.length} книг:\n\n` +
+      `${bookNames.slice(0, 10).join('\n')}` +
+      `${state.selectedBooks.length > 10 ? `\n... та ще ${state.selectedBooks.length - 10} книг` : ''}\n\n` +
+      `⚠️ *Ця дія незворотна!*\n` +
+      `Всі дані про ці книги будуть видалені назавжди.\n\n` +
+      `Ви впевнені?`,
+      {
+        parse_mode: 'Markdown',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🗑️ Так, видалити назавжди', callback_data: 'confirm_bulk_delete' }],
+            [{ text: '❌ Ні, скасувати', callback_data: 'bulk_edit_actions' }]
+          ]
+        }
+      }
+    );
+    
+  } catch (error) {
+    logger.error('Error in bulk delete', error instanceof Error ? error : new Error(String(error)));
+    await ctx.reply('❌ Помилка при підготовці до видалення');
+  }
+});
+
+// Підтвердження масового видалення
+manageBooksScene.action('confirm_bulk_delete', async (ctx: BotContext) => {
+  try {
+    const state = ctx.scene.state as any;
+    
+    if (!state.selectedBooks || state.selectedBooks.length === 0) {
+      await ctx.answerCbQuery('⚠️ Немає обраних книг');
+      return;
+    }
+    
+    await ctx.answerCbQuery('🗑️ Видаляю книги...');
+    
+    const totalBooks = state.selectedBooks.length;
+    let deletedCount = 0;
+    let failedCount = 0;
+    
+    // Видаляємо книги по одній
+    for (const bookId of state.selectedBooks) {
+      try {
+        await deleteBook(bookId);
+        deletedCount++;
+      } catch (error) {
+        logger.error(`Failed to delete book ${bookId}`, error instanceof Error ? error : new Error(String(error)));
+        failedCount++;
+      }
+    }
+    
+    // Очищаємо кеш
+    const { cache, CACHE_KEYS } = await import('../utils/cache');
+    await cache.delete(CACHE_KEYS.TOP_BOOKS);
+    await cache.delete(CACHE_KEYS.NEW_BOOKS);
+    await cache.delete(CACHE_KEYS.GENRES);
+    
+    // Очищаємо вибір
+    state.selectedBooks = [];
+    
+    await ctx.reply(
+      `✅ *ВИДАЛЕННЯ ЗАВЕРШЕНО*\n\n` +
+      `📊 Результати:\n` +
+      `• Видалено: ${deletedCount} книг\n` +
+      `${failedCount > 0 ? `• Помилки: ${failedCount} книг\n` : ''}` +
+      `• Всього оброблено: ${totalBooks} книг`,
+      {
+        parse_mode: 'Markdown',
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback('⬅️ Повернутись до управління', 'back_to_admin')]
+        ]).reply_markup
+      }
+    );
+    
+    logger.info('Bulk delete completed', { 
+      userId: ctx.from?.id, 
+      deleted: deletedCount, 
+      failed: failedCount 
+    });
+    
+  } catch (error) {
+    logger.error('Error confirming bulk delete', error instanceof Error ? error : new Error(String(error)));
+    await ctx.reply('❌ Помилка при видаленні книг');
   }
 });
 
