@@ -39,6 +39,7 @@ export const ERRORS = {
   DOWNLOAD_ERROR: '❌ Помилка при завантаженні',
   REVIEW_ERROR: '❌ Помилка при отриманні відгуків',
   USER_NOT_FOUND: '❌ Користувача не знайдено',
+  RATE_LIMIT: '⚠️ Занадто багато запитів',
 } as const;
 
 // Успішні повідомлення
@@ -57,7 +58,6 @@ export const EMOJI = {
   STAR: '⭐',
   NEW: '🆕',
   SAVE: '💾',
-  REQUEST: '📋',
   PROFILE: '👤',
   HELP: 'ℹ️',
   AI: '🤖',
@@ -87,7 +87,6 @@ export const FILE_TYPES = {
 // Сцени
 export const SCENES = {
   ADD_BOOK: 'ADD_BOOK_SCENE',
-  // REQUEST_BOOK видалено
   SEARCH: 'SEARCH_SCENE',
   PROFILE: 'PROFILE_SCENE',
   RATE_BOOK: 'RATE_BOOK_SCENE',
@@ -103,14 +102,37 @@ export const CONFIG = {
   MAX_SEARCH_RESULTS: 10,
   MAX_REVIEWS_SHOWN: 5,
   MIN_SEARCH_LENGTH: 2,
+  MAX_SEARCH_LENGTH: 100,
   DEFAULT_BOOK_COVER: 'default_book_cover',
-  // ✅ ВИПРАВЛЕНО #42: додано константи для часу
   MAX_FILE_SIZE_MB: 50,
   BOOKS_PER_PAGE: 5,
   AI_TIMEOUT_MS: 25000,
+  AI_MAX_BOOKS: 1000,
   NOTIFICATION_DELAY_MS: 1000,
   BATCH_SIZE: 10,
   BATCH_DELAY_MS: 2000,
+  RETRY_ATTEMPTS: 3,
+  RETRY_DELAY_MS: 1000,
+  OPERATION_TIMEOUT_MS: 30000,
+  MAX_SAVED_BOOKS_DISPLAY: 20,
+  MAX_ANALYTICS_SIZE: 500,
+  ANALYTICS_CLEANUP_THRESHOLD: 0.2,
+} as const;
+
+// Validation limits
+export const VALIDATION = {
+  TITLE_MIN: 2,
+  TITLE_MAX: 200,
+  AUTHOR_MIN: 2,
+  AUTHOR_MAX: 100,
+  DESCRIPTION_MIN: 10,
+  DESCRIPTION_MAX: 1000,
+  COMMENT_MAX: 500,
+  TAG_MIN: 2,
+  TAG_MAX: 50,
+  RATING_MIN: 1,
+  RATING_MAX: 5,
+  MESSAGE_MAX: 4000,
 } as const;
 
 // ✅ ВИПРАВЛЕНО #42: константи для часу доби
@@ -154,7 +176,6 @@ export const AI_MESSAGES = {
 
 // Callback actions
 export const ACTIONS = {
-  // VIEW_REQUESTS, APPROVE, REJECT, ORDER видалені
   ADD_BOOK: 'add_book',
   ADMIN_STATS: 'admin_stats',
   MODERATE_REVIEWS: 'moderate_reviews',
