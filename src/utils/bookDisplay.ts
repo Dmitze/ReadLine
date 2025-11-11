@@ -41,7 +41,7 @@ export async function displayBookList(
       if (subtitle) {
         headerText += `\n\n${subtitle}`;
       }
-      await ctx.reply(headerText, { parse_mode: 'Markdown' });
+      await ctx.reply(headerText, { parse_mode: 'HTML' });
     }
 
     // Показати кожну книгу
@@ -97,12 +97,12 @@ export async function displaySingleBook(
     if (book.photo_file_id && book.photo_file_id !== CONFIG.DEFAULT_BOOK_COVER) {
       await ctx.replyWithPhoto(book.photo_file_id, {
         caption,
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_markup: keyboard,
       });
     } else {
       await ctx.reply(caption, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_markup: keyboard,
       });
     }
@@ -154,7 +154,7 @@ export async function displayTopBooks(
     `🏆 *ТОП-${limitedBooks.length} КНИГ ЗА РЕЙТИНГОМ*\n\n` +
     `Найкращі книги нашої бібліотеки за оцінками читачів:\n\n` +
     `Оберіть книгу для детального перегляду:`,
-    { parse_mode: 'Markdown' }
+    { parse_mode: 'HTML' }
   );
   
   // Створюємо кнопки для кожної книги
@@ -171,7 +171,7 @@ export async function displayTopBooks(
   await ctx.reply(
     '📚 *Список топ книг:*',
     {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard(keyboard).reply_markup
     }
   );
@@ -197,7 +197,7 @@ export async function displayNewBooks(
     `🆕 *НОВИНКИ БІБЛІОТЕКИ*\n\n` +
     `Останні ${limitedBooks.length} додані ${limitedBooks.length === 1 ? 'книга' : 'книг'}:\n\n` +
     `Оберіть книгу для детального перегляду:`,
-    { parse_mode: 'Markdown' }
+    { parse_mode: 'HTML' }
   );
   
   // Створюємо кнопки для кожної книги
@@ -214,7 +214,7 @@ export async function displayNewBooks(
   await ctx.reply(
     '📚 *Список новинок:*',
     {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard(keyboard).reply_markup
     }
   );
@@ -232,7 +232,7 @@ export async function displaySavedBooks(
       '💾 *Ваша бібліотека порожня*\n\n' +
       'Зберігайте цікаві книги натискаючи кнопку 💾 ЗБЕРЕГТИ при перегляді книги.\n\n' +
       'Збережені книги завжди будуть доступні тут для швидкого доступу!',
-      { parse_mode: 'Markdown' }
+      { parse_mode: 'HTML' }
     );
     return;
   }
@@ -244,7 +244,7 @@ export async function displaySavedBooks(
     `💾 *МОЯ БІБЛІОТЕКА*\n\n` +
     `У вас збережено ${books.length} ${books.length === 1 ? 'книга' : 'книг'}:\n\n` +
     `Оберіть книгу для перегляду:`,
-    { parse_mode: 'Markdown' }
+    { parse_mode: 'HTML' }
   );
   
   // Створюємо кнопки для кожної книги (по 1 в рядок)
@@ -261,7 +261,7 @@ export async function displaySavedBooks(
   await ctx.reply(
     '📚 *Список книг:*',
     {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard(keyboard).reply_markup
     }
   );
@@ -288,7 +288,7 @@ export async function displaySearchResults(
       `• Перевірити правильність назви\n` +
       `• Шукати за автором або жанром\n` +
       `• Скоротити запит (мінімум 2 символи)`,
-      { parse_mode: 'Markdown' }
+      { parse_mode: 'HTML' }
     );
     return;
   }
