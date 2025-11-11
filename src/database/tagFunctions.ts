@@ -43,6 +43,44 @@ export const getBookTags = (bookId: number): Promise<Tag[]> => {
   });
 };
 
+// Batch версія - отримати теги для багатьох книг одразу (N+1 fix)
+export const getBooksTagsBatch = (bookIds: number[]): Promise<Map<number, Tag[]>> => {
+  return new Promise((resolve, reject) => {
+    if (bookIds.length === 0) {
+      resolve(new Map());
+      return;
+    }
+    
+    const placeholders = bookIds.map(() => '?').join(',');
+    const query = `
+      SELECT bt.book_id, t.* 
+      FROM tags t 
+      INNER JOIN book_tags bt ON t.id = bt.tag_id 
+      WHERE bt.book_id IN (${placeholders})
+      ORDER BY bt.book_id, t.name
+    `;
+    
+    db.all(query, bookIds, (err, rows: Array<Tag & { book_id: number }>) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      
+      const result = new Map<number, Tag[]>();
+      rows.forEach(row => {
+        const bookId = row.book_id;
+        if (!result.has(bookId)) {
+          result.set(bookId, []);
+        }
+        const { book_id, ...tag } = row;
+        result.get(bookId)!.push(tag);
+      });
+      
+      resolve(result);
+    });
+  });
+};
+
 // Додати тег до книги
 export const addBookTag = (bookId: number, tagId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -64,11 +102,11 @@ export const removeBookTag = (bookId: number, tagId: number): Promise<void> => {
 };
 
 // Пошук книг за тегом
-// ✅ ВИПРАВЛЕНО #16: додана валідація tagName для запобігання SQL injection
+// ✅ ВИПРАВЛЕНО #16: використовуємо sanitization utility
 export const searchBooksByTag = (tagName: string, limit: number = 10): Promise<any[]> => {
   return new Promise((resolve, reject) => {
-    // Валідація: тільки букви, цифри, пробіли, дефіси
-    const sanitizedTagName = tagName.replace(/[^a-zA-Zа-яА-ЯіІїЇєЄ0-9\s\-]/g, '');
+    const { sanitizeTag } = require('../utils/sanitization');
+    const sanitizedTagName = sanitizeTag(tagName);
     
     if (!sanitizedTagName || sanitizedTagName.length < 2) {
       resolve([]);
