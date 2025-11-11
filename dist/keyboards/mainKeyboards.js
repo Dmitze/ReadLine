@@ -137,7 +137,7 @@ const getAdaptiveBookKeyboard = (ctx, book, isSaved = false) => {
         const buttonText = deviceType === 'mobile' ? '🌐 Онлайн' : '🌐 Читати онлайн';
         formatButtons.push(telegraf_1.Markup.button.url(buttonText, book.file_url));
     }
-    if (book.audio_file_id) {
+    if (book.file_type === 'audio' || book.audio_file_id) {
         const buttonText = deviceType === 'mobile' ? '🎧 Аудіо' : '🎧 Слухати';
         formatButtons.push(telegraf_1.Markup.button.callback(buttonText, `download_audio_${book.id}`));
     }
@@ -193,7 +193,7 @@ const getEnhancedBookKeyboard = (book, isSaved = false) => {
     else if (book.file_type === 'link' && book.file_url) {
         formatRow.push(telegraf_1.Markup.button.url('🌐 Читати онлайн', book.file_url));
     }
-    if (book.audio_file_id) {
+    if (book.file_type === 'audio' || book.audio_file_id) {
         formatRow.push(telegraf_1.Markup.button.callback('🎧 Слухати', `download_audio_${book.id}`));
     }
     else if (book.audio_external_link) {
