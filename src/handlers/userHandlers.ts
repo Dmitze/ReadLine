@@ -45,9 +45,19 @@ import { logger } from '../utils/logger';
 import { BUTTONS, ERRORS, CONFIG } from '../constants';
 import { cache, CACHE_KEYS, CACHE_TTL } from '../utils/cache';
 import { BotContext } from '../types/telegraf';
+import { validateUserId, checkUserIdOrReply } from '../utils/userValidation';
+
+// ✅ ВИПРАВЛЕНО #11: видаляємо старі handlers при рестарті
+let handlersRegistered = false;
 
 // Обробники для звичайних користувачів
 export default (bot: Telegraf<BotContext>) => {
+  // Запобігаємо повторній реєстрації handlers
+  if (handlersRegistered) {
+    console.log('⚠️ User handlers already registered, skipping...');
+    return;
+  }
+  handlersRegistered = true;
   console.log('✅ User handlers registering...');
   
   // Перегляд каталогу з фільтрами
@@ -135,12 +145,9 @@ export default (bot: Telegraf<BotContext>) => {
   // Моя бібліотека
   bot.hears(BUTTONS.MY_LIBRARY, async (ctx) => {
     try {
-      const userId = ctx.from?.id;
-      
-      if (!userId) {
-        await ctx.reply(ERRORS.GENERIC);
-        return;
-      }
+      // ✅ ВИПРАВЛЕНО: використовуємо utility для валідації
+      if (!(await checkUserIdOrReply(ctx))) return;
+      const userId = validateUserId(ctx)!;
       
       const savedBooks = await getSavedBooks(userId);
       await displaySavedBooks(ctx, savedBooks);
@@ -212,7 +219,12 @@ export default (bot: Telegraf<BotContext>) => {
     if (messageText.startsWith('/')) return;
     
     try {
-      const genres = await getGenres();
+      // ✅ ВИПРАВЛЕНО #27: кешування жанрів
+      const genres = await cache.getOrSet(
+        CACHE_KEYS.GENRES,
+        getGenres,
+        CACHE_TTL.LONG
+      );
       
       if (genres.includes(messageText)) {
         // Використовуємо пагінацію щоб не флудити
@@ -1077,5 +1089,85 @@ export default (bot: Telegraf<BotContext>) => {
     }
   });
 
-  console.log('✅ User handlers registered (including AI features)');
+  // ==================== ПРОМОКОДИ ====================
+  
+  // Отримання промокоду користувачем
+  bot.hears('🎁 Отримати промокод', async (ctx: BotContext) => {
+    try {
+      const userId = ctx.from?.id;
+      if (!userId) {
+        await ctx.reply('❌ Не вдалося ідентифікувати користувача');
+        return;
+      }
+      
+      const {
+        hasUserReceivedPromoCode,
+        getAvailablePromoCodesCount,
+        getAvailablePromoCode,
+        markPromoCodeAsUsed
+      } = await import('../database/promoCodeFunctions');
+      
+      // Перевірка чи вже отримував промокод
+      const hasReceived = await hasUserReceivedPromoCode(userId);
+      if (hasReceived) {
+        await ctx.reply(
+          '❌ *Ви вже отримували промокод*\n\n' +
+          'Кожен користувач може отримати промокод лише один раз.\n\n' +
+          '💡 Використайте отриманий промокод при замовленні на сайті Yakaboo.ua\n\n' +
+          '🌐 https://www.yakaboo.ua',
+          { parse_mode: 'Markdown' }
+        );
+        return;
+      }
+      
+      // Перевірка наявності промокодів
+      const availableCount = await getAvailablePromoCodesCount();
+      if (availableCount === 0) {
+        await ctx.reply(
+          '😔 *Наразі промокодів немає в наявності*\n\n' +
+          '🔄 Будь ласка, спробуйте пізніше.\n\n' +
+          '📚 А поки що можете ознайомитися з нашим каталогом книг!',
+          { parse_mode: 'Markdown' }
+        );
+        return;
+      }
+      
+      // Отримуємо промокод для користувача
+      const promoCode = await getAvailablePromoCode(userId);
+      if (!promoCode) {
+        await ctx.reply('❌ Сталася помилка при отриманні промокоду. Спробуйте пізніше.');
+        return;
+      }
+      
+      // Позначаємо як використаний
+      await markPromoCodeAsUsed(userId, promoCode.id!);
+      
+      // Відправляємо промокод
+      await ctx.reply(
+        `🎉 *ВІТАЄМО! ВАШ ПРОМОКОД:*\n\n` +
+        `🎫 \`${promoCode.code}\`\n\n` +
+        `📖 *Опис:* ${promoCode.description}\n\n` +
+        `💰 *Знижка:* ${promoCode.discount_value}${promoCode.discount_type === 'percentage' ? '%' : ' грн'}\n\n` +
+        `💾 *Збережіть цей код!* Використовуйте його при замовленні на сайті Yakaboo.ua\n\n` +
+        `🌐 *Посилання:* https://www.yakaboo.ua`,
+        {
+          parse_mode: 'Markdown',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '🌐 Перейти на Yakaboo.ua', url: 'https://www.yakaboo.ua' }],
+              [{ text: '🏠 На головну', callback_data: 'home' }]
+            ]
+          }
+        }
+      );
+      
+      logger.userAction(userId, 'received_promo_code', { code: promoCode.code, promoId: promoCode.id });
+      
+    } catch (error) {
+      logger.error('Error getting promo code', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.reply('❌ Виникла помилка. Спробуйте ще раз.');
+    }
+  });
+
+  console.log('✅ User handlers registered (including AI features and promo codes)');
 };
