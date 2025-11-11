@@ -64,7 +64,13 @@ onboardingScene.action('onboarding_genres', async (ctx: BotContext) => {
   state.selectedGenres = [];
   
   try {
-    const genres = await getGenres();
+    // ✅ ВИПРАВЛЕНО #27: кешування жанрів
+    const { cache, CACHE_KEYS, CACHE_TTL } = await import('../utils/cache');
+    const genres = await cache.getOrSet(
+      CACHE_KEYS.GENRES,
+      getGenres,
+      CACHE_TTL.LONG
+    );
     
     if (genres.length === 0) {
       // Якщо жанрів немає, пропускаємо цей крок
@@ -144,7 +150,13 @@ onboardingScene.action(/onboarding_genre_(.+)/, async (ctx: BotContext) => {
   
   // Оновлюємо повідомлення
   try {
-    const genres = await getGenres();
+    // ✅ ВИПРАВЛЕНО #27: кешування жанрів
+    const { cache, CACHE_KEYS, CACHE_TTL } = await import('../utils/cache');
+    const genres = await cache.getOrSet(
+      CACHE_KEYS.GENRES,
+      getGenres,
+      CACHE_TTL.LONG
+    );
     const genreButtons = [];
     
     for (let i = 0; i < genres.length; i += 2) {
@@ -197,9 +209,10 @@ onboardingScene.action('onboarding_genres_done', async (ctx: BotContext) => {
   await ctx.answerCbQuery('✅ Жанри збережено!');
   
   // Зберігаємо улюблені жанри в БД
-  if (userId && state.selectedGenres && state.selectedGenres.length > 0) {
+  // ✅ ВИПРАВЛЕНО #39: завершуємо навіть без жанрів
+  if (userId) {
     try {
-      await markOnboardingComplete(userId, state.selectedGenres);
+      await markOnboardingComplete(userId, state.selectedGenres || []);
       logger.info('User completed onboarding with genres', { 
         userId, 
         selectedGenres: state.selectedGenres 
