@@ -114,12 +114,13 @@ searchScene.on('text', async (ctx) => {
         });
         return ctx.scene?.leave();
     }
-    if (searchTerm.length < 2) {
-        await ctx.reply('❌ Пошуковий запит занадто короткий. Введіть мінімум 2 символи.');
+    const { CONFIG } = await Promise.resolve().then(() => __importStar(require('../constants')));
+    if (searchTerm.length < CONFIG.MIN_SEARCH_LENGTH) {
+        await ctx.reply(`❌ Пошуковий запит занадто короткий. Введіть мінімум ${CONFIG.MIN_SEARCH_LENGTH} символи.`);
         return;
     }
-    if (searchTerm.length > 100) {
-        await ctx.reply('❌ Пошуковий запит занадто довгий. Максимум 100 символів.\n\n' +
+    if (searchTerm.length > CONFIG.MAX_SEARCH_LENGTH) {
+        await ctx.reply(`❌ Пошуковий запит занадто довгий. Максимум ${CONFIG.MAX_SEARCH_LENGTH} символів.\n\n` +
             'Спробуйте скоротити запит або використати ключові слова.');
         return;
     }
@@ -131,8 +132,9 @@ searchScene.on('text', async (ctx) => {
             try {
                 const { naturalLanguageSearch } = await Promise.resolve().then(() => __importStar(require('../utils/aiHelper')));
                 const { db } = await Promise.resolve().then(() => __importStar(require('../database/models')));
+                const { CONFIG } = await Promise.resolve().then(() => __importStar(require('../constants')));
                 const allBooks = await new Promise((resolve, reject) => {
-                    db.all('SELECT * FROM books WHERE is_available = 1 ORDER BY rating DESC, downloads_count DESC LIMIT 1000', [], (err, rows) => {
+                    db.all(`SELECT * FROM books WHERE is_available = 1 ORDER BY rating DESC, downloads_count DESC LIMIT ${CONFIG.AI_MAX_BOOKS}`, [], (err, rows) => {
                         if (err)
                             reject(err);
                         else
@@ -143,8 +145,8 @@ searchScene.on('text', async (ctx) => {
                     await ctx.reply('📭 На жаль, в бібліотеці поки немає книг');
                     return ctx.scene?.leave();
                 }
-                if (allBooks.length === 1000) {
-                    await ctx.reply('⚠️ Пошук обмежено першими 1000 найпопулярніших книг для швидкості');
+                if (allBooks.length === CONFIG.AI_MAX_BOOKS) {
+                    await ctx.reply(`⚠️ Пошук обмежено першими ${CONFIG.AI_MAX_BOOKS} найпопулярніших книг для швидкості`);
                 }
                 const books = await naturalLanguageSearch(searchTerm, allBooks, userId);
                 if (books.length === 0) {
