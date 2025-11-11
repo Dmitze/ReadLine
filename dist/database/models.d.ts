@@ -71,7 +71,7 @@ export interface ListeningProgress {
     created_at?: string;
 }
 export declare const db: sqlite3.Database;
-export declare const initDatabase: () => void;
+export declare const initDatabase: () => Promise<void>;
 export declare const addBook: (bookData: Omit<Book, "id" | "is_available" | "created_at">) => Promise<number>;
 export declare const getBooksByGenre: (genre: string) => Promise<Book[]>;
 export declare const getAllBooks: () => Promise<Book[]>;
@@ -103,6 +103,7 @@ export declare const saveBook: (userId: number, bookId: number) => Promise<numbe
 export declare const unsaveBook: (userId: number, bookId: number) => Promise<number>;
 export declare const getSavedBooks: (userId: number) => Promise<Book[]>;
 export declare const isBookSaved: (userId: number, bookId: number) => Promise<boolean>;
+export declare const areBooksaved: (userId: number, bookIds: number[]) => Promise<Set<number>>;
 export declare const getTopBooks: (limit?: number) => Promise<Book[]>;
 export declare const getMostDownloadedBooks: (limit?: number) => Promise<Book[]>;
 export declare const getNewestBooks: (limit?: number) => Promise<Book[]>;
