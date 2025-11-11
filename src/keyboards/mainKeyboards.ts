@@ -69,23 +69,14 @@ export const getAdaptiveMainMenuKeyboard = (ctx: Context, withQuickActions: bool
   const config = getKeyboardConfig(deviceType);
   
   // Всі доступні кнопки
-  const allButtons = withQuickActions ? [
-    '⚡ Швидкий пошук',
+  const allButtons = [
     '📖 Каталог',
     '🏆 Топ книги',
     '🆕 Новинки',
     '💾 Моя бібліотека',
     '👤 Профіль',
     '🤖 AI Помічник',
-    'ℹ️ Допомога',
-    '📞 Зворотній зв\'язок'
-  ] : [
-    '📖 Каталог',
-    '🏆 Топ книги',
-    '🆕 Новинки',
-    '💾 Моя бібліотека',
-    '👤 Профіль',
-    '🤖 AI Помічник',
+    '🎁 Отримати промокод',
     'ℹ️ Допомога',
     '📞 Зворотній зв\'язок'
   ];
@@ -113,18 +104,12 @@ export const getAdaptiveMainMenuKeyboard = (ctx: Context, withQuickActions: bool
 };
 
 // Стара версія для зворотної сумісності
-export const getMainMenuKeyboard = (withQuickActions: boolean = true) => {
-  const buttons = withQuickActions ? [
-    ['⚡ Швидкий пошук', '📖 Каталог'],
-    ['🏆 Топ книги', '🆕 Новинки'],
-    ['💾 Моя бібліотека', '👤 Профіль'],
-    ['🎁 Отримати промокод', '🤖 AI Помічник'],
-    ['ℹ️ Допомога', '📞 Зворотній зв\'язок']
-  ] : [
-    ['📖 Каталог'],
-    ['🏆 Топ книги', '🆕 Новинки'],
-    ['💾 Моя бібліотека', '👤 Профіль'],
-    ['🎁 Отримати промокод', '🤖 AI Помічник'],
+export const getMainMenuKeyboard = () => {
+  const buttons = [
+    ['📖 Каталог', '🏆 Топ книги'],
+    ['🆕 Новинки', '💾 Моя бібліотека'],
+    ['👤 Профіль', '🤖 AI Помічник'],
+    ['🎁 Отримати промокод'],
     ['ℹ️ Допомога', '📞 Зворотній зв\'язок']
   ];
   
