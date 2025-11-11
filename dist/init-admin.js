@@ -22,18 +22,14 @@ const initAdmin = async () => {
             process.exit(1);
         }
         logger_1.logger.info('Initializing admin user', { adminId });
-        console.log(`Initializing admin user with ID: ${adminId}`);
         const result = await (0, models_1.addAdmin)(adminId, 'admin');
         if (result) {
             logger_1.logger.info('Admin successfully added', { adminId });
-            console.log(`✅ Admin with ID ${adminId} successfully added to the database`);
         }
         else {
             logger_1.logger.info('Admin already exists', { adminId });
-            console.log(`ℹ️ Admin with ID ${adminId} already exists in the database`);
         }
         logger_1.logger.info('Admin initialization completed');
-        console.log('✅ Admin initialization completed successfully');
     }
     catch (error) {
         logger_1.logger.error('Error adding admin', error instanceof Error ? error : new Error(String(error)));
