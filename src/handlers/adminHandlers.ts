@@ -110,6 +110,25 @@ export default (bot: Telegraf<BotContext>) => {
     return;
   });
   
+  // Керування промокодами
+  bot.action('manage_promo_codes', async (ctx: BotContext) => {
+    try {
+      await ctx.answerCbQuery('Завантаження системи промокодів...');
+      
+      const adminCheck = await isAdmin(ctx.from.id);
+      if (!adminCheck) {
+        await ctx.reply('❌ У вас немає доступу до цієї функції.');
+        return;
+      }
+      
+      ctx.scene.enter('PROMO_ADMIN_SCENE');
+    } catch (error) {
+      logger.error('Error entering promo admin scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.reply('❌ Виникла помилка при переході до керування промокодами.');
+    }
+    return;
+  });
+  
   // Статистика
   bot.action('admin_stats', async (ctx) => {
     try {
@@ -163,30 +182,36 @@ export default (bot: Telegraf<BotContext>) => {
         try {
           const book = await getBookById(review.book_id);
           
-          // Безпечне екранування для Markdown
-          const escapeMarkdown = (text: string) => {
-            return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+          // ✅ ВИПРАВЛЕНО #17: використовуємо HTML замість Markdown для безпечного екранування
+          const escapeHtml = (text: string) => {
+            return text
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
           };
           
-          const safeTitle = escapeMarkdown(book?.title || 'Невідома');
-          const safeName = escapeMarkdown(review.user_name || 'Анонім');
-          const safeComment = review.comment ? escapeMarkdown(review.comment) : '';
+          const safeTitle = escapeHtml(book?.title || 'Невідома');
+          const safeName = escapeHtml(review.user_name || 'Анонім');
+          const safeComment = review.comment ? escapeHtml(review.comment) : '';
+          const safeDate = escapeHtml(review.created_at || '');
           
-          let reviewText = `📝 *Відгук на модерацію #${review.id}*\n\n`;
-          reviewText += `📖 Книга: *${safeTitle}*\n`;
+          let reviewText = `📝 <b>Відгук на модерацію #${review.id}</b>\n\n`;
+          reviewText += `📖 Книга: <b>${safeTitle}</b>\n`;
           reviewText += `👤 Користувач: ${safeName}\n`;
           reviewText += `⭐ Оцінка: ${'⭐'.repeat(review.rating)} (${review.rating}/5)\n\n`;
           
           if (review.comment) {
             reviewText += `💬 Коментар:\n"${safeComment}"\n\n`;
           } else {
-            reviewText += `💬 Коментар: _(відсутній)_\n\n`;
+            reviewText += `💬 Коментар: <i>(відсутній)</i>\n\n`;
           }
           
-          reviewText += `📅 Дата: ${review.created_at}`;
+          reviewText += `📅 Дата: ${safeDate}`;
           
           await ctx.reply(reviewText, {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: getReviewModerationKeyboard(review.id!)
           });
         } catch (bookError) {
@@ -334,32 +359,39 @@ export default (bot: Telegraf<BotContext>) => {
                              msg.status === 'read' ? '✅ Прочитано' : 
                              '💬 Відповіли';
           
-          // Екрануємо спецсимволи Markdown
-          const escapeMarkdown = (text: string) => {
-            return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+          // ✅ ВИПРАВЛЕНО #17: використовуємо HTML замість Markdown для безпечного екранування
+          const escapeHtml = (text: string) => {
+            return text
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
           };
           
-          const safeName = escapeMarkdown(msg.user_name || 'Користувач');
-          const safeUsername = msg.user_username ? escapeMarkdown(msg.user_username) : '';
-          const safeMessage = escapeMarkdown(msg.message);
+          const safeName = escapeHtml(msg.user_name || 'Користувач');
+          const safeUsername = msg.user_username ? escapeHtml(msg.user_username) : '';
+          const safeMessage = escapeHtml(msg.message);
+          const safeCreatedAt = escapeHtml(new Date(msg.created_at!).toLocaleString('uk-UA'));
+          const safeReadAt = msg.read_at ? escapeHtml(new Date(msg.read_at).toLocaleString('uk-UA')) : '';
           
-          let feedbackText = `📞 *Повідомлення #${msg.id}* ${statusEmoji}\n\n`;
+          let feedbackText = `📞 <b>Повідомлення #${msg.id}</b> ${statusEmoji}\n\n`;
           feedbackText += `👤 Від: ${safeName}\n`;
-          feedbackText += `🆔 User ID: \`${msg.user_id}\`\n`;
+          feedbackText += `🆔 User ID: <code>${msg.user_id}</code>\n`;
           
           if (msg.user_username) {
             feedbackText += `📱 Username: @${safeUsername}\n`;
           }
           
-          feedbackText += `\n💬 *Повідомлення:*\n"${safeMessage}"\n\n`;
-          feedbackText += `📅 Дата: ${escapeMarkdown(new Date(msg.created_at!).toLocaleString('uk-UA'))}`;
+          feedbackText += `\n💬 <b>Повідомлення:</b>\n"${safeMessage}"\n\n`;
+          feedbackText += `📅 Дата: ${safeCreatedAt}`;
           
           if (msg.read_at) {
-            feedbackText += `\n👁️ Прочитано: ${escapeMarkdown(new Date(msg.read_at).toLocaleString('uk-UA'))}`;
+            feedbackText += `\n👁️ Прочитано: ${safeReadAt}`;
           }
           
           await ctx.reply(feedbackText, {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: getFeedbackActionKeyboard(msg.id!, msg.user_id)
           });
           
