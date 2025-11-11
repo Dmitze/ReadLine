@@ -111,6 +111,6 @@ export declare const addFeedbackMessage: (feedbackData: Omit<FeedbackMessage, "i
 export declare const getPendingFeedbackMessages: () => Promise<FeedbackMessage[]>;
 export declare const getAllFeedbackMessages: () => Promise<FeedbackMessage[]>;
 export declare const markFeedbackAsRead: (feedbackId: number) => Promise<void>;
-export declare const updateFeedbackStatus: (feedbackId: number, status: string) => Promise<void>;
+export declare const updateFeedbackStatus: (feedbackId: number, status: string) => Promise<number>;
 export declare const addAdminReply: (feedbackId: number, reply: string) => Promise<void>;
 //# sourceMappingURL=models.d.ts.map
