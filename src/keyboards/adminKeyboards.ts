@@ -1,9 +1,7 @@
 // Admin keyboards
 import { Markup } from 'telegraf';
 
-export const getAdminMenuKeyboard = (pendingCount: number = 0, pendingReviews: number = 0, pendingFeedback: number = 0) => {
-  // pendingCount більше не використовується (заявки видалені)
-    
+export const getAdminMenuKeyboard = (pendingReviews: number = 0, pendingFeedback: number = 0) => {
   const reviewsButtonText = pendingReviews > 0
     ? `📝 Відгуки (${pendingReviews}) 🔔`
     : '📝 Модерація';
@@ -23,8 +21,6 @@ export const getAdminMenuKeyboard = (pendingCount: number = 0, pendingReviews: n
     ])
     .reply_markup;
 };
-
-// getRequestActionKeyboard видалено - більше не використовуємо заявки
 
 export const getGenresKeyboard = (genres: string[]) => {
   const keyboard = genres.map(genre => [genre]);
