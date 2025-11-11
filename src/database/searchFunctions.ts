@@ -5,6 +5,8 @@
 import { db, Book } from './models';
 import { cache } from '../utils/cache';
 import * as levenshtein from 'fast-levenshtein';  // ✅ ВИПРАВЛЕНО #14
+import { CONFIG } from '../constants';
+import { logger } from '../utils/logger';
 
 // Search cache TTL - 5 minutes
 const CACHE_TTL = 5 * 60 * 1000;
@@ -35,9 +37,6 @@ interface SearchEvent {
   userId?: number;
 }
 
-// ✅ ВИПРАВЛЕНО #5: використовуємо константи
-import { CONFIG } from '../constants';
-
 const searchAnalytics: SearchEvent[] = [];
 
 // Автоматична очистка старих записів
@@ -45,7 +44,7 @@ function cleanupOldAnalytics(): void {
   if (searchAnalytics.length > CONFIG.MAX_ANALYTICS_SIZE) {
     const toRemove = Math.floor(CONFIG.MAX_ANALYTICS_SIZE * CONFIG.ANALYTICS_CLEANUP_THRESHOLD);
     searchAnalytics.splice(0, toRemove);
-    console.log(`🧹 Cleaned up ${toRemove} old search analytics records`);
+    logger.info('Cleaned up old search analytics records', { count: toRemove });
   }
 }
 
@@ -137,7 +136,7 @@ const synonyms: { [key: string]: string[] } = {
 // Search by title only - ВИПРАВЛЕНО (регістронезалежний пошук)
 export const searchBooksByTitle = (searchTerm: string, limit: number = 10): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
-    console.log(`🔍 Searching books by title: "${searchTerm}"`);
+    logger.debug('Searching books by title', { searchTerm });
     
     // Використовуємо як точний пошук, так і пошук з LIKE (регістронезалежний)
     const query = `
@@ -152,7 +151,7 @@ export const searchBooksByTitle = (searchTerm: string, limit: number = 10): Prom
         console.error('❌ Error searching by title:', err);
         reject(err);
       } else {
-        console.log(`📚 Found ${rows.length} books by title`);
+        logger.debug('Found books by title', { count: rows.length });
         resolve(rows);
       }
     });
@@ -162,7 +161,7 @@ export const searchBooksByTitle = (searchTerm: string, limit: number = 10): Prom
 // Search by author only - ВИПРАВЛЕНО (регістронезалежний пошук)
 export const searchBooksByAuthor = (searchTerm: string, limit: number = 10): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
-    console.log(`🔍 Searching books by author: "${searchTerm}"`);
+    logger.debug('Searching books by author', { searchTerm });
     
     // Використовуємо як точний пошук, так і пошук з LIKE (регістронезалежний)
     const query = `
@@ -177,7 +176,7 @@ export const searchBooksByAuthor = (searchTerm: string, limit: number = 10): Pro
         console.error('❌ Error searching by author:', err);
         reject(err);
       } else {
-        console.log(`📚 Found ${rows.length} books by author`);
+        logger.debug('Found books by author', { count: rows.length });
         resolve(rows);
       }
     });
@@ -187,7 +186,7 @@ export const searchBooksByAuthor = (searchTerm: string, limit: number = 10): Pro
 // Search by genre only - ВИПРАВЛЕНО (регістронезалежний пошук + синоніми)
 export const searchBooksByGenre = (searchTerm: string, limit: number = 10): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
-    console.log(`🔍 Searching books by genre: "${searchTerm}"`);
+    logger.debug('Searching books by genre', { searchTerm });
     
     // Спочатку пробуємо точний пошук (регістронезалежний)
     db.all(
@@ -205,14 +204,14 @@ export const searchBooksByGenre = (searchTerm: string, limit: number = 10): Prom
         }
         
         if (exactRows.length > 0) {
-          console.log(`📚 Found ${exactRows.length} books by exact genre match`);
+          logger.debug('Found books by exact genre match', { count: exactRows.length });
           resolve(exactRows);
           return;
         }
         
         // Якщо точний пошук не дав результатів, пробуємо з синонімами
         const searchTerms = searchWithSynonyms(searchTerm);
-        console.log(`📝 Trying synonyms: ${searchTerms.join(', ')}`);
+        logger.debug('Trying synonyms', { synonyms: searchTerms });
         
         const conditions = searchTerms.map(() => 'genre LIKE ?').join(' OR ');
         const params = searchTerms.map(term => `%${term}%`);
@@ -229,7 +228,7 @@ export const searchBooksByGenre = (searchTerm: string, limit: number = 10): Prom
               console.error('❌ Error in synonym genre search:', err);
               reject(err);
             } else {
-              console.log(`📚 Found ${synonymRows.length} books by genre synonyms`);
+              logger.debug('Found books by genre synonyms', { count: synonymRows.length });
               resolve(synonymRows);
             }
           }
@@ -335,11 +334,11 @@ export const enhancedSearch = async (searchTerm: string, limit: number = 10, use
     aiMessage?: string;
   }>(cacheKey);
   if (cached) {
-    console.log(`💾 Cache hit for: "${searchTerm}" (user: ${userId || 'anonymous'})`);
+    logger.debug('Cache hit for search', { searchTerm, userId: userId || 'anonymous' });
     return cached;
   }
   
-  console.log(`🔍 Advanced search for: "${searchTerm}"`);
+  logger.debug('Advanced search', { searchTerm });
   
   let results: Book[] = [];
   let strategy = 'none';
@@ -349,7 +348,7 @@ export const enhancedSearch = async (searchTerm: string, limit: number = 10, use
   results = await exactMatchSearch(normalizedTerm, limit);
   if (results.length > 0) {
     strategy = 'exact';
-    console.log(`✅ Found ${results.length} results using exact match`);
+    logger.debug('Found results using exact match', { count: results.length });
   }
   
   // Strategy 2: Partial match with relevance scoring
@@ -368,7 +367,7 @@ export const enhancedSearch = async (searchTerm: string, limit: number = 10, use
   
   // Strategy 4: Fuzzy search
   if (results.length < 3) {
-    console.log(`🔍 Trying fuzzy search...`);
+    logger.debug('Trying fuzzy search');
     const fuzzyResults = await fuzzySearchAdvanced(normalizedTerm, limit);
     results = mergeUniqueResults(results, fuzzyResults, limit);
     if (results.length > 0) strategy = 'fuzzy';
@@ -378,7 +377,7 @@ export const enhancedSearch = async (searchTerm: string, limit: number = 10, use
   // ✅ ВИПРАВЛЕНО #38: лічильник спроб для запобігання нескінченному циклу
   let hasAiRecommendations = false;
   if (results.length === 0) {
-    console.log(`🤖 No results found, getting AI recommendations...`);
+    logger.debug('No results found, getting AI recommendations');
     try {
       const aiResults = await getAiRecommendations(searchTerm, limit);
       if (aiResults && aiResults.length > 0) {
@@ -412,7 +411,7 @@ export const enhancedSearch = async (searchTerm: string, limit: number = 10, use
   // Cache the result
   cache.set(cacheKey, searchResult, CACHE_TTL);
   
-  console.log(`✅ Search completed: ${results.length} books using ${strategy} strategy`);
+  logger.debug('Search completed', { count: results.length, strategy });
   
   return searchResult;
 };
