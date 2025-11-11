@@ -127,4 +127,16 @@ replyFeedbackScene.on('text', async (ctx: BotContext) => {
   }
 });
 
+// Cleanup при виході зі сцени
+replyFeedbackScene.leave((ctx: BotContext) => {
+  const state = ctx.scene.state as ReplyState;
+  if (state) {
+    delete state.feedbackId;
+    delete state.userId;
+    delete state.userName;
+    delete state.originalMessage;
+  }
+  logger.debug('ReplyFeedbackScene cleanup completed', { userId: ctx.from?.id });
+});
+
 export default replyFeedbackScene;
