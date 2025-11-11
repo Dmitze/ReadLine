@@ -333,7 +333,7 @@ export async function improveDescription(description: string): Promise<string> {
 /**
  * Розпізнавання інформації з обкладинки (заглушка)
  */
-export async function extractBookInfoFromCover(photoFileId: string): Promise<{
+export async function extractBookInfoFromCover(_photoFileId: string): Promise<{
   title?: string;
   author?: string;
   genre?: string;
@@ -516,7 +516,7 @@ export async function askAI(question: string): Promise<string> {
 /**
  * Рекомендації книг від AI (заглушка)
  */
-export async function getBookRecommendations(userPreferences: any): Promise<AIBookRecommendation[]> {
+export async function getBookRecommendations(_userPreferences: any): Promise<AIBookRecommendation[]> {
   // Повертаємо порожній масив - рекомендації будуть з бази даних
   return [];
 }
@@ -531,7 +531,8 @@ export async function getMoodBasedBooks(mood: string, allBooks: Book[]): Promise
 /**
  * Інтерактивний вибір книг (заглушка)
  */
-export async function interactiveBookSelection(userAnswers: any, allBooks: Book[]): Promise<Book[]> {
+export async function interactiveBookSelection(_userAnswers: any, allBooks: Book[]): Promise<Book[]> {
   // Повертаємо перші 5 книг як заглушку
   return allBooks.slice(0, 5);
 }
+
