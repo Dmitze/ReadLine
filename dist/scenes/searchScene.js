@@ -118,19 +118,35 @@ searchScene.on('text', async (ctx) => {
         await ctx.reply('❌ Пошуковий запит занадто короткий. Введіть мінімум 2 символи.');
         return;
     }
+    if (searchTerm.length > 100) {
+        await ctx.reply('❌ Пошуковий запит занадто довгий. Максимум 100 символів.\n\n' +
+            'Спробуйте скоротити запит або використати ключові слова.');
+        return;
+    }
     try {
         console.log('🔍 Search request:', searchTerm, 'from user:', ctx.from?.id, 'type:', searchType);
         if (searchType === 'ai') {
             await ctx.reply('🤖 Аналізую ваш запит та шукаю книги...');
+            const userId = ctx.from?.id;
             try {
                 const { naturalLanguageSearch } = await Promise.resolve().then(() => __importStar(require('../utils/aiHelper')));
-                const { getAllAvailableBooks } = await Promise.resolve().then(() => __importStar(require('../database/models')));
-                const allBooks = await getAllAvailableBooks();
+                const { db } = await Promise.resolve().then(() => __importStar(require('../database/models')));
+                const allBooks = await new Promise((resolve, reject) => {
+                    db.all('SELECT * FROM books WHERE is_available = 1 ORDER BY rating DESC, downloads_count DESC LIMIT 1000', [], (err, rows) => {
+                        if (err)
+                            reject(err);
+                        else
+                            resolve(rows || []);
+                    });
+                });
                 if (allBooks.length === 0) {
                     await ctx.reply('📭 На жаль, в бібліотеці поки немає книг');
                     return ctx.scene?.leave();
                 }
-                const books = await naturalLanguageSearch(searchTerm, allBooks);
+                if (allBooks.length === 1000) {
+                    await ctx.reply('⚠️ Пошук обмежено першими 1000 найпопулярніших книг для швидкості');
+                }
+                const books = await naturalLanguageSearch(searchTerm, allBooks, userId);
                 if (books.length === 0) {
                     await ctx.reply('😔 Не знайдено книг за вашим запитом.\n\n' +
                         'Спробуйте:\n' +
@@ -142,7 +158,6 @@ searchScene.on('text', async (ctx) => {
                 await ctx.reply(`✨ *AI знайшов ${books.length} ${books.length === 1 ? 'книгу' : books.length < 5 ? 'книги' : 'книг'}*\n\n` +
                     `Запит: "${searchTerm}"`, { parse_mode: 'Markdown' });
                 const { isBookSaved } = await Promise.resolve().then(() => __importStar(require('../database/models')));
-                const userId = ctx.from?.id;
                 for (const book of books) {
                     const isSaved = userId ? await isBookSaved(userId, book.id) : false;
                     const caption = `📖 *${book.title}*\n` +
@@ -264,7 +279,7 @@ searchScene.on('text', async (ctx) => {
                 }
             }
             catch (error) {
-                console.error('Error getting AI recommendations:', error);
+                logger_1.logger.error('Error getting AI recommendations', error instanceof Error ? error : new Error(String(error)));
             }
             return ctx.scene?.leave();
         }
@@ -331,7 +346,6 @@ searchScene.on('text', async (ctx) => {
         });
     }
     catch (error) {
-        console.error('❌ Search error:', error);
         logger_1.logger.error('Error searching books', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id, searchTerm });
         await ctx.reply('❌ Виникла помилка при пошуку книг. Спробуйте ще раз.');
     }
