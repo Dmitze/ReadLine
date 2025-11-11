@@ -1,5 +1,5 @@
 import { Scenes } from 'telegraf';
-import { searchBooks } from '../database/models';
+import { searchBooks, Book } from '../database/models';
 import { 
   searchBooksByTitle, 
   searchBooksByAuthor, 
@@ -118,9 +118,17 @@ searchScene.on('text', async (ctx: BotContext) => {
     return ctx.scene?.leave();
   }
   
-  // Мінімальна довжина пошукового запиту
+  // ✅ ВИПРАВЛЕНО #4: валідація довжини пошукового запиту
   if (searchTerm.length < 2) {
     await ctx.reply('❌ Пошуковий запит занадто короткий. Введіть мінімум 2 символи.');
+    return;
+  }
+  
+  if (searchTerm.length > 100) {
+    await ctx.reply(
+      '❌ Пошуковий запит занадто довгий. Максимум 100 символів.\n\n' +
+      'Спробуйте скоротити запит або використати ключові слова.'
+    );
     return;
   }
   
@@ -131,20 +139,37 @@ searchScene.on('text', async (ctx: BotContext) => {
     if (searchType === 'ai') {
       await ctx.reply('🤖 Аналізую ваш запит та шукаю книги...');
       
+      // ✅ ВИПРАВЛЕНО #13: визначаємо userId для персоналізації
+      const userId = ctx.from?.id;
+      
       try {
         const { naturalLanguageSearch } = await import('../utils/aiHelper');
-        const { getAllAvailableBooks } = await import('../database/models');
+        const { db } = await import('../database/models');
         
-        // Отримуємо всі книги
-        const allBooks = await getAllAvailableBooks();
+        // ✅ ВИПРАВЛЕНО #2: обмежуємо кількість книг для AI пошуку (запобігання memory leak)
+        const allBooks = await new Promise<Book[]>((resolve, reject) => {
+          db.all(
+            'SELECT * FROM books WHERE is_available = 1 ORDER BY rating DESC, downloads_count DESC LIMIT 1000',
+            [],
+            (err, rows: Book[]) => {
+              if (err) reject(err);
+              else resolve(rows || []);
+            }
+          );
+        });
         
         if (allBooks.length === 0) {
           await ctx.reply('📭 На жаль, в бібліотеці поки немає книг');
           return ctx.scene?.leave();
         }
         
-        // AI пошук
-        const books = await naturalLanguageSearch(searchTerm, allBooks);
+        // Попереджаємо якщо обмежили
+        if (allBooks.length === 1000) {
+          await ctx.reply('⚠️ Пошук обмежено першими 1000 найпопулярніших книг для швидкості');
+        }
+        
+        // ✅ ВИПРАВЛЕНО #13: AI пошук з персоналізацією
+        const books = await naturalLanguageSearch(searchTerm, allBooks, userId);
         
         if (books.length === 0) {
           await ctx.reply(
@@ -165,7 +190,6 @@ searchScene.on('text', async (ctx: BotContext) => {
         
         // Показуємо результати
         const { isBookSaved } = await import('../database/models');
-        const userId = ctx.from?.id;
         
         for (const book of books) {
           const isSaved = userId ? await isBookSaved(userId, book.id!) : false;
@@ -307,7 +331,8 @@ searchScene.on('text', async (ctx: BotContext) => {
           }
         }
       } catch (error) {
-        console.error('Error getting AI recommendations:', error);
+        // ✅ ВИПРАВЛЕНО #43: logger замість console.error
+        logger.error('Error getting AI recommendations', error instanceof Error ? error : new Error(String(error)));
       }
       
       return ctx.scene?.leave();
@@ -389,7 +414,7 @@ searchScene.on('text', async (ctx: BotContext) => {
     });
     
   } catch (error) {
-    console.error('❌ Search error:', error);
+    // ✅ ВИПРАВЛЕНО #43: вже є logger.error нижче, видаляємо дублювання
     logger.error('Error searching books', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id, searchTerm });
     await ctx.reply('❌ Виникла помилка при пошуку книг. Спробуйте ще раз.');
   }
