@@ -5,8 +5,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Initialize database when config is loaded
-const initializeDatabase = () => {
+// ✅ ВИПРАВЛЕНО #13: async initialization
+const initializeDatabase = async () => {
   try {
     console.log('Initializing database...');
     
@@ -19,10 +19,10 @@ const initializeDatabase = () => {
       console.log(`📁 Створено директорію для БД: ${dbDir}`);
     }
     
-    initDatabase();
-    console.log('Database initialized successfully');
+    await initDatabase();
+    console.log('✅ Database initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize database:', error);
+    console.error('❌ Failed to initialize database:', error);
     process.exit(1);
   }
 };
