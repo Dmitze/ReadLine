@@ -1,8 +1,8 @@
 import { Book } from '../database/models';
-import { getBookTags } from '../database/tagFunctions';
 
 // Format book caption for display with beautiful emojis
-export const formatBookCaption = async (book: Book): Promise<string> => {
+// ✅ ОПТИМІЗОВАНО: можна передати теги щоб уникнути додаткового запиту
+export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>): Promise<string> => {
   // Заголовок з рамкою
   let caption = `╔═══════════════════════╗\n`;
   caption += `📖 *${book.title}*\n`;
@@ -15,12 +15,18 @@ export const formatBookCaption = async (book: Book): Promise<string> => {
   const genreEmoji = getGenreEmoji(book.genre);
   caption += `${genreEmoji} *Жанр:* ${book.genre}\n`;
   
-  // Теги
-  if (book.id) {
+  // Теги - використовуємо передані або завантажуємо
+  if (tags) {
+    if (tags.length > 0) {
+      const tagNames = tags.map(t => `#${t.name.replace(/\s+/g, '_')}`).join(' ');
+      caption += `🏷️ *Теги:* ${tagNames}\n`;
+    }
+  } else if (book.id) {
     try {
-      const tags = await getBookTags(book.id);
-      if (tags.length > 0) {
-        const tagNames = tags.map(t => `#${t.name.replace(/\s+/g, '_')}`).join(' ');
+      const { getBookTags } = await import('../database/tagFunctions');
+      const loadedTags = await getBookTags(book.id);
+      if (loadedTags.length > 0) {
+        const tagNames = loadedTags.map(t => `#${t.name.replace(/\s+/g, '_')}`).join(' ');
         caption += `🏷️ *Теги:* ${tagNames}\n`;
       }
     } catch (error) {
@@ -133,18 +139,6 @@ function getDownloadsWord(count: number): string {
   if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) return 'завантаження';
   return 'завантажень';
 }
-
-// Format request info for admin
-export const formatRequestInfo = (request: any, book: Book): string => {
-  let info = `📋 Заявка #${request.id}\n`;
-  info += `📖 Книга: ${book.title}\n`;
-  info += `👤 ПІБ: ${request.full_name}\n`;
-  info += `🎯 Підрозділ: ${request.unit}\n`;
-  info += `📞 Телефон: ${request.phone}\n`;
-  info += `📅 Дата: ${request.created_at}`;
-  
-  return info;
-};
 
 export const escapeHtml = (text: string): string => {
   return text
