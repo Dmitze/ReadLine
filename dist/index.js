@@ -41,7 +41,6 @@ const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const logger_1 = require("./utils/logger");
 const rateLimit_1 = require("./middleware/rateLimit");
-const constants_1 = require("./constants");
 const addBookScene_1 = __importDefault(require("./scenes/addBookScene"));
 const editBookScene_1 = __importDefault(require("./scenes/editBookScene"));
 const manageBooksScene_1 = __importDefault(require("./scenes/manageBooksScene"));
@@ -57,14 +56,43 @@ const settingsScene_1 = __importDefault(require("./scenes/settingsScene"));
 const aiFilterScene_1 = __importDefault(require("./scenes/aiFilterScene"));
 const aiAssistantScene_1 = __importDefault(require("./scenes/aiAssistantScene"));
 const promoAdminScene_1 = __importDefault(require("./scenes/promoAdminScene"));
-if (!process.env.BOT_TOKEN) {
-    logger_1.logger.error(constants_1.ERRORS.BOT_TOKEN_MISSING);
-    console.error('📝 Створіть .env файл в корені проекту та додайте:');
-    console.error('   BOT_TOKEN=your_telegram_bot_token_here');
-    console.error('');
-    console.error('💡 Токен можна отримати у @BotFather в Telegram');
-    process.exit(1);
+function validateEnvVariables() {
+    const errors = [];
+    const warnings = [];
+    if (!process.env.BOT_TOKEN) {
+        errors.push('BOT_TOKEN is required');
+    }
+    else if (process.env.BOT_TOKEN.length < 20) {
+        errors.push('BOT_TOKEN appears to be invalid (too short)');
+    }
+    if (!process.env.GEMINI_API_KEY) {
+        warnings.push('GEMINI_API_KEY is not set - AI features will be disabled');
+    }
+    else if (process.env.GEMINI_API_KEY.length < 20) {
+        warnings.push('GEMINI_API_KEY appears to be invalid (too short) - AI features may not work');
+    }
+    if (errors.length > 0) {
+        logger_1.logger.error('Environment validation failed', new Error(errors.join(', ')));
+        console.error('❌ КРИТИЧНА ПОМИЛКА: Невірна конфігурація');
+        console.error('');
+        errors.forEach(err => console.error(`  • ${err}`));
+        console.error('');
+        console.error('📝 Створіть .env файл в корені проекту та додайте:');
+        console.error('   BOT_TOKEN=your_telegram_bot_token_here');
+        console.error('   GEMINI_API_KEY=your_gemini_api_key_here (optional)');
+        console.error('');
+        console.error('💡 Токен можна отримати у @BotFather в Telegram');
+        process.exit(1);
+    }
+    if (warnings.length > 0) {
+        logger_1.logger.warn('Environment validation warnings', { warnings });
+        console.warn('⚠️ ПОПЕРЕДЖЕННЯ:');
+        warnings.forEach(warn => console.warn(`  • ${warn}`));
+        console.warn('');
+    }
+    logger_1.logger.info('Environment variables validated successfully');
 }
+validateEnvVariables();
 const bot = new telegraf_1.Telegraf(process.env.BOT_TOKEN);
 bot.use(async (ctx, next) => {
     logger_1.logger.info('Processing update', { updateId: ctx.update.update_id });
@@ -157,16 +185,16 @@ bot.use(async (ctx, next) => {
             '🏠 На головну'
         ];
         if (menuButtons.includes(text) && ctx.scene) {
-            console.log(`🚪 User pressed menu button "${text}" while in scene, leaving...`);
+            logger_1.logger.info('User pressed menu button while in scene', { text, userId: ctx.from?.id });
             try {
                 await ctx.scene.leave();
                 if (ctx.session) {
                     ctx.session = {};
                 }
-                console.log('✅ Successfully left scene');
+                logger_1.logger.info('Successfully left scene', { userId: ctx.from?.id });
             }
             catch (error) {
-                console.error('❌ Error leaving scene:', error);
+                logger_1.logger.error('Error leaving scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
             }
         }
     }
@@ -219,7 +247,7 @@ bot.start(async (ctx) => {
             '• Випадкова книга\n\n' +
             '👇 *Оберіть дію з меню нижче:*';
         return ctx.reply(welcomeMessage, {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)()
         });
     }
@@ -281,7 +309,7 @@ bot.help((ctx) => {
         '• Всі дії інтуїтивні та зрозумілі\n' +
         '• При помилці бот підкаже що робити\n\n' +
         '❓ Питання? Звертайтеся до адміністратора!';
-    return ctx.reply(helpMessage, { parse_mode: 'Markdown' });
+    return ctx.reply(helpMessage, { parse_mode: 'HTML' });
 });
 bot.command('settings', async (ctx) => {
     logger_1.logger.userAction(ctx.from.id, 'settings_command');
@@ -289,11 +317,11 @@ bot.command('settings', async (ctx) => {
 });
 const userHandlers_1 = __importDefault(require("./handlers/userHandlers"));
 const adminHandlers_1 = __importDefault(require("./handlers/adminHandlers"));
-console.log('📝 Registering handlers...');
+logger_1.logger.info('Registering handlers...');
 (0, adminHandlers_1.default)(bot);
-console.log('✅ Admin handlers called');
+logger_1.logger.info('Admin handlers registered');
 (0, userHandlers_1.default)(bot);
-console.log('✅ User handlers called');
+logger_1.logger.info('User handlers registered');
 bot.action('notification_settings', async (ctx) => {
     await ctx.answerCbQuery();
     return ctx.scene.enter('SETTINGS_SCENE');
@@ -313,13 +341,13 @@ bot.action('random_book', async (ctx) => {
         if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
             await ctx.replyWithPhoto(book.photo_file_id, {
                 caption,
-                parse_mode: 'Markdown',
+                parse_mode: 'HTML',
                 reply_markup: getEnhancedBookKeyboard(book)
             });
         }
         else {
             await ctx.reply(caption, {
-                parse_mode: 'Markdown',
+                parse_mode: 'HTML',
                 reply_markup: getEnhancedBookKeyboard(book)
             });
         }
@@ -330,7 +358,7 @@ bot.action('random_book', async (ctx) => {
 });
 let notificationScheduler = null;
 const shutdown = (signal) => {
-    console.log(`Received ${signal}, shutting down gracefully`);
+    logger_1.logger.info(`Received ${signal}, shutting down gracefully`);
     if (notificationScheduler) {
         const { stopNotificationScheduler } = require('./utils/notifications');
         stopNotificationScheduler(notificationScheduler);
@@ -340,28 +368,26 @@ const shutdown = (signal) => {
 };
 process.once('SIGINT', () => shutdown('SIGINT'));
 process.once('SIGTERM', () => shutdown('SIGTERM'));
-console.log('🚀 Starting bot launch...');
-console.log('✅ User handlers registered');
-console.log('✅ Admin handlers registered');
+logger_1.logger.info('Starting bot launch');
+logger_1.logger.info('User handlers registered');
+logger_1.logger.info('Admin handlers registered');
 (async () => {
     try {
-        console.log('🔄 Initializing database...');
+        logger_1.logger.info('Initializing database...');
         const { initDatabase } = await Promise.resolve().then(() => __importStar(require('./database/models')));
         await initDatabase();
-        console.log('✅ Database initialized successfully');
-        console.log('🔄 Launching bot...');
+        logger_1.logger.info('Database initialized successfully');
+        logger_1.logger.info('Launching bot...');
         await bot.launch({
             dropPendingUpdates: true
         });
-        console.log('📚 Бібліотечний бот запущений!');
-        console.log('Bot username:', bot.botInfo?.username);
-        console.log('✅ Bot is ready to receive messages');
+        logger_1.logger.info('Bot launched successfully', { username: bot.botInfo?.username });
         const { startNotificationScheduler } = require('./utils/notifications');
         notificationScheduler = startNotificationScheduler(bot);
-        console.log('🔔 Notification scheduler started');
+        logger_1.logger.info('Notification scheduler started');
         const { startAutoBackup } = require('./utils/autoBackup');
-        const backupScheduler = startAutoBackup();
-        console.log('💾 Automatic backup scheduler started');
+        startAutoBackup();
+        logger_1.logger.info('Automatic backup scheduler started');
     }
     catch (error) {
         console.error('❌ Помилка запуску бота:', error);
