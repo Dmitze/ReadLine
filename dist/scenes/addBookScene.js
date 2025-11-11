@@ -423,6 +423,8 @@ ${state.bookType === 'type_file' ? '📄 Доступна для заванта�
         let file_type = 'physical';
         if (state.bookType === 'type_file')
             file_type = 'file';
+        else if (state.bookType === 'type_audio')
+            file_type = 'audio';
         else if (state.bookType === 'type_link')
             file_type = 'link';
         const bookData = {
