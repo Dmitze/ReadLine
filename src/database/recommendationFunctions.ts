@@ -212,24 +212,19 @@ export const getCollaborativeRecommendations = (userId: number, limit: number = 
 // Get contextual recommendations based on time of day
 export const getContextualRecommendations = (userId: number, limit: number = 5): Promise<Book[]> => {
   const hour = new Date().getHours();
+  const { TIME_OF_DAY } = require('../constants');
   let genrePreference: string[] = [];
-
-  // ✅ ВИПРАВЛЕНО #42: константи замість magic numbers
-  const MORNING_START = 6;
-  const AFTERNOON_START = 12;
-  const EVENING_START = 18;
-  const NIGHT_START = 22;
   
   // Morning (6-12): Motivational, Business, Self-help
-  if (hour >= MORNING_START && hour < AFTERNOON_START) {
+  if (hour >= TIME_OF_DAY.MORNING_START && hour < TIME_OF_DAY.AFTERNOON_START) {
     genrePreference = ['Мотиваційна', 'Бізнес', 'Саморозвиток', 'Наукова'];
   }
   // Afternoon (12-18): Any genre
-  else if (hour >= 12 && hour < 18) {
+  else if (hour >= TIME_OF_DAY.AFTERNOON_START && hour < TIME_OF_DAY.EVENING_START) {
     genrePreference = ['Історична', 'Біографія', 'Пригоди', 'Детектив'];
   }
   // Evening (18-22): Light reading, Fiction
-  else if (hour >= 18 && hour < 22) {
+  else if (hour >= TIME_OF_DAY.EVENING_START && hour < TIME_OF_DAY.NIGHT_START) {
     genrePreference = ['Романтика', 'Комедія', 'Фентезі', 'Сучасна проза'];
   }
   // Night (22-6): Calm, relaxing books
