@@ -3,13 +3,16 @@ import { Book } from '../database/models';
 // Format book caption for display with beautiful emojis
 // ✅ ОПТИМІЗОВАНО: можна передати теги щоб уникнути додаткового запиту
 export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>): Promise<string> => {
-  // Екрануємо HTML спецсимволи
+  // Екрануємо HTML спецсимволи та видаляємо проблемні символи
   const escapeHtml = (text: string) => {
+    if (!text) return '';
     return text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/"/g, '&quot;')
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Видаляємо control characters
+      .replace(/�/g, ''); // Видаляємо replacement character
   };
   
   const safeTitle = escapeHtml(book.title);
@@ -17,15 +20,15 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
   const safeGenre = escapeHtml(book.genre);
   const safeDescription = escapeHtml(book.description);
   
-  // Заголовок з рамкою
-  let caption = `╔═══════════════════════╗\n`;
+  // Красивий заголовок
+  let caption = `━━━━━━━━━━━━━━━━━━━━━\n`;
   caption += `📖 <b>${safeTitle}</b>\n`;
-  caption += `╚═══════════════════════╝\n\n`;
+  caption += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
   
-  // Автор з емодзі
-  caption += `✍️ <b>Автор:</b> ${safeAuthor}\n`;
+  // Автор
+  caption += `👤 <b>Автор:</b> ${safeAuthor}\n`;
   
-  // Жанр з кольоровим емодзі
+  // Жанр
   const genreEmoji = getGenreEmoji(book.genre);
   caption += `${genreEmoji} <b>Жанр:</b> ${safeGenre}\n`;
   
@@ -39,12 +42,13 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
     try {
       const { getBookTags } = await import('../database/tagFunctions');
       const loadedTags = await getBookTags(book.id);
-      if (loadedTags.length > 0) {
+      if (loadedTags && loadedTags.length > 0) {
         const tagNames = loadedTags.map(t => `#${escapeHtml(t.name.replace(/\s+/g, '_'))}`).join(' ');
         caption += `🏷️ <b>Теги:</b> ${tagNames}\n`;
       }
     } catch (error) {
-      // Ігноруємо помилки з тегами
+      const { logger } = await import('./logger');
+      logger.error('Error loading tags in formatBookCaption', error instanceof Error ? error : new Error(String(error)));
     }
   }
   caption += `\n`;
