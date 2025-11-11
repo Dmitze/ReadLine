@@ -8,20 +8,21 @@ const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
+const logger_1 = require("../utils/logger");
 const initializeDatabase = async () => {
     try {
-        console.log('Initializing database...');
+        logger_1.logger.info('Initializing database');
         const dbPath = process.env.DB_PATH || './database/library.db';
         const dbDir = path_1.default.dirname(dbPath);
         if (!fs_1.default.existsSync(dbDir)) {
             fs_1.default.mkdirSync(dbDir, { recursive: true });
-            console.log(`📁 Створено директорію для БД: ${dbDir}`);
+            logger_1.logger.info('Created database directory', { path: dbDir });
         }
         await (0, models_1.initDatabase)();
-        console.log('✅ Database initialized successfully');
+        logger_1.logger.info('Database initialized successfully');
     }
     catch (error) {
-        console.error('❌ Failed to initialize database:', error);
+        logger_1.logger.error('Failed to initialize database', error instanceof Error ? error : new Error(String(error)));
         process.exit(1);
     }
 };
