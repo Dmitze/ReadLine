@@ -51,23 +51,14 @@ exports.getKeyboardConfig = getKeyboardConfig;
 const getAdaptiveMainMenuKeyboard = (ctx, withQuickActions = true) => {
     const deviceType = (0, exports.detectDeviceType)(ctx);
     const config = (0, exports.getKeyboardConfig)(deviceType);
-    const allButtons = withQuickActions ? [
-        '⚡ Швидкий пошук',
+    const allButtons = [
         '📖 Каталог',
         '🏆 Топ книги',
         '🆕 Новинки',
         '💾 Моя бібліотека',
         '👤 Профіль',
         '🤖 AI Помічник',
-        'ℹ️ Допомога',
-        '📞 Зворотній зв\'язок'
-    ] : [
-        '📖 Каталог',
-        '🏆 Топ книги',
-        '🆕 Новинки',
-        '💾 Моя бібліотека',
-        '👤 Профіль',
-        '🤖 AI Помічник',
+        '🎁 Отримати промокод',
         'ℹ️ Допомога',
         '📞 Зворотній зв\'язок'
     ];
@@ -86,18 +77,12 @@ const getAdaptiveMainMenuKeyboard = (ctx, withQuickActions = true) => {
         .reply_markup;
 };
 exports.getAdaptiveMainMenuKeyboard = getAdaptiveMainMenuKeyboard;
-const getMainMenuKeyboard = (withQuickActions = true) => {
-    const buttons = withQuickActions ? [
-        ['⚡ Швидкий пошук', '📖 Каталог'],
-        ['🏆 Топ книги', '🆕 Новинки'],
-        ['💾 Моя бібліотека', '👤 Профіль'],
-        ['🎁 Отримати промокод', '🤖 AI Помічник'],
-        ['ℹ️ Допомога', '📞 Зворотній зв\'язок']
-    ] : [
-        ['📖 Каталог'],
-        ['🏆 Топ книги', '🆕 Новинки'],
-        ['💾 Моя бібліотека', '👤 Профіль'],
-        ['🎁 Отримати промокод', '🤖 AI Помічник'],
+const getMainMenuKeyboard = () => {
+    const buttons = [
+        ['📖 Каталог', '🏆 Топ книги'],
+        ['🆕 Новинки', '💾 Моя бібліотека'],
+        ['👤 Профіль', '🤖 AI Помічник'],
+        ['🎁 Отримати промокод'],
         ['ℹ️ Допомога', '📞 Зворотній зв\'язок']
     ];
     return telegraf_1.Markup
