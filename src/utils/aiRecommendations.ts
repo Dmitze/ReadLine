@@ -58,20 +58,16 @@ export const getPersonalizedRecommendations = async (userId: number): Promise<st
  * Контекстні рекомендації на основі часу доби
  */
 export const getContextualRecommendations = async (): Promise<string> => {
+  const { TIME_OF_DAY } = await import('../constants');
   const hour = new Date().getHours();
-  
-  // ✅ ВИПРАВЛЕНО #42: константи замість magic numbers
-  const MORNING_START = 6;
-  const AFTERNOON_START = 12;
-  const EVENING_START = 18;
   
   let timeContext = '';
   
-  if (hour >= MORNING_START && hour < AFTERNOON_START) {
+  if (hour >= TIME_OF_DAY.MORNING_START && hour < TIME_OF_DAY.AFTERNOON_START) {
     timeContext = 'Зараз ранок. Порекомендуй мотиваційні або легкі книги для початку дня.';
-  } else if (hour >= AFTERNOON_START && hour < EVENING_START) {
+  } else if (hour >= TIME_OF_DAY.AFTERNOON_START && hour < TIME_OF_DAY.EVENING_START) {
     timeContext = 'Зараз день. Порекомендуй книги для продуктивного читання або навчання.';
-  } else if (hour >= 18 && hour < 22) {
+  } else if (hour >= TIME_OF_DAY.EVENING_START && hour < TIME_OF_DAY.NIGHT_START) {
     timeContext = 'Зараз вечір. Порекомендуй художню літературу або книги для відпочинку.';
   } else {
     timeContext = 'Зараз ніч. Порекомендуй спокійні книги для читання перед сном.';
