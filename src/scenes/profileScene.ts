@@ -3,8 +3,7 @@ import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
 import { escapeHtml } from '../utils/helpers';
 import { 
-  getSmartRecommendations, 
-  getUserReadingStats 
+  getSmartRecommendations
 } from '../database/recommendationFunctions';
 import { getEnhancedBookKeyboard } from '../keyboards/mainKeyboards';
 
@@ -85,8 +84,8 @@ profileScene.enter(async (ctx: BotContext) => {
     await ctx.reply(profileText, { 
       parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard([
-        [{ text: '💡 Вам може сподобатися', callback_data: 'show_recommendations' }],
-        [{ text: '📚 Персональна підбірка (AI)', callback_data: 'show_personal_collection' }],
+        [{ text: '💡 Вам може сподобатися (за жанрами)', callback_data: 'show_recommendations' }],
+        [{ text: '🤖 Розумна підбірка (AI)', callback_data: 'show_personal_collection' }],
         [{ text: '📊 Моя статистика', callback_data: 'show_stats' }],
         [{ text: '⬅️ Назад', callback_data: 'profile_back' }]
       ]).reply_markup
@@ -99,7 +98,7 @@ profileScene.enter(async (ctx: BotContext) => {
   }
 });
 
-// Показати рекомендації
+// Показати рекомендації (прості, на основі жанрів)
 profileScene.action('show_recommendations', async (ctx) => {
   try {
     await ctx.answerCbQuery();
@@ -107,21 +106,40 @@ profileScene.action('show_recommendations', async (ctx) => {
     if (!userId) return;
     
     const { formatBookCaption } = await import('../utils/helpers');
-    const { isBookSaved, getTopBooks, getNewestBooks } = await import('../database/models');
+    const { isBookSaved, getTopBooks, getNewestBooks, getAllBooks } = await import('../database/models');
+    const { getUserFavoriteGenres } = await import('../database/recommendationFunctions');
     
-    // ✅ ВИПРАВЛЕНО #30: видалено дублювання - getUserFavoriteGenres викликається всередині getSmartRecommendations
-    let recommendations = await getSmartRecommendations(userId, 5);
+    // Отримуємо улюблені жанри користувача
+    const favoriteGenres = await getUserFavoriteGenres(userId, 3);
     
-    // Якщо немає персональних рекомендацій - показуємо топ книги
-    if (recommendations.length === 0) {
-      console.log('⚠️ No personal recommendations, showing top books');
+    let recommendations = [];
+    
+    // Якщо є улюблені жанри - шукаємо книги цих жанрів
+    if (favoriteGenres.length > 0) {
+      const allBooks = await getAllBooks();
       
-      // Спробуємо показати топ книги
+      // Фільтруємо книги за улюбленими жанрами
+      recommendations = allBooks
+        .filter(book => favoriteGenres.includes(book.genre))
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        .slice(0, 5);
+      
+      if (recommendations.length > 0) {
+        let text = '💡 *Вам може сподобатися*\n\n';
+        text += `На основі ваших улюблених жанрів: ${favoriteGenres.join(', ')}\n\n`;
+        text += `Знайдено ${recommendations.length} ${recommendations.length === 1 ? 'книга' : 'книг'}:`;
+        
+        await ctx.reply(text, { parse_mode: 'Markdown' });
+      }
+    }
+    
+    // Якщо немає рекомендацій за жанрами - показуємо топ книги
+    if (recommendations.length === 0) {
       const topBooks = await getTopBooks(5);
       
       if (topBooks.length > 0) {
         await ctx.reply(
-          '💡 *Рекомендації для вас*\n\n' +
+          '💡 *Вам може сподобатися*\n\n' +
           'У вас ще немає збережених книг, тому ми підібрали найкращі книги з нашого каталогу:\n\n' +
           '⭐ Топ книги за рейтингом',
           { parse_mode: 'Markdown' }
@@ -133,14 +151,14 @@ profileScene.action('show_recommendations', async (ctx) => {
         
         if (newBooks.length > 0) {
           await ctx.reply(
-            '💡 *Рекомендації для вас*\n\n' +
+            '💡 *Вам може сподобатися*\n\n' +
             'Ось найновіші книги в нашому каталозі:',
             { parse_mode: 'Markdown' }
           );
           recommendations = newBooks;
         } else {
           await ctx.reply(
-            '💡 *Рекомендації для вас*\n\n' +
+            '💡 *Вам може сподобатися*\n\n' +
             'Поки що немає книг в каталозі.\n\n' +
             '💾 Зберігайте книги, щоб отримувати персоналізовані рекомендації!',
             { parse_mode: 'Markdown' }
@@ -150,18 +168,7 @@ profileScene.action('show_recommendations', async (ctx) => {
       }
     }
     
-    // Отримуємо улюблені жанри для відображення
-    const { getUserFavoriteGenres } = await import('../database/recommendationFunctions');
-    const favoriteGenres = await getUserFavoriteGenres(userId, 3);
-    
-    let text = '💡 *Вам може сподобатися*\n\n';
-    if (favoriteGenres.length > 0) {
-      text += `На основі ваших улюблених жанрів: ${favoriteGenres.join(', ')}\n\n`;
-    }
-    text += `Знайдено ${recommendations.length} ${recommendations.length === 1 ? 'книга' : 'книг'}:`;
-    
-    await ctx.reply(text, { parse_mode: 'Markdown' });
-    
+    // Показуємо книги
     for (const book of recommendations) {
       const caption = await formatBookCaption(book);
       const isSaved = await isBookSaved(userId, book.id!);
@@ -179,9 +186,12 @@ profileScene.action('show_recommendations', async (ctx) => {
           reply_markup: keyboard
         });
       }
+      
+      // Затримка між повідомленнями
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
     
-    logger.userAction(userId, 'view_recommendations');
+    logger.userAction(userId, 'view_simple_recommendations');
   } catch (error) {
     logger.error('Error showing recommendations', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
     await ctx.answerCbQuery('❌ Помилка при отриманні рекомендацій');
@@ -238,7 +248,7 @@ profileScene.action('profile_back', async (ctx: BotContext) => {
   });
 });
 
-// Обробник персональної підбірки (AI)
+// Обробник персональної підбірки (AI) - використовує розумні алгоритми
 profileScene.action('show_personal_collection', async (ctx: BotContext) => {
   await ctx.answerCbQuery('🤖 Генерую персональну підбірку...');
   
@@ -251,23 +261,14 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
 
     await ctx.reply('🤖 Аналізую ваші вподобання та створюю персональну підбірку...');
 
-    // Використовуємо розумні рекомендації
-    const { getUserDetailedStats } = await import('../database/userFunctions');
-    const { getTopBooks, getNewestBooks, isBookSaved } = await import('../database/models');
-    
-    console.log('📊 Getting user stats for personal collection...');
-    const stats = await getUserDetailedStats(userId);
-    console.log('📊 User stats:', stats);
+    // Використовуємо розумні рекомендації з урахуванням тегів, рейтингів та історії
+    const { isBookSaved, getTopBooks, getNewestBooks } = await import('../database/models');
     
     let collection = await getSmartRecommendations(userId, 5);
-    console.log('🤖 Smart recommendations:', collection.length);
 
     if (collection.length === 0) {
-      console.log('⚠️ No smart recommendations, trying fallback...');
-      
       // Fallback до топ книг
       const topBooks = await getTopBooks(3);
-      console.log('🏆 Top books fallback:', topBooks.length);
       
       if (topBooks.length > 0) {
         collection = topBooks;
@@ -280,7 +281,6 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
       } else {
         // Якщо навіть топ книг немає - пробуємо новинки
         const newBooks = await getNewestBooks(3);
-        console.log('🆕 New books fallback:', newBooks.length);
         
         if (newBooks.length > 0) {
           collection = newBooks;
@@ -298,7 +298,7 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
     } else {
       await ctx.reply(
         `📚 *Персональна підбірка для вас*\n\n` +
-        `🤖 Створено на основі ваших вподобань\n` +
+        `🤖 Створено на основі ваших вподобань, тегів та рейтингів\n` +
         `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`,
         { parse_mode: 'Markdown' }
       );
@@ -321,7 +321,7 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
               reply_markup: keyboard
             });
           } catch (photoError) {
-            console.log('⚠️ Photo error, sending as text');
+            logger.debug('Photo error, sending as text');
             await ctx.reply(caption, {
               parse_mode: 'Markdown',
               reply_markup: keyboard
@@ -337,16 +337,14 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
         // Затримка між повідомленнями
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (bookError) {
-        // ✅ ВИПРАВЛЕНО #43: logger замість console.error
         logger.error('Error showing book', bookError instanceof Error ? bookError : new Error(String(bookError)));
         // Продовжуємо з наступною книгою
       }
     }
 
-    logger.userAction(userId, 'personal_collection', { booksFound: collection.length });
+    logger.userAction(userId, 'ai_personal_collection', { booksFound: collection.length });
 
   } catch (error) {
-    // ✅ ВИПРАВЛЕНО #43: вже є logger.error нижче, видаляємо дублювання
     logger.error('Error generating personal collection', error instanceof Error ? error : new Error(String(error)));
     await ctx.reply('😔 Не вдалося створити персональну підбірку. Спробуйте пізніше.');
   }
