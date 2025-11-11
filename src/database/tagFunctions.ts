@@ -64,14 +64,23 @@ export const removeBookTag = (bookId: number, tagId: number): Promise<void> => {
 };
 
 // Пошук книг за тегом
+// ✅ ВИПРАВЛЕНО #16: додана валідація tagName для запобігання SQL injection
 export const searchBooksByTag = (tagName: string, limit: number = 10): Promise<any[]> => {
   return new Promise((resolve, reject) => {
+    // Валідація: тільки букви, цифри, пробіли, дефіси
+    const sanitizedTagName = tagName.replace(/[^a-zA-Zа-яА-ЯіІїЇєЄ0-9\s\-]/g, '');
+    
+    if (!sanitizedTagName || sanitizedTagName.length < 2) {
+      resolve([]);
+      return;
+    }
+    
     const query = `SELECT DISTINCT b.* FROM books b
       INNER JOIN book_tags bt ON b.id = bt.book_id
       INNER JOIN tags t ON bt.tag_id = t.id
       WHERE t.name LIKE ? AND b.is_available = 1
       ORDER BY b.rating DESC, b.downloads_count DESC LIMIT ?`;
-    db.all(query, [`%${tagName}%`, limit], (err, rows: any[]) => {
+    db.all(query, [`%${sanitizedTagName}%`, limit], (err, rows: any[]) => {
       if (err) reject(err);
       else resolve(rows);
     });
