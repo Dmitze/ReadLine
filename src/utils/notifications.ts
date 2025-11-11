@@ -21,83 +21,85 @@ export interface NotificationSettings {
 // ============================================
 
 // Отримати налаштування сповіщень користувача
-export const getUserNotificationSettings = (userId: number): NotificationSettings => {
-  try {
-    const result = db.prepare(`
+export const getUserNotificationSettings = (userId: number): Promise<NotificationSettings> => {
+  return new Promise((resolve, reject) => {
+    db.get(`
       SELECT 
-        telegram_id as userId,
+        user_id as userId,
         notification_frequency as frequency,
         notifications_enabled as enabled,
         last_notification_at as lastNotificationAt,
         notification_time as preferredTime
       FROM users 
-      WHERE telegram_id = ?
-    `).get(userId) as any;
-    
-    if (result) {
-      return {
-        userId: result.userId,
-        frequency: result.frequency || 'weekly',
-        enabled: result.enabled !== 0,
-        lastNotificationAt: result.lastNotificationAt ? new Date(result.lastNotificationAt) : undefined,
-        preferredTime: result.preferredTime || '10:00'
-      };
-    }
-    
-    // За замовчуванням
-    return {
-      userId,
-      frequency: 'weekly',
-      enabled: true,
-      preferredTime: '10:00'
-    };
-  } catch (error) {
-    logger.error('Error getting notification settings', error instanceof Error ? error : new Error(String(error)));
-    return {
-      userId,
-      frequency: 'weekly',
-      enabled: true,
-      preferredTime: '10:00'
-    };
-  }
+      WHERE user_id = ?
+    `, [userId], (err, result: any) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+      
+      if (result) {
+        resolve({
+          userId: result.userId,
+          frequency: result.frequency || 'weekly',
+          enabled: result.enabled !== 0,
+          lastNotificationAt: result.lastNotificationAt ? new Date(result.lastNotificationAt) : undefined,
+          preferredTime: result.preferredTime || '10:00'
+        });
+      } else {
+        // За замовчуванням
+        resolve({
+          userId,
+          frequency: 'weekly',
+          enabled: true,
+          preferredTime: '10:00'
+        });
+      }
+    });
+  });
 };
 
 // Зберегти налаштування сповіщень
-export const setUserNotificationSettings = (settings: NotificationSettings): boolean => {
-  try {
-    db.prepare(`
+export const setUserNotificationSettings = (settings: NotificationSettings): Promise<boolean> => {
+  return new Promise((resolve) => {
+    db.run(`
       UPDATE users 
       SET 
         notification_frequency = ?,
         notifications_enabled = ?,
         notification_time = ?
-      WHERE telegram_id = ?
-    `).run(
+      WHERE user_id = ?
+    `, [
       settings.frequency,
       settings.enabled ? 1 : 0,
       settings.preferredTime || '10:00',
       settings.userId
-    );
-    
-    logger.info('Notification settings updated', { userId: settings.userId, frequency: settings.frequency });
-    return true;
-  } catch (error) {
-    logger.error('Error setting notification settings', error instanceof Error ? error : new Error(String(error)));
-    return false;
-  }
+    ], (err) => {
+      if (err) {
+        logger.error('Error setting notification settings', err);
+        resolve(false);
+      } else {
+        logger.info('Notification settings updated', { userId: settings.userId, frequency: settings.frequency });
+        resolve(true);
+      }
+    });
+  });
 };
 
 // Оновити час останнього сповіщення
-export const updateLastNotificationTime = (userId: number): void => {
-  try {
-    db.prepare(`
+export const updateLastNotificationTime = (userId: number): Promise<void> => {
+  return new Promise((resolve) => {
+    db.run(`
       UPDATE users 
       SET last_notification_at = datetime('now')
-      WHERE telegram_id = ?
-    `).run(userId);
-  } catch (error) {
-    logger.error('Error updating last notification time', error instanceof Error ? error : new Error(String(error)));
-  }
+      WHERE user_id = ?
+    `, [userId], (err) => {
+      if (err) {
+        logger.error('Error updating last notification time', err);
+      }
+      resolve();
+    });
+  });
 };
 
 // ============================================
@@ -105,8 +107,9 @@ export const updateLastNotificationTime = (userId: number): void => {
 // ============================================
 
 // Перевірити чи потрібно надіслати сповіщення користувачу
-export const shouldSendNotification = (userId: number): boolean => {
-  const settings = getUserNotificationSettings(userId);
+export const shouldSendNotification = async (userId: number): Promise<boolean> => {
+  // ✅ ВИПРАВЛЕНО: async функція
+  const settings = await getUserNotificationSettings(userId);
   
   // Якщо сповіщення вимкнені
   if (!settings.enabled || settings.frequency === 'disabled') {
@@ -119,7 +122,7 @@ export const shouldSendNotification = (userId: number): boolean => {
   }
   
   const now = new Date();
-  const lastNotification = settings.lastNotificationAt;
+  const lastNotification = new Date(settings.lastNotificationAt);
   const hoursSinceLastNotification = (now.getTime() - lastNotification.getTime()) / (1000 * 60 * 60);
   
   // Перевіряємо частоту
@@ -142,15 +145,20 @@ export const shouldSendNotification = (userId: number): boolean => {
 // Отримати персоналізоване повідомлення для користувача
 export const getPersonalizedNotification = async (userId: number): Promise<string | null> => {
   try {
-    // Отримуємо інформацію про користувача
-    const user = db.prepare(`
-      SELECT 
-        first_name,
-        favorite_genres,
-        last_active_at
-      FROM users 
-      WHERE telegram_id = ?
-    `).get(userId) as any;
+    // ✅ ВИПРАВЛЕНО: telegram_id → user_id та async API
+    const user = await new Promise<any>((resolve, reject) => {
+      db.get(`
+        SELECT 
+          first_name,
+          favorite_genres,
+          last_active_at
+        FROM users 
+        WHERE user_id = ?
+      `, [userId], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
     
     if (!user) return null;
     
@@ -182,15 +190,20 @@ export const getPersonalizedNotification = async (userId: number): Promise<strin
       }
     }
     
-    // Перевіряємо чи є незавершені аудіокниги
-    const unfinishedAudio = db.prepare(`
-      SELECT b.title
-      FROM saved_books sb
-      JOIN books b ON sb.book_id = b.id
-      WHERE sb.user_id = ?
-      AND b.audio_file_id IS NOT NULL
-      LIMIT 1
-    `).get(userId) as { title?: string } | undefined;
+    // ✅ ВИПРАВЛЕНО: async API
+    const unfinishedAudio = await new Promise<{ title?: string } | undefined>((resolve, reject) => {
+      db.get(`
+        SELECT b.title
+        FROM saved_books sb
+        JOIN books b ON sb.book_id = b.id
+        WHERE sb.user_id = ?
+        AND b.audio_file_id IS NOT NULL
+        LIMIT 1
+      `, [userId], (err, row: any) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
     
     if (unfinishedAudio && unfinishedAudio.title) {
       return (
@@ -245,7 +258,8 @@ export const sendNotification = async (bot: Telegraf<BotContext>, userId: number
       }
     });
     
-    updateLastNotificationTime(userId);
+    // ✅ ВИПРАВЛЕНО: await для async функції
+    await updateLastNotificationTime(userId);
     logger.info('Notification sent', { userId });
     return true;
     
@@ -266,10 +280,10 @@ export const startNotificationScheduler = (bot: Telegraf<BotContext>): NodeJS.Ti
   // Перевіряємо кожну годину
   const interval = setInterval(async () => {
     try {
-      // Отримуємо всіх користувачів з увімкненими сповіщеннями
+      // ✅ ВИПРАВЛЕНО: telegram_id → user_id
       const users = await new Promise<Array<{ userId: number }>>((resolve, reject) => {
         db.all(`
-          SELECT telegram_id as userId
+          SELECT user_id as userId
           FROM users
           WHERE notifications_enabled = 1
           AND notification_frequency != 'disabled'
@@ -281,11 +295,29 @@ export const startNotificationScheduler = (bot: Telegraf<BotContext>): NodeJS.Ti
       
       logger.info(`Checking notifications for ${users.length} users`);
       
-      for (const user of users) {
-        if (shouldSendNotification(user.userId)) {
-          await sendNotification(bot, user.userId);
-          // Затримка між сповіщеннями щоб не флудити
-          await new Promise(resolve => setTimeout(resolve, 1000));
+      // ✅ ВИПРАВЛЕНО #8: batch processing замість послідовного циклу для уникнення deadlock
+      const BATCH_SIZE = 10;
+      const DELAY_BETWEEN_BATCHES = 2000; // 2 секунди між батчами
+      
+      for (let i = 0; i < users.length; i += BATCH_SIZE) {
+        const batch = users.slice(i, i + BATCH_SIZE);
+        
+        // Обробляємо батч паралельно
+        await Promise.allSettled(
+          batch.map(async (user) => {
+            try {
+              if (await shouldSendNotification(user.userId)) {
+                await sendNotification(bot, user.userId);
+              }
+            } catch (error) {
+              logger.error('Error sending notification to user', error, { userId: user.userId });
+            }
+          })
+        );
+        
+        // Затримка між батчами
+        if (i + BATCH_SIZE < users.length) {
+          await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
         }
       }
     } catch (error) {
