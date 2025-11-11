@@ -60,11 +60,16 @@ export const getPersonalizedRecommendations = async (userId: number): Promise<st
 export const getContextualRecommendations = async (): Promise<string> => {
   const hour = new Date().getHours();
   
+  // ✅ ВИПРАВЛЕНО #42: константи замість magic numbers
+  const MORNING_START = 6;
+  const AFTERNOON_START = 12;
+  const EVENING_START = 18;
+  
   let timeContext = '';
   
-  if (hour >= 6 && hour < 12) {
+  if (hour >= MORNING_START && hour < AFTERNOON_START) {
     timeContext = 'Зараз ранок. Порекомендуй мотиваційні або легкі книги для початку дня.';
-  } else if (hour >= 12 && hour < 18) {
+  } else if (hour >= AFTERNOON_START && hour < EVENING_START) {
     timeContext = 'Зараз день. Порекомендуй книги для продуктивного читання або навчання.';
   } else if (hour >= 18 && hour < 22) {
     timeContext = 'Зараз вечір. Порекомендуй художню літературу або книги для відпочинку.';
