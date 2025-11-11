@@ -14,23 +14,29 @@ export interface ValidationResult {
 
 /**
  * Валідація даних книги
+ * ✅ ВИПРАВЛЕНО: використовуємо константи
  */
 export function validateBookData(
   data: Partial<Omit<Book, 'id' | 'created_at'>>
 ): ValidationResult {
+  const { VALIDATION } = require('../constants');
   const errors: string[] = [];
 
   // Обов'язкові поля
   if (!data.title || data.title.trim().length === 0) {
     errors.push('Назва книги обов\'язкова');
-  } else if (data.title.length > 200) {
-    errors.push('Назва книги занадто довга (максимум 200 символів)');
+  } else if (data.title.length < VALIDATION.TITLE_MIN) {
+    errors.push(`Назва занадто коротка (мінімум ${VALIDATION.TITLE_MIN} символи)`);
+  } else if (data.title.length > VALIDATION.TITLE_MAX) {
+    errors.push(`Назва книги занадто довга (максимум ${VALIDATION.TITLE_MAX} символів)`);
   }
 
   if (!data.author || data.author.trim().length === 0) {
     errors.push('Автор обов\'язковий');
-  } else if (data.author.length > 100) {
-    errors.push('Ім\'я автора занадто довге (максимум 100 символів)');
+  } else if (data.author.length < VALIDATION.AUTHOR_MIN) {
+    errors.push(`Ім\'я автора занадто коротке (мінімум ${VALIDATION.AUTHOR_MIN} символи)`);
+  } else if (data.author.length > VALIDATION.AUTHOR_MAX) {
+    errors.push(`Ім\'я автора занадто довге (максимум ${VALIDATION.AUTHOR_MAX} символів)`);
   }
 
   if (!data.genre || data.genre.trim().length === 0) {
@@ -39,8 +45,10 @@ export function validateBookData(
 
   if (!data.description || data.description.trim().length === 0) {
     errors.push('Опис обов\'язковий');
-  } else if (data.description.length > 1000) {
-    errors.push('Опис занадто довгий (максимум 1000 символів)');
+  } else if (data.description.length < VALIDATION.DESCRIPTION_MIN) {
+    errors.push(`Опис занадто короткий (мінімум ${VALIDATION.DESCRIPTION_MIN} символів)`);
+  } else if (data.description.length > VALIDATION.DESCRIPTION_MAX) {
+    errors.push(`Опис занадто довгий (максимум ${VALIDATION.DESCRIPTION_MAX} символів)`);
   }
 
   if (!data.photo_file_id || data.photo_file_id.trim().length === 0) {
@@ -69,10 +77,12 @@ export function validateBookData(
 
 /**
  * Валідація даних відгуку
+ * ✅ ВИПРАВЛЕНО: використовуємо константи
  */
 export function validateReviewData(
   data: Partial<Omit<Review, 'id' | 'created_at'>>
 ): ValidationResult {
+  const { VALIDATION } = require('../constants');
   const errors: string[] = [];
 
   if (!data.book_id || data.book_id <= 0) {
@@ -83,13 +93,13 @@ export function validateReviewData(
     errors.push('ID користувача обов\'язковий');
   }
 
-  if (!data.rating || data.rating < 1 || data.rating > 5) {
-    errors.push('Рейтинг має бути від 1 до 5');
+  if (!data.rating || data.rating < VALIDATION.RATING_MIN || data.rating > VALIDATION.RATING_MAX) {
+    errors.push(`Рейтинг має бути від ${VALIDATION.RATING_MIN} до ${VALIDATION.RATING_MAX}`);
   }
 
   if (data.comment) {
-    if (data.comment.length > 500) {
-      errors.push('Коментар занадто довгий (максимум 500 символів)');
+    if (data.comment.length > VALIDATION.COMMENT_MAX) {
+      errors.push(`Коментар занадто довгий (максимум ${VALIDATION.COMMENT_MAX} символів)`);
     }
     if (data.comment.trim().length === 0) {
       errors.push('Коментар не може бути порожнім');
@@ -104,20 +114,22 @@ export function validateReviewData(
 
 /**
  * Валідація пошукового запиту
+ * ✅ ВИПРАВЛЕНО: використовуємо константи
  */
 export function validateSearchQuery(query: string): ValidationResult {
+  const { CONFIG } = require('../constants');
   const errors: string[] = [];
 
   if (!query || query.trim().length === 0) {
     errors.push('Пошуковий запит не може бути порожнім');
   }
 
-  if (query.length < 2) {
-    errors.push('Пошуковий запит занадто короткий (мінімум 2 символи)');
+  if (query.length < CONFIG.MIN_SEARCH_LENGTH) {
+    errors.push(`Пошуковий запит занадто короткий (мінімум ${CONFIG.MIN_SEARCH_LENGTH} символи)`);
   }
 
-  if (query.length > 100) {
-    errors.push('Пошуковий запит занадто довгий (максимум 100 символів)');
+  if (query.length > CONFIG.MAX_SEARCH_LENGTH) {
+    errors.push(`Пошуковий запит занадто довгий (максимум ${CONFIG.MAX_SEARCH_LENGTH} символів)`);
   }
 
   return {
