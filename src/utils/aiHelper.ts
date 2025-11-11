@@ -4,6 +4,7 @@
  */
 
 import { Book } from '../database/models';
+import { logger } from './logger';
 
 export interface UserProfile {
   favoriteGenres: string[];
@@ -18,13 +19,58 @@ export interface AIBookRecommendation extends Book {
 
 /**
  * Пошук за природною мовою (заглушка)
+ * ✅ ВИПРАВЛЕНО #5: додано timeout для запобігання зависанню
+ * ✅ ВИПРАВЛЕНО #13: додано персоналізацію на основі історії користувача
  */
 export async function naturalLanguageSearch(
   query: string, 
-  allBooks: Book[]
+  allBooks: Book[],
+  userId?: number
+): Promise<Book[]> {
+  // Обгортаємо в Promise.race з timeout
+  return Promise.race([
+    actualNaturalLanguageSearch(query, allBooks, userId),
+    new Promise<Book[]>((_, reject) => 
+      setTimeout(() => reject(new Error('AI search timeout (10s)')), 10000)
+    )
+  ]);
+}
+
+/**
+ * Внутрішня функція пошуку
+ * ✅ ВИПРАВЛЕНО #13: враховує історію користувача для персоналізації
+ */
+async function actualNaturalLanguageSearch(
+  query: string,
+  allBooks: Book[],
+  userId?: number
 ): Promise<Book[]> {
   // Простий алгоритм пошуку за ключовими словами
   const keywords = query.toLowerCase().split(' ');
+  
+  // ✅ ВИПРАВЛЕНО #13: Завантажуємо історію користувача
+  let userSavedBooks: Set<number> = new Set();
+  let userFavoriteGenres: string[] = [];
+  
+  if (userId) {
+    try {
+      const { getSavedBooks } = await import('../database/models');
+      const savedBooks = await getSavedBooks(userId);
+      userSavedBooks = new Set(savedBooks.map(b => b.id));
+      
+      // Визначаємо улюблені жанри з історії
+      const genreCounts: Record<string, number> = {};
+      savedBooks.forEach(book => {
+        genreCounts[book.genre] = (genreCounts[book.genre] || 0) + 1;
+      });
+      userFavoriteGenres = Object.entries(genreCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([genre]) => genre);
+    } catch (error) {
+      logger.warn('Failed to load user history for personalization', error);
+    }
+  }
   
   const results = allBooks.filter(book => {
     const searchText = `${book.title} ${book.author} ${book.genre} ${book.description}`.toLowerCase();
@@ -56,10 +102,28 @@ export async function naturalLanguageSearch(
     });
   });
   
-  // Сортуємо за релевантністю (рейтинг + кількість завантажень)
+  // ✅ ВИПРАВЛЕНО #13: Персоналізоване сортування
   return results.sort((a, b) => {
-    const scoreA = (a.rating || 0) * 10 + (a.downloads_count || 0);
-    const scoreB = (b.rating || 0) * 10 + (b.downloads_count || 0);
+    // Базовий score
+    let scoreA = (a.rating || 0) * 10 + (a.downloads_count || 0);
+    let scoreB = (b.rating || 0) * 10 + (b.downloads_count || 0);
+    
+    // Бонус за улюблені жанри користувача
+    if (userFavoriteGenres.includes(a.genre)) scoreA += 50;
+    if (userFavoriteGenres.includes(b.genre)) scoreB += 50;
+    
+    // Бонус за схожість з збереженими книгами (той самий автор)
+    if (userId) {
+      const aSimilar = allBooks.some(book => 
+        userSavedBooks.has(book.id) && book.author === a.author
+      );
+      const bSimilar = allBooks.some(book => 
+        userSavedBooks.has(book.id) && book.author === b.author
+      );
+      if (aSimilar) scoreA += 30;
+      if (bSimilar) scoreB += 30;
+    }
+    
     return scoreB - scoreA;
   }).slice(0, 10);
 }
@@ -104,47 +168,58 @@ export async function getPersonalCollection(
   });
   
   // Беремо топ 5 та додаємо AI анотації
-  return candidates.slice(0, 5).map(book => ({
-    ...book,
-    aiSummary: generateAISummary(book),
-    reason: generateRecommendationReason(book, userProfile)
-  }));
+  const topBooks = candidates.slice(0, 5);
+  const booksWithAI = await Promise.all(
+    topBooks.map(async (book) => ({
+      ...book,
+      aiSummary: await generateAISummary(book),
+      reason: await generateRecommendationReason(book, userProfile)
+    }))
+  );
+  
+  return booksWithAI;
 }
 
 /**
  * Генерація AI резюме (заглушка)
+ * ✅ ВИПРАВЛЕНО #10: використовуємо константи
  */
-function generateAISummary(book: Book): string {
-  const summaries = [
+async function generateAISummary(book: Book): Promise<string> {
+  const { AI_MESSAGES } = await import('../constants');
+  const summaries = AI_MESSAGES.SUMMARIES;
+  
+  // Додаємо персоналізовані варіанти
+  const customSummaries = [
     `Захоплююча історія про ${book.genre.toLowerCase()}, яка не залишить вас байдужими.`,
     `Чудова книга в жанрі "${book.genre}" з неочікуваними поворотами сюжету.`,
     `Майстерно написана робота автора ${book.author} в стилі ${book.genre.toLowerCase()}.`,
-    `Книга, яка змінить ваше уявлення про ${book.genre.toLowerCase()}.`,
-    `Неперевершений твір, який поєднує в собі найкращі традиції жанру ${book.genre.toLowerCase()}.`
+    ...summaries
   ];
   
-  return summaries[Math.floor(Math.random() * summaries.length)];
+  return customSummaries[Math.floor(Math.random() * customSummaries.length)];
 }
 
 /**
  * Генерація причини рекомендації (заглушка)
+ * ✅ ВИПРАВЛЕНО #10: використовуємо константи
  */
-function generateRecommendationReason(book: Book, userProfile: UserProfile): string {
+async function generateRecommendationReason(book: Book, userProfile: UserProfile): Promise<string> {
+  const { AI_MESSAGES } = await import('../constants');
   const { favoriteGenres } = userProfile;
   
   if (favoriteGenres.includes(book.genre)) {
-    return `Рекомендую, оскільки вам подобається жанр "${book.genre}"`;
+    return `${AI_MESSAGES.RECOMMENDATION_REASONS.FAVORITE_GENRE} "${book.genre}"`;
   }
   
   if (book.rating && book.rating > 4) {
-    return `Високий рейтинг (${book.rating.toFixed(1)}/5) - читачі в захваті!`;
+    return `${AI_MESSAGES.RECOMMENDATION_REASONS.HIGH_RATING} (${book.rating.toFixed(1)}/5)`;
   }
   
   if (book.downloads_count && book.downloads_count > 100) {
-    return `Популярна книга - завантажили ${book.downloads_count} разів`;
+    return `${AI_MESSAGES.RECOMMENDATION_REASONS.POPULAR} (${book.downloads_count} разів)`;
   }
   
-  return `Цікава книга в жанрі "${book.genre}" від талановитого автора`;
+  return `${AI_MESSAGES.RECOMMENDATION_REASONS.INTERESTING} в жанрі "${book.genre}"`;
 }
 
 /**
@@ -307,10 +382,36 @@ export async function generateTagsFromDescription(description: string, title: st
   return generateTags(title, description, genre);
 }
 
+// ✅ ВИПРАВЛЕНО #47: rate limiting для AI
+const aiRequestTimestamps: number[] = [];
+const AI_RATE_LIMIT = 10; // запитів
+const AI_RATE_WINDOW = 60000; // за хвилину
+
+function checkAiRateLimit(): boolean {
+  const now = Date.now();
+  // Видаляємо старі timestamps
+  while (aiRequestTimestamps.length > 0 && aiRequestTimestamps[0] < now - AI_RATE_WINDOW) {
+    aiRequestTimestamps.shift();
+  }
+  
+  if (aiRequestTimestamps.length >= AI_RATE_LIMIT) {
+    return false;
+  }
+  
+  aiRequestTimestamps.push(now);
+  return true;
+}
+
 /**
  * AI чат-бот з Gemini API
+ * ✅ ВИПРАВЛЕНО #47: додано rate limiting
  */
 export async function askAI(question: string): Promise<string> {
+  // Перевірка rate limit
+  if (!checkAiRateLimit()) {
+    throw new Error('Занадто багато запитів до AI. Спробуйте через хвилину.');
+  }
+  
   const apiKey = process.env.GEMINI_API_KEY;
   const model = process.env.GEMINI_MODEL || 'gemini-flash-latest';
   
@@ -319,14 +420,20 @@ export async function askAI(question: string): Promise<string> {
   }
   
   try {
-    // Використовуємо правильний endpoint для Gemini 2.0
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    // ✅ ВИПРАВЛЕНО #49: винесено в змінну оточення
+    const apiBaseUrl = process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta';
+    const url = `${apiBaseUrl}/models/${model}:generateContent?key=${apiKey}`;
+    
+    // ✅ ВИПРАВЛЕНО #58: timeout для network requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
     
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      signal: controller.signal,
       body: JSON.stringify({
         contents: [{
           parts: [{
@@ -340,39 +447,62 @@ export async function askAI(question: string): Promise<string> {
       })
     });
 
+    clearTimeout(timeoutId);
+    
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ Gemini API error response:', errorText);
+      logger.error('Gemini API error response', new Error(errorText));
       throw new Error(`Gemini API помилка: ${response.status} - ${errorText}`);
     }
 
     const data = await response.json();
     
-    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-      return data.candidates[0].content.parts[0].text;
+    // ✅ ВИПРАВЛЕНО #14: proper error handling з перевіркою на кожному рівні
+    if (!data) {
+      throw new Error('Порожня відповідь від Gemini API');
     }
     
-    throw new Error('Некоректна відповідь від Gemini API');
+    if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
+      throw new Error('Відсутні candidates у відповіді Gemini API');
+    }
+    
+    const candidate = data.candidates[0];
+    if (!candidate || !candidate.content) {
+      throw new Error('Відсутній content у candidate');
+    }
+    
+    if (!candidate.content.parts || !Array.isArray(candidate.content.parts) || candidate.content.parts.length === 0) {
+      throw new Error('Відсутні parts у content');
+    }
+    
+    const text = candidate.content.parts[0]?.text;
+    if (!text || typeof text !== 'string') {
+      throw new Error('Відсутній text у parts');
+    }
+    
+    return text;
     
   } catch (error) {
-    console.error('❌ Gemini API error:', error);
+    // ✅ ВИПРАВЛЕНО #43: logger замість console.error
+    logger.error('Gemini API error', error instanceof Error ? error : new Error(String(error)));
     
-    // Fallback до простих відповідей
+    // ✅ ВИПРАВЛЕНО #10: використовуємо константи замість hardcoded повідомлень
+    const { AI_MESSAGES } = await import('../constants');
     const lowerQuestion = question.toLowerCase();
     
     if (lowerQuestion.includes('рекоменд') || lowerQuestion.includes('пораді')) {
-      return 'Рекомендую почати з класичної української літератури: "Кобзар" Тараса Шевченка або "Лісова пісня" Лесі Українки.';
+      return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[0];
     }
     
     if (lowerQuestion.includes('жанр') || lowerQuestion.includes('що читати')) {
-      return 'Залежить від вашого настрою! Для відпочинку - романтика, для пригод - фантастика, для роздумів - філософія.';
+      return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[1];
     }
     
     if (lowerQuestion.includes('автор')) {
-      return 'Серед українських авторів рекомендую: Тарас Шевченко, Леся Українка, Іван Франко, Михайло Коцюбинський.';
+      return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[2];
     }
     
-    return 'Цікаве питання! Спробуйте переглянути наш каталог книг або скористайтеся пошуком за жанрами.';
+    return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[3];
   }
 }
 
