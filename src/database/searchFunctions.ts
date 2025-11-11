@@ -35,9 +35,19 @@ interface SearchEvent {
   userId?: number;
 }
 
-// ✅ ВИПРАВЛЕНО #5: обмежуємо розмір масиву для запобігання memory leak
-const MAX_ANALYTICS_SIZE = 500; // Зменшено з 1000
+// ✅ ВИПРАВЛЕНО #5: використовуємо константи
+import { CONFIG } from '../constants';
+
 const searchAnalytics: SearchEvent[] = [];
+
+// Автоматична очистка старих записів
+function cleanupOldAnalytics(): void {
+  if (searchAnalytics.length > CONFIG.MAX_ANALYTICS_SIZE) {
+    const toRemove = Math.floor(CONFIG.MAX_ANALYTICS_SIZE * CONFIG.ANALYTICS_CLEANUP_THRESHOLD);
+    searchAnalytics.splice(0, toRemove);
+    console.log(`🧹 Cleaned up ${toRemove} old search analytics records`);
+  }
+}
 
 /**
  * Calculate Levenshtein distance between two strings
@@ -494,14 +504,15 @@ async function partialMatchSearch(searchTerm: string, limit: number): Promise<Bo
 
 /**
  * Semantic search using expanded synonyms
- * ✅ ВИПРАВЛЕНО #21: додана санітизація expandedTerms
+ * ✅ ВИПРАВЛЕНО #21: використовуємо sanitization utility
  */
 async function semanticSearch(searchTerm: string, limit: number): Promise<Book[]> {
+  const { sanitizeSearchQuery } = require('../utils/sanitization');
   const expandedTerms = expandSearchWithSemantics(searchTerm);
   
-  // Санітизація: видаляємо небезпечні символи
+  // Санітизація через utility
   const sanitizedTerms = expandedTerms
-    .map(term => term.replace(/[^a-zA-Zа-яА-ЯіІїЇєЄґҐ0-9\s\-']/g, ''))
+    .map(term => sanitizeSearchQuery(term))
     .filter(term => term.length >= 2);
   
   if (sanitizedTerms.length === 0) {
@@ -612,10 +623,13 @@ function calculateAdvancedRelevanceScore(book: Book, searchTerm: string): number
 
 /**
  * Expand search with semantic relationships
+ * ✅ ВИПРАВЛЕНО: використовуємо sanitization
  */
 function expandSearchWithSemantics(searchTerm: string): string[] {
-  const terms = [searchTerm];
-  const searchWords = searchTerm.toLowerCase().split(/\s+/);
+  const { sanitizeSearchQuery } = require('../utils/sanitization');
+  const sanitized = sanitizeSearchQuery(searchTerm);
+  const terms = [sanitized];
+  const searchWords = sanitized.toLowerCase().split(/\s+/);
   
   for (const [key, values] of Object.entries(synonyms)) {
     for (const word of searchWords) {
@@ -731,12 +745,8 @@ function trackSearch(searchTerm: string, resultsCount: number, strategy: string,
     userId
   });
   
-  // Видаляємо старі записи коли досягаємо ліміту
-  if (searchAnalytics.length > MAX_ANALYTICS_SIZE) {
-    // Видаляємо 20% найстаріших записів
-    const toRemove = Math.floor(MAX_ANALYTICS_SIZE * 0.2);
-    searchAnalytics.splice(0, toRemove);
-  }
+  // Автоматична очистка
+  cleanupOldAnalytics();
 }
 
 /**
