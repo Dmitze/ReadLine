@@ -210,9 +210,6 @@ const editBookScene = new Scenes.WizardScene(
         state.updates = state.updates || {};
         state.updates.photo_file_id = photo.file_id;
         
-        // ⚠️ ПОПЕРЕДЖЕННЯ #19: file_id застаріває через 24-48 годин
-        // TODO: Для production потрібно завантажувати фото на власний сервер
-        
         // Показуємо превью
         await ctx.replyWithPhoto(photo.file_id, {
           caption: '✅ Нове фото обкладинки збережено!\n\n⚠️ Зверніть увагу: Telegram file_id може застаріти через 24-48 годин.\n\nВикористайте меню вище для продовження редагування або збереження змін.'
