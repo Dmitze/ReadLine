@@ -56,6 +56,7 @@ const onboardingScene_1 = __importDefault(require("./scenes/onboardingScene"));
 const settingsScene_1 = __importDefault(require("./scenes/settingsScene"));
 const aiFilterScene_1 = __importDefault(require("./scenes/aiFilterScene"));
 const aiAssistantScene_1 = __importDefault(require("./scenes/aiAssistantScene"));
+const promoAdminScene_1 = __importDefault(require("./scenes/promoAdminScene"));
 if (!process.env.BOT_TOKEN) {
     logger_1.logger.error(constants_1.ERRORS.BOT_TOKEN_MISSING);
     console.error('📝 Створіть .env файл в корені проекту та додайте:');
@@ -131,7 +132,8 @@ const stage = new telegraf_1.Scenes.Stage([
     onboardingScene_1.default,
     settingsScene_1.default,
     aiFilterScene_1.default,
-    aiAssistantScene_1.default
+    aiAssistantScene_1.default,
+    promoAdminScene_1.default
 ]);
 bot.use((0, telegraf_1.session)());
 bot.use(stage.middleware());
@@ -308,6 +310,10 @@ console.log('✅ User handlers registered');
 console.log('✅ Admin handlers registered');
 (async () => {
     try {
+        console.log('🔄 Initializing database...');
+        const { initDatabase } = await Promise.resolve().then(() => __importStar(require('./database/models')));
+        await initDatabase();
+        console.log('✅ Database initialized successfully');
         console.log('🔄 Launching bot...');
         await bot.launch({
             dropPendingUpdates: true
@@ -318,6 +324,9 @@ console.log('✅ Admin handlers registered');
         const { startNotificationScheduler } = require('./utils/notifications');
         notificationScheduler = startNotificationScheduler(bot);
         console.log('🔔 Notification scheduler started');
+        const { startAutoBackup } = require('./utils/autoBackup');
+        const backupScheduler = startAutoBackup();
+        console.log('💾 Automatic backup scheduler started');
     }
     catch (error) {
         console.error('❌ Помилка запуску бота:', error);
