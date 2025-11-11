@@ -278,6 +278,7 @@ exports.default = (bot) => {
         return;
     });
     bot.action(/save_(\d+)/, async (ctx) => {
+        const { retryOperation, sendErrorToUser } = await Promise.resolve().then(() => __importStar(require('../utils/errorHandler')));
         try {
             const match = ctx.match;
             if (!match || !match[1]) {
@@ -290,29 +291,31 @@ exports.default = (bot) => {
                 await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача');
                 return;
             }
-            const isSaved = await (0, models_1.isBookSaved)(userId, bookId);
-            if (isSaved) {
-                await (0, models_1.unsaveBook)(userId, bookId);
-                await ctx.answerCbQuery('💔 Видалено зі збережених', { show_alert: false });
-            }
-            else {
-                await (0, models_1.saveBook)(userId, bookId);
-                const book = await (0, models_1.getBookById)(bookId);
-                if (book && book.genre) {
-                    const { getUserFavoriteGenres, updateUserFavoriteGenres } = await Promise.resolve().then(() => __importStar(require('../database/userFunctions')));
-                    const currentGenres = await getUserFavoriteGenres(userId);
-                    if (!currentGenres.includes(book.genre)) {
-                        const updatedGenres = [...currentGenres, book.genre];
-                        await updateUserFavoriteGenres(userId, updatedGenres);
-                        logger_1.logger.info('Added genre to user favorites', { userId, genre: book.genre });
-                    }
+            await retryOperation(async () => {
+                const isSaved = await (0, models_1.isBookSaved)(userId, bookId);
+                if (isSaved) {
+                    await (0, models_1.unsaveBook)(userId, bookId);
+                    await ctx.answerCbQuery('💔 Видалено зі збережених', { show_alert: false });
                 }
-                await ctx.answerCbQuery('❤️ Збережено!', { show_alert: false });
-            }
+                else {
+                    await (0, models_1.saveBook)(userId, bookId);
+                    const book = await (0, models_1.getBookById)(bookId);
+                    if (book && book.genre) {
+                        const { getUserFavoriteGenres, updateUserFavoriteGenres } = await Promise.resolve().then(() => __importStar(require('../database/userFunctions')));
+                        const currentGenres = await getUserFavoriteGenres(userId);
+                        if (!currentGenres.includes(book.genre)) {
+                            const updatedGenres = [...currentGenres, book.genre];
+                            await updateUserFavoriteGenres(userId, updatedGenres);
+                            logger_1.logger.info('Added genre to user favorites', { userId, genre: book.genre });
+                        }
+                    }
+                    await ctx.answerCbQuery('❤️ Збережено!', { show_alert: false });
+                }
+            }, 2, 500);
         }
         catch (error) {
             logger_1.logger.error('Error saving book', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.answerCbQuery('❌ Помилка при збереженні');
+            await sendErrorToUser(ctx, error, '❌ Помилка при збереженні. Спробуйте ще раз.');
         }
         return;
     });
@@ -415,6 +418,7 @@ exports.default = (bot) => {
         return;
     });
     bot.action(/download_pdf_(\d+)/, async (ctx) => {
+        const { withTimeout, ErrorType, sendErrorToUser } = await Promise.resolve().then(() => __importStar(require('../utils/errorHandler')));
         try {
             const match = ctx.match;
             if (!match || !match[1]) {
@@ -422,26 +426,28 @@ exports.default = (bot) => {
                 return;
             }
             const bookId = parseInt(match[1]);
-            await (0, models_1.incrementDownloads)(bookId);
-            const book = await (0, models_1.getBookById)(bookId);
-            if (!book) {
-                await ctx.answerCbQuery('❌ Книга не знайдена');
-                return;
-            }
-            const pdfFileId = book.pdf_file_id || (book.file_type === 'file' ? book.file_url : null);
-            if (pdfFileId) {
-                await ctx.telegram.sendDocument(ctx.from.id, pdfFileId, {
-                    caption: `📥 ${book.title}\n👤 ${book.author}\n\n✅ PDF файл завантажено!`
-                });
-                await ctx.answerCbQuery('📥 PDF надіслано вам у приватні повідомлення');
-            }
-            else {
-                await ctx.answerCbQuery('❌ PDF файл недоступний');
-            }
+            await withTimeout(async () => {
+                await (0, models_1.incrementDownloads)(bookId);
+                const book = await (0, models_1.getBookById)(bookId);
+                if (!book) {
+                    await ctx.answerCbQuery('❌ Книга не знайдена');
+                    return;
+                }
+                const pdfFileId = book.pdf_file_id || (book.file_type === 'file' ? book.file_url : null);
+                if (pdfFileId) {
+                    await ctx.telegram.sendDocument(ctx.from.id, pdfFileId, {
+                        caption: `📥 ${book.title}\n👤 ${book.author}\n\n✅ PDF файл завантажено!`
+                    });
+                    await ctx.answerCbQuery('📥 PDF надіслано вам у приватні повідомлення');
+                }
+                else {
+                    await ctx.answerCbQuery('❌ PDF файл недоступний');
+                }
+            }, 30000, 'PDF download timeout');
         }
         catch (error) {
             logger_1.logger.error('Error downloading PDF', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.answerCbQuery('❌ Помилка при завантаженні');
+            await sendErrorToUser(ctx, error, '❌ Помилка при завантаженні PDF. Спробуйте пізніше.');
         }
         return;
     });
