@@ -40,20 +40,24 @@ exports.createProgressBar = createProgressBar;
 exports.formatStepProgress = formatStepProgress;
 const formatBookCaption = async (book, tags) => {
     const escapeHtml = (text) => {
+        if (!text)
+            return '';
         return text
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
+            .replace(/"/g, '&quot;')
+            .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+            .replace(/�/g, '');
     };
     const safeTitle = escapeHtml(book.title);
     const safeAuthor = escapeHtml(book.author);
     const safeGenre = escapeHtml(book.genre);
     const safeDescription = escapeHtml(book.description);
-    let caption = `╔═══════════════════════╗\n`;
+    let caption = `━━━━━━━━━━━━━━━━━━━━━\n`;
     caption += `📖 <b>${safeTitle}</b>\n`;
-    caption += `╚═══════════════════════╝\n\n`;
-    caption += `✍️ <b>Автор:</b> ${safeAuthor}\n`;
+    caption += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    caption += `👤 <b>Автор:</b> ${safeAuthor}\n`;
     const genreEmoji = getGenreEmoji(book.genre);
     caption += `${genreEmoji} <b>Жанр:</b> ${safeGenre}\n`;
     if (tags) {
@@ -66,12 +70,14 @@ const formatBookCaption = async (book, tags) => {
         try {
             const { getBookTags } = await Promise.resolve().then(() => __importStar(require('../database/tagFunctions')));
             const loadedTags = await getBookTags(book.id);
-            if (loadedTags.length > 0) {
+            if (loadedTags && loadedTags.length > 0) {
                 const tagNames = loadedTags.map(t => `#${escapeHtml(t.name.replace(/\s+/g, '_'))}`).join(' ');
                 caption += `🏷️ <b>Теги:</b> ${tagNames}\n`;
             }
         }
         catch (error) {
+            const { logger } = await Promise.resolve().then(() => __importStar(require('./logger')));
+            logger.error('Error loading tags in formatBookCaption', error instanceof Error ? error : new Error(String(error)));
         }
     }
     caption += `\n`;
