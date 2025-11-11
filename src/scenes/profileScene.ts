@@ -84,8 +84,7 @@ profileScene.enter(async (ctx: BotContext) => {
     await ctx.reply(profileText, { 
       parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard([
-        [{ text: '💡 Вам може сподобатися (за жанрами)', callback_data: 'show_recommendations' }],
-        [{ text: '🤖 Розумна підбірка (AI)', callback_data: 'show_personal_collection' }],
+        [{ text: '🤖 Персональні рекомендації', callback_data: 'show_personal_collection' }],
         [{ text: '📊 Моя статистика', callback_data: 'show_stats' }],
         [{ text: '⬅️ Назад', callback_data: 'profile_back' }]
       ]).reply_markup
@@ -95,106 +94,6 @@ profileScene.enter(async (ctx: BotContext) => {
   } catch (error) {
     logger.error('Error in profile scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
     await ctx.reply('❌ Виникла помилка при отриманні профілю.');
-  }
-});
-
-// Показати рекомендації (прості, на основі жанрів)
-profileScene.action('show_recommendations', async (ctx) => {
-  try {
-    await ctx.answerCbQuery();
-    const userId = ctx.from?.id;
-    if (!userId) return;
-    
-    const { formatBookCaption } = await import('../utils/helpers');
-    const { isBookSaved, getTopBooks, getNewestBooks, getAllBooks } = await import('../database/models');
-    const { getUserFavoriteGenres } = await import('../database/recommendationFunctions');
-    
-    // Отримуємо улюблені жанри користувача
-    const favoriteGenres = await getUserFavoriteGenres(userId, 3);
-    
-    let recommendations = [];
-    
-    // Якщо є улюблені жанри - шукаємо книги цих жанрів
-    if (favoriteGenres.length > 0) {
-      const allBooks = await getAllBooks();
-      
-      // Фільтруємо книги за улюбленими жанрами
-      recommendations = allBooks
-        .filter(book => favoriteGenres.includes(book.genre))
-        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-        .slice(0, 5);
-      
-      if (recommendations.length > 0) {
-        let text = '💡 *Вам може сподобатися*\n\n';
-        text += `На основі ваших улюблених жанрів: ${favoriteGenres.join(', ')}\n\n`;
-        text += `Знайдено ${recommendations.length} ${recommendations.length === 1 ? 'книга' : 'книг'}:`;
-        
-        await ctx.reply(text, { parse_mode: 'Markdown' });
-      }
-    }
-    
-    // Якщо немає рекомендацій за жанрами - показуємо топ книги
-    if (recommendations.length === 0) {
-      const topBooks = await getTopBooks(5);
-      
-      if (topBooks.length > 0) {
-        await ctx.reply(
-          '💡 *Вам може сподобатися*\n\n' +
-          'У вас ще немає збережених книг, тому ми підібрали найкращі книги з нашого каталогу:\n\n' +
-          '⭐ Топ книги за рейтингом',
-          { parse_mode: 'Markdown' }
-        );
-        recommendations = topBooks;
-      } else {
-        // Якщо навіть топ книг немає - показуємо новинки
-        const newBooks = await getNewestBooks(5);
-        
-        if (newBooks.length > 0) {
-          await ctx.reply(
-            '💡 *Вам може сподобатися*\n\n' +
-            'Ось найновіші книги в нашому каталозі:',
-            { parse_mode: 'Markdown' }
-          );
-          recommendations = newBooks;
-        } else {
-          await ctx.reply(
-            '💡 *Вам може сподобатися*\n\n' +
-            'Поки що немає книг в каталозі.\n\n' +
-            '💾 Зберігайте книги, щоб отримувати персоналізовані рекомендації!',
-            { parse_mode: 'Markdown' }
-          );
-          return;
-        }
-      }
-    }
-    
-    // Показуємо книги
-    for (const book of recommendations) {
-      const caption = await formatBookCaption(book);
-      const isSaved = await isBookSaved(userId, book.id!);
-      const keyboard = getEnhancedBookKeyboard(book, isSaved);
-      
-      if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
-        await ctx.replyWithPhoto(book.photo_file_id, {
-          caption,
-          parse_mode: 'Markdown',
-          reply_markup: keyboard
-        });
-      } else {
-        await ctx.reply(caption, {
-          parse_mode: 'Markdown',
-          reply_markup: keyboard
-        });
-      }
-      
-      // Затримка між повідомленнями
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-    
-    logger.userAction(userId, 'view_simple_recommendations');
-  } catch (error) {
-    logger.error('Error showing recommendations', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-    await ctx.answerCbQuery('❌ Помилка при отриманні рекомендацій');
   }
 });
 
@@ -230,7 +129,7 @@ profileScene.action('show_stats', async (ctx) => {
     
     statsText += `💡 Продовжуйте читати та слухати!`;
     
-    await ctx.reply(statsText, { parse_mode: 'Markdown' });
+    await ctx.reply(statsText, { parse_mode: 'HTML' });
     logger.userAction(userId, 'view_stats');
   } catch (error) {
     logger.error('Error showing stats', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
@@ -276,7 +175,7 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
           '📚 *Персональна підбірка для вас*\n\n' +
           '🤖 На основі найкращих книг каталогу\n' +
           `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`,
-          { parse_mode: 'Markdown' }
+          { parse_mode: 'HTML' }
         );
       } else {
         // Якщо навіть топ книг немає - пробуємо новинки
@@ -288,7 +187,7 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
             '📚 *Персональна підбірка для вас*\n\n' +
             '🤖 Найновіші книги каталогу\n' +
             `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`,
-            { parse_mode: 'Markdown' }
+            { parse_mode: 'HTML' }
           );
         } else {
           await ctx.reply('😔 Не вдалося створити персональну підбірку. В каталозі поки немає книг.');
@@ -300,7 +199,7 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
         `📚 *Персональна підбірка для вас*\n\n` +
         `🤖 Створено на основі ваших вподобань, тегів та рейтингів\n` +
         `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`,
-        { parse_mode: 'Markdown' }
+        { parse_mode: 'HTML' }
       );
     }
 
@@ -317,19 +216,19 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
           try {
             await ctx.replyWithPhoto(book.photo_file_id, {
               caption,
-              parse_mode: 'Markdown',
+              parse_mode: 'HTML',
               reply_markup: keyboard
             });
           } catch (photoError) {
             logger.debug('Photo error, sending as text');
             await ctx.reply(caption, {
-              parse_mode: 'Markdown',
+              parse_mode: 'HTML',
               reply_markup: keyboard
             });
           }
         } else {
           await ctx.reply(caption, {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
         }
@@ -348,6 +247,11 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
     logger.error('Error generating personal collection', error instanceof Error ? error : new Error(String(error)));
     await ctx.reply('😔 Не вдалося створити персональну підбірку. Спробуйте пізніше.');
   }
+});
+
+// Cleanup при виході зі сцени
+profileScene.leave((ctx: BotContext) => {
+  logger.debug('ProfileScene cleanup completed', { userId: ctx.from?.id });
 });
 
 export default profileScene;
