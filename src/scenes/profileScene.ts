@@ -40,13 +40,43 @@ profileScene.enter(async (ctx: BotContext) => {
     const minutes = Math.floor((stats.totalListeningTime % 3600) / 60);
     profileText += `🎧 Прослухано: ${hours}г ${minutes}хв\n`;
     
-    if (stats.favoriteGenres.length > 0) {
+    // Отримуємо збережені книги для аналізу жанрів
+    const { getSavedBooks } = await import('../database/models');
+    const { getBookTags } = await import('../database/tagFunctions');
+    const savedBooks = await getSavedBooks(userId);
+    
+    // Збираємо жанри зі збережених книг
+    const genresFromBooks = new Set<string>();
+    savedBooks.forEach(book => {
+      if (book.genre) {
+        genresFromBooks.add(book.genre);
+      }
+    });
+    
+    // Об'єднуємо з улюбленими жанрами
+    const allGenres = [...new Set([...stats.favoriteGenres, ...Array.from(genresFromBooks)])];
+    
+    if (allGenres.length > 0) {
       profileText += `\n<b>📚 Улюблені жанри:</b>\n`;
-      stats.favoriteGenres.forEach((genre, i) => {
+      allGenres.slice(0, 5).forEach((genre, i) => {
         profileText += `${i + 1}. ${genre}\n`;
       });
     } else {
       profileText += `\n<i>📚 Улюблені жанри ще не встановлені</i>\n`;
+    }
+    
+    if (savedBooks.length > 0) {
+      const allUserTags = new Set<string>();
+      for (const book of savedBooks) {
+        const bookTags = await getBookTags(book.id!);
+        bookTags.forEach(tag => allUserTags.add(tag.name));
+      }
+      
+      if (allUserTags.size > 0) {
+        profileText += `\n<b>🏷️ Ваші інтереси (теги):</b>\n`;
+        const tagsArray = Array.from(allUserTags).slice(0, 10);
+        profileText += tagsArray.map(tag => `#${tag}`).join(' ') + '\n';
+      }
     }
     profileText += '\n<i>💡 Продовжуйте читати та залишати відгуки!</i>';
 
