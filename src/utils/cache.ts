@@ -167,7 +167,6 @@ export const CACHE_KEYS = {
   TOP_BOOKS: 'top_books',
   NEW_BOOKS: 'new_books',
   ADMIN_STATS: 'admin_stats',
-  PENDING_REQUESTS: 'pending_requests',
   PENDING_REVIEWS: 'pending_reviews',
   BOOK: (id: number) => `book_${id}`,
   BOOKS_BY_GENRE: (genre: string) => `books_genre_${genre}`,
