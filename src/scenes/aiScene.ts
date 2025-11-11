@@ -1,5 +1,5 @@
 import { Scenes, Markup } from 'telegraf';
-import { isAIEnabled, askAI, getBookRecommendations } from '../utils/aiHelper';
+import { isAIEnabled, askAI } from '../utils/aiHelper';
 import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
 
@@ -71,11 +71,23 @@ aiScene.on('text', async (ctx: BotContext) => {
       return;
     }
     
-    // Показуємо що обробляємо
-    await ctx.reply('🤔 Думаю...');
+    // ✅ ВИПРАВЛЕНО #41: timeout для AI запиту
+    const thinkingMsg = await ctx.reply('🤔 Думаю...');
     
-    // Отримуємо відповідь від AI
-    const aiResponse = await askAI(question);
+    // Timeout 25 секунд (Telegram має 30 секунд)
+    const timeoutPromise = new Promise<string>((_, reject) => 
+      setTimeout(() => reject(new Error('AI timeout')), 25000)
+    );
+    
+    const aiResponse = await Promise.race([
+      askAI(question),
+      timeoutPromise
+    ]);
+    
+    // Видаляємо "думаю" повідомлення
+    try {
+      await ctx.deleteMessage(thinkingMsg.message_id);
+    } catch {}
     
     // Відправляємо відповідь
     await ctx.reply(
