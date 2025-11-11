@@ -3,12 +3,13 @@
  */
 
 import { db, Book, getTopBooks } from './models';
+import { logger } from '../utils/logger';
 
 // Get random book - ВИПРАВЛЕНО
 export const getRandomBook = (): Promise<Book | null> => {
   return new Promise((resolve, reject) => {
     // ✅ ВИПРАВЛЕНО #37: один запит замість двох
-    console.log('🎲 Getting random book...');
+    logger.debug('Getting random book');
     
     db.get(
       'SELECT * FROM books WHERE (is_available = 1 OR is_available IS NULL) ORDER BY RANDOM() LIMIT 1',
@@ -20,7 +21,7 @@ export const getRandomBook = (): Promise<Book | null> => {
         }
         
         if (row) {
-          console.log(`✅ Random book selected: "${row.title}" by ${row.author}`);
+          logger.debug('Random book selected', { title: row.title, author: row.author });
           row.is_available = true;
           resolve(row);
         } else {
