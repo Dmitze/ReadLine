@@ -401,8 +401,25 @@ export const getGenres = (): Promise<string[]> => {
   return new Promise((resolve, reject) => {
     const query = `SELECT DISTINCT genre FROM books`;
     db.all(query, [], (err, rows: { genre: string }[]) => {
-      if (err) reject(err);
-      else resolve(rows.map(row => row.genre));
+      if (err) {
+        reject(err);
+      } else {
+        // ВИПРАВЛЕННЯ: Розділяємо жанри по комі і повертаємо унікальні
+        const allGenres = new Set<string>();
+        rows.forEach(row => {
+          if (row.genre) {
+            // Розділяємо по комі, обрізаємо пробіли і додаємо до Set
+            row.genre.split(',').forEach(genre => {
+              const trimmedGenre = genre.trim();
+              if (trimmedGenre) {
+                allGenres.add(trimmedGenre);
+              }
+            });
+          }
+        });
+        // Повертаємо відсортований масив унікальних жанрів
+        resolve(Array.from(allGenres).sort());
+      }
     });
   });
 };
