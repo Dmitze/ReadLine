@@ -60,7 +60,7 @@ exports.default = (bot) => {
             const feedbackAlert = pendingFeedback.length > 0
                 ? `📞 Нових повідомлень: *${pendingFeedback.length}* 🔔`
                 : '✅ Всі повідомлення прочитані';
-            await ctx.reply(`🛠️ *Панель адміністратора*\n\n` +
+            await ctx.reply(`🛠️ <b>Панель адміністратора</b>\n\n` +
                 `📊 *Статистика:*\n` +
                 `📚 Книг в каталозі: ${stats.totalBooks}\n` +
                 `${reviewsAlert}\n` +
@@ -221,7 +221,7 @@ exports.default = (bot) => {
             if (result > 0) {
                 const message = ctx.callbackQuery?.message;
                 const messageText = message && 'text' in message ? message.text : 'Відгук';
-                await ctx.editMessageText(messageText + '\n\n✅ *ОПУБЛІКОВАНО*', { parse_mode: 'Markdown' });
+                await ctx.editMessageText(messageText + '\n\n✅ <b>ОПУБЛІКОВАНО</b>', { parse_mode: 'Markdown' });
                 await ctx.answerCbQuery('✅ Відгук опубліковано!');
             }
             else {
@@ -256,7 +256,7 @@ exports.default = (bot) => {
             if (result > 0) {
                 const message = ctx.callbackQuery?.message;
                 const messageText = message && 'text' in message ? message.text : 'Відгук';
-                await ctx.editMessageText(messageText + '\n\n❌ *ВИДАЛЕНО*', { parse_mode: 'Markdown' });
+                await ctx.editMessageText(messageText + '\n\n❌ <b>ВИДАЛЕНО</b>', { parse_mode: 'Markdown' });
                 await ctx.answerCbQuery('✅ Відгук видалено!');
             }
             else {
@@ -271,24 +271,31 @@ exports.default = (bot) => {
     });
     bot.action('view_feedback', async (ctx) => {
         try {
-            await ctx.answerCbQuery('Завантаження повідомлень...');
+            await ctx.answerCbQuery('Завантаження нових повідомлень...');
             const adminCheck = await (0, models_1.isAdmin)(ctx.from.id);
             if (!adminCheck) {
                 await ctx.reply('❌ У вас немає доступу до цієї функції.');
                 return;
             }
-            const messages = await (0, models_1.getAllFeedbackMessages)();
-            logger_1.logger.info('Feedback messages loaded', { count: messages.length });
+            const messages = await (0, models_1.getPendingFeedbackMessages)();
+            const allMessages = await (0, models_1.getAllFeedbackMessages)();
+            logger_1.logger.info('Feedback messages loaded', { pending: messages.length, total: allMessages.length });
             if (messages.length === 0) {
-                await ctx.reply('✅ *Немає повідомлень*\n\n' +
-                    'Всі повідомлення зворотного зв\'язку оброблені.\n\n' +
+                await ctx.reply('✅ <b>Немає нових повідомлень</b>\n\n' +
+                    'Всі повідомлення зворотного зв\'язку прочитані.\n\n' +
                     '💡 Користувачі можуть надіслати повідомлення через:\n' +
-                    'Головне меню → 📞 Зворотній зв\'язок', { parse_mode: 'Markdown' });
+                    'Головне меню → 📞 Зворотній зв\'язок', {
+                    parse_mode: 'Markdown',
+                    reply_markup: telegraf_1.Markup.inlineKeyboard([
+                        [telegraf_1.Markup.button.callback('📜 Показати історію', 'view_feedback_history')],
+                        [telegraf_1.Markup.button.callback('🏠 Головна', 'home')]
+                    ]).reply_markup
+                });
                 return;
             }
-            await ctx.reply(`📞 *Повідомлення зворотного зв'язку*\n\n` +
-                `Всього: ${messages.length}\n` +
-                `Нових: ${messages.filter(m => m.status === 'pending').length}`, { parse_mode: 'Markdown' });
+            await ctx.reply(`📞 <b>Нові повідомлення зворотного зв'язку</b>\n\n` +
+                `Нових: ${messages.length}\n` +
+                `Всього в історії: ${allMessages.length}`, { parse_mode: 'Markdown' });
             for (const msg of messages) {
                 try {
                     if (!msg.message || msg.message.trim() === '') {
@@ -338,9 +345,10 @@ exports.default = (bot) => {
                         `Деталі: ${msgError instanceof Error ? msgError.message : String(msgError)}`);
                 }
             }
-            await ctx.reply('✅ Всі повідомлення завантажено', {
+            await ctx.reply('✅ Всі нові повідомлення завантажено', {
                 reply_markup: telegraf_1.Markup.inlineKeyboard([
                     [telegraf_1.Markup.button.callback('🔄 Оновити', 'view_feedback')],
+                    [telegraf_1.Markup.button.callback('📜 Показати історію', 'view_feedback_history')],
                     [telegraf_1.Markup.button.callback('🏠 Головна', 'home')]
                 ]).reply_markup
             });
@@ -445,7 +453,7 @@ exports.default = (bot) => {
             const feedbackAlert = pendingFeedback.length > 0
                 ? `📞 Нових повідомлень: *${pendingFeedback.length}* 🔔`
                 : '✅ Всі повідомлення прочитані';
-            await ctx.editMessageText(`🛠️ *Панель адміністратора*\n\n` +
+            await ctx.editMessageText(`🛠️ <b>Панель адміністратора</b>\n\n` +
                 `📊 *Статистика:*\n` +
                 `📚 Книг в каталозі: ${stats.totalBooks}\n` +
                 `${reviewsAlert}\n` +
@@ -478,7 +486,7 @@ exports.default = (bot) => {
             const feedbackAlert = pendingFeedback.length > 0
                 ? `📞 Нових повідомлень: *${pendingFeedback.length}* 🔔`
                 : '✅ Всі повідомлення прочитані';
-            await ctx.reply(`🛠️ *Панель адміністратора*\n\n` +
+            await ctx.reply(`🛠️ <b>Панель адміністратора</b>\n\n` +
                 `📊 *Статистика:*\n` +
                 `📚 Книг в каталозі: ${stats.totalBooks}\n` +
                 `${reviewsAlert}\n` +
@@ -490,6 +498,81 @@ exports.default = (bot) => {
         catch (error) {
             logger_1.logger.error('Error returning to admin panel from promo', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
             await ctx.answerCbQuery('❌ Помилка');
+        }
+        return;
+    });
+    bot.action('view_feedback_history', async (ctx) => {
+        try {
+            await ctx.answerCbQuery('Завантаження історії повідомлень...');
+            const adminCheck = await (0, models_1.isAdmin)(ctx.from.id);
+            if (!adminCheck) {
+                await ctx.reply('❌ У вас немає доступу до цієї функції.');
+                return;
+            }
+            const messages = await (0, models_1.getAllFeedbackMessages)();
+            logger_1.logger.info('Feedback history loaded', { count: messages.length });
+            if (messages.length === 0) {
+                await ctx.reply('📭 <b>Історія порожня</b>\n\n' +
+                    'Ще немає жодного повідомлення зворотного зв\'язку.', { parse_mode: 'Markdown' });
+                return;
+            }
+            await ctx.reply(`📜 <b>Історія повідомлень зворотного зв'язку</b>\n\n` +
+                `Всього повідомлень: ${messages.length}\n` +
+                `Нових: ${messages.filter(m => m.status === 'pending').length}\n` +
+                `Прочитаних: ${messages.filter(m => m.status === 'read').length}\n` +
+                `З відповіддю: ${messages.filter(m => m.status === 'replied').length}`, { parse_mode: 'Markdown' });
+            for (const msg of messages) {
+                try {
+                    if (!msg.message || msg.message.trim() === '') {
+                        continue;
+                    }
+                    const statusEmoji = msg.status === 'pending' ? '🔔 НОВЕ' :
+                        msg.status === 'read' ? '✅ Прочитано' :
+                            '💬 Відповіли';
+                    const escapeHtml = (text) => {
+                        return text
+                            .replace(/&/g, '&amp;')
+                            .replace(/</g, '&lt;')
+                            .replace(/>/g, '&gt;')
+                            .replace(/"/g, '&quot;')
+                            .replace(/'/g, '&#39;');
+                    };
+                    const safeName = escapeHtml(msg.user_name || 'Користувач');
+                    const safeUsername = msg.user_username ? escapeHtml(msg.user_username) : '';
+                    const safeMessage = escapeHtml(msg.message);
+                    const safeCreatedAt = escapeHtml(new Date(msg.created_at).toLocaleString('uk-UA'));
+                    const safeReadAt = msg.read_at ? escapeHtml(new Date(msg.read_at).toLocaleString('uk-UA')) : '';
+                    let feedbackText = `📞 <b>Повідомлення #${msg.id}</b> ${statusEmoji}\n\n`;
+                    feedbackText += `👤 Від: ${safeName}\n`;
+                    feedbackText += `🆔 User ID: <code>${msg.user_id}</code>\n`;
+                    if (msg.user_username) {
+                        feedbackText += `📱 Username: @${safeUsername}\n`;
+                    }
+                    feedbackText += `\n💬 <b>Повідомлення:</b>\n"${safeMessage}"\n\n`;
+                    feedbackText += `📅 Дата: ${safeCreatedAt}`;
+                    if (msg.read_at) {
+                        feedbackText += `\n👁️ Прочитано: ${safeReadAt}`;
+                    }
+                    await ctx.reply(feedbackText, {
+                        parse_mode: 'HTML',
+                        reply_markup: (0, adminKeyboards_1.getFeedbackActionKeyboard)(msg.id, msg.user_id)
+                    });
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                catch (msgError) {
+                    logger_1.logger.error('Error displaying feedback message', msgError instanceof Error ? msgError : new Error(String(msgError)), { feedbackId: msg.id });
+                }
+            }
+            await ctx.reply('✅ Вся історія завантажена', {
+                reply_markup: telegraf_1.Markup.inlineKeyboard([
+                    [telegraf_1.Markup.button.callback('📞 Показати лише нові', 'view_feedback')],
+                    [telegraf_1.Markup.button.callback('🏠 Головна', 'home')]
+                ]).reply_markup
+            });
+        }
+        catch (error) {
+            logger_1.logger.error('Error showing feedback history', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+            await ctx.reply('❌ Виникла помилка при отриманні історії повідомлень.');
         }
         return;
     });
