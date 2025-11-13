@@ -83,7 +83,7 @@ export default (bot: Telegraf<BotContext>) => {
       
       if (hasReceived) {
         await ctx.reply(
-          '❌ *Ви вже отримували промокод*\n\n' +
+          '❌ <b>Ви вже отримували промокод</b>\n\n' +
           'Кожен користувач може отримати промокод лише один раз.\n\n' +
           '💡 Використайте отриманий промокод при замовленні на сайті Yakaboo.ua\n\n' +
           '🌐 https://www.yakaboo.ua',
@@ -99,7 +99,7 @@ export default (bot: Telegraf<BotContext>) => {
       
       if (availableCount === 0) {
         await ctx.reply(
-          '😔 *Наразі промокодів немає в наявності*\n\n' +
+          '😔 <b>Наразі промокодів немає в наявності</b>\n\n' +
           '🔄 Будь ласка, спробуйте пізніше.\n\n' +
           '📚 А поки що можете ознайомитися з нашим каталогом книг!',
           { parse_mode: 'HTML' }
@@ -151,7 +151,7 @@ export default (bot: Telegraf<BotContext>) => {
   bot.hears([BUTTONS.CATALOG_OLD, BUTTONS.CATALOG], async (ctx) => {
     try {
       await ctx.reply(
-        '📚 *КАТАЛОГ КНИГ*\n\n' +
+        '📚 <b>КАТАЛОГ КНИГ</b>\n\n' +
         'Оберіть спосіб перегляду:',
         {
           parse_mode: 'HTML',
@@ -270,16 +270,16 @@ export default (bot: Telegraf<BotContext>) => {
     logger.userAction(ctx.from!.id, 'view_help');
     // Викликаємо /help
     return ctx.reply(
-      '📖 *ДОВІДКА ПО БОТУ*\n\n' +
+      '📖 <b>ДОВІДКА ПО БОТУ</b>\n\n' +
       
       '🎯 *ОСНОВНІ ФУНКЦІЇ:*\n\n' +
       
-      '📖 *Каталог* - перегляд книг за жанрами\n' +
-      '🔍 *Пошук* - швидкий пошук книг\n' +
-      '⭐ *Топ книги* - найкращі книги за рейтингом\n' +
-      '🆕 *Новинки* - останні додані книги\n' +
-      '💾 *Моя бібліотека* - збережені книги\n' +
-      '👤 *Профіль* - ваша статистика\n' +
+      '📖 <b>Каталог</b> - перегляд книг за жанрами\n' +
+      '🔍 <b>Пошук</b> - швидкий пошук книг\n' +
+      '⭐ <b>Топ книги</b> - найкращі книги за рейтингом\n' +
+      '🆕 <b>Новинки</b> - останні додані книги\n' +
+      '💾 <b>Моя бібліотека</b> - збережені книги\n' +
+      '👤 <b>Профіль</b> - ваша статистика\n' +
       '📞 *Зворотній зв\'язок* - зв\'язок з адміном\n\n' +
       
       '⚙️ *КОМАНДИ:*\n' +
@@ -659,7 +659,7 @@ export default (bot: Telegraf<BotContext>) => {
         return;
       }
       
-      let reviewsText = `📊 *Відгуки про книгу*\n\n📖 ${book.title}\n👤 ${book.author}\n`;
+      let reviewsText = `📊 <b>Відгуки про книгу</b>\n\n📖 ${book.title}\n👤 ${book.author}\n`;
       reviewsText += `⭐ Середній рейтинг: ${book.rating?.toFixed(1) || 0}/5\n\n`;
       
       reviews.slice(0, 5).forEach((review, index) => {
@@ -708,7 +708,7 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       await ctx.reply(
-        `🔍 *Схожі книги* (жанр: ${book.genre}):\n\n` +
+        `🔍 <b>Схожі книги</b> (жанр: ${book.genre}):\n\n` +
         filtered.map((b, i) => `${i + 1}. 📖 ${b.title}\n   👤 ${b.author}`).join('\n\n'),
         { parse_mode: 'HTML' }
       );
@@ -787,7 +787,7 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       await ctx.reply(
-        `⭐ *КНИГИ З ВИСОКИМ РЕЙТИНГОМ*\n\n` +
+        `⭐ <b>КНИГИ З ВИСОКИМ РЕЙТИНГОМ</b>\n\n` +
         `Знайдено ${books.length} ${books.length === 1 ? 'книга' : 'книг'} з рейтингом 4+ зірки:`,
         { parse_mode: 'HTML' }
       );
@@ -835,7 +835,7 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       await ctx.reply(
-        `🆕 *НОВИНКИ БІБЛІОТЕКИ*\n\n` +
+        `🆕 <b>НОВИНКИ БІБЛІОТЕКИ</b>\n\n` +
         `Останні ${books.length} додані ${books.length === 1 ? 'книга' : 'книг'}:`,
         { parse_mode: 'HTML' }
       );
@@ -890,7 +890,7 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       await ctx.reply(
-        '🏷️ *КАТАЛОГ ЗА ТЕГАМИ*\n\n' +
+        '🏷️ <b>КАТАЛОГ ЗА ТЕГАМИ</b>\n\n' +
         'Оберіть тег для перегляду книг:',
         {
           parse_mode: 'HTML',
@@ -917,7 +917,7 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       await ctx.reply(
-        `🔤 *КНИГИ ЗА АЛФАВІТОМ*\n\n` +
+        `🔤 <b>КНИГИ ЗА АЛФАВІТОМ</b>\n\n` +
         `Показано ${books.length} з ${total} ${total === 1 ? 'книги' : 'книг'}:`,
         { parse_mode: 'HTML' }
       );
@@ -965,7 +965,7 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       await ctx.reply(
-        `🎧 *АУДІОКНИГИ*\n\n` +
+        `🎧 <b>АУДІОКНИГИ</b>\n\n` +
         `Знайдено ${books.length} ${books.length === 1 ? 'аудіокнига' : 'аудіокниг'}:`,
         { parse_mode: 'HTML' }
       );
@@ -1009,7 +1009,7 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       await ctx.reply(
-        `📥 *НАЙПОПУЛЯРНІШІ КНИГИ*\n\n` +
+        `📥 <b>НАЙПОПУЛЯРНІШІ КНИГИ</b>\n\n` +
         `Топ ${books.length} найбільш завантажуваних ${books.length === 1 ? 'книга' : 'книг'}:`,
         { parse_mode: 'HTML' }
       );
