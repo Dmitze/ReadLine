@@ -247,26 +247,28 @@ export const getEnhancedBookKeyboard = (book: Book, isSaved: boolean = false) =>
   const formatRow: any[] = [];
   
   // Файл книги (PDF, EPUB, MOBI, FB2 тощо)
-  if ((book as any).pdf_file_id || (book.file_type === 'file' && book.file_url)) {
+  // Перевіряємо чи є file_url (нове поле) або pdf_file_id (старе поле)
+  if (book.file_url || (book as any).pdf_file_id) {
     // Визначаємо формат файлу
     const format = (book as any).file_format || 'PDF';
     const buttonText = `📥 Завантажити (${format})`;
     formatRow.push(Markup.button.callback(buttonText, `download_pdf_${book.id}`));
   }
   
-  // Онлайн посилання
-  if ((book as any).external_link) {
-    formatRow.push(Markup.button.url('🌐 Читати онлайн', (book as any).external_link));
-  } else if (book.file_type === 'link' && book.file_url) {
-    formatRow.push(Markup.button.url('🌐 Читати онлайн', book.file_url));
-  }
-  
-  // Аудіокнига - перевіряємо file_type
-  if (book.file_type === 'audio' || (book as any).audio_file_id) {
+  // Аудіокнига - перевіряємо audio_file_id (нове поле)
+  if ((book as any).audio_file_id) {
     formatRow.push(Markup.button.callback('🎧 Слухати', `download_audio_${book.id}`));
   } else if ((book as any).audio_external_link) {
     // Для великих аудіофайлів (> 50 МБ) - посилання
     formatRow.push(Markup.button.url('🎧 Слухати онлайн', (book as any).audio_external_link));
+  }
+  
+  // Онлайн посилання - перевіряємо online_link (нове поле)
+  if ((book as any).online_link) {
+    formatRow.push(Markup.button.url('🌐 Читати онлайн', (book as any).online_link));
+  } else if ((book as any).external_link) {
+    // Старе поле для зворотної сумісності
+    formatRow.push(Markup.button.url('🌐 Читати онлайн', (book as any).external_link));
   }
   
   // Додаємо формати по 2 в рядок для кращого вигляду
