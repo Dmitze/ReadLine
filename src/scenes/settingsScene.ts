@@ -9,7 +9,7 @@ const settingsScene = new Scenes.BaseScene<BotContext>('SETTINGS_SCENE');
 // Вхід в scene
 settingsScene.enter(async (ctx) => {
   await ctx.reply(
-    '⚙️ *Налаштування*\n\n' +
+    '⚙️ <b>Налаштування</b>\n\n' +
     'Оберіть що хочете налаштувати:',
     {
       parse_mode: 'Markdown',
@@ -28,11 +28,11 @@ settingsScene.enter(async (ctx) => {
 settingsScene.action('settings_keyboard', async (ctx) => {
   await ctx.answerCbQuery();
   await ctx.editMessageText(
-    '📱 *Тип клавіатури*\n\n' +
+    '📱 <b>Тип клавіатури</b>\n\n' +
     'Оберіть тип клавіатури який найкраще підходить для вашого пристрою:\n\n' +
-    '📱 *Мобільний* - великі кнопки, 2 в ряд\n' +
-    '📲 *Планшет* - компактніші кнопки, 3 в ряд\n' +
-    '💻 *Десктоп* - inline клавіатури, 4 в ряд',
+    '📱 <b>Мобільний</b> - великі кнопки, 2 в ряд\n' +
+    '📲 <b>Планшет</b> - компактніші кнопки, 3 в ряд\n' +
+    '💻 <b>Десктоп</b> - inline клавіатури, 4 в ряд',
     {
       parse_mode: 'Markdown',
       reply_markup: {
@@ -68,7 +68,7 @@ settingsScene.action(/^keyboard_(mobile|tablet|desktop)$/, async (ctx) => {
     
     await ctx.answerCbQuery('✅ Збережено');
     await ctx.editMessageText(
-      `✅ *Тип клавіатури змінено*\n\n` +
+      `✅ <b>Тип клавіатури змінено</b>\n\n` +
       `Обрано: ${deviceNames[deviceType]}\n\n` +
       `Зміни застосуються при наступному відкритті меню.`,
       {
@@ -106,7 +106,7 @@ settingsScene.action('settings_notifications', async (ctx) => {
   
   await ctx.answerCbQuery();
   await ctx.editMessageText(
-    '🔔 *Налаштування сповіщень*\n\n' +
+    '🔔 <b>Налаштування сповіщень</b>\n\n' +
     `Статус: ${settings.enabled ? '✅ Увімкнено' : '❌ Вимкнено'}\n` +
     `Частота: ${frequencyNames[settings.frequency]}\n` +
     `Час: ${settings.preferredTime || '10:00'}\n\n` +
@@ -150,7 +150,7 @@ settingsScene.action('notif_toggle', async (ctx) => {
   };
   
   await ctx.editMessageText(
-    '🔔 *Налаштування сповіщень*\n\n' +
+    '🔔 <b>Налаштування сповіщень</b>\n\n' +
     `Статус: ${settings.enabled ? '✅ Увімкнено' : '❌ Вимкнено'}\n` +
     `Частота: ${frequencyNames[settings.frequency]}\n` +
     `Час: ${settings.preferredTime || '10:00'}\n\n` +
@@ -173,7 +173,7 @@ settingsScene.action('notif_toggle', async (ctx) => {
 settingsScene.action('notif_frequency', async (ctx) => {
   await ctx.answerCbQuery();
   await ctx.editMessageText(
-    '⏰ *Частота сповіщень*\n\n' +
+    '⏰ <b>Частота сповіщень</b>\n\n' +
     'Як часто ви хочете отримувати нагадування?',
     {
       parse_mode: 'Markdown',
@@ -218,7 +218,7 @@ settingsScene.action(/^freq_(daily|every_4_days|weekly|disabled)$/, async (ctx) 
   
   await ctx.answerCbQuery('✅ Збережено');
   await ctx.editMessageText(
-    `✅ *Частота змінена*\n\n` +
+    `✅ <b>Частота змінена</b>\n\n` +
     `Нова частота: ${frequencyNames[frequency]}`,
     {
       parse_mode: 'Markdown',
@@ -236,7 +236,7 @@ settingsScene.action(/^freq_(daily|every_4_days|weekly|disabled)$/, async (ctx) 
 settingsScene.action('notif_time', async (ctx) => {
   await ctx.answerCbQuery();
   await ctx.editMessageText(
-    '🕐 *Час сповіщень*\n\n' +
+    '🕐 <b>Час сповіщень</b>\n\n' +
     'Налаштування часу буде доступне незабаром!\n\n' +
     'За замовчуванням сповіщення надсилаються о 10:00.',
     {
@@ -254,7 +254,7 @@ settingsScene.action('notif_time', async (ctx) => {
 settingsScene.action('settings_back', async (ctx) => {
   await ctx.answerCbQuery();
   await ctx.editMessageText(
-    '⚙️ *Налаштування*\n\n' +
+    '⚙️ <b>Налаштування</b>\n\n' +
     'Оберіть що хочете налаштувати:',
     {
       parse_mode: 'Markdown',
@@ -273,7 +273,10 @@ settingsScene.action('settings_back', async (ctx) => {
 settingsScene.action('settings_exit', async (ctx) => {
   await ctx.answerCbQuery('🏠 Повернення на головну');
   await ctx.scene.leave();
-  await ctx.reply('🏠 Ви повернулись на головну');
+  const { getMainMenuKeyboard } = await import('../keyboards/mainKeyboards');
+  await ctx.reply('🏠 Ви повернулись на головну', {
+    reply_markup: getMainMenuKeyboard()
+  });
 });
 
 // Команда для виходу
