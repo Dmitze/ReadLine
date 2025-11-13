@@ -50,7 +50,7 @@ export default (bot: Telegraf<BotContext>) => {
         : '✅ Всі повідомлення прочитані';
       
       await ctx.reply(
-        `🛠️ *Панель адміністратора*\n\n` +
+        `🛠️ <b>Панель адміністратора</b>\n\n` +
         `📊 *Статистика:*\n` +
         `📚 Книг в каталозі: ${stats.totalBooks}\n` +
         `${reviewsAlert}\n` +
@@ -247,7 +247,7 @@ export default (bot: Telegraf<BotContext>) => {
         const message = ctx.callbackQuery?.message;
         const messageText = message && 'text' in message ? message.text : 'Відгук';
         await ctx.editMessageText(
-          messageText + '\n\n✅ *ОПУБЛІКОВАНО*',
+          messageText + '\n\n✅ <b>ОПУБЛІКОВАНО</b>',
           { parse_mode: 'Markdown' }
         );
         await ctx.answerCbQuery('✅ Відгук опубліковано!');
@@ -288,7 +288,7 @@ export default (bot: Telegraf<BotContext>) => {
         const message = ctx.callbackQuery?.message;
         const messageText = message && 'text' in message ? message.text : 'Відгук';
         await ctx.editMessageText(
-          messageText + '\n\n❌ *ВИДАЛЕНО*',
+          messageText + '\n\n❌ <b>ВИДАЛЕНО</b>',
           { parse_mode: 'Markdown' }
         );
         await ctx.answerCbQuery('✅ Відгук видалено!');
@@ -302,10 +302,10 @@ export default (bot: Telegraf<BotContext>) => {
     return;
   });
   
-  // Перегляд повідомлень зворотного зв'язку
+  // Перегляд повідомлень зворотного зв'язку (лише нові)
   bot.action('view_feedback', async (ctx) => {
     try {
-      await ctx.answerCbQuery('Завантаження повідомлень...');
+      await ctx.answerCbQuery('Завантаження нових повідомлень...');
       
       const adminCheck = await isAdmin(ctx.from!.id);
       if (!adminCheck) {
@@ -313,25 +313,33 @@ export default (bot: Telegraf<BotContext>) => {
         return;
       }
       
-      const messages = await getAllFeedbackMessages();
+      // Показуємо лише непрочитані повідомлення
+      const messages = await getPendingFeedbackMessages();
+      const allMessages = await getAllFeedbackMessages();
       
-      logger.info('Feedback messages loaded', { count: messages.length });
+      logger.info('Feedback messages loaded', { pending: messages.length, total: allMessages.length });
       
       if (messages.length === 0) {
         await ctx.reply(
-          '✅ *Немає повідомлень*\n\n' +
-          'Всі повідомлення зворотного зв\'язку оброблені.\n\n' +
+          '✅ <b>Немає нових повідомлень</b>\n\n' +
+          'Всі повідомлення зворотного зв\'язку прочитані.\n\n' +
           '💡 Користувачі можуть надіслати повідомлення через:\n' +
           'Головне меню → 📞 Зворотній зв\'язок',
-          { parse_mode: 'Markdown' }
+          { 
+            parse_mode: 'Markdown',
+            reply_markup: Markup.inlineKeyboard([
+              [Markup.button.callback('📜 Показати історію', 'view_feedback_history')],
+              [Markup.button.callback('🏠 Головна', 'home')]
+            ]).reply_markup
+          }
         );
         return;
       }
       
       await ctx.reply(
-        `📞 *Повідомлення зворотного зв'язку*\n\n` +
-        `Всього: ${messages.length}\n` +
-        `Нових: ${messages.filter(m => m.status === 'pending').length}`,
+        `📞 <b>Нові повідомлення зворотного зв'язку</b>\n\n` +
+        `Нових: ${messages.length}\n` +
+        `Всього в історії: ${allMessages.length}`,
         { parse_mode: 'Markdown' }
       );
       
@@ -405,10 +413,11 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       await ctx.reply(
-        '✅ Всі повідомлення завантажено',
+        '✅ Всі нові повідомлення завантажено',
         {
           reply_markup: Markup.inlineKeyboard([
             [Markup.button.callback('🔄 Оновити', 'view_feedback')],
+            [Markup.button.callback('📜 Показати історію', 'view_feedback_history')],
             [Markup.button.callback('🏠 Головна', 'home')]
           ]).reply_markup
         }
@@ -541,7 +550,7 @@ export default (bot: Telegraf<BotContext>) => {
         : '✅ Всі повідомлення прочитані';
       
       await ctx.editMessageText(
-        `🛠️ *Панель адміністратора*\n\n` +
+        `🛠️ <b>Панель адміністратора</b>\n\n` +
         `📊 *Статистика:*\n` +
         `📚 Книг в каталозі: ${stats.totalBooks}\n` +
         `${reviewsAlert}\n` +
@@ -583,7 +592,7 @@ export default (bot: Telegraf<BotContext>) => {
         : '✅ Всі повідомлення прочитані';
       
       await ctx.reply(
-        `🛠️ *Панель адміністратора*\n\n` +
+        `🛠️ <b>Панель адміністратора</b>\n\n` +
         `📊 *Статистика:*\n` +
         `📚 Книг в каталозі: ${stats.totalBooks}\n` +
         `${reviewsAlert}\n` +
@@ -596,6 +605,108 @@ export default (bot: Telegraf<BotContext>) => {
     } catch (error) {
       logger.error('Error returning to admin panel from promo', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
       await ctx.answerCbQuery('❌ Помилка');
+    }
+    return;
+  });
+
+  // Показати історію всіх повідомлень
+  bot.action('view_feedback_history', async (ctx) => {
+    try {
+      await ctx.answerCbQuery('Завантаження історії повідомлень...');
+      
+      const adminCheck = await isAdmin(ctx.from!.id);
+      if (!adminCheck) {
+        await ctx.reply('❌ У вас немає доступу до цієї функції.');
+        return;
+      }
+      
+      const messages = await getAllFeedbackMessages();
+      
+      logger.info('Feedback history loaded', { count: messages.length });
+      
+      if (messages.length === 0) {
+        await ctx.reply(
+          '📭 <b>Історія порожня</b>\n\n' +
+          'Ще немає жодного повідомлення зворотного зв\'язку.',
+          { parse_mode: 'Markdown' }
+        );
+        return;
+      }
+      
+      await ctx.reply(
+        `📜 <b>Історія повідомлень зворотного зв'язку</b>\n\n` +
+        `Всього повідомлень: ${messages.length}\n` +
+        `Нових: ${messages.filter(m => m.status === 'pending').length}\n` +
+        `Прочитаних: ${messages.filter(m => m.status === 'read').length}\n` +
+        `З відповіддю: ${messages.filter(m => m.status === 'replied').length}`,
+        { parse_mode: 'Markdown' }
+      );
+      
+      for (const msg of messages) {
+        try {
+          if (!msg.message || msg.message.trim() === '') {
+            continue;
+          }
+          
+          const statusEmoji = msg.status === 'pending' ? '🔔 НОВЕ' : 
+                             msg.status === 'read' ? '✅ Прочитано' : 
+                             '💬 Відповіли';
+          
+          const escapeHtml = (text: string) => {
+            return text
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+          };
+          
+          const safeName = escapeHtml(msg.user_name || 'Користувач');
+          const safeUsername = msg.user_username ? escapeHtml(msg.user_username) : '';
+          const safeMessage = escapeHtml(msg.message);
+          const safeCreatedAt = escapeHtml(new Date(msg.created_at!).toLocaleString('uk-UA'));
+          const safeReadAt = msg.read_at ? escapeHtml(new Date(msg.read_at).toLocaleString('uk-UA')) : '';
+          
+          let feedbackText = `📞 <b>Повідомлення #${msg.id}</b> ${statusEmoji}\n\n`;
+          feedbackText += `👤 Від: ${safeName}\n`;
+          feedbackText += `🆔 User ID: <code>${msg.user_id}</code>\n`;
+          
+          if (msg.user_username) {
+            feedbackText += `📱 Username: @${safeUsername}\n`;
+          }
+          
+          feedbackText += `\n💬 <b>Повідомлення:</b>\n"${safeMessage}"\n\n`;
+          feedbackText += `📅 Дата: ${safeCreatedAt}`;
+          
+          if (msg.read_at) {
+            feedbackText += `\n👁️ Прочитано: ${safeReadAt}`;
+          }
+          
+          await ctx.reply(feedbackText, {
+            parse_mode: 'HTML',
+            reply_markup: getFeedbackActionKeyboard(msg.id!, msg.user_id)
+          });
+          
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+        } catch (msgError) {
+          logger.error('Error displaying feedback message', msgError instanceof Error ? msgError : new Error(String(msgError)), { feedbackId: msg.id });
+        }
+      }
+      
+      await ctx.reply(
+        '✅ Вся історія завантажена',
+        {
+          reply_markup: Markup.inlineKeyboard([
+            [Markup.button.callback('📞 Показати лише нові', 'view_feedback')],
+            [Markup.button.callback('🏠 Головна', 'home')]
+          ]).reply_markup
+        }
+      );
+      
+    } catch (error) {
+      logger.error('Error showing feedback history', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      await ctx.reply('❌ Виникла помилка при отриманні історії повідомлень.');
     }
     return;
   });
