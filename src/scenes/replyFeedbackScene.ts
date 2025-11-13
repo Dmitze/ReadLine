@@ -21,7 +21,7 @@ replyFeedbackScene.enter(async (ctx: BotContext) => {
   }
   
   await ctx.reply(
-    `✉️ *ВІДПОВІДЬ НА ПОВІДОМЛЕННЯ*\n\n` +
+    `✉️ <b>ВІДПОВІДЬ НА ПОВІДОМЛЕННЯ</b>\n\n` +
     `👤 Від: ${state.userName || 'Користувач'}\n` +
     `💬 Повідомлення:\n"${state.originalMessage}"\n\n` +
     `📝 Введіть вашу відповідь:`,
@@ -55,7 +55,7 @@ replyFeedbackScene.on('text', async (ctx: BotContext) => {
     try {
       await ctx.telegram.sendMessage(
         state.userId!,
-        `📬 *ВІДПОВІДЬ ВІД АДМІНІСТРАТОРА*\n\n` +
+        `📬 <b>ВІДПОВІДЬ ВІД АДМІНІСТРАТОРА</b>\n\n` +
         `💬 Ваше повідомлення:\n"${state.originalMessage}"\n\n` +
         `✉️ Відповідь:\n${replyText}\n\n` +
         `Дякуємо за звернення!`,
@@ -97,21 +97,21 @@ replyFeedbackScene.on('text', async (ctx: BotContext) => {
       
       if (isBotBlocked) {
         await ctx.reply(
-          `⚠️ *Відповідь збережена в БД*\n\n` +
+          `⚠️ <b>Відповідь збережена в БД</b>\n\n` +
           `❌ Користувач заблокував бота.\n` +
           `Повідомлення не доставлено, але збережено в системі.`,
           { parse_mode: 'Markdown' }
         );
       } else if (isChatDeleted) {
         await ctx.reply(
-          `⚠️ *Відповідь збережена в БД*\n\n` +
+          `⚠️ <b>Відповідь збережена в БД</b>\n\n` +
           `❌ Чат з користувачем не знайдено (можливо видалив акаунт).\n` +
           `Повідомлення не доставлено.`,
           { parse_mode: 'Markdown' }
         );
       } else {
         await ctx.reply(
-          `⚠️ *Відповідь збережена в БД*\n\n` +
+          `⚠️ <b>Відповідь збережена в БД</b>\n\n` +
           `❌ Помилка при надсиланні:\n` +
           `${errorMessage.substring(0, 150)}`,
           { parse_mode: 'Markdown' }
