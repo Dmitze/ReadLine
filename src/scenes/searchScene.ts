@@ -18,7 +18,7 @@ const searchScene = new Scenes.BaseScene('SEARCH_SCENE');
 searchScene.enter(async (ctx) => {
   const { Markup } = await import('telegraf');
   await ctx.reply(
-    '🔍 *Розширений пошук книг*\n\n' +
+    '🔍 <b>Розширений пошук книг</b>\n\n' +
     'Оберіть тип пошуку або введіть запит:',
     { 
       parse_mode: 'Markdown',
@@ -45,7 +45,7 @@ searchScene.action('search_by_title', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
   (ctx.scene as any).state.searchType = 'title';
   await ctx.editMessageText(
-    '📖 *Пошук за назвою*\n\n' +
+    '📖 <b>Пошук за назвою</b>\n\n' +
     'Введіть назву книги:\n\n' +
     '💡 *Приклад:* Кобзар',
     { parse_mode: 'Markdown' }
@@ -56,7 +56,7 @@ searchScene.action('search_by_author', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
   (ctx.scene as any).state.searchType = 'author';
   await ctx.editMessageText(
-    '👤 *Пошук за автором*\n\n' +
+    '👤 <b>Пошук за автором</b>\n\n' +
     'Введіть ім\'я автора:\n\n' +
     '💡 *Приклад:* Шевченко',
     { parse_mode: 'Markdown' }
@@ -67,7 +67,7 @@ searchScene.action('search_by_genre', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
   (ctx.scene as any).state.searchType = 'genre';
   await ctx.editMessageText(
-    '📚 *Пошук за жанром*\n\n' +
+    '📚 <b>Пошук за жанром</b>\n\n' +
     'Введіть жанр:\n\n' +
     '💡 *Приклад:* Історична',
     { parse_mode: 'Markdown' }
@@ -78,7 +78,7 @@ searchScene.action('search_general', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
   (ctx.scene as any).state.searchType = 'general';
   await ctx.editMessageText(
-    '🔍 *Розумний пошук*\n\n' +
+    '🔍 <b>Розумний пошук</b>\n\n' +
     'Введіть будь-який запит (назва, автор, жанр):\n\n' +
     '✨ *Можливості:*\n' +
     '• Пошук з помилками: "Кобзарь" → "Кобзар"\n' +
@@ -275,7 +275,7 @@ searchScene.on('text', async (ctx: BotContext) => {
     logger.info('Search results', { booksFound: books.length });
     
     if (books.length === 0) {
-      let noResultsMessage = '📭 *За вашим запитом нічого не знайдено*\n\n' +
+      let noResultsMessage = '📭 <b>За вашим запитом нічого не знайдено</b>\n\n' +
         `Пошуковий запит: "${searchTerm}"\n\n`;
       
       if (suggestions.length > 0) {
