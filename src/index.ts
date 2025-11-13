@@ -424,6 +424,56 @@ bot.action('random_book', async (ctx) => {
   }
 });
 
+// Глобальний обробник "Назад до адмін-панелі"
+bot.action('back_to_admin', async (ctx) => {
+  try {
+    await ctx.answerCbQuery();
+    
+    const { isAdmin, getAdminStats, getPendingReviews, getPendingFeedbackMessages } = await import('./database/models');
+    const { getAdminMenuKeyboard } = await import('./keyboards/adminKeyboards');
+    
+    const adminCheck = await isAdmin(ctx.from!.id);
+    if (!adminCheck) {
+      await ctx.reply('❌ У вас немає доступу до адмін-панелі.');
+      return;
+    }
+    
+    const stats = await getAdminStats();
+    const pendingReviews = await getPendingReviews();
+    const pendingFeedback = await getPendingFeedbackMessages();
+      
+    const reviewsAlert = pendingReviews.length > 0
+      ? `📝 Відгуків на модерацію: <b>${pendingReviews.length}</b> 🔔`
+      : '✅ Всі відгуки оброблені';
+      
+    const feedbackAlert = pendingFeedback.length > 0
+      ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
+      : '✅ Всі повідомлення прочитані';
+    
+    // Видаляємо попереднє повідомлення
+    try {
+      await ctx.deleteMessage();
+    } catch (error) {
+      // Ігноруємо помилку
+    }
+    
+    await ctx.reply(
+      `🛠️ <b>Панель адміністратора</b>\n\n` +
+      `📊 <b>Статистика:</b>\n` +
+      `📚 Книг в каталозі: ${stats.totalBooks}\n` +
+      `${reviewsAlert}\n` +
+      `${feedbackAlert}`,
+      {
+        parse_mode: 'HTML',
+        reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
+      }
+    );
+  } catch (error) {
+    logger.error('Error in back_to_admin handler', error instanceof Error ? error : new Error(String(error)));
+    await ctx.reply('❌ Помилка при поверненні до адмін-панелі');
+  }
+});
+
 // Graceful shutdown
 let notificationScheduler: NodeJS.Timeout | null = null;
 
