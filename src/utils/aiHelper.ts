@@ -222,33 +222,7 @@ async function generateRecommendationReason(book: Book, userProfile: UserProfile
   return `${AI_MESSAGES.RECOMMENDATION_REASONS.INTERESTING} в жанрі "${book.genre}"`;
 }
 
-/**
- * AI аналіз настрою користувача (заглушка)
- */
-export async function analyzeMood(message: string): Promise<{
-  mood: 'happy' | 'sad' | 'excited' | 'calm' | 'adventurous';
-  confidence: number;
-}> {
-  const lowerMessage = message.toLowerCase();
-  
-  if (lowerMessage.includes('весел') || lowerMessage.includes('радіс') || lowerMessage.includes('щасли')) {
-    return { mood: 'happy', confidence: 0.8 };
-  }
-  
-  if (lowerMessage.includes('сумн') || lowerMessage.includes('грустн') || lowerMessage.includes('депрес')) {
-    return { mood: 'sad', confidence: 0.8 };
-  }
-  
-  if (lowerMessage.includes('пригод') || lowerMessage.includes('екстрим') || lowerMessage.includes('активн')) {
-    return { mood: 'adventurous', confidence: 0.8 };
-  }
-  
-  if (lowerMessage.includes('спокій') || lowerMessage.includes('релакс') || lowerMessage.includes('відпочин')) {
-    return { mood: 'calm', confidence: 0.8 };
-  }
-  
-  return { mood: 'calm', confidence: 0.5 };
-}
+
 
 /**
  * Рекомендації на основі настрою (заглушка)
@@ -286,20 +260,7 @@ export function isAIEnabled(): boolean {
   return !!(apiKey && apiKey.length > 10);
 }
 
-/**
- * Перевірка якості опису (заглушка)
- */
-export async function checkDescriptionQuality(description: string): Promise<{
-  score: number;
-  suggestions: string[];
-}> {
-  const score = description.length > 50 ? 80 : 40;
-  const suggestions = description.length < 50 ? 
-    ['Додайте більше деталей про сюжет', 'Опишіть головних персонажів'] : 
-    [];
-  
-  return { score, suggestions };
-}
+
 
 /**
  * Генерація тегів (заглушка)
@@ -375,12 +336,7 @@ export async function detectGenreFromDescription(description: string): Promise<s
   return null;
 }
 
-/**
- * Генерація тегів з опису (заглушка)
- */
-export async function generateTagsFromDescription(description: string, title: string = '', genre: string = ''): Promise<string[]> {
-  return generateTags(title, description, genre);
-}
+
 
 // ✅ ВИПРАВЛЕНО #47: rate limiting для AI
 const aiRequestTimestamps: number[] = [];
