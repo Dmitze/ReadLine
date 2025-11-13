@@ -95,11 +95,8 @@ const formatBookCaption = async (book, tags) => {
     caption += `📝 <b>Опис:</b>\n${safeDescription}\n\n`;
     caption += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
     const availableFormats = [];
-    if (book.pdf_file_id || (book.file_type === 'file' && book.file_url)) {
+    if (book.pdf_file_id || (book.file_url && book.file_type === 'file')) {
         availableFormats.push('📄 PDF');
-    }
-    if (book.external_link || (book.file_type === 'link' && book.file_url)) {
-        availableFormats.push('🌐 Онлайн');
     }
     if (book.audio_file_id) {
         let audioText = '🎧 Аудіо';
@@ -114,6 +111,9 @@ const formatBookCaption = async (book, tags) => {
             }
         }
         availableFormats.push(audioText);
+    }
+    if (book.online_link || book.external_link || (book.file_url && book.file_type === 'link')) {
+        availableFormats.push('🌐 Онлайн');
     }
     if (availableFormats.length > 0) {
         caption += `📦 <b>Доступні формати:</b>\n`;
