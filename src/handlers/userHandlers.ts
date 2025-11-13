@@ -558,15 +558,16 @@ export default (bot: Telegraf<BotContext>) => {
           return;
         }
         
-        const pdfFileId = (book as any).pdf_file_id || (book.file_type === 'file' ? book.file_url : null);
+        // ВИПРАВЛЕННЯ: Шукаємо file_url незалежно від file_type
+        const pdfFileId = (book as any).pdf_file_id || book.file_url;
         
         if (pdfFileId) {
           await ctx.telegram.sendDocument(ctx.from!.id, pdfFileId, {
-            caption: `📥 ${book.title}\n👤 ${book.author}\n\n✅ PDF файл завантажено!`
+            caption: `📥 ${book.title}\n👤 ${book.author}\n\n✅ Файл завантажено!`
           });
-          await ctx.answerCbQuery('📥 PDF надіслано вам у приватні повідомлення');
+          await ctx.answerCbQuery('📥 Файл надіслано вам у приватні повідомлення');
         } else {
-          await ctx.answerCbQuery('❌ PDF файл недоступний');
+          await ctx.answerCbQuery('❌ Файл недоступний');
         }
       }, 30000, 'PDF download timeout');
       
@@ -595,8 +596,8 @@ export default (bot: Telegraf<BotContext>) => {
         return;
       }
       
-      // Перевіряємо чи є аудіо (file_type === 'audio' або audio_file_id)
-      const audioFileId = (book as any).audio_file_id || (book.file_type === 'audio' ? book.file_url : null);
+      // ВИПРАВЛЕННЯ: Шукаємо audio_file_id незалежно від file_type
+      const audioFileId = (book as any).audio_file_id;
       
       if (audioFileId) {
         await ctx.answerCbQuery('🎧 Відправляю аудіокнигу...');
