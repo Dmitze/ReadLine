@@ -39,7 +39,6 @@ const tagFunctions_1 = require("../database/tagFunctions");
 const helpers_1 = require("../utils/helpers");
 const logger_1 = require("../utils/logger");
 const validation_1 = require("../utils/validation");
-const aiHelper_1 = require("../utils/aiHelper");
 let cachedTags = [];
 let tagsLastUpdated = 0;
 const TAGS_CACHE_DURATION = 5 * 60 * 1000;
@@ -398,22 +397,6 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
     state.description = description;
     autoSaveState(state);
     logUserAction(ctx, 'entered_description', { descriptionLength: description.length });
-    if ((0, aiHelper_1.isAIEnabled)() && state.title && state.author && state.genre) {
-        await ctx.reply('🤖 AI перевіряє опис та генерує теги...');
-        try {
-            const suggestedTags = await (0, aiHelper_1.generateTagsFromDescription)(state.title, description, state.genre);
-            if (suggestedTags.length > 0) {
-                state.aiSuggestedTags = suggestedTags;
-                await ctx.reply(`🏷️ *AI запропонував теги:*\n\n` +
-                    suggestedTags.map(tag => `• ${tag}`).join('\n') +
-                    `\n\nВи зможете додати їх після збереження книги.`, { parse_mode: 'HTML' });
-                logUserAction(ctx, 'ai_tags_generated', { tagsCount: suggestedTags.length });
-            }
-        }
-        catch (error) {
-            logger_1.logger.error('AI tag generation error', error instanceof Error ? error : new Error(String(error)));
-        }
-    }
     await ctx.reply(`${getProgress(4)}\n🖼️ Завантажте фото обкладинки книги (або натисніть "Пропустити"):`, {
         reply_markup: telegraf_1.Markup.inlineKeyboard([
             [{ text: '⏭️ Пропустити', callback_data: 'skip_photo' }]
@@ -757,21 +740,28 @@ addBookScene.action('confirm_book', async (ctx) => {
             tagsCount: state.selectedTags?.length || 0
         });
         await ctx.reply('✅ Книга успішно опублікована!', {
-            reply_markup: telegraf_1.Markup.inlineKeyboard([
-                [telegraf_1.Markup.button.callback('🏠 Назад до адмін-панелі', 'back_to_admin')]
-            ]).reply_markup
+            reply_markup: {
+                remove_keyboard: true,
+                inline_keyboard: [
+                    [{ text: '🏠 Назад до адмін-панелі', callback_data: 'back_to_admin' }]
+                ]
+            }
         });
         return ctx.scene.leave();
     }
     catch (error) {
         logger_1.logger.error('Error saving book', error instanceof Error ? error : new Error(String(error)));
-        await ctx.reply('❌ Помилка при додаванні книги');
+        await ctx.reply('❌ Помилка при додаванні книги', {
+            reply_markup: { remove_keyboard: true }
+        });
         return ctx.scene.leave();
     }
 });
 addBookScene.action('cancel_book', async (ctx) => {
     await ctx.answerCbQuery('❌ Скасовано');
-    await ctx.reply('❌ Додавання книги скасовано');
+    await ctx.reply('❌ Додавання книги скасовано', {
+        reply_markup: { remove_keyboard: true }
+    });
     return ctx.scene.leave();
 });
 addBookScene.action('add_more_file', async (ctx) => {
@@ -887,7 +877,9 @@ addBookScene.action('back_to_admin', async (ctx) => {
     }
 });
 addBookScene.command('cancel', async (ctx) => {
-    await ctx.reply('❌ Додавання книги скасовано');
+    await ctx.reply('❌ Додавання книги скасовано', {
+        reply_markup: { remove_keyboard: true }
+    });
     return ctx.scene.leave();
 });
 addBookScene.leave((ctx) => {
