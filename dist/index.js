@@ -356,6 +356,44 @@ bot.action('random_book', async (ctx) => {
         await ctx.reply('❌ На жаль, зараз немає доступних книг');
     }
 });
+bot.action('back_to_admin', async (ctx) => {
+    try {
+        await ctx.answerCbQuery();
+        const { isAdmin, getAdminStats, getPendingReviews, getPendingFeedbackMessages } = await Promise.resolve().then(() => __importStar(require('./database/models')));
+        const { getAdminMenuKeyboard } = await Promise.resolve().then(() => __importStar(require('./keyboards/adminKeyboards')));
+        const adminCheck = await isAdmin(ctx.from.id);
+        if (!adminCheck) {
+            await ctx.reply('❌ У вас немає доступу до адмін-панелі.');
+            return;
+        }
+        const stats = await getAdminStats();
+        const pendingReviews = await getPendingReviews();
+        const pendingFeedback = await getPendingFeedbackMessages();
+        const reviewsAlert = pendingReviews.length > 0
+            ? `📝 Відгуків на модерацію: <b>${pendingReviews.length}</b> 🔔`
+            : '✅ Всі відгуки оброблені';
+        const feedbackAlert = pendingFeedback.length > 0
+            ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
+            : '✅ Всі повідомлення прочитані';
+        try {
+            await ctx.deleteMessage();
+        }
+        catch (error) {
+        }
+        await ctx.reply(`🛠️ <b>Панель адміністратора</b>\n\n` +
+            `📊 <b>Статистика:</b>\n` +
+            `📚 Книг в каталозі: ${stats.totalBooks}\n` +
+            `${reviewsAlert}\n` +
+            `${feedbackAlert}`, {
+            parse_mode: 'HTML',
+            reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
+        });
+    }
+    catch (error) {
+        logger_1.logger.error('Error in back_to_admin handler', error instanceof Error ? error : new Error(String(error)));
+        await ctx.reply('❌ Помилка при поверненні до адмін-панелі');
+    }
+});
 let notificationScheduler = null;
 const shutdown = (signal) => {
     logger_1.logger.info(`Received ${signal}, shutting down gracefully`);
