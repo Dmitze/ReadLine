@@ -45,7 +45,7 @@ const editBookScene = new Scenes.WizardScene(
           [Markup.button.callback('✏️ Жанр', 'edit_genre')],
           [Markup.button.callback('✏️ Опис', 'edit_description')],
           [Markup.button.callback('🖼️ Обкладинка', 'edit_photo')],
-          [Markup.button.callback('✅ Доступність', 'edit_availability')],
+          [Markup.button.callback('✅ Доступність', 'edit_availability')],                      
           [Markup.button.callback('💾 Зберегти', 'save_changes')],
           [Markup.button.callback('⬅️ Назад до списку', 'back_to_list')],
           [Markup.button.callback('❌ Скасувати', 'cancel_edit')]
