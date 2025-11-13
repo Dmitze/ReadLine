@@ -182,22 +182,22 @@ exports.getAdaptiveBookKeyboard = getAdaptiveBookKeyboard;
 const getEnhancedBookKeyboard = (book, isSaved = false) => {
     const keyboard = [];
     const formatRow = [];
-    if (book.pdf_file_id || (book.file_type === 'file' && book.file_url)) {
+    if (book.file_url || book.pdf_file_id) {
         const format = book.file_format || 'PDF';
         const buttonText = `📥 Завантажити (${format})`;
         formatRow.push(telegraf_1.Markup.button.callback(buttonText, `download_pdf_${book.id}`));
     }
-    if (book.external_link) {
-        formatRow.push(telegraf_1.Markup.button.url('🌐 Читати онлайн', book.external_link));
-    }
-    else if (book.file_type === 'link' && book.file_url) {
-        formatRow.push(telegraf_1.Markup.button.url('🌐 Читати онлайн', book.file_url));
-    }
-    if (book.file_type === 'audio' || book.audio_file_id) {
+    if (book.audio_file_id) {
         formatRow.push(telegraf_1.Markup.button.callback('🎧 Слухати', `download_audio_${book.id}`));
     }
     else if (book.audio_external_link) {
         formatRow.push(telegraf_1.Markup.button.url('🎧 Слухати онлайн', book.audio_external_link));
+    }
+    if (book.online_link) {
+        formatRow.push(telegraf_1.Markup.button.url('🌐 Читати онлайн', book.online_link));
+    }
+    else if (book.external_link) {
+        formatRow.push(telegraf_1.Markup.button.url('🌐 Читати онлайн', book.external_link));
     }
     if (formatRow.length > 0) {
         if (formatRow.length <= 2) {
