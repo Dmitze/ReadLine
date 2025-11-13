@@ -47,6 +47,16 @@ export interface WizardState {
   savedBookId?: number;     // ID збереженої книги для додавання тегів
   editingField?: 'title' | 'author' | 'description';  // ✅ ВИПРАВЛЕНО #15: Поле що редагується
   
+  // Multi-format fields (нові поля для мультиформатності)
+  bookFile?: string;        // File ID для файлу книги
+  bookFileName?: string;    // Назва файлу книги
+  bookAudio?: string;       // File ID для аудіо
+  bookAudioName?: string;   // Назва аудіофайлу
+  bookLink?: string;        // Посилання на книгу
+  
+  // Multi-genre support (підтримка кількох жанрів)
+  selectedGenres?: string[]; // Вибрані жанри при додаванні книги
+  
   // AI Assistant (Завдання 29)
   useAI?: boolean;          // Чи використовувати AI для розпізнавання
   aiRecognized?: boolean;   // Чи була інформація розпізнана AI
