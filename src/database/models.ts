@@ -19,8 +19,10 @@ export interface Book {
   genre: string;
   description: string;
   photo_file_id: string;
-  file_url?: string; // Посилання на файл
-  file_type?: string; // 'physical' | 'link' | 'file'
+  file_url?: string; // Файл книги (PDF, EPUB, тощо)
+  audio_file_id?: string; // Аудіофайл
+  online_link?: string; // Онлайн посилання
+  file_type?: string; // 'physical' | 'link' | 'file' | 'audio'
   file_name?: string; // Назва файлу для завантаження
   rating?: number; // Середній рейтинг 0-5
   reviews_count?: number; // Кількість відгуків
@@ -324,18 +326,28 @@ export const addBook = (bookData: Omit<Book, 'id' | 'is_available' | 'created_at
       description, 
       photo_file_id, 
       file_url, 
+      audio_file_id,
+      online_link,
       file_type = 'physical',
       file_name 
     } = bookData;
     
     const query = `
-      INSERT INTO books (title, author, genre, description, photo_file_id, file_url, file_type, file_name, is_available)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+      INSERT INTO books (
+        title, author, genre, description, photo_file_id, 
+        file_url, audio_file_id, online_link, 
+        file_type, file_name, is_available
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
     `;
     
     db.run(
       query, 
-      [title, author, genre, description, photo_file_id, file_url, file_type, file_name], 
+      [
+        title, author, genre, description, photo_file_id,
+        file_url || null, audio_file_id || null, online_link || null,
+        file_type, file_name
+      ], 
       function(err) {
         if (err) reject(err);
         else resolve(this.lastID);
