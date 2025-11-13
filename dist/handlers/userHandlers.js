@@ -236,9 +236,9 @@ exports.default = (bot) => {
                 for (const book of books) {
                     const caption = `📖 *${book.title}*
 👤 Автор: ${book.author}
-� Жванр: ${book.genre}
-� Опис:  ${book.description}
-� Статус: b${book.is_available ? 'Доступна' : 'Недоступна'}`;
+🎭 Жанр: ${book.genre}
+📖 Опис:  ${book.description}
+✅ Статус: b${book.is_available ? 'Доступна' : 'Недоступна'}`;
                     if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
                         try {
                             await ctx.replyWithPhoto(book.photo_file_id, {
@@ -262,9 +262,15 @@ exports.default = (bot) => {
                     }
                 }
                 if (total > BOOKS_PER_PAGE) {
-                    await ctx.reply(`ℹ️ Показано ${books.length} з ${total} книг.\n\n` +
-                        `Для перегляду інших книг використайте:\n` +
-                        `🔍 Пошук книги - пошук за назвою або автором`);
+                    const totalPages = Math.ceil(total / BOOKS_PER_PAGE);
+                    const currentPage = 1;
+                    const paginationButtons = [];
+                    if (currentPage < totalPages) {
+                        paginationButtons.push(telegraf_1.Markup.button.callback(`➡️ Наступна сторінка (${currentPage + 1}/${totalPages})`, `genre_page_${messageText}_${currentPage + 1}`));
+                    }
+                    await ctx.reply(`ℹ️ Показано ${books.length} з ${total} книг (сторінка ${currentPage}/${totalPages})`, {
+                        reply_markup: telegraf_1.Markup.inlineKeyboard([paginationButtons]).reply_markup
+                    });
                 }
             }
         }
@@ -273,6 +279,67 @@ exports.default = (bot) => {
             await ctx.reply('❌ Виникла помилка при отриманні книг.');
         }
         return;
+    });
+    bot.action(/genre_page_(.+)_(\d+)/, async (ctx) => {
+        try {
+            const match = ctx.match;
+            if (!match || !match[1] || !match[2]) {
+                await ctx.answerCbQuery('❌ Помилка');
+                return;
+            }
+            const genre = match[1];
+            const page = parseInt(match[2]);
+            const BOOKS_PER_PAGE = 5;
+            const offset = (page - 1) * BOOKS_PER_PAGE;
+            await ctx.answerCbQuery(`Завантаження сторінки ${page}...`);
+            const { books, total } = await (0, models_1.getBooksByGenreWithPagination)(genre, BOOKS_PER_PAGE, offset);
+            if (books.length === 0) {
+                await ctx.answerCbQuery('❌ Книги не знайдено');
+                return;
+            }
+            await ctx.reply(`📚 Жанр "${genre}" - сторінка ${page}:`);
+            for (const book of books) {
+                const caption = await (0, helpers_1.formatBookCaption)(book);
+                if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
+                    try {
+                        await ctx.replyWithPhoto(book.photo_file_id, {
+                            caption,
+                            parse_mode: 'HTML',
+                            reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, false)
+                        });
+                    }
+                    catch (error) {
+                        await ctx.reply(caption, {
+                            parse_mode: 'HTML',
+                            reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, false)
+                        });
+                    }
+                }
+                else {
+                    await ctx.reply(caption, {
+                        parse_mode: 'HTML',
+                        reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, false)
+                    });
+                }
+            }
+            const totalPages = Math.ceil(total / BOOKS_PER_PAGE);
+            const paginationButtons = [];
+            if (page > 1) {
+                paginationButtons.push(telegraf_1.Markup.button.callback(`⬅️ Попередня (${page - 1}/${totalPages})`, `genre_page_${genre}_${page - 1}`));
+            }
+            if (page < totalPages) {
+                paginationButtons.push(telegraf_1.Markup.button.callback(`➡️ Наступна (${page + 1}/${totalPages})`, `genre_page_${genre}_${page + 1}`));
+            }
+            if (paginationButtons.length > 0) {
+                await ctx.reply(`ℹ️ Показано ${books.length} з ${total} книг (сторінка ${page}/${totalPages})`, {
+                    reply_markup: telegraf_1.Markup.inlineKeyboard([paginationButtons]).reply_markup
+                });
+            }
+        }
+        catch (error) {
+            logger_1.logger.error('Error in genre pagination', error instanceof Error ? error : new Error(String(error)));
+            await ctx.answerCbQuery('❌ Помилка');
+        }
     });
     bot.action(/save_(\d+)/, async (ctx) => {
         const { retryOperation, sendErrorToUser } = await Promise.resolve().then(() => __importStar(require('../utils/errorHandler')));
@@ -444,7 +511,7 @@ exports.default = (bot) => {
         }
         catch (error) {
             logger_1.logger.error('Error downloading PDF', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await sendErrorToUser(ctx, error, '❌ Помилка при завантаженні PDF. Спробуйте пізніше.');
+            await sendErrorToUser(ctx, error, '❌ Помилка при завантаженні файлу. Спробуйте пізніше.');
         }
         return;
     });
