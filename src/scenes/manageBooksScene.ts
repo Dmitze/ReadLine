@@ -55,9 +55,9 @@ manageBooksScene.action('filter_by_genre', async (ctx: BotContext) => {
       return;
     }
     
-    // Створюємо кнопки для жанрів
-    const keyboard = genres.map(genre => [
-      Markup.button.callback(genre, `genre_filter_${genre}`)
+    // Створюємо кнопки для жанрів (використовуємо індекс замість повної назви)
+    const keyboard = genres.map((genre, index) => [
+      Markup.button.callback(genre, `genre_filter_${index}`)
     ]);
     keyboard.push([Markup.button.callback('⬅️ Назад', 'back_to_manage')]);
     
@@ -76,7 +76,7 @@ manageBooksScene.action('filter_by_genre', async (ctx: BotContext) => {
 });
 
 // Показати книги за жанром
-manageBooksScene.action(/genre_filter_(.+)/, async (ctx: BotContext) => {
+manageBooksScene.action(/genre_filter_(\d+)/, async (ctx: BotContext) => {
   try {
     const match = ctx.match;
     if (!match || !match[1]) {
@@ -84,7 +84,23 @@ manageBooksScene.action(/genre_filter_(.+)/, async (ctx: BotContext) => {
       return;
     }
     
-    const genre = match[1];
+    const genreIndex = parseInt(match[1]);
+    
+    // Отримуємо жанр за індексом
+    const { getGenres } = await import('../database/models');
+    const { cache, CACHE_KEYS, CACHE_TTL } = await import('../utils/cache');
+    const genres = await cache.getOrSet(
+      CACHE_KEYS.GENRES,
+      getGenres,
+      CACHE_TTL.LONG
+    );
+    
+    const genre = genres[genreIndex];
+    if (!genre) {
+      await ctx.answerCbQuery('❌ Жанр не знайдено');
+      return;
+    }
+    
     await ctx.answerCbQuery(`Завантаження книг жанру "${genre}"...`);
     
     const { getBooksByGenre } = await import('../database/models');
