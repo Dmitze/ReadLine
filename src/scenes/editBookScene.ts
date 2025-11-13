@@ -157,6 +157,35 @@ const editBookScene = new Scenes.WizardScene(
       });
     } else if (state.editingField === 'photo') {
       await ctx.reply('🖼️ Надішліть нове фото обкладинки або натисніть /skip щоб пропустити');
+    } else if (state.editingField === 'genre') {
+      // Показуємо кнопки з жанрами
+      const genres = [
+        'Фантастика', 'Sci-Fi', 'Кіберпанк', 'Фентезі', 'Антиутопія',
+        'Детектив', 'Трилер', 'Нуар', 'Шпигунський роман',
+        'Пригоди', 'Історичні пригоди', 'Бойовик',
+        'Романтика', 'Любовний роман', 'Мелодрама',
+        'Жахи', 'Містика', 'Хорор',
+        'Дитячі', 'Казки', 'Young Adult',
+        'Біографія', 'Мемуари', 'Есеї', 'Документальні',
+        'Військова', 'Історична', 'Технічна', 'Психологія',
+        'Художня', 'Поезія', 'Драма', 'Сатира'
+      ];
+      
+      const keyboard = [];
+      for (let i = 0; i < genres.length; i += 2) {
+        const row = [
+          { text: genres[i], callback_data: `set_genre_${i}` }
+        ];
+        if (i + 1 < genres.length) {
+          row.push({ text: genres[i + 1], callback_data: `set_genre_${i + 1}` });
+        }
+        keyboard.push(row);
+      }
+      keyboard.push([{ text: '⬅️ Назад', callback_data: 'back_to_menu' }]);
+      
+      await ctx.reply('🎭 Оберіть новий жанр:', {
+        reply_markup: { inline_keyboard: keyboard }
+      });
     } else {
       await ctx.reply(`✏️ Введіть нове значення для поля "${fieldName}":`);
     }
@@ -179,13 +208,88 @@ const editBookScene = new Scenes.WizardScene(
         return;
       }
       
+      if (action.startsWith('set_genre_')) {
+        const genreIndex = parseInt(action.replace('set_genre_', ''));
+        const genres = [
+          'Фантастика', 'Sci-Fi', 'Кіберпанк', 'Фентезі', 'Антиутопія',
+          'Детектив', 'Трилер', 'Нуар', 'Шпигунський роман',
+          'Пригоди', 'Історичні пригоди', 'Бойовик',
+          'Романтика', 'Любовний роман', 'Мелодрама',
+          'Жахи', 'Містика', 'Хорор',
+          'Дитячі', 'Казки', 'Young Adult',
+          'Біографія', 'Мемуари', 'Есеї', 'Документальні',
+          'Військова', 'Історична', 'Технічна', 'Психологія',
+          'Художня', 'Поезія', 'Драма', 'Сатира'
+        ];
+        
+        const selectedGenre = genres[genreIndex];
+        state.updates = state.updates || {};
+        state.updates.genre = selectedGenre;
+        
+        await ctx.answerCbQuery('✅ Жанр обрано');
+        
+        // Повертаємося на крок 0 (меню редагування)
+        ctx.wizard.selectStep(0);
+        
+        // Показуємо меню редагування з оновленою інформацією
+        const { Markup } = await import('telegraf');
+        await ctx.editMessageText(
+          `📝 *Редагування книги*\n\n` +
+          `📖 ${state.book.title}\n` +
+          `👤 ${state.book.author}\n\n` +
+          `✅ Жанр змінено на: ${selectedGenre}\n\n` +
+          `Оберіть що хочете змінити або збережіть зміни:`,
+          {
+            parse_mode: 'Markdown',
+            reply_markup: Markup.inlineKeyboard([
+              [Markup.button.callback('📖 Назва', 'edit_title')],
+              [Markup.button.callback('👤 Автор', 'edit_author')],
+              [Markup.button.callback('📚 Жанр', 'edit_genre')],
+              [Markup.button.callback('📝 Опис', 'edit_description')],
+              [Markup.button.callback('🖼️ Обкладинка', 'edit_photo')],
+              [Markup.button.callback('✅ Доступність', 'edit_availability')],
+              [Markup.button.callback('💾 Зберегти', 'save_changes')],
+              [Markup.button.callback('⬅️ Назад до списку', 'back_to_list')],
+              [Markup.button.callback('❌ Скасувати', 'cancel_edit')]
+            ]).reply_markup
+          }
+        );
+        return;
+      }
+      
       if (action === 'set_available_true' || action === 'set_available_false') {
         const isAvailable = action === 'set_available_true';
         state.updates = state.updates || {};
         state.updates.is_available = isAvailable;
         
         await ctx.answerCbQuery('✅ Змінено');
-        await ctx.reply(`✅ Доступність змінено на: ${isAvailable ? 'Доступна' : 'Недоступна'}\n\nВикористайте меню вище для продовження редагування або збереження змін.`);
+        
+        // Повертаємося на крок 0 (меню редагування)
+        ctx.wizard.selectStep(0);
+        
+        // Показуємо меню редагування
+        const { Markup } = await import('telegraf');
+        await ctx.editMessageText(
+          `📝 *Редагування книги*\n\n` +
+          `📖 ${state.book.title}\n` +
+          `👤 ${state.book.author}\n\n` +
+          `✅ Доступність змінено на: ${isAvailable ? 'Доступна' : 'Недоступна'}\n\n` +
+          `Оберіть що хочете змінити або збережіть зміни:`,
+          {
+            parse_mode: 'Markdown',
+            reply_markup: Markup.inlineKeyboard([
+              [Markup.button.callback('📖 Назва', 'edit_title')],
+              [Markup.button.callback('👤 Автор', 'edit_author')],
+              [Markup.button.callback('📚 Жанр', 'edit_genre')],
+              [Markup.button.callback('📝 Опис', 'edit_description')],
+              [Markup.button.callback('🖼️ Обкладинка', 'edit_photo')],
+              [Markup.button.callback('✅ Доступність', 'edit_availability')],
+              [Markup.button.callback('💾 Зберегти', 'save_changes')],
+              [Markup.button.callback('⬅️ Назад до списку', 'back_to_list')],
+              [Markup.button.callback('❌ Скасувати', 'cancel_edit')]
+            ]).reply_markup
+          }
+        );
         return;
       }
     }
