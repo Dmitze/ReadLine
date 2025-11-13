@@ -1,14 +1,5 @@
 import { Scenes } from 'telegraf';
 import { searchBooks, Book } from '../database/models';
-import { 
-  searchBooksByTitle, 
-  searchBooksByAuthor, 
-  searchBooksByGenre,
-  fuzzySearchBooksByTitle,
-  fuzzySearchBooksByAuthor,
-  enhancedSearch,
-  getSearchSuggestions
-} from '../database/searchFunctions';
 import { getEnhancedBookKeyboard } from '../keyboards/mainKeyboards';
 import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
@@ -235,139 +226,46 @@ searchScene.on('text', async (ctx: BotContext) => {
       return ctx.scene?.leave();
     }
     
-    // Розумний пошук з новою системою
+    // Простий пошук через models.searchBooks
     const SEARCH_LIMIT = 10;
-    let searchResult: any;
-    let books: any[] = [];
-    let suggestions: string[] = [];
-    let hasAiRecommendations = false;
+    let books: Book[] = [];
     let searchTypeText = '';
-    let aiMessage = '';
+    
+    // Використовуємо базову функцію пошуку з models.ts
+    books = await searchBooks(searchTerm, SEARCH_LIMIT);
     
     switch (searchType) {
       case 'title':
-        // Use dedicated title search for better accuracy
-        books = await searchBooksByTitle(searchTerm, SEARCH_LIMIT);
-        suggestions = await getSearchSuggestions(searchTerm, 3);
         searchTypeText = '📖 за назвою';
         break;
       case 'author':
-        // Use dedicated author search for better accuracy
-        books = await searchBooksByAuthor(searchTerm, SEARCH_LIMIT);
-        suggestions = await getSearchSuggestions(searchTerm, 3);
         searchTypeText = '👤 за автором';
         break;
       case 'genre':
-        books = await searchBooksByGenre(searchTerm, SEARCH_LIMIT);
-        suggestions = await getSearchSuggestions(searchTerm, 3);
         searchTypeText = '📚 за жанром';
         break;
       default:
-        // Enhanced search with full AI capabilities
-        searchResult = await enhancedSearch(searchTerm, SEARCH_LIMIT, ctx.from?.id);
-        books = searchResult.books;
-        suggestions = searchResult.suggestions;
-        hasAiRecommendations = searchResult.hasAiRecommendations;
-        aiMessage = searchResult.aiMessage || '';
-        searchTypeText = `🤖 розумний (${searchResult.searchStrategy})`;
+        searchTypeText = '🔍 загальний';
     }
     
     logger.info('Search results', { booksFound: books.length });
     
     if (books.length === 0) {
-      let noResultsMessage = '📭 <b>За вашим запитом нічого не знайдено</b>\n\n' +
-        `Пошуковий запит: "${searchTerm}"\n\n`;
-      
-      if (suggestions.length > 0) {
-        noResultsMessage += '💡 *Можливо, ви мали на увазі:*\n';
-        suggestions.slice(0, 5).forEach((suggestion, i) => {
-          noResultsMessage += `${i + 1}. ${suggestion}\n`;
-        });
-        noResultsMessage += '\n';
-      }
-      
-      noResultsMessage += '🔍 *Спробуйте:*\n' +
+      const noResultsMessage = '📭 <b>За вашим запитом нічого не знайдено</b>\n\n' +
+        `Пошуковий запит: "${searchTerm}"\n\n` +
+        '🔍 *Спробуйте:*\n' +
         '• Перевірити правопис\n' +
         '• Використати менш конкретні слова\n' +
         '• Скористатися каталогом за жанрами\n' +
-        '• Спробувати пошук за автором\n\n' +
-        '🤖 *Розумні підказки:*\n' +
-        '• "Любовний" → "Романтика"\n' +
-        '• "Sci-Fi" → "Фантастика"\n' +
-        '• "Детектив" → "Кримінал"\n' +
-        '• "Історичний" → "Історія"';
+        '• Спробувати інший пошук';
       
       await ctx.reply(noResultsMessage, { parse_mode: 'Markdown' });
-      
-      // Показуємо AI рекомендації
-      try {
-        const aiRecommendations = await enhancedSearch('популярні книги', 3, ctx.from?.id);
-        if (aiRecommendations.books.length > 0) {
-          await ctx.reply(
-            '🤖 *AI рекомендує популярні книги:*',
-            { parse_mode: 'Markdown' }
-          );
-          
-          for (const book of aiRecommendations.books) {
-            const caption = `📖 *${book.title}*\n👤 ${book.author}\n📚 ${book.genre}\n⭐ ${book.rating || 'Немає рейтингу'}`;
-            
-            if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
-              try {
-                await ctx.replyWithPhoto(book.photo_file_id, {
-                  caption,
-                  parse_mode: 'Markdown',
-                  reply_markup: getEnhancedBookKeyboard(book, false)
-                });
-              } catch (error) {
-                await ctx.reply(caption, {
-                  parse_mode: 'Markdown',
-                  reply_markup: getEnhancedBookKeyboard(book, false)
-                });
-              }
-            } else {
-              await ctx.reply(caption, {
-                parse_mode: 'Markdown',
-                reply_markup: getEnhancedBookKeyboard(book, false)
-              });
-            }
-          }
-        }
-      } catch (error) {
-        // ✅ ВИПРАВЛЕНО #43: logger замість console.error
-        logger.error('Error getting AI recommendations', error instanceof Error ? error : new Error(String(error)));
-      }
-      
       return ctx.scene?.leave();
     }
     
-    let resultsMessage = `🔍 *Результати пошуку ${searchTypeText}*\n\n`;
-    
-    if (aiMessage) {
-      resultsMessage += `${aiMessage}\n\n`;
-    }
-    
-    resultsMessage += `Знайдено: ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}\n` +
+    const resultsMessage = `🔍 *Результати пошуку ${searchTypeText}*\n\n` +
+      `Знайдено: ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}\n` +
       `Запит: "${searchTerm}"`;
-    
-    if (hasAiRecommendations) {
-      resultsMessage += '\n\n🤖 *Включено AI-рекомендації на основі схожих книг*';
-    }
-    
-    if (suggestions.length > 0 && books.length < 8) {
-      resultsMessage += '\n\n💡 *Схожі запити:* ' + suggestions.slice(0, 4).join(', ');
-    }
-    
-    if (searchResult && searchResult.searchStrategy) {
-      const strategyNames = {
-        'exact': 'точний збіг',
-        'partial': 'часткове співпадіння',
-        'semantic': 'семантичний пошук',
-        'fuzzy': 'нечіткий пошук',
-        'ai_recommendations': 'AI-рекомендації'
-      };
-      const strategyName = strategyNames[searchResult.searchStrategy as keyof typeof strategyNames] || searchResult.searchStrategy;
-      resultsMessage += `\n\n🎯 *Стратегія:* ${strategyName}`;
-    }
     
     await ctx.reply(resultsMessage, { parse_mode: 'Markdown' });
     
