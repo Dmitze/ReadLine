@@ -75,14 +75,12 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
   // Доступні формати з красивими іконками
   const availableFormats: string[] = [];
   
-  if ((book as any).pdf_file_id || (book.file_type === 'file' && book.file_url)) {
+  // Перевіряємо файл книги (PDF/EPUB)
+  if ((book as any).pdf_file_id || (book.file_url && book.file_type === 'file')) {
     availableFormats.push('📄 PDF');
   }
   
-  if ((book as any).external_link || (book.file_type === 'link' && book.file_url)) {
-    availableFormats.push('🌐 Онлайн');
-  }
-  
+  // Перевіряємо аудіо
   if ((book as any).audio_file_id) {
     let audioText = '🎧 Аудіо';
     if ((book as any).audio_duration) {
@@ -95,6 +93,11 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
       }
     }
     availableFormats.push(audioText);
+  }
+  
+  // Перевіряємо онлайн-посилання
+  if ((book as any).online_link || (book as any).external_link || (book.file_url && book.file_type === 'link')) {
+    availableFormats.push('🌐 Онлайн');
   }
   
   if (availableFormats.length > 0) {
