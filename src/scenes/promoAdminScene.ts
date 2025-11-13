@@ -22,7 +22,7 @@ promoAdminScene.enter(async (ctx) => {
     const stats = await getPromoCodeStats();
     
     await ctx.reply(
-      `🎁 *КЕРУВАННЯ ПРОМОКОДАМИ*\n\n` +
+      `🎁 <b>КЕРУВАННЯ ПРОМОКОДАМИ</b>\n\n` +
       `📊 *Статистика:*\n` +
       `• Всього промокодів: ${stats.total}\n` +
       `• Доступно: ${stats.available}\n` +
@@ -51,7 +51,7 @@ promoAdminScene.enter(async (ctx) => {
 promoAdminScene.action('promo_add', async (ctx) => {
   await ctx.answerCbQuery();
   await ctx.editMessageText(
-    '🎫 *ДОДАВАННЯ НОВОГО ПРОМОКОДУ*\n\n' +
+    '🎫 <b>ДОДАВАННЯ НОВОГО ПРОМОКОДУ</b>\n\n' +
     'Введіть код промокоду:\n\n' +
     '💡 *Приклади:*\n' +
     '• `SUMMER20` - літня знижка 20%\n' +
@@ -74,7 +74,7 @@ promoAdminScene.action('promo_list', async (ctx) => {
     
     if (promoCodes.length === 0) {
       await ctx.editMessageText(
-        '📋 *СПИСОК ПРОМОКОДІВ*\n\n' +
+        '📋 <b>СПИСОК ПРОМОКОДІВ</b>\n\n' +
         '📭 Промокодів ще немає.\n\n' +
         'Додайте перший промокод натиснувши "➕ Додати промокод"',
         {
@@ -90,7 +90,7 @@ promoAdminScene.action('promo_list', async (ctx) => {
       return;
     }
     
-    let message = '📋 *СПИСОК ПРОМОКОДІВ*\n\n';
+    let message = '📋 <b>СПИСОК ПРОМОКОДІВ</b>\n\n';
     
     for (const promo of promoCodes.slice(0, 10)) {
       const status = promo.is_active ? '✅' : '❌';
@@ -127,7 +127,7 @@ promoAdminScene.action('promo_stats', async (ctx) => {
     const usagePercent = stats.total > 0 ? Math.round((stats.used / stats.total) * 100) : 0;
     
     await ctx.editMessageText(
-      `📊 *ДЕТАЛЬНА СТАТИСТИКА ПРОМОКОДІВ*\n\n` +
+      `📊 <b>ДЕТАЛЬНА СТАТИСТИКА ПРОМОКОДІВ</b>\n\n` +
       `📈 *Загальна інформація:*\n` +
       `• Всього створено: ${stats.total}\n` +
       `• Активних: ${stats.total}\n` +
