@@ -38,3 +38,4 @@ Thumbs.db
 database.db
 .kiro
 dist
+database.sqlite
