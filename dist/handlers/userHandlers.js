@@ -430,15 +430,15 @@ exports.default = (bot) => {
                     await ctx.answerCbQuery('❌ Книга не знайдена');
                     return;
                 }
-                const pdfFileId = book.pdf_file_id || (book.file_type === 'file' ? book.file_url : null);
+                const pdfFileId = book.pdf_file_id || book.file_url;
                 if (pdfFileId) {
                     await ctx.telegram.sendDocument(ctx.from.id, pdfFileId, {
-                        caption: `📥 ${book.title}\n👤 ${book.author}\n\n✅ PDF файл завантажено!`
+                        caption: `📥 ${book.title}\n👤 ${book.author}\n\n✅ Файл завантажено!`
                     });
-                    await ctx.answerCbQuery('📥 PDF надіслано вам у приватні повідомлення');
+                    await ctx.answerCbQuery('📥 Файл надіслано вам у приватні повідомлення');
                 }
                 else {
-                    await ctx.answerCbQuery('❌ PDF файл недоступний');
+                    await ctx.answerCbQuery('❌ Файл недоступний');
                 }
             }, 30000, 'PDF download timeout');
         }
@@ -462,7 +462,7 @@ exports.default = (bot) => {
                 await ctx.answerCbQuery('❌ Книга не знайдена');
                 return;
             }
-            const audioFileId = book.audio_file_id || (book.file_type === 'audio' ? book.file_url : null);
+            const audioFileId = book.audio_file_id;
             if (audioFileId) {
                 await ctx.answerCbQuery('🎧 Відправляю аудіокнигу...');
                 let caption = `🎧 <b>${book.title}</b>\n`;
