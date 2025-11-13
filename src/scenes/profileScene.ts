@@ -112,7 +112,7 @@ profileScene.action('show_stats', async (ctx) => {
     const hours = Math.floor(stats.totalListeningTime / 3600);
     const minutes = Math.floor((stats.totalListeningTime % 3600) / 60);
     
-    let statsText = '📊 *Ваша детальна статистика*\n\n';
+    let statsText = '📊 <b>Ваша детальна статистика</b>\n\n';
     statsText += `💾 Збережено книг: ${stats.savedBooksCount}\n`;
     statsText += `⭐ Залишено відгуків: ${stats.reviewsCount}\n`;
     statsText += `🎧 Прослухано: ${hours}г ${minutes}хв\n\n`;
@@ -172,7 +172,7 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
       if (topBooks.length > 0) {
         collection = topBooks;
         await ctx.reply(
-          '📚 *Персональна підбірка для вас*\n\n' +
+          '📚 <b>Персональна підбірка для вас</b>\n\n' +
           '🤖 На основі найкращих книг каталогу\n' +
           `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`,
           { parse_mode: 'HTML' }
@@ -184,7 +184,7 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
         if (newBooks.length > 0) {
           collection = newBooks;
           await ctx.reply(
-            '📚 *Персональна підбірка для вас*\n\n' +
+            '📚 <b>Персональна підбірка для вас</b>\n\n' +
             '🤖 Найновіші книги каталогу\n' +
             `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`,
             { parse_mode: 'HTML' }
@@ -196,7 +196,7 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
       }
     } else {
       await ctx.reply(
-        `📚 *Персональна підбірка для вас*\n\n` +
+        `📚 <b>Персональна підбірка для вас</b>\n\n` +
         `🤖 Створено на основі ваших вподобань, тегів та рейтингів\n` +
         `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`,
         { parse_mode: 'HTML' }
