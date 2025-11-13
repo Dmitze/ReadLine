@@ -98,6 +98,7 @@ profileScene.enter(async (ctx) => {
             parse_mode: 'HTML',
             reply_markup: Markup.inlineKeyboard([
                 [{ text: '🤖 Персональні рекомендації', callback_data: 'show_personal_collection' }],
+                [{ text: '🎯 AI Підбір книги', callback_data: 'start_ai_assistant' }],
                 [{ text: '📊 Моя статистика', callback_data: 'show_stats' }],
                 [{ text: '⬅️ Назад', callback_data: 'profile_back' }]
             ]).reply_markup
@@ -141,6 +142,12 @@ profileScene.action('show_stats', async (ctx) => {
         logger_1.logger.error('Error showing stats', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
         await ctx.answerCbQuery('❌ Помилка при отриманні статистики');
     }
+});
+profileScene.action('start_ai_assistant', async (ctx) => {
+    await ctx.answerCbQuery('🤖 Запускаю AI Підбір...');
+    logger_1.logger.userAction(ctx.from.id, 'start_ai_assistant_from_profile');
+    await ctx.scene?.leave();
+    return ctx.scene?.enter('AI_ASSISTANT_SCENE');
 });
 profileScene.action('profile_back', async (ctx) => {
     await ctx.answerCbQuery();
