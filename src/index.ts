@@ -22,11 +22,9 @@ import profileScene from './scenes/profileScene';
 import rateBookScene from './scenes/rateBookScene';
 import feedbackScene from './scenes/feedbackScene';
 import aiScene from './scenes/aiScene';
-import audioPlayerScene from './scenes/audioPlayerScene';
 import replyFeedbackScene from './scenes/replyFeedbackScene';
 import onboardingScene from './scenes/onboardingScene';
 import settingsScene from './scenes/settingsScene';
-import aiFilterScene from './scenes/aiFilterScene';
 import aiAssistantScene from './scenes/aiAssistantScene';
 import promoAdminScene from './scenes/promoAdminScene';
 
@@ -174,11 +172,9 @@ const stage = new Scenes.Stage([
   rateBookScene as any,
   feedbackScene as any,
   aiScene as any,
-  audioPlayerScene as any,
   replyFeedbackScene as any,
   onboardingScene as any,
   settingsScene as any,
-  aiFilterScene as any,
   aiAssistantScene as any,
   promoAdminScene as any
 ]);
@@ -457,6 +453,12 @@ bot.action('back_to_admin', async (ctx) => {
       // Ігноруємо помилку
     }
     
+    // Спочатку прибираємо reply клавіатуру
+    await ctx.reply('🔄 Повертаємось до адмін-панелі...', {
+      reply_markup: { remove_keyboard: true }
+    });
+    
+    // Потім показуємо адмін-панель з inline клавіатурою
     await ctx.reply(
       `🛠️ <b>Панель адміністратора</b>\n\n` +
       `📊 <b>Статистика:</b>\n` +
