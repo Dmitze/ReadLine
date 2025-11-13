@@ -57,6 +57,9 @@ export interface WizardState {
   // Multi-genre support (підтримка кількох жанрів)
   selectedGenres?: string[]; // Вибрані жанри при додаванні книги
   
+  // Additional format flag
+  addingAdditionalFormat?: boolean; // Чи додаємо додатковий формат
+  
   // AI Assistant (Завдання 29)
   useAI?: boolean;          // Чи використовувати AI для розпізнавання
   aiRecognized?: boolean;   // Чи була інформація розпізнана AI
