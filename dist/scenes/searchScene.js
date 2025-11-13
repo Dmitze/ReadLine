@@ -40,7 +40,7 @@ const logger_1 = require("../utils/logger");
 const searchScene = new telegraf_1.Scenes.BaseScene('SEARCH_SCENE');
 searchScene.enter(async (ctx) => {
     const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
-    await ctx.reply('🔍 *Розширений пошук книг*\n\n' +
+    await ctx.reply('🔍 <b>Розширений пошук книг</b>\n\n' +
         'Оберіть тип пошуку або введіть запит:', {
         parse_mode: 'Markdown',
         reply_markup: Markup.inlineKeyboard([
@@ -62,28 +62,28 @@ searchScene.enter(async (ctx) => {
 searchScene.action('search_by_title', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'title';
-    await ctx.editMessageText('📖 *Пошук за назвою*\n\n' +
+    await ctx.editMessageText('📖 <b>Пошук за назвою</b>\n\n' +
         'Введіть назву книги:\n\n' +
         '💡 *Приклад:* Кобзар', { parse_mode: 'Markdown' });
 });
 searchScene.action('search_by_author', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'author';
-    await ctx.editMessageText('👤 *Пошук за автором*\n\n' +
+    await ctx.editMessageText('👤 <b>Пошук за автором</b>\n\n' +
         'Введіть ім\'я автора:\n\n' +
         '💡 *Приклад:* Шевченко', { parse_mode: 'Markdown' });
 });
 searchScene.action('search_by_genre', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'genre';
-    await ctx.editMessageText('📚 *Пошук за жанром*\n\n' +
+    await ctx.editMessageText('📚 <b>Пошук за жанром</b>\n\n' +
         'Введіть жанр:\n\n' +
         '💡 *Приклад:* Історична', { parse_mode: 'Markdown' });
 });
 searchScene.action('search_general', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'general';
-    await ctx.editMessageText('🔍 *Розумний пошук*\n\n' +
+    await ctx.editMessageText('🔍 <b>Розумний пошук</b>\n\n' +
         'Введіть будь-який запит (назва, автор, жанр):\n\n' +
         '✨ *Можливості:*\n' +
         '• Пошук з помилками: "Кобзарь" → "Кобзар"\n' +
@@ -230,7 +230,7 @@ searchScene.on('text', async (ctx) => {
         }
         logger_1.logger.info('Search results', { booksFound: books.length });
         if (books.length === 0) {
-            let noResultsMessage = '📭 *За вашим запитом нічого не знайдено*\n\n' +
+            let noResultsMessage = '📭 <b>За вашим запитом нічого не знайдено</b>\n\n' +
                 `Пошуковий запит: "${searchTerm}"\n\n`;
             if (suggestions.length > 0) {
                 noResultsMessage += '💡 *Можливо, ви мали на увазі:*\n';
