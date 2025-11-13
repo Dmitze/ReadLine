@@ -1,1 +1,1 @@
-{"version":3,"file":"profileScene.d.ts","sourceRoot":"","sources":["../../src/scenes/profileScene.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAE,MAAM,UAAU,CAAC;AASlC,QAAA,MAAM,YAAY,gFAAwC,CAAC;AAuP3D,eAAe,YAAY,CAAC"}
+{"version":3,"file":"profileScene.d.ts","sourceRoot":"","sources":["../../src/scenes/profileScene.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAE,MAAM,UAAU,CAAC;AASlC,QAAA,MAAM,YAAY,gFAAwC,CAAC;AAgQ3D,eAAe,YAAY,CAAC"}
