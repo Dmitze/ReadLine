@@ -264,10 +264,23 @@ const getGenres = () => {
     return new Promise((resolve, reject) => {
         const query = `SELECT DISTINCT genre FROM books`;
         exports.db.all(query, [], (err, rows) => {
-            if (err)
+            if (err) {
                 reject(err);
-            else
-                resolve(rows.map(row => row.genre));
+            }
+            else {
+                const allGenres = new Set();
+                rows.forEach(row => {
+                    if (row.genre) {
+                        row.genre.split(',').forEach(genre => {
+                            const trimmedGenre = genre.trim();
+                            if (trimmedGenre) {
+                                allGenres.add(trimmedGenre);
+                            }
+                        });
+                    }
+                });
+                resolve(Array.from(allGenres).sort());
+            }
         });
     });
 };
