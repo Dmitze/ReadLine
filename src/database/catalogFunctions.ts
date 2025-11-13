@@ -75,8 +75,11 @@ export const getBooksWithFilters = (filters: CatalogFilters): Promise<{ books: B
 export const getBooksWithAudio = (limit: number = 10): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     db.all(
-      `SELECT * FROM books WHERE (audio_file_id IS NOT NULL OR audio_external_link IS NOT NULL) 
-       AND is_available = 1 ORDER BY created_at DESC LIMIT ?`,
+      `SELECT * FROM books WHERE (
+        audio_file_id IS NOT NULL 
+        OR audio_external_link IS NOT NULL 
+        OR file_type = 'audio'
+      ) AND is_available = 1 ORDER BY created_at DESC LIMIT ?`,
       [limit],
       (err, rows: Book[]) => {
         if (err) reject(err);
