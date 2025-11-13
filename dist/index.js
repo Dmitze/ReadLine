@@ -49,11 +49,9 @@ const profileScene_1 = __importDefault(require("./scenes/profileScene"));
 const rateBookScene_1 = __importDefault(require("./scenes/rateBookScene"));
 const feedbackScene_1 = __importDefault(require("./scenes/feedbackScene"));
 const aiScene_1 = __importDefault(require("./scenes/aiScene"));
-const audioPlayerScene_1 = __importDefault(require("./scenes/audioPlayerScene"));
 const replyFeedbackScene_1 = __importDefault(require("./scenes/replyFeedbackScene"));
 const onboardingScene_1 = __importDefault(require("./scenes/onboardingScene"));
 const settingsScene_1 = __importDefault(require("./scenes/settingsScene"));
-const aiFilterScene_1 = __importDefault(require("./scenes/aiFilterScene"));
 const aiAssistantScene_1 = __importDefault(require("./scenes/aiAssistantScene"));
 const promoAdminScene_1 = __importDefault(require("./scenes/promoAdminScene"));
 function validateEnvVariables() {
@@ -165,11 +163,9 @@ const stage = new telegraf_1.Scenes.Stage([
     rateBookScene_1.default,
     feedbackScene_1.default,
     aiScene_1.default,
-    audioPlayerScene_1.default,
     replyFeedbackScene_1.default,
     onboardingScene_1.default,
     settingsScene_1.default,
-    aiFilterScene_1.default,
     aiAssistantScene_1.default,
     promoAdminScene_1.default
 ]);
@@ -380,6 +376,9 @@ bot.action('back_to_admin', async (ctx) => {
         }
         catch (error) {
         }
+        await ctx.reply('🔄 Повертаємось до адмін-панелі...', {
+            reply_markup: { remove_keyboard: true }
+        });
         await ctx.reply(`🛠️ <b>Панель адміністратора</b>\n\n` +
             `📊 <b>Статистика:</b>\n` +
             `📚 Книг в каталозі: ${stats.totalBooks}\n` +
