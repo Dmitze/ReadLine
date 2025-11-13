@@ -190,12 +190,20 @@ const initDatabase = () => {
 exports.initDatabase = initDatabase;
 const addBook = (bookData) => {
     return new Promise((resolve, reject) => {
-        const { title, author, genre, description, photo_file_id, file_url, file_type = 'physical', file_name } = bookData;
+        const { title, author, genre, description, photo_file_id, file_url, audio_file_id, online_link, file_type = 'physical', file_name } = bookData;
         const query = `
-      INSERT INTO books (title, author, genre, description, photo_file_id, file_url, file_type, file_name, is_available)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+      INSERT INTO books (
+        title, author, genre, description, photo_file_id, 
+        file_url, audio_file_id, online_link, 
+        file_type, file_name, is_available
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
     `;
-        exports.db.run(query, [title, author, genre, description, photo_file_id, file_url, file_type, file_name], function (err) {
+        exports.db.run(query, [
+            title, author, genre, description, photo_file_id,
+            file_url || null, audio_file_id || null, online_link || null,
+            file_type, file_name
+        ], function (err) {
             if (err)
                 reject(err);
             else
