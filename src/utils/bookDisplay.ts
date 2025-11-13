@@ -194,7 +194,7 @@ export async function displayNewBooks(
   const limitedBooks = books.slice(0, limit);
   
   await ctx.reply(
-    `🆕 *НОВИНКИ БІБЛІОТЕКИ*\n\n` +
+    `🆕 <b>НОВИНКИ БІБЛІОТЕКИ</b>\n\n` +
     `Останні ${limitedBooks.length} додані ${limitedBooks.length === 1 ? 'книга' : 'книг'}:\n\n` +
     `Оберіть книгу для детального перегляду:`,
     { parse_mode: 'HTML' }
@@ -229,7 +229,7 @@ export async function displaySavedBooks(
 ): Promise<void> {
   if (books.length === 0) {
     await ctx.reply(
-      '💾 *Ваша бібліотека порожня*\n\n' +
+      '💾 <b>Ваша бібліотека порожня</b>\n\n' +
       'Зберігайте цікаві книги натискаючи кнопку 💾 ЗБЕРЕГТИ при перегляді книги.\n\n' +
       'Збережені книги завжди будуть доступні тут для швидкого доступу!',
       { parse_mode: 'HTML' }
@@ -241,7 +241,7 @@ export async function displaySavedBooks(
   const { Markup } = await import('telegraf');
   
   await ctx.reply(
-    `💾 *МОЯ БІБЛІОТЕКА*\n\n` +
+    `💾 <b>МОЯ БІБЛІОТЕКА</b>\n\n` +
     `У вас збережено ${books.length} ${books.length === 1 ? 'книга' : 'книг'}:\n\n` +
     `Оберіть книгу для перегляду:`,
     { parse_mode: 'HTML' }
@@ -281,7 +281,7 @@ export async function displaySearchResults(
 ): Promise<void> {
   if (books.length === 0) {
     await ctx.reply(
-      `📭 *Нічого не знайдено*\n\n` +
+      `📭 <b>Нічого не знайдено</b>\n\n` +
       `За запитом "${searchTerm}" книг не знайдено.\n\n` +
       `💡 *Спробуйте:*\n` +
       `• Використати інші ключові слова\n` +
