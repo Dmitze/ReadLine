@@ -65,7 +65,7 @@ exports.default = (bot) => {
             const hasReceived = await hasUserReceivedPromoCode(userId);
             logger_1.logger.info('User promo code check result', { userId, hasReceived });
             if (hasReceived) {
-                await ctx.reply('❌ *Ви вже отримували промокод*\n\n' +
+                await ctx.reply('❌ <b>Ви вже отримували промокод</b>\n\n' +
                     'Кожен користувач може отримати промокод лише один раз.\n\n' +
                     '💡 Використайте отриманий промокод при замовленні на сайті Yakaboo.ua\n\n' +
                     '🌐 https://www.yakaboo.ua', { parse_mode: 'HTML' });
@@ -75,7 +75,7 @@ exports.default = (bot) => {
             const availableCount = await getAvailablePromoCodesCount();
             logger_1.logger.info('Available promo codes count', { userId, availableCount });
             if (availableCount === 0) {
-                await ctx.reply('😔 *Наразі промокодів немає в наявності*\n\n' +
+                await ctx.reply('😔 <b>Наразі промокодів немає в наявності</b>\n\n' +
                     '🔄 Будь ласка, спробуйте пізніше.\n\n' +
                     '📚 А поки що можете ознайомитися з нашим каталогом книг!', { parse_mode: 'HTML' });
                 return;
@@ -111,7 +111,7 @@ exports.default = (bot) => {
     });
     bot.hears([constants_1.BUTTONS.CATALOG_OLD, constants_1.BUTTONS.CATALOG], async (ctx) => {
         try {
-            await ctx.reply('📚 *КАТАЛОГ КНИГ*\n\n' +
+            await ctx.reply('📚 <b>КАТАЛОГ КНИГ</b>\n\n' +
                 'Оберіть спосіб перегляду:', {
                 parse_mode: 'HTML',
                 reply_markup: telegraf_1.Markup.inlineKeyboard([
@@ -201,14 +201,14 @@ exports.default = (bot) => {
     });
     bot.hears(constants_1.BUTTONS.HELP, async (ctx) => {
         logger_1.logger.userAction(ctx.from.id, 'view_help');
-        return ctx.reply('📖 *ДОВІДКА ПО БОТУ*\n\n' +
+        return ctx.reply('📖 <b>ДОВІДКА ПО БОТУ</b>\n\n' +
             '🎯 *ОСНОВНІ ФУНКЦІЇ:*\n\n' +
-            '📖 *Каталог* - перегляд книг за жанрами\n' +
-            '🔍 *Пошук* - швидкий пошук книг\n' +
-            '⭐ *Топ книги* - найкращі книги за рейтингом\n' +
-            '🆕 *Новинки* - останні додані книги\n' +
-            '💾 *Моя бібліотека* - збережені книги\n' +
-            '👤 *Профіль* - ваша статистика\n' +
+            '📖 <b>Каталог</b> - перегляд книг за жанрами\n' +
+            '🔍 <b>Пошук</b> - швидкий пошук книг\n' +
+            '⭐ <b>Топ книги</b> - найкращі книги за рейтингом\n' +
+            '🆕 <b>Новинки</b> - останні додані книги\n' +
+            '💾 <b>Моя бібліотека</b> - збережені книги\n' +
+            '👤 <b>Профіль</b> - ваша статистика\n' +
             '📞 *Зворотній зв\'язок* - зв\'язок з адміном\n\n' +
             '⚙️ *КОМАНДИ:*\n' +
             '/start - Головне меню\n' +
@@ -514,7 +514,7 @@ exports.default = (bot) => {
                 await ctx.answerCbQuery('📝 Поки що немає відгуків', { show_alert: true });
                 return;
             }
-            let reviewsText = `📊 *Відгуки про книгу*\n\n📖 ${book.title}\n👤 ${book.author}\n`;
+            let reviewsText = `📊 <b>Відгуки про книгу</b>\n\n📖 ${book.title}\n👤 ${book.author}\n`;
             reviewsText += `⭐ Середній рейтинг: ${book.rating?.toFixed(1) || 0}/5\n\n`;
             reviews.slice(0, 5).forEach((review, index) => {
                 reviewsText += `${index + 1}. ${'⭐'.repeat(review.rating)} - ${review.user_name || 'Користувач'}\n`;
@@ -554,7 +554,7 @@ exports.default = (bot) => {
                 await ctx.answerCbQuery('📭 Схожих книг не знайдено', { show_alert: true });
                 return;
             }
-            await ctx.reply(`🔍 *Схожі книги* (жанр: ${book.genre}):\n\n` +
+            await ctx.reply(`🔍 <b>Схожі книги</b> (жанр: ${book.genre}):\n\n` +
                 filtered.map((b, i) => `${i + 1}. 📖 ${b.title}\n   👤 ${b.author}`).join('\n\n'), { parse_mode: 'HTML' });
             await ctx.answerCbQuery();
         }
@@ -612,7 +612,7 @@ exports.default = (bot) => {
                 await ctx.reply('📭 Поки що немає книг з рейтингом 4+ зірки.');
                 return;
             }
-            await ctx.reply(`⭐ *КНИГИ З ВИСОКИМ РЕЙТИНГОМ*\n\n` +
+            await ctx.reply(`⭐ <b>КНИГИ З ВИСОКИМ РЕЙТИНГОМ</b>\n\n` +
                 `Знайдено ${books.length} ${books.length === 1 ? 'книга' : 'книг'} з рейтингом 4+ зірки:`, { parse_mode: 'HTML' });
             for (const book of books) {
                 const caption = await (0, helpers_1.formatBookCaption)(book);
@@ -648,7 +648,7 @@ exports.default = (bot) => {
                 await ctx.reply('📭 Книг ще немає в бібліотеці.');
                 return;
             }
-            await ctx.reply(`🆕 *НОВИНКИ БІБЛІОТЕКИ*\n\n` +
+            await ctx.reply(`🆕 <b>НОВИНКИ БІБЛІОТЕКИ</b>\n\n` +
                 `Останні ${books.length} додані ${books.length === 1 ? 'книга' : 'книг'}:`, { parse_mode: 'HTML' });
             for (const book of books) {
                 const caption = await (0, helpers_1.formatBookCaption)(book);
@@ -694,7 +694,7 @@ exports.default = (bot) => {
                 }
                 tagButtons.push(row);
             }
-            await ctx.reply('🏷️ *КАТАЛОГ ЗА ТЕГАМИ*\n\n' +
+            await ctx.reply('🏷️ <b>КАТАЛОГ ЗА ТЕГАМИ</b>\n\n' +
                 'Оберіть тег для перегляду книг:', {
                 parse_mode: 'HTML',
                 reply_markup: telegraf_1.Markup.inlineKeyboard(tagButtons).reply_markup
@@ -714,7 +714,7 @@ exports.default = (bot) => {
                 await ctx.reply('📭 Книг ще немає в бібліотеці.');
                 return;
             }
-            await ctx.reply(`🔤 *КНИГИ ЗА АЛФАВІТОМ*\n\n` +
+            await ctx.reply(`🔤 <b>КНИГИ ЗА АЛФАВІТОМ</b>\n\n` +
                 `Показано ${books.length} з ${total} ${total === 1 ? 'книги' : 'книг'}:`, { parse_mode: 'HTML' });
             for (const book of books) {
                 const caption = await (0, helpers_1.formatBookCaption)(book);
@@ -753,7 +753,7 @@ exports.default = (bot) => {
                 await ctx.reply('📭 Поки що немає аудіокниг в бібліотеці.');
                 return;
             }
-            await ctx.reply(`🎧 *АУДІОКНИГИ*\n\n` +
+            await ctx.reply(`🎧 <b>АУДІОКНИГИ</b>\n\n` +
                 `Знайдено ${books.length} ${books.length === 1 ? 'аудіокнига' : 'аудіокниг'}:`, { parse_mode: 'HTML' });
             for (const book of books) {
                 const caption = await (0, helpers_1.formatBookCaption)(book);
@@ -789,7 +789,7 @@ exports.default = (bot) => {
                 await ctx.reply('📭 Поки що немає завантажених книг.');
                 return;
             }
-            await ctx.reply(`📥 *НАЙПОПУЛЯРНІШІ КНИГИ*\n\n` +
+            await ctx.reply(`📥 <b>НАЙПОПУЛЯРНІШІ КНИГИ</b>\n\n` +
                 `Топ ${books.length} найбільш завантажуваних ${books.length === 1 ? 'книга' : 'книг'}:`, { parse_mode: 'HTML' });
             for (const book of books) {
                 const caption = await (0, helpers_1.formatBookCaption)(book);
