@@ -10,15 +10,13 @@ dotenv_1.default.config();
 const initAdmin = async () => {
     try {
         if (!process.env.ADMIN_ID) {
-            logger_1.logger.error('ADMIN_ID not found in .env file');
-            console.error('Please set ADMIN_ID in your .env file');
+            logger_1.logger.error('ADMIN_ID not found in .env file', new Error('ADMIN_ID environment variable is required'));
             process.exit(1);
         }
         const adminIdStr = process.env.ADMIN_ID;
         const adminId = parseInt(adminIdStr);
         if (isNaN(adminId) || adminId <= 0) {
-            logger_1.logger.error('Invalid ADMIN_ID', new Error('ADMIN_ID must be a positive integer'), { adminIdStr });
-            console.error('❌ Invalid ADMIN_ID. Please provide a valid positive integer.');
+            logger_1.logger.error('Invalid ADMIN_ID - must be a positive integer', new Error(`ADMIN_ID='${adminIdStr}' is not a valid positive integer`));
             process.exit(1);
         }
         logger_1.logger.info('Initializing admin user', { adminId });
@@ -33,7 +31,6 @@ const initAdmin = async () => {
     }
     catch (error) {
         logger_1.logger.error('Error adding admin', error instanceof Error ? error : new Error(String(error)));
-        console.error('❌ Error adding admin:', error);
         process.exit(1);
     }
 };

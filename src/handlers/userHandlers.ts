@@ -242,27 +242,25 @@ export default (bot: Telegraf<BotContext>) => {
     }
   });
   
+  // ✅ ВИПРАВЛЕНО #18: ctx.scene?.enter() consistency
   // Профіль користувача
   bot.hears([BUTTONS.PROFILE_OLD, BUTTONS.PROFILE], async (ctx: BotContext) => {
-    ctx.scene?.enter('PROFILE_SCENE');
     logger.userAction(ctx.from!.id, 'enter_profile');
-    return;
+    return ctx.scene?.enter('PROFILE_SCENE');
   });
   
   // "Мої заявки" видалено - більше не використовуємо фізичні книги
   
   // Зворотній зв'язок
   bot.hears(BUTTONS.FEEDBACK, async (ctx: BotContext) => {
-    ctx.scene?.enter('FEEDBACK_SCENE');
     logger.userAction(ctx.from!.id, 'enter_feedback');
-    return;
+    return ctx.scene?.enter('FEEDBACK_SCENE');
   });
   
   // AI Помічник
   bot.hears(BUTTONS.AI_ASSISTANT, async (ctx: BotContext) => {
-    ctx.scene?.enter('AI_SCENE');
     logger.userAction(ctx.from!.id, 'enter_ai');
-    return;
+    return ctx.scene?.enter('AI_SCENE');
   });
   
   // Допомога
@@ -327,11 +325,11 @@ export default (bot: Telegraf<BotContext>) => {
         );
         
         for (const book of books) {
-           const caption = `📖 *${book.title}*
-        👤 Автор: ${book.author}
-        🎭 Жанр: ${book.genre}
-        📖 Опис:  ${book.description}
-        ✅ Статус: ${book.is_available ? 'Доступна' : 'Недоступна'}`;
+           const caption = `📖 <b>${book.title}</b>
+         👤 Автор: ${book.author}
+         🎭 Жанр: ${book.genre}
+         📖 Опис:  ${book.description}
+         ✅ Статус: ${book.is_available ? 'Доступна' : 'Недоступна'}`;
 
           // Перевіряємо чи є валідний photo_file_id
           if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
@@ -815,16 +813,15 @@ export default (bot: Telegraf<BotContext>) => {
   
   // Обробка кнопки "Оцінити"
   bot.action(/rate_(\d+)/, async (ctx: BotContext) => {
-    const match = ctx.match;
-    if (!match || !match[1]) {
-      await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
-      return;
-    }
-    const bookId = parseInt(match[1]);
-    ctx.scene?.enter('RATE_BOOK_SCENE', { bookId });
-    await ctx.answerCbQuery();
-    return;
-  });
+     const match = ctx.match;
+     if (!match || !match[1]) {
+       await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
+       return;
+     }
+     const bookId = parseInt(match[1]);
+     await ctx.answerCbQuery();
+     return ctx.scene?.enter('RATE_BOOK_SCENE', { bookId });
+   });
 
  
  

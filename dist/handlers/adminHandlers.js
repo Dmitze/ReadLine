@@ -61,11 +61,11 @@ exports.default = (bot) => {
                 ? `📞 Нових повідомлень: *${pendingFeedback.length}* 🔔`
                 : '✅ Всі повідомлення прочитані';
             await ctx.reply(`🛠️ <b>Панель адміністратора</b>\n\n` +
-                `📊 *Статистика:*\n` +
+                `📊 <b>Статистика:</b>\n` +
                 `📚 Книг в каталозі: ${stats.totalBooks}\n` +
                 `${reviewsAlert}\n` +
                 `${feedbackAlert}`, {
-                parse_mode: 'Markdown',
+                parse_mode: 'HTML',
                 reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(pendingReviews.length, pendingFeedback.length)
             });
         }

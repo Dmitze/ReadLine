@@ -21,15 +21,15 @@ replyFeedbackScene.enter(async (ctx: BotContext) => {
   }
   
   await ctx.reply(
-    `✉️ <b>ВІДПОВІДЬ НА ПОВІДОМЛЕННЯ</b>\n\n` +
-    `👤 Від: ${state.userName || 'Користувач'}\n` +
-    `💬 Повідомлення:\n"${state.originalMessage}"\n\n` +
-    `📝 Введіть вашу відповідь:`,
-    {
-      parse_mode: 'Markdown',
-      reply_markup: Markup.keyboard([['❌ Скасувати']]).resize().reply_markup
-    }
-  );
+     `✉️ <b>ВІДПОВІДЬ НА ПОВІДОМЛЕННЯ</b>\n\n` +
+     `👤 Від: ${state.userName || 'Користувач'}\n` +
+     `💬 Повідомлення:\n"${state.originalMessage}"\n\n` +
+     `📝 Введіть вашу відповідь:`,
+     {
+       parse_mode: 'HTML',
+       reply_markup: Markup.keyboard([['❌ Скасувати']]).resize().reply_markup
+     }
+   );
 });
 
 replyFeedbackScene.hears('❌ Скасувати', async (ctx: BotContext) => {

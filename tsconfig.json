@@ -6,15 +6,15 @@
     "outDir": "./dist",
     "rootDir": "./src",
     // ✅ ПОСТУПОВО ВКЛЮЧАЄМО STRICT MODE
-    // Включено тільки безпечні checks, які не ламають існуючий код
-    "strict": false, // Поки false - повне включення потребує великого рефакторингу
-    "noImplicitAny": false, // Поки false - багато any в коді
-    "strictNullChecks": false, // Поки false - потребує великого рефакторингу
-    "strictFunctionTypes": false, // Поки false - конфлікти з Telegraf types
-    "noImplicitThis": true, // ✅ ВКЛЮЧЕНО - this має бути типізований
-    "noImplicitReturns": false, // Поки false - потребує рефакторингу
-    "noUnusedLocals": false, // Поки false - багато warnings
-    "noUnusedParameters": false, // Поки false - багато warnings
+    // ФАЗА 1 (Листопад 2025): Максимально безпечні checks
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": true,
+    "strictFunctionTypes": false,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "skipLibCheck": true,

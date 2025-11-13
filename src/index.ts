@@ -7,7 +7,7 @@ dotenv.config();
 
 // Імпорт utilities
 import { logger } from './utils/logger';
-import { rateLimitMessage, rateLimitCallback } from './middleware/rateLimit';
+import { rateLimitMessage, rateLimitCallback, rateLimitCommand } from './middleware/rateLimit';
 import { BotContext } from './types/telegraf';
 import { ERRORS } from './constants';
 
@@ -47,25 +47,14 @@ function validateEnvVariables() {
   }
   
   if (errors.length > 0) {
-    logger.error('Environment validation failed', new Error(errors.join(', ')));
-    console.error('❌ КРИТИЧНА ПОМИЛКА: Невірна конфігурація');
-    console.error('');
-    errors.forEach(err => console.error(`  • ${err}`));
-    console.error('');
-    console.error('📝 Створіть .env файл в корені проекту та додайте:');
-    console.error('   BOT_TOKEN=your_telegram_bot_token_here');
-    console.error('   GEMINI_API_KEY=your_gemini_api_key_here (optional)');
-    console.error('');
-    console.error('💡 Токен можна отримати у @BotFather в Telegram');
-    process.exit(1);
-  }
-  
-  if (warnings.length > 0) {
-    logger.warn('Environment validation warnings', { warnings });
-    console.warn('⚠️ ПОПЕРЕДЖЕННЯ:');
-    warnings.forEach(warn => console.warn(`  • ${warn}`));
-    console.warn('');
-  }
+     logger.error('Environment validation failed - Critical configuration errors', new Error(errors.join(', ')));
+     logger.error('Configuration required', new Error('Create .env file with: BOT_TOKEN, GEMINI_API_KEY (optional)'));
+     process.exit(1);
+   }
+   
+   if (warnings.length > 0) {
+     logger.warn('Environment validation warnings', { warnings });
+   }
   
   logger.info('Environment variables validated successfully');
 }
@@ -83,6 +72,7 @@ bot.use(async (ctx, next) => {
 
 // Rate limiting
 bot.use(rateLimitMessage);
+bot.use(rateLimitCommand);
 bot.on('callback_query', rateLimitCallback);
 
 // Глобальний обробник команд /start та /cancel - працює навіть в scenes
@@ -145,23 +135,23 @@ bot.catch((err, ctx) => {
       '• Зв\'язатися з адміністратором'
     );
   } catch (replyError) {
-    console.error('Не вдалося відправити повідомлення про помилку:', replyError);
-  }
-});
-
-// Обробка необроблених promise rejections
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('❌ Unhandled Promise Rejection at:', promise);
-  console.error('Reason:', reason);
-});
-
-// Обробка необроблених виключень
-process.on('uncaughtException', (error) => {
-  console.error('❌ Uncaught Exception:');
-  console.error(error);
+     logger.error('Failed to send error message to user', replyError instanceof Error ? replyError : new Error(String(replyError)));
+   }
+  });
+  
+  // Обробка необроблених promise rejections
+  process.on('unhandledRejection', (reason, promise) => {
+   logger.error('Unhandled Promise Rejection', new Error(String(reason)), { promise: String(promise) });
+  });
+  
+  // Обробка необроблених виключень
+  process.on('uncaughtException', (error) => {
+   logger.error('Uncaught Exception', error instanceof Error ? error : new Error(String(error)));
   // Не виходимо одразу, даємо можливість graceful shutdown
 });
 
+// NOTE: Stage з Telegraf потребує 'as any' через типізаційні конфлікти з BotContext
+// Це відоме обмеження Telegraf.js, не критична проблема
 // Реєстрація сесій та сцен
 const stage = new Scenes.Stage([
   addBookScene as any,
@@ -497,8 +487,7 @@ process.once('SIGTERM', () => shutdown('SIGTERM'));
 
 // Запуск бота
 logger.info('Starting bot launch');
-logger.info('User handlers registered');
-logger.info('Admin handlers registered');
+// ✅ ВИПРАВЛЕНО #14: видалено дублювання логів (вже логуються в handlers)
 
 // Асинхронний запуск без блокування
 (async () => {
@@ -526,11 +515,7 @@ logger.info('Admin handlers registered');
     logger.info('Automatic backup scheduler started');
     
   } catch (error) {
-    console.error('❌ Помилка запуску бота:', error);
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-    }
+    logger.error('Bot launch error', error instanceof Error ? error : new Error(String(error)));
     process.exit(1);
   }
 })();

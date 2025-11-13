@@ -165,7 +165,7 @@ async function proceedToTags(ctx) {
         if (!state.selectedTags) {
             state.selectedTags = [];
         }
-        await ctx.reply(`${getProgress(8)}\n🏷️ *Додайте теги до книги (опціонально):*\n\n` +
+        await ctx.reply(`${getProgress(8)}\n🏷️ <b>Додайте теги до книги (опціонально):</b>\n\n` +
             'Оберіть один або кілька тегів, які підходять до цієї книги.\n' +
             'Натисніть "Далі" коли закінчите або щоб пропустити цей крок.', {
             parse_mode: 'HTML',

@@ -70,23 +70,12 @@ function validateEnvVariables() {
         warnings.push('GEMINI_API_KEY appears to be invalid (too short) - AI features may not work');
     }
     if (errors.length > 0) {
-        logger_1.logger.error('Environment validation failed', new Error(errors.join(', ')));
-        console.error('❌ КРИТИЧНА ПОМИЛКА: Невірна конфігурація');
-        console.error('');
-        errors.forEach(err => console.error(`  • ${err}`));
-        console.error('');
-        console.error('📝 Створіть .env файл в корені проекту та додайте:');
-        console.error('   BOT_TOKEN=your_telegram_bot_token_here');
-        console.error('   GEMINI_API_KEY=your_gemini_api_key_here (optional)');
-        console.error('');
-        console.error('💡 Токен можна отримати у @BotFather в Telegram');
+        logger_1.logger.error('Environment validation failed - Critical configuration errors', new Error(errors.join(', ')));
+        logger_1.logger.error('Configuration required', new Error('Create .env file with: BOT_TOKEN, GEMINI_API_KEY (optional)'));
         process.exit(1);
     }
     if (warnings.length > 0) {
         logger_1.logger.warn('Environment validation warnings', { warnings });
-        console.warn('⚠️ ПОПЕРЕДЖЕННЯ:');
-        warnings.forEach(warn => console.warn(`  • ${warn}`));
-        console.warn('');
     }
     logger_1.logger.info('Environment variables validated successfully');
 }
@@ -97,6 +86,7 @@ bot.use(async (ctx, next) => {
     await next();
 });
 bot.use(rateLimit_1.rateLimitMessage);
+bot.use(rateLimit_1.rateLimitCommand);
 bot.on('callback_query', rateLimit_1.rateLimitCallback);
 bot.use(async (ctx, next) => {
     if (ctx.message && 'text' in ctx.message) {
@@ -143,16 +133,14 @@ bot.catch((err, ctx) => {
             '• Зв\'язатися з адміністратором');
     }
     catch (replyError) {
-        console.error('Не вдалося відправити повідомлення про помилку:', replyError);
+        logger_1.logger.error('Failed to send error message to user', replyError instanceof Error ? replyError : new Error(String(replyError)));
     }
 });
 process.on('unhandledRejection', (reason, promise) => {
-    console.error('❌ Unhandled Promise Rejection at:', promise);
-    console.error('Reason:', reason);
+    logger_1.logger.error('Unhandled Promise Rejection', new Error(String(reason)), { promise: String(promise) });
 });
 process.on('uncaughtException', (error) => {
-    console.error('❌ Uncaught Exception:');
-    console.error(error);
+    logger_1.logger.error('Uncaught Exception', error instanceof Error ? error : new Error(String(error)));
 });
 const stage = new telegraf_1.Scenes.Stage([
     addBookScene_1.default,
@@ -406,8 +394,6 @@ const shutdown = (signal) => {
 process.once('SIGINT', () => shutdown('SIGINT'));
 process.once('SIGTERM', () => shutdown('SIGTERM'));
 logger_1.logger.info('Starting bot launch');
-logger_1.logger.info('User handlers registered');
-logger_1.logger.info('Admin handlers registered');
 (async () => {
     try {
         logger_1.logger.info('Initializing database...');
@@ -427,11 +413,7 @@ logger_1.logger.info('Admin handlers registered');
         logger_1.logger.info('Automatic backup scheduler started');
     }
     catch (error) {
-        console.error('❌ Помилка запуску бота:', error);
-        if (error instanceof Error) {
-            console.error('Error message:', error.message);
-            console.error('Error stack:', error.stack);
-        }
+        logger_1.logger.error('Bot launch error', error instanceof Error ? error : new Error(String(error)));
         process.exit(1);
     }
 })();

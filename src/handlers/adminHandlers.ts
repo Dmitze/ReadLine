@@ -50,13 +50,13 @@ export default (bot: Telegraf<BotContext>) => {
         : '✅ Всі повідомлення прочитані';
       
       await ctx.reply(
-        `🛠️ <b>Панель адміністратора</b>\n\n` +
-        `📊 *Статистика:*\n` +
-        `📚 Книг в каталозі: ${stats.totalBooks}\n` +
-        `${reviewsAlert}\n` +
-        `${feedbackAlert}`,
-        {
-          parse_mode: 'Markdown',
+         `🛠️ <b>Панель адміністратора</b>\n\n` +
+         `📊 <b>Статистика:</b>\n` +
+         `📚 Книг в каталозі: ${stats.totalBooks}\n` +
+         `${reviewsAlert}\n` +
+         `${feedbackAlert}`,
+         {
+           parse_mode: 'HTML',
           reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
         }
       );

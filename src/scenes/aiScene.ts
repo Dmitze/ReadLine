@@ -78,7 +78,7 @@ aiScene.on('text', async (ctx: BotContext) => {
     
     // Використовуємо withTimeout з константою
     const answer = await withTimeout(
-      () => retryOperation(() => askAI(question), 2, 1000),
+      () => retryOperation(() => askAI(question, ctx.from?.id), 2, 1000),
       CONFIG.AI_TIMEOUT_MS,
       'AI request timeout'
     );

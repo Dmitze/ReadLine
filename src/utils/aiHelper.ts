@@ -338,34 +338,36 @@ export async function detectGenreFromDescription(description: string): Promise<s
 
 
 
-// ✅ ВИПРАВЛЕНО #47: rate limiting для AI
-const aiRequestTimestamps: number[] = [];
+// ✅ ВИПРАВЛЕНО #47: rate limiting для AI (per-user, не глобальний)
+const aiRequestsByUser = new Map<number, number[]>();
 const AI_RATE_LIMIT = 10; // запитів
 const AI_RATE_WINDOW = 60000; // за хвилину
 
-function checkAiRateLimit(): boolean {
+function checkAiRateLimitPerUser(userId: number): boolean {
   const now = Date.now();
-  // Видаляємо старі timestamps
-  while (aiRequestTimestamps.length > 0 && aiRequestTimestamps[0] < now - AI_RATE_WINDOW) {
-    aiRequestTimestamps.shift();
-  }
+  const userTimestamps = aiRequestsByUser.get(userId) || [];
   
-  if (aiRequestTimestamps.length >= AI_RATE_LIMIT) {
+  // Видаляємо старі timestamps
+  const recent = userTimestamps.filter(t => t > now - AI_RATE_WINDOW);
+  
+  if (recent.length >= AI_RATE_LIMIT) {
+    logger.warn('AI rate limit exceeded for user', { userId, count: recent.length, limit: AI_RATE_LIMIT });
     return false;
   }
   
-  aiRequestTimestamps.push(now);
+  recent.push(now);
+  aiRequestsByUser.set(userId, recent);
   return true;
 }
 
 /**
  * AI чат-бот з Gemini API
- * ✅ ВИПРАВЛЕНО #47: додано rate limiting
+ * ✅ ВИПРАВЛЕНО #47: додано per-user rate limiting (не глобальний)
  */
-export async function askAI(question: string): Promise<string> {
-  // Перевірка rate limit
-  if (!checkAiRateLimit()) {
-    throw new Error('Занадто багато запитів до AI. Спробуйте через хвилину.');
+export async function askAI(question: string, userId?: number): Promise<string> {
+  // Перевірка rate limit для користувача
+  if (userId && !checkAiRateLimitPerUser(userId)) {
+    throw new Error(`Занадто багато запитів до AI. Ліміт: ${AI_RATE_LIMIT} запитів за хвилину. Спробуйте через хвилину.`);
   }
   
   const apiKey = process.env.GEMINI_API_KEY;

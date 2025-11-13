@@ -24,7 +24,7 @@ const rateBookScene = new Scenes.WizardScene(
     await ctx.reply(
       `⭐ <b>Оцініть книгу</b>\n\n📖 ${book.title}\n👤 ${book.author}\n\nОберіть рейтинг (1-5 зірок):`,
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
             [

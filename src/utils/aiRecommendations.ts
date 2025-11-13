@@ -42,7 +42,7 @@ export const getPersonalizedRecommendations = async (userId: number): Promise<st
       `🎯 Жанр\n\n` +
       `Контекст: ${context}`;
     
-    const recommendations = await askAI(question);
+    const recommendations = await askAI(question, userId);
     
     logger.info('AI recommendations generated', { userId, hasHistory: savedBooks.length > 0 });
     

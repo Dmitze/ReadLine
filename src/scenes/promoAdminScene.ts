@@ -22,15 +22,15 @@ promoAdminScene.enter(async (ctx) => {
     const stats = await getPromoCodeStats();
     
     await ctx.reply(
-      `🎁 <b>КЕРУВАННЯ ПРОМОКОДАМИ</b>\n\n` +
-      `📊 *Статистика:*\n` +
-      `• Всього промокодів: ${stats.total}\n` +
-      `• Доступно: ${stats.available}\n` +
-      `• Використано: ${stats.used}\n` +
-      `• Користувачів отримали: ${stats.usedByUsers}\n\n` +
-      `Оберіть дію:`,
-      {
-        parse_mode: 'Markdown',
+       `🎁 <b>КЕРУВАННЯ ПРОМОКОДАМИ</b>\n\n` +
+       `📊 <b>Статистика:</b>\n` +
+       `• Всього промокодів: ${stats.total}\n` +
+       `• Доступно: ${stats.available}\n` +
+       `• Використано: ${stats.used}\n` +
+       `• Користувачів отримали: ${stats.usedByUsers}\n\n` +
+       `Оберіть дію:`,
+       {
+         parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
             [{ text: '➕ Додати промокод', callback_data: 'promo_add' }],
@@ -51,16 +51,16 @@ promoAdminScene.enter(async (ctx) => {
 promoAdminScene.action('promo_add', async (ctx) => {
   await ctx.answerCbQuery();
   await ctx.editMessageText(
-    '🎫 <b>ДОДАВАННЯ НОВОГО ПРОМОКОДУ</b>\n\n' +
-    'Введіть код промокоду:\n\n' +
-    '💡 *Приклади:*\n' +
-    '• `SUMMER20` - літня знижка 20%\n' +
-    '• `WELCOME15` - вітальна знижка 15%\n' +
-    '• `STUDENT10` - студентська знижка 10%\n' +
-    '• `FREESHIP` - безкоштовна доставка\n\n' +
-    '✨ *Система автоматично визначить тип та розмір знижки!*',
-    { parse_mode: 'Markdown' }
-  );
+     '🎫 <b>ДОДАВАННЯ НОВОГО ПРОМОКОДУ</b>\n\n' +
+     'Введіть код промокоду:\n\n' +
+     '💡 <b>Приклади:</b>\n' +
+     '• <code>SUMMER20</code> - літня знижка 20%\n' +
+     '• <code>WELCOME15</code> - вітальна знижка 15%\n' +
+     '• <code>STUDENT10</code> - студентська знижка 10%\n' +
+     '• <code>FREESHIP</code> - безкоштовна доставка\n\n' +
+     '✨ <b>Система автоматично визначить тип та розмір знижки!</b>',
+     { parse_mode: 'HTML' }
+   );
   
   (ctx.scene as any).state.waitingForPromoCode = true;
 });
@@ -78,7 +78,7 @@ promoAdminScene.action('promo_list', async (ctx) => {
         '📭 Промокодів ще немає.\n\n' +
         'Додайте перший промокод натиснувши "➕ Додати промокод"',
         {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           reply_markup: {
             inline_keyboard: [
               [{ text: '➕ Додати промокод', callback_data: 'promo_add' }],
@@ -94,17 +94,17 @@ promoAdminScene.action('promo_list', async (ctx) => {
     
     for (const promo of promoCodes.slice(0, 10)) {
       const status = promo.is_active ? '✅' : '❌';
-      message += `${status} \`${promo.code}\`\n`;
+      message += `${status} <code>${promo.code}</code>\n`;
       message += `   ${promo.description}\n`;
       message += `   💰 ${promo.discount_value}${promo.discount_type === 'percentage' ? '%' : ' грн'}\n\n`;
     }
     
     if (promoCodes.length > 10) {
-      message += `\n_Показано 10 з ${promoCodes.length} промокодів_`;
+      message += `\n<i>Показано 10 з ${promoCodes.length} промокодів</i>`;
     }
     
     await ctx.editMessageText(message, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
           [{ text: '➕ Додати промокод', callback_data: 'promo_add' }],
@@ -128,19 +128,19 @@ promoAdminScene.action('promo_stats', async (ctx) => {
     
     await ctx.editMessageText(
       `📊 <b>ДЕТАЛЬНА СТАТИСТИКА ПРОМОКОДІВ</b>\n\n` +
-      `📈 *Загальна інформація:*\n` +
+      `📈 <b>Загальна інформація:</b>\n` +
       `• Всього створено: ${stats.total}\n` +
       `• Активних: ${stats.total}\n` +
       `• Доступних: ${stats.available}\n` +
       `• Використано: ${stats.used}\n\n` +
-      `👥 *Користувачі:*\n` +
+      `👥 <b>Користувачі:</b>\n` +
       `• Отримали промокод: ${stats.usedByUsers}\n\n` +
-      `📊 *Використання:*\n` +
+      `📊 <b>Використання:</b>\n` +
       `• Відсоток використання: ${usagePercent}%\n` +
       `• Залишилось: ${stats.available} промокодів\n\n` +
-      `🔗 *Партнер:* Yakaboo.ua`,
+      `🔗 <b>Партнер:</b> Yakaboo.ua`,
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
             [{ text: '🔄 Оновити', callback_data: 'promo_stats' }],

@@ -185,19 +185,16 @@ exports.default = (bot) => {
         }
     });
     bot.hears([constants_1.BUTTONS.PROFILE_OLD, constants_1.BUTTONS.PROFILE], async (ctx) => {
-        ctx.scene?.enter('PROFILE_SCENE');
         logger_1.logger.userAction(ctx.from.id, 'enter_profile');
-        return;
+        return ctx.scene?.enter('PROFILE_SCENE');
     });
     bot.hears(constants_1.BUTTONS.FEEDBACK, async (ctx) => {
-        ctx.scene?.enter('FEEDBACK_SCENE');
         logger_1.logger.userAction(ctx.from.id, 'enter_feedback');
-        return;
+        return ctx.scene?.enter('FEEDBACK_SCENE');
     });
     bot.hears(constants_1.BUTTONS.AI_ASSISTANT, async (ctx) => {
-        ctx.scene?.enter('AI_SCENE');
         logger_1.logger.userAction(ctx.from.id, 'enter_ai');
-        return;
+        return ctx.scene?.enter('AI_SCENE');
     });
     bot.hears(constants_1.BUTTONS.HELP, async (ctx) => {
         logger_1.logger.userAction(ctx.from.id, 'view_help');
@@ -234,11 +231,11 @@ exports.default = (bot) => {
                 await ctx.reply(`📚 Знайдено ${total} ${total === 1 ? 'книгу' : 'книг'} в жанрі "${messageText}".\n` +
                     `Показано перші ${books.length}:`);
                 for (const book of books) {
-                    const caption = `📖 *${book.title}*
-        👤 Автор: ${book.author}
-        🎭 Жанр: ${book.genre}
-        📖 Опис:  ${book.description}
-        ✅ Статус: ${book.is_available ? 'Доступна' : 'Недоступна'}`;
+                    const caption = `📖 <b>${book.title}</b>
+         👤 Автор: ${book.author}
+         🎭 Жанр: ${book.genre}
+         📖 Опис:  ${book.description}
+         ✅ Статус: ${book.is_available ? 'Доступна' : 'Недоступна'}`;
                     if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
                         try {
                             await ctx.replyWithPhoto(book.photo_file_id, {
@@ -638,9 +635,8 @@ exports.default = (bot) => {
             return;
         }
         const bookId = parseInt(match[1]);
-        ctx.scene?.enter('RATE_BOOK_SCENE', { bookId });
         await ctx.answerCbQuery();
-        return;
+        return ctx.scene?.enter('RATE_BOOK_SCENE', { bookId });
     });
     bot.hears('🏠 На головну', async (ctx) => {
         await ctx.reply('🏠 Повертаємось на головну', {

@@ -218,41 +218,41 @@ searchScene.on('text', async (ctx) => {
         if (books.length === 0) {
             const noResultsMessage = '📭 <b>За вашим запитом нічого не знайдено</b>\n\n' +
                 `Пошуковий запит: "${searchTerm}"\n\n` +
-                '🔍 *Спробуйте:*\n' +
+                '<b>🔍 Спробуйте:</b>\n' +
                 '• Перевірити правопис\n' +
                 '• Використати менш конкретні слова\n' +
                 '• Скористатися каталогом за жанрами\n' +
                 '• Спробувати інший пошук';
-            await ctx.reply(noResultsMessage, { parse_mode: 'Markdown' });
+            await ctx.reply(noResultsMessage, { parse_mode: 'HTML' });
             return ctx.scene?.leave();
         }
-        const resultsMessage = `🔍 *Результати пошуку ${searchTypeText}*\n\n` +
+        const resultsMessage = `<b>🔍 Результати пошуку ${searchTypeText}</b>\n\n` +
             `Знайдено: ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}\n` +
             `Запит: "${searchTerm}"`;
-        await ctx.reply(resultsMessage, { parse_mode: 'Markdown' });
+        await ctx.reply(resultsMessage, { parse_mode: 'HTML' });
         const { isBookSaved } = await Promise.resolve().then(() => __importStar(require('../database/models')));
         const userId = ctx.from?.id;
         for (const book of books) {
             const isSaved = userId ? await isBookSaved(userId, book.id) : false;
-            const caption = `📖 *${book.title}*\n👤 Автор: ${book.author}\n📚 Жанр: ${book.genre}\n📝 ${book.description?.substring(0, 100) || 'Немає опису'}...`;
+            const caption = `📖 <b>${book.title}</b>\n👤 Автор: ${book.author}\n📚 Жанр: ${book.genre}\n📝 ${book.description?.substring(0, 100) || 'Немає опису'}...`;
             if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
                 try {
                     await ctx.replyWithPhoto(book.photo_file_id, {
                         caption,
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
                     });
                 }
                 catch (error) {
                     await ctx.reply(caption, {
-                        parse_mode: 'Markdown',
+                        parse_mode: 'HTML',
                         reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
                     });
                 }
             }
             else {
                 await ctx.reply(caption, {
-                    parse_mode: 'Markdown',
+                    parse_mode: 'HTML',
                     reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
                 });
             }
