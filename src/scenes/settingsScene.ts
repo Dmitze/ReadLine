@@ -12,7 +12,7 @@ settingsScene.enter(async (ctx) => {
     '⚙️ <b>Налаштування</b>\n\n' +
     'Оберіть що хочете налаштувати:',
     {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
           [{ text: '📱 Тип клавіатури', callback_data: 'settings_keyboard' }],
@@ -34,7 +34,7 @@ settingsScene.action('settings_keyboard', async (ctx) => {
     '📲 <b>Планшет</b> - компактніші кнопки, 3 в ряд\n' +
     '💻 <b>Десктоп</b> - inline клавіатури, 4 в ряд',
     {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
           [{ text: '📱 Мобільний', callback_data: 'keyboard_mobile' }],
@@ -72,7 +72,7 @@ settingsScene.action(/^keyboard_(mobile|tablet|desktop)$/, async (ctx) => {
       `Обрано: ${deviceNames[deviceType]}\n\n` +
       `Зміни застосуються при наступному відкритті меню.`,
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
             [{ text: '⬅️ Назад до налаштувань', callback_data: 'settings_back' }],
@@ -94,8 +94,8 @@ settingsScene.action('settings_notifications', async (ctx) => {
     return;
   }
   
-  const { getUserNotificationSettings } = require('../utils/notifications');
-  const settings = getUserNotificationSettings(userId);
+  const { getUserNotificationSettings } = await import('../utils/notifications');
+  const settings = await getUserNotificationSettings(userId);
   
   const frequencyNames = {
     daily: 'Щодня',
@@ -112,7 +112,7 @@ settingsScene.action('settings_notifications', async (ctx) => {
     `Час: ${settings.preferredTime || '10:00'}\n\n` +
     'Оберіть що хочете змінити:',
     {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
           [{ text: settings.enabled ? '🔕 Вимкнути сповіщення' : '🔔 Увімкнути сповіщення', callback_data: 'notif_toggle' }],
@@ -133,11 +133,11 @@ settingsScene.action('notif_toggle', async (ctx) => {
     return;
   }
   
-  const { getUserNotificationSettings, setUserNotificationSettings } = require('../utils/notifications');
-  const settings = getUserNotificationSettings(userId);
+  const { getUserNotificationSettings, setUserNotificationSettings } = await import('../utils/notifications');
+  const settings = await getUserNotificationSettings(userId);
   settings.enabled = !settings.enabled;
   
-  setUserNotificationSettings(settings);
+  await setUserNotificationSettings(settings);
   
   await ctx.answerCbQuery(settings.enabled ? '✅ Сповіщення увімкнено' : '🔕 Сповіщення вимкнено');
   
@@ -156,7 +156,7 @@ settingsScene.action('notif_toggle', async (ctx) => {
     `Час: ${settings.preferredTime || '10:00'}\n\n` +
     'Оберіть що хочете змінити:',
     {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
           [{ text: settings.enabled ? '🔕 Вимкнути сповіщення' : '🔔 Увімкнути сповіщення', callback_data: 'notif_toggle' }],
@@ -176,7 +176,7 @@ settingsScene.action('notif_frequency', async (ctx) => {
     '⏰ <b>Частота сповіщень</b>\n\n' +
     'Як часто ви хочете отримувати нагадування?',
     {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
           [{ text: '📅 Щодня', callback_data: 'freq_daily' }],
@@ -199,15 +199,15 @@ settingsScene.action(/^freq_(daily|every_4_days|weekly|disabled)$/, async (ctx) 
   }
   
   const frequency = ctx.match[1] as 'daily' | 'every_4_days' | 'weekly' | 'disabled';
-  const { getUserNotificationSettings, setUserNotificationSettings } = require('../utils/notifications');
-  const settings = getUserNotificationSettings(userId);
+  const { getUserNotificationSettings, setUserNotificationSettings } = await import('../utils/notifications');
+  const settings = await getUserNotificationSettings(userId);
   settings.frequency = frequency;
   
   if (frequency === 'disabled') {
     settings.enabled = false;
   }
   
-  setUserNotificationSettings(settings);
+  await setUserNotificationSettings(settings);
   
   const frequencyNames = {
     daily: 'Щодня',
@@ -221,7 +221,7 @@ settingsScene.action(/^freq_(daily|every_4_days|weekly|disabled)$/, async (ctx) 
     `✅ <b>Частота змінена</b>\n\n` +
     `Нова частота: ${frequencyNames[frequency]}`,
     {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
           [{ text: '⬅️ Назад до сповіщень', callback_data: 'settings_notifications' }],
@@ -240,7 +240,7 @@ settingsScene.action('notif_time', async (ctx) => {
     'Налаштування часу буде доступне незабаром!\n\n' +
     'За замовчуванням сповіщення надсилаються о 10:00.',
     {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
           [{ text: '⬅️ Назад', callback_data: 'settings_notifications' }]
@@ -257,7 +257,7 @@ settingsScene.action('settings_back', async (ctx) => {
     '⚙️ <b>Налаштування</b>\n\n' +
     'Оберіть що хочете налаштувати:',
     {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
           [{ text: '📱 Тип клавіатури', callback_data: 'settings_keyboard' }],

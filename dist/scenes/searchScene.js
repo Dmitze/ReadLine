@@ -42,7 +42,7 @@ searchScene.enter(async (ctx) => {
     const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
     await ctx.reply('🔍 <b>Розширений пошук книг</b>\n\n' +
         'Оберіть тип пошуку або введіть запит:', {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_markup: Markup.inlineKeyboard([
             [
                 { text: '📖 За назвою', callback_data: 'search_by_title' },
@@ -64,32 +64,32 @@ searchScene.action('search_by_title', async (ctx) => {
     ctx.scene.state.searchType = 'title';
     await ctx.editMessageText('📖 <b>Пошук за назвою</b>\n\n' +
         'Введіть назву книги:\n\n' +
-        '💡 *Приклад:* Кобзар', { parse_mode: 'Markdown' });
+        '💡 <i>Приклад:</i> Кобзар', { parse_mode: 'HTML' });
 });
 searchScene.action('search_by_author', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'author';
     await ctx.editMessageText('👤 <b>Пошук за автором</b>\n\n' +
         'Введіть ім\'я автора:\n\n' +
-        '💡 *Приклад:* Шевченко', { parse_mode: 'Markdown' });
+        '💡 <i>Приклад:</i> Шевченко', { parse_mode: 'HTML' });
 });
 searchScene.action('search_by_genre', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'genre';
     await ctx.editMessageText('📚 <b>Пошук за жанром</b>\n\n' +
         'Введіть жанр:\n\n' +
-        '💡 *Приклад:* Історична', { parse_mode: 'Markdown' });
+        '💡 <i>Приклад:</i> Історична', { parse_mode: 'HTML' });
 });
 searchScene.action('search_general', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'general';
     await ctx.editMessageText('🔍 <b>Розумний пошук</b>\n\n' +
         'Введіть будь-який запит (назва, автор, жанр):\n\n' +
-        '✨ *Можливості:*\n' +
+        '✨ <b>Можливості:</b>\n' +
         '• Пошук з помилками: "Кобзарь" → "Кобзар"\n' +
         '• Синоніми: "Sci-Fi" → "Фантастика"\n' +
         '• Автодоповнення при введенні\n\n' +
-        '💡 Пошук буде виконано по всіх полях', { parse_mode: 'Markdown' });
+        '💡 Пошук буде виконано по всіх полях', { parse_mode: 'HTML' });
 });
 searchScene.action('search_back', async (ctx) => {
     await ctx.answerCbQuery();

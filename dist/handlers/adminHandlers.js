@@ -299,7 +299,7 @@ exports.default = (bot) => {
             for (const msg of messages) {
                 try {
                     if (!msg.message || msg.message.trim() === '') {
-                        console.warn(`⚠️ Empty feedback message #${msg.id}`);
+                        logger_1.logger.warn('Empty feedback message', { messageId: msg.id });
                         await ctx.reply(`⚠️ *Повідомлення #${msg.id}*\n\n` +
                             `❌ Текст повідомлення відсутній або пошкоджений.\n\n` +
                             `👤 Від: ${msg.user_name || 'Користувач'}\n` +

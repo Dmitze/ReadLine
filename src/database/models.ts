@@ -105,6 +105,23 @@ if (!fs.existsSync(dbDir)) {
 
 export const db = new sqlite3.Database(dbPath);
 
+// ✅ ВИПРАВЛЕНО #7: PRAGMA для SQLite оптимізації
+db.exec(`
+  PRAGMA foreign_keys = ON;
+  PRAGMA busy_timeout = 3000;
+  PRAGMA journal_mode = WAL;
+`, (err) => {
+  if (err) {
+    logger.error('Error configuring SQLite PRAGMA', err);
+  } else {
+    logger.info('SQLite PRAGMA configured', { 
+      foreign_keys: 'ON', 
+      busy_timeout: 3000,
+      journal_mode: 'WAL'
+    });
+  }
+});
+
 // ✅ ВИПРАВЛЕНО #13: async initialization з proper error handling
 export const initDatabase = (): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -192,6 +209,9 @@ export const initDatabase = (): Promise<void> => {
           keyboard_type TEXT DEFAULT 'mobile',
           has_completed_onboarding BOOLEAN DEFAULT 0,
           last_notification_at DATETIME,
+          notifications_enabled INTEGER DEFAULT 1,
+          notification_frequency TEXT DEFAULT 'weekly',
+          notification_time TEXT DEFAULT '10:00',
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `;
@@ -257,7 +277,7 @@ export const initDatabase = (): Promise<void> => {
         // Створюємо таблицю AI selections
         db.run(createAiSelectionsTable, (err) => {
           if (err) {
-            console.warn(`Warning: Failed to create ai_selections table: ${err.message}`);
+            logger.warn('Failed to create ai_selections table', { error: err.message });
           }
         });
         
@@ -296,19 +316,19 @@ export const initDatabase = (): Promise<void> => {
         
         let indexCount = 0;
         const createNextIndex = () => {
-          if (indexCount >= indexes.length) {
-            resolve();
-            return;
-          }
-          
-          db.run(indexes[indexCount], (indexErr) => {
-            if (indexErr) {
-              console.warn(`Warning: Failed to create index: ${indexErr.message}`);
-            }
-            indexCount++;
-            createNextIndex();
-          });
-        };
+           if (indexCount >= indexes.length) {
+             resolve();
+             return;
+           }
+           
+           db.run(indexes[indexCount], (indexErr) => {
+             if (indexErr) {
+               logger.warn('Failed to create index', { error: indexErr.message });
+             }
+             indexCount++;
+             createNextIndex();
+           });
+         };
         
         createNextIndex();
       });
@@ -577,6 +597,12 @@ export const updateBook = (
   updates: Partial<Omit<Book, 'id' | 'created_at'>>
 ): Promise<number> => {
   return new Promise((resolve, reject) => {
+    // ✅ ВИПРАВЛЕНО #8: guard для порожних updates
+    if (Object.keys(updates).length === 0) {
+      resolve(0);
+      return;
+    }
+
     const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
     const values = Object.values(updates);
     
@@ -896,17 +922,14 @@ export const updateFeedbackStatus = (feedbackId: number, status: string): Promis
 };
 
 export const addAdminReply = (feedbackId: number, reply: string): Promise<void> => {
-  return new Promise((resolve, reject) => {
-    db.run(
-      'UPDATE feedback_messages SET admin_reply = ?, status = ? WHERE id = ?',
-      [reply, 'replied', feedbackId],
-      (err) => {
-        if (err) reject(err);
-        else resolve();
-      }
-    );
-  });
-};
-
-// Initialize database on module load
-initDatabase();
+   return new Promise((resolve, reject) => {
+     db.run(
+       'UPDATE feedback_messages SET admin_reply = ?, status = ? WHERE id = ?',
+       [reply, 'replied', feedbackId],
+       (err) => {
+         if (err) reject(err);
+         else resolve();
+       }
+     );
+   });
+ };

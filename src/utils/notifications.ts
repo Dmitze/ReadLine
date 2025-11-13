@@ -161,10 +161,20 @@ export const getPersonalizedNotification = async (userId: number): Promise<strin
     });
     
     if (!user) return null;
-    
-    const firstName = user.first_name || 'Друже';
-    const favoriteGenres = user.favorite_genres ? user.favorite_genres.split(',') : [];
-    const lastActive = user.last_active_at ? new Date(user.last_active_at) : null;
+     
+     const firstName = user.first_name || 'Друже';
+     // ✅ ВИПРАВЛЕНО #10: використовуємо JSON.parse як в userFunctions
+     let favoriteGenres: string[] = [];
+     if (user.favorite_genres) {
+       try {
+         const parsed = JSON.parse(user.favorite_genres);
+         favoriteGenres = Array.isArray(parsed) ? parsed : [];
+       } catch {
+         // Якщо JSON parse не спрацює - це OK, просто пустий масив
+         favoriteGenres = [];
+       }
+     }
+     const lastActive = user.last_active_at ? new Date(user.last_active_at) : null;
     
     // Перевіряємо чи є нові книги в улюблених жанрах
     if (favoriteGenres.length > 0) {

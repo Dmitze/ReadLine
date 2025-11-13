@@ -347,7 +347,7 @@ export default (bot: Telegraf<BotContext>) => {
         try {
           // Перевіряємо чи є текст повідомлення
           if (!msg.message || msg.message.trim() === '') {
-            console.warn(`⚠️ Empty feedback message #${msg.id}`);
+            logger.warn('Empty feedback message', { messageId: msg.id });
             await ctx.reply(
               `⚠️ *Повідомлення #${msg.id}*\n\n` +
               `❌ Текст повідомлення відсутній або пошкоджений.\n\n` +

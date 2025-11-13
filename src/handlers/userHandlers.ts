@@ -327,11 +327,11 @@ export default (bot: Telegraf<BotContext>) => {
         );
         
         for (const book of books) {
-          const caption = `📖 *${book.title}*
-👤 Автор: ${book.author}
-🎭 Жанр: ${book.genre}
-📖 Опис:  ${book.description}
-✅ Статус: b${book.is_available ? 'Доступна' : 'Недоступна'}`;
+           const caption = `📖 *${book.title}*
+        👤 Автор: ${book.author}
+        🎭 Жанр: ${book.genre}
+        📖 Опис:  ${book.description}
+        ✅ Статус: ${book.is_available ? 'Доступна' : 'Недоступна'}`;
 
           // Перевіряємо чи є валідний photo_file_id
           if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {

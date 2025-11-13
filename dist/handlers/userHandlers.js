@@ -235,10 +235,10 @@ exports.default = (bot) => {
                     `Показано перші ${books.length}:`);
                 for (const book of books) {
                     const caption = `📖 *${book.title}*
-👤 Автор: ${book.author}
-🎭 Жанр: ${book.genre}
-📖 Опис:  ${book.description}
-✅ Статус: b${book.is_available ? 'Доступна' : 'Недоступна'}`;
+        👤 Автор: ${book.author}
+        🎭 Жанр: ${book.genre}
+        📖 Опис:  ${book.description}
+        ✅ Статус: ${book.is_available ? 'Доступна' : 'Недоступна'}`;
                     if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
                         try {
                             await ctx.replyWithPhoto(book.photo_file_id, {

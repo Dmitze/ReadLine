@@ -7,12 +7,12 @@ import { BotContext } from '../types/telegraf';
 const searchScene = new Scenes.BaseScene('SEARCH_SCENE');
 
 searchScene.enter(async (ctx) => {
-  const { Markup } = await import('telegraf');
-  await ctx.reply(
-    '🔍 <b>Розширений пошук книг</b>\n\n' +
-    'Оберіть тип пошуку або введіть запит:',
-    { 
-      parse_mode: 'Markdown',
+   const { Markup } = await import('telegraf');
+   await ctx.reply(
+     '🔍 <b>Розширений пошук книг</b>\n\n' +
+     'Оберіть тип пошуку або введіть запит:',
+     { 
+       parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard([
         [
           { text: '📖 За назвою', callback_data: 'search_by_title' },
@@ -36,48 +36,48 @@ searchScene.action('search_by_title', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
   (ctx.scene as any).state.searchType = 'title';
   await ctx.editMessageText(
-    '📖 <b>Пошук за назвою</b>\n\n' +
-    'Введіть назву книги:\n\n' +
-    '💡 *Приклад:* Кобзар',
-    { parse_mode: 'Markdown' }
-  );
+     '📖 <b>Пошук за назвою</b>\n\n' +
+     'Введіть назву книги:\n\n' +
+     '💡 <i>Приклад:</i> Кобзар',
+     { parse_mode: 'HTML' }
+   );
 });
 
 searchScene.action('search_by_author', async (ctx: BotContext) => {
-  await ctx.answerCbQuery();
-  (ctx.scene as any).state.searchType = 'author';
-  await ctx.editMessageText(
-    '👤 <b>Пошук за автором</b>\n\n' +
-    'Введіть ім\'я автора:\n\n' +
-    '💡 *Приклад:* Шевченко',
-    { parse_mode: 'Markdown' }
-  );
+   await ctx.answerCbQuery();
+   (ctx.scene as any).state.searchType = 'author';
+   await ctx.editMessageText(
+     '👤 <b>Пошук за автором</b>\n\n' +
+     'Введіть ім\'я автора:\n\n' +
+     '💡 <i>Приклад:</i> Шевченко',
+     { parse_mode: 'HTML' }
+   );
 });
 
 searchScene.action('search_by_genre', async (ctx: BotContext) => {
-  await ctx.answerCbQuery();
-  (ctx.scene as any).state.searchType = 'genre';
-  await ctx.editMessageText(
-    '📚 <b>Пошук за жанром</b>\n\n' +
-    'Введіть жанр:\n\n' +
-    '💡 *Приклад:* Історична',
-    { parse_mode: 'Markdown' }
-  );
+   await ctx.answerCbQuery();
+   (ctx.scene as any).state.searchType = 'genre';
+   await ctx.editMessageText(
+     '📚 <b>Пошук за жанром</b>\n\n' +
+     'Введіть жанр:\n\n' +
+     '💡 <i>Приклад:</i> Історична',
+     { parse_mode: 'HTML' }
+   );
 });
 
 searchScene.action('search_general', async (ctx: BotContext) => {
-  await ctx.answerCbQuery();
-  (ctx.scene as any).state.searchType = 'general';
-  await ctx.editMessageText(
-    '🔍 <b>Розумний пошук</b>\n\n' +
-    'Введіть будь-який запит (назва, автор, жанр):\n\n' +
-    '✨ *Можливості:*\n' +
-    '• Пошук з помилками: "Кобзарь" → "Кобзар"\n' +
-    '• Синоніми: "Sci-Fi" → "Фантастика"\n' +
-    '• Автодоповнення при введенні\n\n' +
-    '💡 Пошук буде виконано по всіх полях',
-    { parse_mode: 'Markdown' }
-  );
+   await ctx.answerCbQuery();
+   (ctx.scene as any).state.searchType = 'general';
+   await ctx.editMessageText(
+     '🔍 <b>Розумний пошук</b>\n\n' +
+     'Введіть будь-який запит (назва, автор, жанр):\n\n' +
+     '✨ <b>Можливості:</b>\n' +
+     '• Пошук з помилками: "Кобзарь" → "Кобзар"\n' +
+     '• Синоніми: "Sci-Fi" → "Фантастика"\n' +
+     '• Автодоповнення при введенні\n\n' +
+     '💡 Пошук буде виконано по всіх полях',
+     { parse_mode: 'HTML' }
+   );
 });
 
 searchScene.action('search_back', async (ctx: BotContext) => {

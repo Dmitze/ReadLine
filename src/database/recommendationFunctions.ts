@@ -15,7 +15,7 @@ export const getRandomBook = (): Promise<Book | null> => {
       'SELECT * FROM books WHERE (is_available = 1 OR is_available IS NULL) ORDER BY RANDOM() LIMIT 1',
       (err, row: Book) => {
         if (err) {
-          console.error('❌ Error getting random book:', err);
+          logger.error('Error getting random book', err instanceof Error ? err : new Error(String(err)));
           reject(err);
           return;
         }
@@ -25,7 +25,7 @@ export const getRandomBook = (): Promise<Book | null> => {
           row.is_available = true;
           resolve(row);
         } else {
-          console.warn('⚠️ No available books in database');
+          logger.warn('No available books in database');
           resolve(null);
         }
       }
@@ -298,7 +298,7 @@ export const getSmartRecommendations = async (userId: number, limit: number = 10
 
     return allRecommendations.slice(0, limit);
   } catch (error) {
-    console.error('Error getting smart recommendations:', error);
+    logger.error('Error getting smart recommendations', error instanceof Error ? error : new Error(String(error)));
     // Fallback to simple recommendations
     return getRecommendedBooks(userId, limit);
   }

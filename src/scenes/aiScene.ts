@@ -7,33 +7,33 @@ const aiScene = new Scenes.BaseScene('AI_SCENE');
 
 aiScene.enter(async (ctx: BotContext) => {
   if (!isAIEnabled()) {
-    await ctx.reply(
-      '❌ *AI-помічник недоступний*\n\n' +
-      'Для використання AI-помічника адміністратор повинен додати `GEMINI_API_KEY` в `.env` файл.\n\n' +
-      '💡 Як налаштувати:\n' +
-      '1. Отримайте API ключ на https://makersuite.google.com/app/apikey\n' +
-      '2. Додайте в .env: `GEMINI_API_KEY=ваш_ключ`\n' +
-      '3. Перезапустіть бота',
-      { parse_mode: 'Markdown' }
-    );
-    return ctx.scene?.leave();
-  }
+     await ctx.reply(
+       '❌ <b>AI-помічник недоступний</b>\n\n' +
+       'Для використання AI-помічника адміністратор повинен додати <code>GEMINI_API_KEY</code> в <code>.env</code> файл.\n\n' +
+       '💡 Як налаштувати:\n' +
+       '1. Отримайте API ключ на https://makersuite.google.com/app/apikey\n' +
+       '2. Додайте в .env: <code>GEMINI_API_KEY=ваш_ключ</code>\n' +
+       '3. Перезапустіть бота',
+       { parse_mode: 'HTML' }
+     );
+     return ctx.scene?.leave();
+   }
   
   await ctx.reply(
-    '🤖 *AI-ПОМІЧНИК АКТИВОВАНО*\n\n' +
+    '🤖 <b>AI-ПОМІЧНИК АКТИВОВАНО</b>\n\n' +
     'Я можу допомогти вам з:\n' +
     '📚 Рекомендаціями книг\n' +
     '🔍 Пошуком книг за описом\n' +
     '✍️ Інформацією про авторів\n' +
     '📖 Поясненням жанрів\n' +
     '💡 Відповідями на питання про літературу\n\n' +
-    '✍️ *Напишіть ваше питання:*\n\n' +
-    '💡 *Приклади:*\n' +
+    '✍️ <b>Напишіть ваше питання:</b>\n\n' +
+    '💡 <b>Приклади:</b>\n' +
     '• "Порекомендуй книгу про космос"\n' +
     '• "Розкажи про жанр фантастика"\n' +
     '• "Хто такий Тарас Шевченко?"',
     { 
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: Markup.keyboard([['⬅️ Назад до меню']]).resize().reply_markup
     }
   );

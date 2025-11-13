@@ -15,6 +15,22 @@ if (!fs_1.default.existsSync(dbDir)) {
     logger_1.logger.info('Created database directory', { path: dbDir });
 }
 exports.db = new sqlite3_1.default.Database(dbPath);
+exports.db.exec(`
+  PRAGMA foreign_keys = ON;
+  PRAGMA busy_timeout = 3000;
+  PRAGMA journal_mode = WAL;
+`, (err) => {
+    if (err) {
+        logger_1.logger.error('Error configuring SQLite PRAGMA', err);
+    }
+    else {
+        logger_1.logger.info('SQLite PRAGMA configured', {
+            foreign_keys: 'ON',
+            busy_timeout: 3000,
+            journal_mode: 'WAL'
+        });
+    }
+});
 const initDatabase = () => {
     return new Promise((resolve, reject) => {
         const createBooksTable = `
@@ -90,6 +106,9 @@ const initDatabase = () => {
           keyboard_type TEXT DEFAULT 'mobile',
           has_completed_onboarding BOOLEAN DEFAULT 0,
           last_notification_at DATETIME,
+          notifications_enabled INTEGER DEFAULT 1,
+          notification_frequency TEXT DEFAULT 'weekly',
+          notification_time TEXT DEFAULT '10:00',
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
     `;
@@ -145,7 +164,7 @@ const initDatabase = () => {
                 }
                 exports.db.run(createAiSelectionsTable, (err) => {
                     if (err) {
-                        console.warn(`Warning: Failed to create ai_selections table: ${err.message}`);
+                        logger_1.logger.warn('Failed to create ai_selections table', { error: err.message });
                     }
                 });
                 const indexes = [
@@ -176,7 +195,7 @@ const initDatabase = () => {
                     }
                     exports.db.run(indexes[indexCount], (indexErr) => {
                         if (indexErr) {
-                            console.warn(`Warning: Failed to create index: ${indexErr.message}`);
+                            logger_1.logger.warn('Failed to create index', { error: indexErr.message });
                         }
                         indexCount++;
                         createNextIndex();
@@ -403,6 +422,10 @@ const searchBooks = (searchTerm, limit = 10) => {
 exports.searchBooks = searchBooks;
 const updateBook = (bookId, updates) => {
     return new Promise((resolve, reject) => {
+        if (Object.keys(updates).length === 0) {
+            resolve(0);
+            return;
+        }
         const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
         const values = Object.values(updates);
         const query = `UPDATE books SET ${fields} WHERE id = ?`;
@@ -685,5 +708,4 @@ const addAdminReply = (feedbackId, reply) => {
     });
 };
 exports.addAdminReply = addAdminReply;
-(0, exports.initDatabase)();
 //# sourceMappingURL=models.js.map
