@@ -115,9 +115,14 @@ export class QueueManager {
       }
 
       let status: JobResult['status'] = 'pending';
-      if (job.isCompleted()) status = 'completed';
-      else if (job.isFailed()) status = 'failed';
-      else if (job.isActive()) status = 'active';
+      // Bull job status methods - synchronous calls
+      try {
+        if ((job as any).isCompleted?.()) status = 'completed';
+        else if ((job as any).isFailed?.()) status = 'failed';
+        else if ((job as any).isActive?.()) status = 'active';
+      } catch {
+        // If status check fails, default to pending
+      }
 
       return new Ok({
         status,

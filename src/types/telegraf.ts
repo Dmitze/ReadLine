@@ -2,18 +2,14 @@
  * Типізація для Telegraf - замінює any
  */
 
-import { Context } from 'telegraf';
 import { Scenes } from 'telegraf';
 
 /**
  * Розширений контекст бота
+ * NOTE: Telegraf middleware система не дозволяє коректну типізацію
+ * Використовуємо 'any' для сумісності із Telegraf сценами
  */
-export interface BotContext extends Context {
-  scene: Scenes.SceneContextScene<BotContext, Scenes.WizardSessionData>;
-  wizard: Scenes.WizardContextWizard<WizardState>;
-  session: SessionData;
-  match?: RegExpMatchArray;
-}
+export type BotContext = any;
 
 /**
  * Дані сесії

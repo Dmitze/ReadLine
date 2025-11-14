@@ -8,8 +8,8 @@ import { Database, DatabaseWrapper } from './dbWrapper';
 export interface IMigration {
   version: string;
   name: string;
-  up: (db: DatabaseWrapper) => Promise<void>;
-  down?: (db: DatabaseWrapper) => Promise<void>;
+  up: (db: Database | DatabaseWrapper) => Promise<void>;
+  down?: (db: Database | DatabaseWrapper) => Promise<void>;
 }
 
 export interface MigrationRecord {

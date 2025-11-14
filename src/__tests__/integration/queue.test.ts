@@ -2,7 +2,6 @@
  * Queue System Integration Tests
  */
 
-import { QueueManager, JobData } from '../../queue/Queue';
 import { JobQueueRegistry, JobHandlers } from '../../queue/Jobs';
 
 describe('Queue System', () => {
@@ -136,7 +135,6 @@ describe('Queue System', () => {
 
     it('should close all queues', async () => {
       const emailQueue = queueRegistry.getEmailQueue();
-      const reportQueue = queueRegistry.getReportQueue();
 
       await emailQueue.addJob('email', {
         to: 'test@example.com',

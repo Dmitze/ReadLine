@@ -1,0 +1,4 @@
+
+> readline-library-bot@1.0.0 build
+> tsc --project tsconfig.build.json
+

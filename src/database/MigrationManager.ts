@@ -4,7 +4,7 @@
  */
 
 import { MigrationRunner } from './Migration';
-import { Database } from './dbWrapper';
+import { Database, DatabaseWrapper } from './dbWrapper';
 import { allMigrations } from './migrations';
 
 export interface MigrationStatus {
@@ -23,10 +23,12 @@ export interface MigrationStatus {
 export class MigrationManager {
   private runner: MigrationRunner;
   private db: Database;
+  private wrapper: DatabaseWrapper;
 
   constructor(db: Database) {
     this.db = db;
-    this.runner = new MigrationRunner(db);
+    this.wrapper = new DatabaseWrapper(db);
+    this.runner = new MigrationRunner(this.wrapper);
   }
 
   /**

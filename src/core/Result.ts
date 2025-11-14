@@ -50,7 +50,7 @@ export class Ok<T, E = Error> {
   /**
    * Get the value or return a default
    */
-  unwrapOr(defaultValue: T): T {
+  unwrapOr(_defaultValue: T): T {
     return this.value;
   }
 
@@ -93,14 +93,14 @@ export class Err<T, E = Error> {
   /**
    * Map over error, but pass through Ok
    */
-  map<U>(fn: (value: T) => U): Result<U, E> {
+  map<U>(_fn: (value: T) => U): Result<U, E> {
     return new Err(this.error);
   }
 
   /**
    * Chain operations that return Result
    */
-  flatMap<U>(fn: (value: T) => Result<U, E>): Result<U, E> {
+  flatMap<U>(_fn: (value: T) => Result<U, E>): Result<U, E> {
     return new Err(this.error);
   }
 
@@ -121,7 +121,7 @@ export class Err<T, E = Error> {
   /**
    * Execute a function for side effects
    */
-  tap(fn: (value: T) => void): Result<T, E> {
+  tap(_fn: (value: T) => void): Result<T, E> {
     return this;
   }
 }

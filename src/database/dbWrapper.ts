@@ -6,10 +6,9 @@
 import { Database as SqliteDatabase } from 'sqlite3';
 
 export type { SqliteDatabase as Database };
-export { DatabaseWrapper };
 
 export class DatabaseWrapper {
-  constructor(private db: Database) {}
+  constructor(private db: SqliteDatabase) {}
 
   /**
    * Виконати SELECT ONE запит

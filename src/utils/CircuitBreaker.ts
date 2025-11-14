@@ -45,7 +45,7 @@ export interface CircuitBreakerOptions {
 /**
  * Generic Circuit Breaker implementation
  */
-export class CircuitBreaker {
+export class CircuitBreaker<T = any> {
   private state: CircuitState = CircuitState.CLOSED;
   private metrics: CircuitMetrics;
   private lastFailureTime: number = 0;
@@ -271,7 +271,7 @@ export class CircuitBreaker {
 /**
  * Specialized Circuit Breaker for HTTP requests
  */
-export class HttpCircuitBreaker extends CircuitBreaker<Response> {
+export class HttpCircuitBreaker extends CircuitBreaker {
   private readonly httpErrorCodes: Set<number>;
 
   constructor(options: CircuitBreakerOptions = {}) {
