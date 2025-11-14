@@ -26,6 +26,28 @@ export interface Admin {
 export interface AdminStats {
     totalBooks: number;
 }
+export interface ExtendedAdminStats {
+    totalBooks: number;
+    totalUsers: number;
+    totalReviews: number;
+    totalFeedback: number;
+    totalSavedBooks: number;
+    avgRating: number;
+    pendingReviews: number;
+    pendingFeedback: number;
+    newUsersToday: number;
+    newBooksThisMonth: number;
+    activeUsersThisMonth: number;
+    topGenres: {
+        genre: string;
+        count: number;
+    }[];
+    topRatedBooks: {
+        title: string;
+        rating: number;
+        author: string;
+    }[];
+}
 export interface Review {
     id?: number;
     book_id: number;
@@ -84,6 +106,7 @@ export declare const addAdmin: (userId: number, username?: string) => Promise<nu
 export declare const isAdmin: (userId: number) => Promise<boolean>;
 export declare const getAllAdmins: () => Promise<Admin[]>;
 export declare const getAdminStats: () => Promise<AdminStats>;
+export declare const getExtendedAdminStats: () => Promise<ExtendedAdminStats>;
 export declare const getBooksByGenreWithPagination: (genre: string, limit?: number, offset?: number) => Promise<{
     books: Book[];
     total: number;
