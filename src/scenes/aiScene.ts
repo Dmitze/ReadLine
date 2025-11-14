@@ -62,44 +62,34 @@ aiScene.on('text', async (ctx: BotContext) => {
   const { withTimeout, retryOperation, sendErrorToUser } = await import('../utils/errorHandler');
   const { CONFIG } = await import('../constants');
   
-  try {
-    if (!('text' in ctx.message)) {
-      await ctx.reply('❌ Будь ласка, надішліть текстове повідомлення.');
-      return;
-    }
-    const question = ctx.message.text;
-    
-    if (!question || question.length < 3) {
-      await ctx.reply('⚠️ Питання занадто коротке. Напишіть більше деталей.');
-      return;
-    }
-    
-    const thinkingMsg = await ctx.reply('🤔 Думаю...');
-    
-    // Використовуємо withTimeout з константою
-    const answer = await withTimeout(
-      () => retryOperation(() => askAI(question, ctx.from?.id), 2, 1000),
-      CONFIG.AI_TIMEOUT_MS,
-      'AI request timeout'
-    );
-    
-    // Видаляємо "думаю" повідомлення
-    try {
-      await ctx.deleteMessage(thinkingMsg.message_id);
-    } catch {}
-    
-    // Відправляємо відповідь (без parse_mode щоб уникнути помилок з спецсимволами)
-    await ctx.reply(
-      `🤖 AI-ПОМІЧНИК:\n\n${answer}\n\n` +
-      '❓ Задайте ще питання або натисніть "⬅️ Назад до меню"'
-    );
-    
-  } catch (error) {
-    logger.error('Error in AI scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-    await sendErrorToUser(ctx, error, 
-      '❌ Помилка AI. Спробуйте перефразувати питання або спробуйте пізніше.'
-    );
+  if (!('text' in ctx.message)) {
+    await ctx.reply('❌ Будь ласка, надішліть текстове повідомлення.');
+    return;
   }
+  const question = ctx.message.text;
+  
+  if (!question || question.length < 3) {
+    await ctx.reply('⚠️ Питання занадто коротке. Напишіть більше деталей.');
+    return;
+  }
+  
+  const thinkingMsg = await ctx.reply('🤔 Думаю...');
+   
+   // Використовуємо withTimeout з константою
+   const answer = await withTimeout(
+     () => retryOperation(() => askAI(question, ctx.from?.id), 2, 1000),
+     CONFIG.AI_TIMEOUT_MS,
+     'AI request timeout'
+   );
+   
+   // Видаляємо "думаю" повідомлення (ігноруємо помилки)
+   await ctx.deleteMessage(thinkingMsg.message_id).catch(() => {});
+  
+  // Відправляємо відповідь (без parse_mode щоб уникнути помилок з спецсимволами)
+  await ctx.reply(
+    `🤖 AI-ПОМІЧНИК:\n\n${answer}\n\n` +
+    '❓ Задайте ще питання або натисніть "⬅️ Назад до меню"'
+  );
 });
 
 // Обробка інших команд
