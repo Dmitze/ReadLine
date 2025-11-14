@@ -123,70 +123,64 @@ const aiAssistantScene = new Scenes.WizardScene(
     await ctx.answerCbQuery('🤖 Шукаю ідеальні книги...');
     await ctx.editMessageText('🤖 Аналізую твої вподобання та шукаю ідеальні книги...');
 
-    try {
-      // Отримуємо всі доступні книги
-      const { getAllAvailableBooks } = await import('../database/models');
-      const allBooks = await getAllAvailableBooks();
-      
-      if (allBooks.length === 0) {
-        await ctx.reply('📭 На жаль, в бібліотеці поки немає книг');
-        return ctx.scene.leave();
-      }
-
-      // AI підбирає книги
-      const books = await interactiveBookSelection({
-        interest: state.aiInterest || 'interest_any',
-        length: state.aiLength || 'length_any',
-        mood: state.aiMood || 'mood_any'
-      }, allBooks);
-
-      if (books.length === 0) {
-        await ctx.reply('😔 Не вдалося підібрати книги за вашими критеріями. Спробуйте інші параметри.');
-        return ctx.scene.leave();
-      }
-
-      await ctx.reply(
-        `✨ *Знайшов ${books.length} ідеальних ${books.length === 1 ? 'варіант' : 'варіанти'}!*\n\n` +
-        'Ось чому саме ці книги:',
-        { parse_mode: 'Markdown' }
-      );
-
-      // Показуємо книги з поясненнями
-      for (const book of books) {
-        const caption = 
-          `📖 *${book.title}*\n` +
-          `👤 ${book.author}\n` +
-          `📚 ${book.genre}\n\n` +
-          `🤖 Рекомендовано на основі ваших вподобань`;
-
-        if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
-          await ctx.replyWithPhoto(book.photo_file_id, {
-            caption,
-            parse_mode: 'Markdown',
-            reply_markup: getEnhancedBookKeyboard(book)
-          });
-        } else {
-          await ctx.reply(caption, {
-            parse_mode: 'Markdown',
-            reply_markup: getEnhancedBookKeyboard(book)
-          });
-        }
-
-        // Затримка між повідомленнями
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-
-      logger.userAction(ctx.from?.id || 0, 'ai_assistant_selection', {
-        interest: state.aiInterest,
-        length: state.aiLength,
-        mood: state.aiMood,
-        booksFound: books.length
-      });
-
-    } catch (error) {
-      logger.error('Error in AI assistant', error instanceof Error ? error : new Error(String(error)));
-      await ctx.reply('❌ Виникла помилка при підборі книг. Спробуйте ще раз.');
+    // Отримуємо всі доступні книги
+    const { getAllAvailableBooks } = await import('../database/models');
+    const allBooks = await getAllAvailableBooks();
+    
+    if (allBooks.length === 0) {
+      await ctx.reply('📭 На жаль, в бібліотеці поки немає книг');
+      return ctx.scene.leave();
     }
+
+    // AI підбирає книги
+    const books = await interactiveBookSelection({
+      interest: state.aiInterest || 'interest_any',
+      length: state.aiLength || 'length_any',
+      mood: state.aiMood || 'mood_any'
+    }, allBooks);
+
+    if (books.length === 0) {
+      await ctx.reply('😔 Не вдалося підібрати книги за вашими критеріями. Спробуйте інші параметри.');
+      return ctx.scene.leave();
+    }
+
+    await ctx.reply(
+      `✨ *Знайшов ${books.length} ідеальних ${books.length === 1 ? 'варіант' : 'варіанти'}!*\n\n` +
+      'Ось чому саме ці книги:',
+      { parse_mode: 'Markdown' }
+    );
+
+    // Показуємо книги з поясненнями
+    for (const book of books) {
+      const caption = 
+        `📖 *${book.title}*\n` +
+        `👤 ${book.author}\n` +
+        `📚 ${book.genre}\n\n` +
+        `🤖 Рекомендовано на основі ваших вподобань`;
+
+      if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
+        await ctx.replyWithPhoto(book.photo_file_id, {
+          caption,
+          parse_mode: 'Markdown',
+          reply_markup: getEnhancedBookKeyboard(book)
+        });
+      } else {
+        await ctx.reply(caption, {
+          parse_mode: 'Markdown',
+          reply_markup: getEnhancedBookKeyboard(book)
+        });
+      }
+
+      // Затримка між повідомленнями
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    logger.userAction(ctx.from?.id || 0, 'ai_assistant_selection', {
+      interest: state.aiInterest,
+      length: state.aiLength,
+      mood: state.aiMood,
+      booksFound: books.length
+    });
 
     return ctx.scene.leave();
   }
