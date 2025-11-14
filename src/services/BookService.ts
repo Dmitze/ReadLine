@@ -114,8 +114,7 @@ export class BookService {
         author: input.author || book.author,
         genre: input.genre || book.genre,
         description: input.description || book.description,
-        photo_file_id: input.photo_file_id || book.photo_file_id,
-        updated_at: new Date()
+        photo_file_id: input.photo_file_id || book.photo_file_id
       });
 
       return new Ok(undefined);
@@ -178,7 +177,8 @@ export class BookService {
       query += ` LIMIT ? OFFSET ?`;
       params.push(limit, offset);
 
-      const books = await this.bookRepository.findByQuery(query, params);
+      // Using direct database call for complex filtered query
+      const books = await (this.bookRepository as any).db.all(query, params);
       return new Ok(books);
     } catch (error) {
       return new Err(error instanceof Error ? error : new Error('Failed to search books'));
@@ -214,8 +214,10 @@ export class BookService {
    */
   async getBooksByGenre(genre: string, limit: number = 20, offset: number = 0): Promise<Result<any[]>> {
     try {
-      const books = await this.bookRepository.findByGenre(genre, limit, offset);
-      return new Ok(books);
+      const books = await this.bookRepository.findByGenre(genre);
+      // Apply pagination manually
+      const paginatedBooks = books.slice(offset, offset + limit);
+      return new Ok(paginatedBooks);
     } catch (error) {
       return new Err(error instanceof Error ? error : new Error('Failed to fetch books by genre'));
     }
@@ -231,7 +233,7 @@ export class BookService {
         return new Err(new Error(`Book with id ${bookId} not found`));
       }
 
-      const similarBooks = await this.bookRepository.findByGenre(book.genre, limit + 1, 0);
+      const similarBooks = await this.bookRepository.findByGenre(book.genre);
       const filtered = similarBooks.filter(b => b.id !== bookId).slice(0, limit);
 
       return new Ok(filtered);
