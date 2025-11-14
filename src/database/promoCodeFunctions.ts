@@ -321,6 +321,111 @@ export const getPromoCodeStats = (): Promise<{
 };
 
 /**
+ * Отримати розширену статистику промокодів
+ */
+export const getExtendedPromoStats = (): Promise<{
+  total: number;
+  available: number;
+  used: number;
+  usedByUsers: number;
+  usagePercent: number;
+  byDiscountType: { type: string; count: number; totalValue: number }[];
+  topPromos: { code: string; used: number; description: string }[];
+  avgUsage: number;
+  createdToday: number;
+  createdThisWeek: number;
+}> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Базова статистика
+      const basicStats = await getPromoCodeStats();
+      const usagePercent = basicStats.total > 0 ? Math.round((basicStats.used / basicStats.total) * 100) : 0;
+      const avgUsage = basicStats.used > 0 ? Math.round(basicStats.used / basicStats.usedByUsers) : 0;
+
+      // За типами знижок
+      const byDiscountType = await new Promise<any[]>((res, rej) => {
+        db.all(
+          `SELECT discount_type as type, COUNT(*) as count, SUM(discount_value) as totalValue 
+           FROM promo_codes 
+           WHERE is_active = 1
+           GROUP BY discount_type`,
+          [],
+          (err, rows) => {
+            if (err) rej(err);
+            else res(rows || []);
+          }
+        );
+      });
+
+      // Топ промокоди за використанням
+      const topPromos = await new Promise<any[]>((res, rej) => {
+        db.all(
+          `SELECT pc.code, pc.description, COUNT(upc.id) as used
+           FROM promo_codes pc
+           LEFT JOIN used_promo_codes upc ON pc.id = upc.promo_code_id
+           WHERE pc.is_active = 1
+           GROUP BY pc.id
+           ORDER BY used DESC
+           LIMIT 5`,
+          [],
+          (err, rows) => {
+            if (err) rej(err);
+            else res(rows || []);
+          }
+        );
+      });
+
+      // Промокоди створені сьогодні
+      const createdToday = await new Promise<number>((res, rej) => {
+        db.get(
+          `SELECT COUNT(*) as count FROM promo_codes 
+           WHERE DATE(created_at) = DATE('now') AND is_active = 1`,
+          [],
+          (err, row: any) => {
+            if (err) rej(err);
+            else res(row?.count || 0);
+          }
+        );
+      });
+
+      // Промокоди створені цього тижня
+      const createdThisWeek = await new Promise<number>((res, rej) => {
+        db.get(
+          `SELECT COUNT(*) as count FROM promo_codes 
+           WHERE datetime(created_at) > datetime('now', '-7 days') AND is_active = 1`,
+          [],
+          (err, row: any) => {
+            if (err) rej(err);
+            else res(row?.count || 0);
+          }
+        );
+      });
+
+      resolve({
+        ...basicStats,
+        usagePercent,
+        byDiscountType: byDiscountType.map(d => ({
+          type: getDiscountTypeText(d.type),
+          count: d.count,
+          totalValue: d.totalValue || 0
+        })),
+        topPromos: topPromos.map(p => ({
+          code: p.code,
+          used: p.used || 0,
+          description: p.description
+        })),
+        avgUsage,
+        createdToday,
+        createdThisWeek
+      });
+    } catch (error) {
+      logger.error('Error getting extended promo stats', error instanceof Error ? error : new Error(String(error)));
+      reject(error);
+    }
+  });
+};
+
+/**
  * Деактивувати промокод
  */
 export const deactivatePromoCode = (promoCodeId: number): Promise<void> => {
