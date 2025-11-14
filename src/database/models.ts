@@ -28,7 +28,22 @@ export interface Book {
   reviews_count?: number; // Кількість відгуків
   downloads_count?: number; // Кількість завантажень
   is_available?: boolean;
+  recommended_age?: number; // Рекомендована вікова група (6+, 12+, 16+, 18+)
+  content_warnings?: string; // JSON string of content warnings: ["violence", "explicit_content", ...]
   created_at?: string;
+}
+
+export interface BookRatingStats {
+  id?: number;
+  book_id: number;
+  rating_1_count: number; // Кількість рейтингів 1⭐
+  rating_2_count: number; // Кількість рейтингів 2⭐
+  rating_3_count: number; // Кількість рейтингів 3⭐
+  rating_4_count: number; // Кількість рейтингів 4⭐
+  rating_5_count: number; // Кількість рейтингів 5⭐
+  readers_count: number; // Кількість читачів сервісу, які зберегли книгу
+  popular_quotes?: string; // JSON масив популярних цитат з рецензій
+  updated_at?: string;
 }
 
 export interface Admin {
@@ -1068,3 +1083,156 @@ export const addAdminReply = (feedbackId: number, reply: string): Promise<void> 
      );
    });
  };
+
+// ===== EXTENDED BOOK INFORMATION FUNCTIONS =====
+
+/**
+ * Отримати детальну статистику книги (розподіл рейтингів, читачі, цитати)
+ * Функція для реалізації розширеної інформації про книги
+ */
+export const getBookDetailedStats = (bookId: number): Promise<any> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Отримуємо основну інформацію про книгу
+      const book = await getBookById(bookId);
+      if (!book) {
+        reject(new Error(`Book with id ${bookId} not found`));
+        return;
+      }
+
+      // Отримуємо розподіл рейтингів з відгуків
+      const ratingDistribution = await new Promise<any>((res, rej) => {
+        db.all(
+          `SELECT rating, COUNT(*) as count FROM reviews 
+           WHERE book_id = ? AND is_published = 1 
+           GROUP BY rating`,
+          [bookId],
+          (err, rows: Array<{ rating: number; count: number }>) => {
+            if (err) rej(err);
+            else {
+              const distribution = {
+                rating_1_count: 0,
+                rating_2_count: 0,
+                rating_3_count: 0,
+                rating_4_count: 0,
+                rating_5_count: 0
+              };
+              
+              if (rows && rows.length > 0) {
+                const totalReviews = rows.reduce((sum, r) => sum + r.count, 0);
+                rows.forEach(row => {
+                  const key = `rating_${row.rating}_count` as keyof typeof distribution;
+                  distribution[key] = row.count;
+                });
+                
+                res({ ...distribution, totalReviews });
+              } else {
+                res({ ...distribution, totalReviews: 0 });
+              }
+            }
+          }
+        );
+      });
+
+      // Отримуємо кількість читачів (користувачів, які зберегли книгу)
+      const readersCount = await new Promise<number>((res, rej) => {
+        db.get(
+          `SELECT COUNT(*) as count FROM saved_books WHERE book_id = ?`,
+          [bookId],
+          (err, row: any) => {
+            if (err) rej(err);
+            else res(row?.count || 0);
+          }
+        );
+      });
+
+      // Отримуємо популярні цитати з рецензій (коментарі з найбільшим рейтингом)
+      const popularQuotes = await new Promise<string[]>((res, rej) => {
+        db.all(
+          `SELECT comment FROM reviews 
+           WHERE book_id = ? AND is_published = 1 AND comment IS NOT NULL 
+           ORDER BY rating DESC LIMIT 5`,
+          [bookId],
+          (err, rows: Array<{ comment: string }>) => {
+            if (err) rej(err);
+            else res((rows || []).map(r => r.comment).filter(c => c && c.length > 0));
+          }
+        );
+      });
+
+      // Розраховуємо відсоток для кожного рейтингу
+      const totalReviews = ratingDistribution.totalReviews;
+      const ratingPercentages = {
+        rating_1_percent: totalReviews > 0 ? ((ratingDistribution.rating_1_count / totalReviews) * 100).toFixed(1) : 0,
+        rating_2_percent: totalReviews > 0 ? ((ratingDistribution.rating_2_count / totalReviews) * 100).toFixed(1) : 0,
+        rating_3_percent: totalReviews > 0 ? ((ratingDistribution.rating_3_count / totalReviews) * 100).toFixed(1) : 0,
+        rating_4_percent: totalReviews > 0 ? ((ratingDistribution.rating_4_count / totalReviews) * 100).toFixed(1) : 0,
+        rating_5_percent: totalReviews > 0 ? ((ratingDistribution.rating_5_count / totalReviews) * 100).toFixed(1) : 0
+      };
+
+      // Формуємо повну відповідь
+      const detailedStats = {
+        book,
+        rating_distribution: {
+          counts: {
+            rating_1: ratingDistribution.rating_1_count,
+            rating_2: ratingDistribution.rating_2_count,
+            rating_3: ratingDistribution.rating_3_count,
+            rating_4: ratingDistribution.rating_4_count,
+            rating_5: ratingDistribution.rating_5_count,
+            total_reviews: totalReviews
+          },
+          percentages: {
+            rating_1_percent: parseFloat(ratingPercentages.rating_1_percent as any),
+            rating_2_percent: parseFloat(ratingPercentages.rating_2_percent as any),
+            rating_3_percent: parseFloat(ratingPercentages.rating_3_percent as any),
+            rating_4_percent: parseFloat(ratingPercentages.rating_4_percent as any),
+            rating_5_percent: parseFloat(ratingPercentages.rating_5_percent as any)
+          }
+        },
+        readers_count: readersCount,
+        popular_quotes: popularQuotes,
+        recommended_age: book.recommended_age || 0,
+        content_warnings: book.content_warnings ? JSON.parse(book.content_warnings) : []
+      };
+
+      resolve(detailedStats);
+    } catch (error) {
+      reject(error);
+    }
+  });
+};
+
+/**
+ * Оновити інформацію про книгу (рекомендована вікова група, тригери вмісту)
+ */
+export const updateBookInfo = (
+  bookId: number,
+  recommendedAge?: number,
+  contentWarnings?: string[]
+): Promise<number> => {
+  return new Promise((resolve, reject) => {
+    const updates: any = {};
+    if (recommendedAge !== undefined) {
+      updates.recommended_age = recommendedAge;
+    }
+    if (contentWarnings !== undefined) {
+      updates.content_warnings = JSON.stringify(contentWarnings);
+    }
+
+    if (Object.keys(updates).length === 0) {
+      resolve(0);
+      return;
+    }
+
+    const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+    const values = Object.values(updates);
+    
+    const query = `UPDATE books SET ${fields} WHERE id = ?`;
+    
+    db.run(query, [...values, bookId], function(err) {
+      if (err) reject(err);
+      else resolve(this.changes);
+    });
+  });
+};

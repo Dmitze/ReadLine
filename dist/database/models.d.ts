@@ -15,7 +15,21 @@ export interface Book {
     reviews_count?: number;
     downloads_count?: number;
     is_available?: boolean;
+    recommended_age?: number;
+    content_warnings?: string;
     created_at?: string;
+}
+export interface BookRatingStats {
+    id?: number;
+    book_id: number;
+    rating_1_count: number;
+    rating_2_count: number;
+    rating_3_count: number;
+    rating_4_count: number;
+    rating_5_count: number;
+    readers_count: number;
+    popular_quotes?: string;
+    updated_at?: string;
 }
 export interface Admin {
     id?: number;
@@ -138,4 +152,6 @@ export declare const getAllFeedbackMessages: () => Promise<FeedbackMessage[]>;
 export declare const markFeedbackAsRead: (feedbackId: number) => Promise<void>;
 export declare const updateFeedbackStatus: (feedbackId: number, status: string) => Promise<number>;
 export declare const addAdminReply: (feedbackId: number, reply: string) => Promise<void>;
+export declare const getBookDetailedStats: (bookId: number) => Promise<any>;
+export declare const updateBookInfo: (bookId: number, recommendedAge?: number, contentWarnings?: string[]) => Promise<number>;
 //# sourceMappingURL=models.d.ts.map

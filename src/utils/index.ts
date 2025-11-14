@@ -27,3 +27,10 @@ export {
   type AICircuitBreakerConfig,
   type AICircuitBreakerStats
 } from './AICircuitBreaker';
+
+export {
+  isValidTag,
+  normalizeTag,
+  sanitizeTag,
+  splitCompoundTag
+} from './tagValidator';

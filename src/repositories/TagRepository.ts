@@ -41,11 +41,20 @@ export class TagRepository extends BaseRepository<Tag> {
 
   /**
    * Create a new tag
-   * @param name Tag name
+   * ВАЖЛИВО: теги повинні бути однослівними (максимум 2 слова без пробілів)
+   * @param name Tag name (e.g., "Детектив" or "Графічний_роман")
    * @returns Promise with tag ID
+   * @throws Error if tag name is invalid
    */
   async createTag(name: string): Promise<number> {
-    return this.insert({ name });
+    const { isValidTag, normalizeTag } = await import('../utils/tagValidator');
+    
+    if (!isValidTag(name)) {
+      throw new Error(`Невалідна назва тегу: "${name}". Теги мають бути однослівними або двослівними без пробілів.`);
+    }
+    
+    const normalized = normalizeTag(name);
+    return this.insert({ name: normalized });
   }
 
   /**
@@ -320,15 +329,19 @@ export class TagRepository extends BaseRepository<Tag> {
 
   /**
    * Create tag if not exists
+   * ВАЖЛИВО: теги повинні бути однослівними (максимум 2 слова без пробілів)
    * @param name Tag name
    * @returns Promise with tag ID
    */
   async getOrCreateTag(name: string): Promise<number> {
-    const existing = await this.getTagByName(name);
+    const { normalizeTag } = await import('../utils/tagValidator');
+    const normalized = normalizeTag(name);
+    
+    const existing = await this.getTagByName(normalized);
     if (existing && existing.id) {
       return existing.id;
     }
-    return this.createTag(name);
+    return this.createTag(normalized);
   }
 
   /**

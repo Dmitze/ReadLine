@@ -144,6 +144,74 @@ export class RestAPI {
     });
 
     /**
+     * Get detailed book information with rating distribution, readers count, quotes, age group and content warnings
+     * @route GET /api/books/:id/details
+     * @param {number} id - Book ID
+     * @returns {Object} Book details with extended information
+     */
+    this.app.get(`${prefix}/books/:id/details`, async (req: Request, res: Response) => {
+      try {
+        const bookId = parseInt(req.params.id);
+        const bookService = await this.serviceContainer.getBookService();
+        
+        const result = await bookService.getDetailedBookInfo(bookId);
+        
+        if (result.isErr()) {
+          return res.status(404).json({
+            success: false,
+            error: result.error.message
+          });
+        }
+
+        res.json({
+          success: true,
+          data: result.value
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: (error as Error).message
+        });
+      }
+    });
+
+    /**
+     * Update book extended information (age group, content warnings)
+     * @route PUT /api/books/:id/extended-info
+     * @param {number} id - Book ID
+     * @param {Object} body - Update data
+     * @param {number} body.recommended_age - Recommended age (0, 6, 12, 16, 18)
+     * @param {Array<string>} body.content_warnings - Content warnings list
+     * @returns {Object} Update result
+     */
+    this.app.put(`${prefix}/books/:id/extended-info`, async (req: Request, res: Response) => {
+      try {
+        const bookId = parseInt(req.params.id);
+        const { recommended_age, content_warnings } = req.body;
+        const bookService = await this.serviceContainer.getBookService();
+        
+        const result = await bookService.updateBookExtendedInfo(bookId, recommended_age, content_warnings);
+        
+        if (result.isErr()) {
+          return res.status(400).json({
+            success: false,
+            error: result.error.message
+          });
+        }
+
+        res.json({
+          success: true,
+          message: 'Book extended information updated successfully'
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          error: (error as Error).message
+        });
+      }
+    });
+
+    /**
      * Reviews endpoints
      */
     this.app.get(`${prefix}/books/:id/reviews`, async (req: Request, res: Response) => {

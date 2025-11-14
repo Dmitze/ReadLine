@@ -87,13 +87,18 @@ export const AudioUpdateSchema = {
 
 // ==================== TAG SCHEMAS ====================
 
+/**
+ * Теги повинні бути однослівними (максимум 2 слова без пробілів)
+ * Приклади валідних тегів: "Детектив", "Графічний_роман"
+ * Приклади невалідних тегів: "Сучасна література" (2 слова з пробілом)
+ */
 export const TagCreateSchema = {
-  name: ['required', 'string', 'min:1', 'max:50'],
+  name: ['required', 'string', 'min:1', 'max:50', 'tag'], // Спеціальна валідація для тегів
   description: ['string', 'max:500']
 };
 
 export const TagUpdateSchema = {
-  name: ['string', 'min:1', 'max:50'],
+  name: ['string', 'min:1', 'max:50', 'tag'], // Спеціальна валідація для тегів
   description: ['string', 'max:500']
 };
 

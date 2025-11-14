@@ -23,9 +23,18 @@ export const getAllTags = (): Promise<Tag[]> => {
 };
 
 // Додати новий тег
-export const addTag = (name: string): Promise<number> => {
+// ВАЖЛИВО: теги повинні бути однослівними (максимум 2 слова без пробілів)
+export const addTag = async (name: string): Promise<number> => {
+  const { isValidTag, normalizeTag } = await import('../utils/tagValidator');
+  
+  if (!isValidTag(name)) {
+    throw new Error(`Невалідна назва тегу: "${name}". Теги мають бути однослівними або двослівними без пробілів.`);
+  }
+  
+  const normalized = normalizeTag(name);
+  
   return new Promise((resolve, reject) => {
-    db.run('INSERT INTO tags (name) VALUES (?)', [name], function(err) {
+    db.run('INSERT INTO tags (name) VALUES (?)', [normalized], function(err) {
       if (err) reject(err);
       else resolve(this.lastID);
     });

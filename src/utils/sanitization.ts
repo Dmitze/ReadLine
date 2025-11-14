@@ -20,14 +20,17 @@ export function sanitizeSqlParam(value: string): string {
 }
 
 /**
- * Санітизація тегів
- * Дозволяє букви, цифри, пробіли, дефіси та апострофи
+ * Санітизація тегів - видаляє невалідні символи
+ * ВАЖЛИВО: тегів повинні бути однослівними (максимум 2 слова без пробілів)
+ * Дозволяє букви, цифри, дефіси, апострофи та підкреслення
+ * 
+ * @deprecated Використовуйте isValidTag та normalizeTag з tagValidator.ts
  */
 export function sanitizeTag(tag: string): string {
   if (!tag) return '';
   
   return tag
-    .replace(/[^a-zA-Zа-яА-ЯіІїЇєЄґҐ0-9\s\-']/g, '')
+    .replace(/[^a-zA-Zа-яА-ЯіІїЇєЄґҐ0-9\-_']/g, '') // Видаляємо невалідні символи, дозволяємо підкреслення
     .trim()
     .substring(0, 50); // Обмежуємо довжину
 }

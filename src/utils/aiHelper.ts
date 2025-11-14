@@ -378,7 +378,7 @@ export async function askAI(question: string, userId?: number): Promise<string> 
       throw new Error(`Gemini API помилка: ${response.status} - ${errorText}`);
     }
 
-    const data = await response.json();
+    const data = await response.json() as any;
     
     // ✅ ВИПРАВЛЕНО #14: proper error handling з перевіркою на кожному рівні
     if (!data) {

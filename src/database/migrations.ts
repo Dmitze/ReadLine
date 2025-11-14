@@ -339,6 +339,55 @@ const migration006_AddSoftDeleteSupport: IMigration = {
   }
 };
 
+/**
+ * MIGRATION 007 - Add extended book information (ratings distribution, age group, content warnings)
+ */
+const migration007_AddExtendedBookInfo: IMigration = {
+  version: '007_20251115_add_extended_book_info',
+  name: 'Add extended book information',
+
+  up: async (db: Database) => {
+    const sql = `
+      -- Add new columns to books table
+      ALTER TABLE books ADD COLUMN recommended_age INTEGER DEFAULT 0;
+      ALTER TABLE books ADD COLUMN content_warnings TEXT;
+
+      -- Create table for rating distribution (for caching stats)
+      CREATE TABLE IF NOT EXISTS book_rating_stats (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        book_id INTEGER NOT NULL UNIQUE,
+        rating_1_count INTEGER DEFAULT 0,
+        rating_2_count INTEGER DEFAULT 0,
+        rating_3_count INTEGER DEFAULT 0,
+        rating_4_count INTEGER DEFAULT 0,
+        rating_5_count INTEGER DEFAULT 0,
+        readers_count INTEGER DEFAULT 0,
+        popular_quotes TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+      );
+
+      -- Create indexes for performance
+      CREATE INDEX IF NOT EXISTS idx_books_recommended_age ON books(recommended_age);
+      CREATE INDEX IF NOT EXISTS idx_books_content_warnings ON books(content_warnings);
+      CREATE INDEX IF NOT EXISTS idx_book_rating_stats_book_id ON book_rating_stats(book_id);
+      CREATE INDEX IF NOT EXISTS idx_book_rating_stats_updated_at ON book_rating_stats(updated_at);
+    `;
+
+    try {
+      await db.run(sql);
+    } catch (error) {
+      // Columns might already exist in some cases
+      console.warn('Extended book info columns might already exist');
+    }
+  },
+
+  down: async (db: Database) => {
+    // SQLite doesn't support DROP COLUMN easily, so we skip rollback
+    console.warn('Rollback not supported for extended book info migration');
+  }
+};
+
 // Export all migrations
 export const allMigrations: IMigration[] = [
   migration001_CreateCoreTables,
@@ -346,5 +395,6 @@ export const allMigrations: IMigration[] = [
   migration003_AddSearchHistory,
   migration004_AddNotifications,
   migration005_AddStatistics,
-  migration006_AddSoftDeleteSupport
+  migration006_AddSoftDeleteSupport,
+  migration007_AddExtendedBookInfo
 ];

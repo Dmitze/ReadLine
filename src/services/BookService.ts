@@ -8,6 +8,7 @@ import { ReviewRepository } from '../repositories/ReviewRepository';
 import { SavedBookRepository } from '../repositories/SavedBookRepository';
 import { TagRepository } from '../repositories/TagRepository';
 import { Result, Ok, Err } from '../core/Result';
+import { getBookDetailedStats, updateBookInfo } from '../database/models';
 
 export interface CreateBookInput {
   title: string;
@@ -273,6 +274,47 @@ export class BookService {
       return new Ok(tags);
     } catch (error) {
       return new Err(error instanceof Error ? error : new Error('Failed to fetch book tags'));
+    }
+  }
+
+  /**
+   * Отримати детальну інформацію про книгу (розширена інформація)
+   * Включає розподіл рейтингів, кількість читачів, популярні цитати, вікову групу та тригери вмісту
+   */
+  async getDetailedBookInfo(bookId: number): Promise<Result<any>> {
+    try {
+      const stats = await getBookDetailedStats(bookId);
+      return new Ok(stats);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch detailed book info'));
+    }
+  }
+
+  /**
+   * Оновити розширену інформацію про книгу
+   * @param bookId - ID книги
+   * @param recommendedAge - Рекомендована вікова група (0 - всім, 6, 12, 16, 18)
+   * @param contentWarnings - Масив тригерів вмісту (наприклад: ["violence", "explicit_content"])
+   */
+  async updateBookExtendedInfo(
+    bookId: number,
+    recommendedAge?: number,
+    contentWarnings?: string[]
+  ): Promise<Result<void>> {
+    try {
+      const book = await this.bookRepository.findById(bookId);
+      if (!book) {
+        return new Err(new Error(`Book with id ${bookId} not found`));
+      }
+
+      const result = await updateBookInfo(bookId, recommendedAge, contentWarnings);
+      if (result === 0) {
+        return new Err(new Error('No updates were made'));
+      }
+
+      return new Ok(undefined);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to update book extended info'));
     }
   }
 }

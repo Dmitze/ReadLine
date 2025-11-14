@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addAdminReply = exports.updateFeedbackStatus = exports.markFeedbackAsRead = exports.getAllFeedbackMessages = exports.getPendingFeedbackMessages = exports.addFeedbackMessage = exports.getNewestBooks = exports.getMostDownloadedBooks = exports.getTopBooks = exports.areBooksaved = exports.isBookSaved = exports.getSavedBooks = exports.unsaveBook = exports.saveBook = exports.deleteReview = exports.publishReview = exports.getPendingReviews = exports.getBookReviews = exports.addReview = exports.incrementDownloads = exports.deleteBook = exports.updateBook = exports.searchBooks = exports.getBooksWithPagination = exports.getBooksByGenreWithPagination = exports.getExtendedAdminStats = exports.getAdminStats = exports.getAllAdmins = exports.isAdmin = exports.addAdmin = exports.getGenres = exports.getBookById = exports.getAllAvailableBooks = exports.getAllBooks = exports.getBooksByGenre = exports.addBook = exports.initDatabase = exports.db = void 0;
+exports.updateBookInfo = exports.getBookDetailedStats = exports.addAdminReply = exports.updateFeedbackStatus = exports.markFeedbackAsRead = exports.getAllFeedbackMessages = exports.getPendingFeedbackMessages = exports.addFeedbackMessage = exports.getNewestBooks = exports.getMostDownloadedBooks = exports.getTopBooks = exports.areBooksaved = exports.isBookSaved = exports.getSavedBooks = exports.unsaveBook = exports.saveBook = exports.deleteReview = exports.publishReview = exports.getPendingReviews = exports.getBookReviews = exports.addReview = exports.incrementDownloads = exports.deleteBook = exports.updateBook = exports.searchBooks = exports.getBooksWithPagination = exports.getBooksByGenreWithPagination = exports.getExtendedAdminStats = exports.getAdminStats = exports.getAllAdmins = exports.isAdmin = exports.addAdmin = exports.getGenres = exports.getBookById = exports.getAllAvailableBooks = exports.getAllBooks = exports.getBooksByGenre = exports.addBook = exports.initDatabase = exports.db = void 0;
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
@@ -803,4 +803,123 @@ const addAdminReply = (feedbackId, reply) => {
     });
 };
 exports.addAdminReply = addAdminReply;
+const getBookDetailedStats = (bookId) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const book = await (0, exports.getBookById)(bookId);
+            if (!book) {
+                reject(new Error(`Book with id ${bookId} not found`));
+                return;
+            }
+            const ratingDistribution = await new Promise((res, rej) => {
+                exports.db.all(`SELECT rating, COUNT(*) as count FROM reviews 
+           WHERE book_id = ? AND is_published = 1 
+           GROUP BY rating`, [bookId], (err, rows) => {
+                    if (err)
+                        rej(err);
+                    else {
+                        const distribution = {
+                            rating_1_count: 0,
+                            rating_2_count: 0,
+                            rating_3_count: 0,
+                            rating_4_count: 0,
+                            rating_5_count: 0
+                        };
+                        if (rows && rows.length > 0) {
+                            const totalReviews = rows.reduce((sum, r) => sum + r.count, 0);
+                            rows.forEach(row => {
+                                const key = `rating_${row.rating}_count`;
+                                distribution[key] = row.count;
+                            });
+                            res({ ...distribution, totalReviews });
+                        }
+                        else {
+                            res({ ...distribution, totalReviews: 0 });
+                        }
+                    }
+                });
+            });
+            const readersCount = await new Promise((res, rej) => {
+                exports.db.get(`SELECT COUNT(*) as count FROM saved_books WHERE book_id = ?`, [bookId], (err, row) => {
+                    if (err)
+                        rej(err);
+                    else
+                        res(row?.count || 0);
+                });
+            });
+            const popularQuotes = await new Promise((res, rej) => {
+                exports.db.all(`SELECT comment FROM reviews 
+           WHERE book_id = ? AND is_published = 1 AND comment IS NOT NULL 
+           ORDER BY rating DESC LIMIT 5`, [bookId], (err, rows) => {
+                    if (err)
+                        rej(err);
+                    else
+                        res((rows || []).map(r => r.comment).filter(c => c && c.length > 0));
+                });
+            });
+            const totalReviews = ratingDistribution.totalReviews;
+            const ratingPercentages = {
+                rating_1_percent: totalReviews > 0 ? ((ratingDistribution.rating_1_count / totalReviews) * 100).toFixed(1) : 0,
+                rating_2_percent: totalReviews > 0 ? ((ratingDistribution.rating_2_count / totalReviews) * 100).toFixed(1) : 0,
+                rating_3_percent: totalReviews > 0 ? ((ratingDistribution.rating_3_count / totalReviews) * 100).toFixed(1) : 0,
+                rating_4_percent: totalReviews > 0 ? ((ratingDistribution.rating_4_count / totalReviews) * 100).toFixed(1) : 0,
+                rating_5_percent: totalReviews > 0 ? ((ratingDistribution.rating_5_count / totalReviews) * 100).toFixed(1) : 0
+            };
+            const detailedStats = {
+                book,
+                rating_distribution: {
+                    counts: {
+                        rating_1: ratingDistribution.rating_1_count,
+                        rating_2: ratingDistribution.rating_2_count,
+                        rating_3: ratingDistribution.rating_3_count,
+                        rating_4: ratingDistribution.rating_4_count,
+                        rating_5: ratingDistribution.rating_5_count,
+                        total_reviews: totalReviews
+                    },
+                    percentages: {
+                        rating_1_percent: parseFloat(ratingPercentages.rating_1_percent),
+                        rating_2_percent: parseFloat(ratingPercentages.rating_2_percent),
+                        rating_3_percent: parseFloat(ratingPercentages.rating_3_percent),
+                        rating_4_percent: parseFloat(ratingPercentages.rating_4_percent),
+                        rating_5_percent: parseFloat(ratingPercentages.rating_5_percent)
+                    }
+                },
+                readers_count: readersCount,
+                popular_quotes: popularQuotes,
+                recommended_age: book.recommended_age || 0,
+                content_warnings: book.content_warnings ? JSON.parse(book.content_warnings) : []
+            };
+            resolve(detailedStats);
+        }
+        catch (error) {
+            reject(error);
+        }
+    });
+};
+exports.getBookDetailedStats = getBookDetailedStats;
+const updateBookInfo = (bookId, recommendedAge, contentWarnings) => {
+    return new Promise((resolve, reject) => {
+        const updates = {};
+        if (recommendedAge !== undefined) {
+            updates.recommended_age = recommendedAge;
+        }
+        if (contentWarnings !== undefined) {
+            updates.content_warnings = JSON.stringify(contentWarnings);
+        }
+        if (Object.keys(updates).length === 0) {
+            resolve(0);
+            return;
+        }
+        const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
+        const values = Object.values(updates);
+        const query = `UPDATE books SET ${fields} WHERE id = ?`;
+        exports.db.run(query, [...values, bookId], function (err) {
+            if (err)
+                reject(err);
+            else
+                resolve(this.changes);
+        });
+    });
+};
+exports.updateBookInfo = updateBookInfo;
 //# sourceMappingURL=models.js.map

@@ -179,6 +179,13 @@ export class ServiceContainer implements IServiceContainer {
   }
 
   /**
+   * Get BookService (convenience method)
+   */
+  async getBookService(): Promise<any> {
+    return this.resolve('bookService');
+  }
+
+  /**
    * Create a service instance
    */
   private async createInstance<T>(
