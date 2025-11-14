@@ -3,6 +3,7 @@ import { addReview, getBookById } from '../database/models';
 import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
 import { validateReviewData } from '../utils/validation';
+import { handleResult } from '../utils/resultHandler';
 
 const rateBookScene = new Scenes.WizardScene(
   'RATE_BOOK_SCENE',
@@ -15,11 +16,11 @@ const rateBookScene = new Scenes.WizardScene(
       return ctx.scene?.leave();
     }
     
-    const book = await getBookById(bookId);
-    if (!book) {
-      await ctx.reply('❌ Книга не знайдена.');
+    const bookResult = await getBookById(bookId);
+    if (!await handleResult(ctx, bookResult)) {
       return ctx.scene?.leave();
     }
+    const book = bookResult.unwrap();
     
     await ctx.reply(
       `⭐ <b>Оцініть книгу</b>\n\n📖 ${book.title}\n👤 ${book.author}\n\nОберіть рейтинг (1-5 зірок):`,
@@ -88,39 +89,34 @@ const rateBookScene = new Scenes.WizardScene(
       return;
     }
     
-    try {
-      const reviewData = {
-        book_id: bookId,
-        user_id: ctx.from!.id,
-        user_name: ctx.from!.first_name || 'Користувач',
-        rating: rating,
-        comment: comment,
-        is_published: false // Модерація адміном
-      };
-      
-      // Валідація даних
-      const validation = validateReviewData(reviewData);
-      if (!validation.isValid) {
-        await ctx.reply(
-          '❌ *Помилка валідації:*\n\n' + validation.errors.join('\n') + '\n\nСпробуйте оцінити книгу ще раз.',
-          { parse_mode: 'Markdown' }
-        );
-        return ctx.scene?.leave();
-      }
-      
-      await addReview(reviewData);
-      
+    const reviewData = {
+      book_id: bookId,
+      user_id: ctx.from!.id,
+      user_name: ctx.from!.first_name || 'Користувач',
+      rating: rating,
+      comment: comment,
+      is_published: false // Модерація адміном
+    };
+    
+    // Валідація даних
+    const validation = validateReviewData(reviewData);
+    if (!validation.isValid) {
       await ctx.reply(
-        `✅ *Дякуємо за відгук!*\n\n` +
-        `⭐ Ваша оцінка: ${'⭐'.repeat(rating)}\n` +
-        `💬 Коментар: ${comment || 'без коментаря'}\n\n` +
-        `📝 Відгук буде опублікований після модерації адміністратором.`,
+        '❌ *Помилка валідації:*\n\n' + validation.errors.join('\n') + '\n\nСпробуйте оцінити книгу ще раз.',
         { parse_mode: 'Markdown' }
       );
-    } catch (error) {
-      logger.error('Error saving review', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id, bookId });
-      await ctx.reply('❌ Виникла помилка при збереженні відгуку. Спробуйте ще раз.');
+      return ctx.scene?.leave();
     }
+    
+    await addReview(reviewData);
+    
+    await ctx.reply(
+      `✅ *Дякуємо за відгук!*\n\n` +
+      `⭐ Ваша оцінка: ${'⭐'.repeat(rating)}\n` +
+      `💬 Коментар: ${comment || 'без коментаря'}\n\n` +
+      `📝 Відгук буде опублікований після модерації адміністратором.`,
+      { parse_mode: 'Markdown' }
+    );
     
     return ctx.scene?.leave();
   }
