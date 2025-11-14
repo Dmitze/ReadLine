@@ -53,7 +53,6 @@ const editBookScene = new Scenes.WizardScene(
       });
       
       return ctx.wizard.next();
-    }
   },
   
   // Крок 2: Обробка вибору поля для редагування

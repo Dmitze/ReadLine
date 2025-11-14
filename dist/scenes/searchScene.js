@@ -37,6 +37,7 @@ const telegraf_1 = require("telegraf");
 const models_1 = require("../database/models");
 const mainKeyboards_1 = require("../keyboards/mainKeyboards");
 const logger_1 = require("../utils/logger");
+const SEARCH_LIMIT = 10;
 const searchScene = new telegraf_1.Scenes.BaseScene('SEARCH_SCENE');
 searchScene.enter(async (ctx) => {
     const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
@@ -124,154 +125,135 @@ searchScene.on('text', async (ctx) => {
             'Спробуйте скоротити запит або використати ключові слова.');
         return;
     }
-    try {
-        logger_1.logger.info('Search request', { searchTerm, userId: ctx.from?.id, searchType });
-        if (searchType === 'ai') {
-            await ctx.reply('🤖 Аналізую ваш запит та шукаю книги...');
-            const userId = ctx.from?.id;
-            try {
-                const { naturalLanguageSearch } = await Promise.resolve().then(() => __importStar(require('../utils/aiHelper')));
-                const { db } = await Promise.resolve().then(() => __importStar(require('../database/models')));
-                const { CONFIG } = await Promise.resolve().then(() => __importStar(require('../constants')));
-                const allBooks = await new Promise((resolve, reject) => {
-                    db.all(`SELECT * FROM books WHERE is_available = 1 ORDER BY rating DESC, downloads_count DESC LIMIT ${CONFIG.AI_MAX_BOOKS}`, [], (err, rows) => {
-                        if (err)
-                            reject(err);
-                        else
-                            resolve(rows || []);
-                    });
-                });
-                if (allBooks.length === 0) {
-                    await ctx.reply('📭 На жаль, в бібліотеці поки немає книг');
-                    return ctx.scene?.leave();
-                }
-                if (allBooks.length === CONFIG.AI_MAX_BOOKS) {
-                    await ctx.reply(`⚠️ Пошук обмежено першими ${CONFIG.AI_MAX_BOOKS} найпопулярніших книг для швидкості`);
-                }
-                const books = await naturalLanguageSearch(searchTerm, allBooks, userId);
-                if (books.length === 0) {
-                    await ctx.reply('😔 Не знайдено книг за вашим запитом.\n\n' +
-                        'Спробуйте:\n' +
-                        '• Описати інакше\n' +
-                        '• Використати інші ключові слова\n' +
-                        '• Звичайний пошук');
-                    return ctx.scene?.leave();
-                }
-                await ctx.reply(`✨ *AI знайшов ${books.length} ${books.length === 1 ? 'книгу' : books.length < 5 ? 'книги' : 'книг'}*\n\n` +
-                    `Запит: "${searchTerm}"`, { parse_mode: 'Markdown' });
-                const { isBookSaved } = await Promise.resolve().then(() => __importStar(require('../database/models')));
-                for (const book of books) {
-                    const isSaved = userId ? await isBookSaved(userId, book.id) : false;
-                    const caption = `📖 *${book.title}*\n` +
-                        `👤 ${book.author}\n` +
-                        `📚 ${book.genre}\n\n` +
-                        `${book.description?.substring(0, 150) || 'Немає опису'}...`;
-                    if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
-                        try {
-                            await ctx.replyWithPhoto(book.photo_file_id, {
-                                caption,
-                                parse_mode: 'Markdown',
-                                reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
-                            });
-                        }
-                        catch (error) {
-                            await ctx.reply(caption, {
-                                parse_mode: 'Markdown',
-                                reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
-                            });
-                        }
-                    }
-                    else {
-                        await ctx.reply(caption, {
-                            parse_mode: 'Markdown',
-                            reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
-                        });
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-                logger_1.logger.userAction(ctx.from?.id || 0, 'ai_search', { query: searchTerm, booksFound: books.length });
-            }
-            catch (error) {
-                logger_1.logger.error('Error in AI search', error instanceof Error ? error : new Error(String(error)));
-                await ctx.reply('❌ Виникла помилка при AI пошуку. Спробуйте звичайний пошук.');
-            }
-            return ctx.scene?.leave();
-        }
-        const SEARCH_LIMIT = 10;
-        let books = [];
-        let searchTypeText = '';
-        books = await (0, models_1.searchBooks)(searchTerm, SEARCH_LIMIT);
-        switch (searchType) {
-            case 'title':
-                searchTypeText = '📖 за назвою';
-                break;
-            case 'author':
-                searchTypeText = '👤 за автором';
-                break;
-            case 'genre':
-                searchTypeText = '📚 за жанром';
-                break;
-            default:
-                searchTypeText = '🔍 загальний';
-        }
-        logger_1.logger.info('Search results', { booksFound: books.length });
-        if (books.length === 0) {
-            const noResultsMessage = '📭 <b>За вашим запитом нічого не знайдено</b>\n\n' +
-                `Пошуковий запит: "${searchTerm}"\n\n` +
-                '<b>🔍 Спробуйте:</b>\n' +
-                '• Перевірити правопис\n' +
-                '• Використати менш конкретні слова\n' +
-                '• Скористатися каталогом за жанрами\n' +
-                '• Спробувати інший пошук';
-            await ctx.reply(noResultsMessage, { parse_mode: 'HTML' });
-            return ctx.scene?.leave();
-        }
-        const resultsMessage = `<b>🔍 Результати пошуку ${searchTypeText}</b>\n\n` +
-            `Знайдено: ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}\n` +
-            `Запит: "${searchTerm}"`;
-        await ctx.reply(resultsMessage, { parse_mode: 'HTML' });
-        const { isBookSaved } = await Promise.resolve().then(() => __importStar(require('../database/models')));
+    logger_1.logger.info('Search request', { searchTerm, userId: ctx.from?.id, searchType });
+    if (searchType === 'ai') {
+        await ctx.reply('🤖 Аналізую ваш запит та шукаю книги...');
         const userId = ctx.from?.id;
+        const { naturalLanguageSearch } = await Promise.resolve().then(() => __importStar(require('../utils/aiHelper')));
+        const { db } = await Promise.resolve().then(() => __importStar(require('../database/models')));
+        const { CONFIG } = await Promise.resolve().then(() => __importStar(require('../constants')));
+        const allBooks = await new Promise((resolve, reject) => {
+            db.all(`SELECT * FROM books WHERE is_available = 1 ORDER BY rating DESC, downloads_count DESC LIMIT ${CONFIG.AI_MAX_BOOKS}`, [], (err, rows) => {
+                if (err)
+                    reject(err);
+                else
+                    resolve(rows || []);
+            });
+        });
+        if (allBooks.length === 0) {
+            await ctx.reply('📭 На жаль, в бібліотеці поки немає книг');
+            return ctx.scene?.leave();
+        }
+        if (allBooks.length === CONFIG.AI_MAX_BOOKS) {
+            await ctx.reply(`⚠️ Пошук обмежено першими ${CONFIG.AI_MAX_BOOKS} найпопулярніших книг для швидкості`);
+        }
+        const books = await naturalLanguageSearch(searchTerm, allBooks, userId);
+        if (books.length === 0) {
+            await ctx.reply('😔 Не знайдено книг за вашим запитом.\n\n' +
+                'Спробуйте:\n' +
+                '• Описати інакше\n' +
+                '• Використати інші ключові слова\n' +
+                '• Звичайний пошук');
+            return ctx.scene?.leave();
+        }
+        await ctx.reply(`✨ *AI знайшов ${books.length} ${books.length === 1 ? 'книгу' : books.length < 5 ? 'книги' : 'книг'}*\n\n` +
+            `Запит: "${searchTerm}"`, { parse_mode: 'Markdown' });
+        const { isBookSaved } = await Promise.resolve().then(() => __importStar(require('../database/models')));
         for (const book of books) {
             const isSaved = userId ? await isBookSaved(userId, book.id) : false;
-            const caption = `📖 <b>${book.title}</b>\n👤 Автор: ${book.author}\n📚 Жанр: ${book.genre}\n📝 ${book.description?.substring(0, 100) || 'Немає опису'}...`;
-            if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
-                try {
-                    await ctx.replyWithPhoto(book.photo_file_id, {
-                        caption,
-                        parse_mode: 'HTML',
-                        reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
-                    });
-                }
-                catch (error) {
+            const caption = `📖 *${book.title}*\n` +
+                `👤 ${book.author}\n` +
+                `📚 ${book.genre}\n\n` +
+                `${book.description?.substring(0, 150) || 'Немає опису'}...`;
+            if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
+                await ctx.replyWithPhoto(book.photo_file_id, {
+                    caption,
+                    parse_mode: 'Markdown',
+                    reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
+                }).catch(async () => {
                     await ctx.reply(caption, {
-                        parse_mode: 'HTML',
+                        parse_mode: 'Markdown',
                         reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
                     });
-                }
+                });
             }
             else {
+                await ctx.reply(caption, {
+                    parse_mode: 'Markdown',
+                    reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
+                });
+            }
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        logger_1.logger.userAction(ctx.from?.id || 0, 'ai_search', { query: searchTerm, booksFound: books.length });
+        return ctx.scene?.leave();
+    }
+    let books = [];
+    let searchTypeText = '';
+    books = await (0, models_1.searchBooks)(searchTerm, SEARCH_LIMIT);
+    switch (searchType) {
+        case 'title':
+            searchTypeText = '📖 за назвою';
+            break;
+        case 'author':
+            searchTypeText = '👤 за автором';
+            break;
+        case 'genre':
+            searchTypeText = '📚 за жанром';
+            break;
+        default:
+            searchTypeText = '🔍 загальний';
+    }
+    logger_1.logger.info('Search results', { booksFound: books.length });
+    if (books.length === 0) {
+        const noResultsMessage = '📭 <b>За вашим запитом нічого не знайдено</b>\n\n' +
+            `Пошуковий запит: "${searchTerm}"\n\n` +
+            '<b>🔍 Спробуйте:</b>\n' +
+            '• Перевірити правопис\n' +
+            '• Використати менш конкретні слова\n' +
+            '• Скористатися каталогом за жанрами\n' +
+            '• Спробувати інший пошук';
+        await ctx.reply(noResultsMessage, { parse_mode: 'HTML' });
+        return ctx.scene?.leave();
+    }
+    const resultsMessage = `<b>🔍 Результати пошуку ${searchTypeText}</b>\n\n` +
+        `Знайдено: ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}\n` +
+        `Запит: "${searchTerm}"`;
+    await ctx.reply(resultsMessage, { parse_mode: 'HTML' });
+    const { isBookSaved } = await Promise.resolve().then(() => __importStar(require('../database/models')));
+    const userId = ctx.from?.id;
+    for (const book of books) {
+        const isSaved = userId ? await isBookSaved(userId, book.id) : false;
+        const caption = `📖 <b>${book.title}</b>\n👤 Автор: ${book.author}\n📚 Жанр: ${book.genre}\n📝 ${book.description?.substring(0, 100) || 'Немає опису'}...`;
+        if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
+            await ctx.replyWithPhoto(book.photo_file_id, {
+                caption,
+                parse_mode: 'HTML',
+                reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
+            }).catch(async () => {
                 await ctx.reply(caption, {
                     parse_mode: 'HTML',
                     reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
                 });
-            }
-            await new Promise(resolve => setTimeout(resolve, 300));
+            });
         }
-        if (books.length === SEARCH_LIMIT) {
-            await ctx.reply(`ℹ️ Показано перші ${SEARCH_LIMIT} результатів.\n` +
-                `Уточніть пошуковий запит для більш точних результатів.`);
+        else {
+            await ctx.reply(caption, {
+                parse_mode: 'HTML',
+                reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
+            });
         }
-        logger_1.logger.userAction(ctx.from?.id || 0, 'search_completed', {
-            searchTerm,
-            searchType,
-            resultsCount: books.length
-        });
+        await new Promise(resolve => setTimeout(resolve, 300));
     }
-    catch (error) {
-        logger_1.logger.error('Error searching books', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id, searchTerm });
-        await ctx.reply('❌ Виникла помилка при пошуку книг. Спробуйте ще раз.');
+    if (books.length === SEARCH_LIMIT) {
+        await ctx.reply(`ℹ️ Показано перші ${SEARCH_LIMIT} результатів.\n` +
+            `Уточніть пошуковий запит для більш точних результатів.`);
     }
+    logger_1.logger.userAction(ctx.from?.id || 0, 'search_completed', {
+        searchTerm,
+        searchType,
+        resultsCount: books.length
+    });
     const { getMainMenuKeyboard } = await Promise.resolve().then(() => __importStar(require('../keyboards/mainKeyboards')));
     await ctx.reply('🔍 Пошук завершено', {
         reply_markup: getMainMenuKeyboard()

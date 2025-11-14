@@ -208,12 +208,12 @@ manageBooksScene.action(/delete_book_(\d+)/, async (ctx: BotContext) => {
   }
   
   const bookId = parseInt(match[1]);
-  const bookResult = await getBookById(bookId);
+  const book = await getBookById(bookId);
   
-  if (!await handleResult(ctx, bookResult)) {
+  if (!book) {
+    await ctx.answerCbQuery('❌ Книга не знайдена');
     return;
   }
-  const book = bookResult.unwrap();
   
   await ctx.answerCbQuery();
   
@@ -243,12 +243,12 @@ manageBooksScene.action(/confirm_delete_(\d+)/, async (ctx: BotContext) => {
   }
   
   const bookId = parseInt(match[1]);
-  const bookResult = await getBookById(bookId);
+  const book = await getBookById(bookId);
   
-  if (!await handleResult(ctx, bookResult)) {
+  if (!book) {
+    await ctx.answerCbQuery('❌ Книга не знайдена');
     return;
   }
-  const book = bookResult.unwrap();
   
   // Видаляємо книгу
   await deleteBook(bookId);
@@ -686,11 +686,10 @@ manageBooksScene.action('bulk_delete', async (ctx: BotContext) => {
   // Отримуємо назви книг для підтвердження
   const bookNames = await Promise.all(
     state.selectedBooks.map(async (id: number) => {
-      const bookResult = await getBookById(id);
-      if (!await handleResult(ctx, bookResult, false)) {
+      const book = await getBookById(id);
+      if (!book) {
         return `• Книга #${id}`;
       }
-      const book = bookResult.unwrap();
       return `• ${book.title}`;
     })
   );

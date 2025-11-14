@@ -16,11 +16,11 @@ const rateBookScene = new Scenes.WizardScene(
       return ctx.scene?.leave();
     }
     
-    const bookResult = await getBookById(bookId);
-    if (!await handleResult(ctx, bookResult)) {
+    const book = await getBookById(bookId);
+    if (!book) {
+      await ctx.reply('❌ Помилка: книга не знайдена.');
       return ctx.scene?.leave();
     }
-    const book = bookResult.unwrap();
     
     await ctx.reply(
       `⭐ <b>Оцініть книгу</b>\n\n📖 ${book.title}\n👤 ${book.author}\n\nОберіть рейтинг (1-5 зірок):`,

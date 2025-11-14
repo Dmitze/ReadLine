@@ -19,7 +19,7 @@ export default (bot: Telegraf<BotContext>) => {
   // Команда адміністратора
   bot.command('admin', async (ctx) => {
     logger.info('/admin command received', { userId: ctx.from?.id });
-    try {
+    (async () => {
       // Перевіряємо чи є користувач
       if (!ctx.from?.id) {
         await ctx.reply('❌ Не вдалося ідентифікувати користувача.');
@@ -60,16 +60,16 @@ export default (bot: Telegraf<BotContext>) => {
           reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
         }
       );
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error in admin command', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.reply('❌ Виникла помилка при отриманні даних адміністратора.');
-    }
+      ctx.reply('❌ Виникла помилка при отриманні даних адміністратора.');
+    });
     return;
   });
   
   // Додати книгу
   bot.action('add_book', async (ctx: BotContext) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery('Відкриваємо форму додавання книги...');
       
       const adminCheck = await isAdmin(ctx.from.id);
@@ -79,16 +79,16 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       ctx.scene.enter('ADD_BOOK_SCENE');
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error entering add book scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.reply('❌ Виникла помилка при переході до додавання книги.');
-    }
+      ctx.reply('❌ Виникла помилка при переході до додавання книги.');
+    });
     return;
   });
   
   // Управління книгами
   bot.action('manage_books', async (ctx: BotContext) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery('Завантаження списку книг...');
       
       const adminCheck = await isAdmin(ctx.from.id);
@@ -98,16 +98,16 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       ctx.scene.enter('MANAGE_BOOKS_SCENE');
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error entering manage books scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.reply('❌ Виникла помилка при переході до управління книгами.');
-    }
+      ctx.reply('❌ Виникла помилка при переході до управління книгами.');
+    });
     return;
   });
   
   // Керування промокодами
   bot.action('manage_promo_codes', async (ctx: BotContext) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery('Завантаження системи промокодів...');
       
       const adminCheck = await isAdmin(ctx.from.id);
@@ -117,16 +117,16 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       ctx.scene.enter('PROMO_ADMIN_SCENE');
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error entering promo admin scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.reply('❌ Виникла помилка при переході до керування промокодами.');
-    }
+      ctx.reply('❌ Виникла помилка при переході до керування промокодами.');
+    });
     return;
   });
   
   // Статистика
   bot.action('admin_stats', async (ctx) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery('Завантаження статистики...');
       
       const adminCheck = await isAdmin(ctx.from.id);
@@ -144,10 +144,10 @@ export default (bot: Telegraf<BotContext>) => {
         `📝 Відгуків на модерацію: ${pendingReviews.length}`,
         { parse_mode: 'Markdown' }
       );
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error getting admin stats', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.reply('❌ Виникла помилка при отриманні статистики.');
-    }
+      ctx.reply('❌ Виникла помилка при отриманні статистики.');
+    });
     return;
   });
   
@@ -155,7 +155,7 @@ export default (bot: Telegraf<BotContext>) => {
   
   // Модерація відгуків
   bot.action('moderate_reviews', async (ctx) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery('Завантаження відгуків...');
       
       const adminCheck = await isAdmin(ctx.from!.id);
@@ -213,16 +213,16 @@ export default (bot: Telegraf<BotContext>) => {
           logger.error('Error getting book for review', bookError instanceof Error ? bookError : new Error(String(bookError)), { reviewId: review.id });
         }
       }
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error showing pending reviews', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.reply('❌ Виникла помилка при отриманні відгуків.');
-    }
+      ctx.reply('❌ Виникла помилка при отриманні відгуків.');
+    });
     return;
   });
   
   // Публікація відгуку
   bot.action(/publish_review_(\d+)/, async (ctx: BotContext) => {
-    try {
+    (async () => {
       if (!ctx.from?.id) {
         await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача.');
         return;
@@ -254,16 +254,16 @@ export default (bot: Telegraf<BotContext>) => {
       } else {
         await ctx.answerCbQuery('⚠️ Відгук не знайдено');
       }
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error publishing review', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка при публікації відгуку');
-    }
+      ctx.answerCbQuery('❌ Помилка при публікації відгуку');
+    });
     return;
   });
   
   // Видалення відгуку
   bot.action(/delete_review_(\d+)/, async (ctx: BotContext) => {
-    try {
+    (async () => {
       if (!ctx.from?.id) {
         await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача.');
         return;
@@ -295,16 +295,16 @@ export default (bot: Telegraf<BotContext>) => {
       } else {
         await ctx.answerCbQuery('⚠️ Відгук не знайдено');
       }
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error deleting review', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка при видаленні відгуку');
-    }
+      ctx.answerCbQuery('❌ Помилка при видаленні відгуку');
+    });
     return;
   });
   
   // Перегляд повідомлень зворотного зв'язку (лише нові)
   bot.action('view_feedback', async (ctx) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery('Завантаження нових повідомлень...');
       
       const adminCheck = await isAdmin(ctx.from!.id);
@@ -423,19 +423,19 @@ export default (bot: Telegraf<BotContext>) => {
         }
       );
       
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error showing feedback messages', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.reply(
+      ctx.reply(
         '❌ Виникла помилка при отриманні повідомлень.\n\n' +
         `Деталі: ${error instanceof Error ? error.message : String(error)}`
       );
-    }
+    });
     return;
   });
   
   // Відповісти на повідомлення
   bot.action(/reply_feedback_(\d+)/, async (ctx: BotContext) => {
-    try {
+    (async () => {
       if (!ctx.from?.id) {
         await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача.');
         return;
@@ -472,16 +472,16 @@ export default (bot: Telegraf<BotContext>) => {
         originalMessage: message.message
       });
       
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error opening reply form', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка при відкритті форми відповіді');
-    }
+      ctx.answerCbQuery('❌ Помилка при відкритті форми відповіді');
+    });
     return;
   });
   
   // Позначити повідомлення прочитаним
   bot.action(/mark_feedback_read_(\d+)/, async (ctx: BotContext) => {
-    try {
+    (async () => {
       if (!ctx.from?.id) {
         await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача.');
         return;
@@ -519,16 +519,16 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       await ctx.answerCbQuery('✅ Позначено прочитаним!');
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error marking feedback as read', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка при оновленні статусу');
-    }
+      ctx.answerCbQuery('❌ Помилка при оновленні статусу');
+    });
     return;
   });
   
   // Обробник кнопки "Назад до адмінки"
   bot.action('admin_back', async (ctx: BotContext) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery();
       
       const adminCheck = await isAdmin(ctx.from.id);
@@ -560,16 +560,16 @@ export default (bot: Telegraf<BotContext>) => {
           reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
         }
       );
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error returning to admin panel', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка');
-    }
+      ctx.answerCbQuery('❌ Помилка');
+    });
     return;
   });
   
   // Обробник для кнопки "Назад" з промокодів
   bot.action('promo_back', async (ctx: BotContext) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery();
       await ctx.scene.leave();
       
@@ -602,16 +602,16 @@ export default (bot: Telegraf<BotContext>) => {
           reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
         }
       );
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error returning to admin panel from promo', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка');
-    }
+      ctx.answerCbQuery('❌ Помилка');
+    });
     return;
   });
 
   // Показати історію всіх повідомлень
   bot.action('view_feedback_history', async (ctx) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery('Завантаження історії повідомлень...');
       
       const adminCheck = await isAdmin(ctx.from!.id);
@@ -704,10 +704,10 @@ export default (bot: Telegraf<BotContext>) => {
         }
       );
       
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error showing feedback history', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.reply('❌ Виникла помилка при отриманні історії повідомлень.');
-    }
+      ctx.reply('❌ Виникла помилка при отриманні історії повідомлень.');
+    });
     return;
   });
 };

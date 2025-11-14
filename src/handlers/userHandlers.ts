@@ -468,7 +468,7 @@ export default (bot: Telegraf<BotContext>) => {
   bot.action(/save_(\d+)/, async (ctx: BotContext) => {
     const { retryOperation, sendErrorToUser } = await import('../utils/errorHandler');
     
-    try {
+    (async () => {
       const match = ctx.match;
       if (!match || !match[1]) {
         await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
@@ -508,17 +508,16 @@ export default (bot: Telegraf<BotContext>) => {
           await ctx.answerCbQuery('❤️ Збережено!', { show_alert: false });
         }
       }, 2, 500);
-      
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error saving book', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await sendErrorToUser(ctx, error, '❌ Помилка при збереженні. Спробуйте ще раз.');
-    }
+      sendErrorToUser(ctx, error, '❌ Помилка при збереженні. Спробуйте ще раз.');
+    });
     return;
   });
   
   // Обробка перегляду збереженої книги
   bot.action(/view_saved_book_(\d+)/, async (ctx: BotContext) => {
-    try {
+    (async () => {
       const match = ctx.match;
       if (!match || !match[1]) {
         await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
@@ -546,18 +545,16 @@ export default (bot: Telegraf<BotContext>) => {
       const keyboard = getEnhancedBookKeyboard(book, isSaved);
       
       if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
-        try {
-          await ctx.replyWithPhoto(book.photo_file_id, {
-            caption,
-            parse_mode: 'HTML',
-            reply_markup: keyboard
-          });
-        } catch (photoError) {
+        await ctx.replyWithPhoto(book.photo_file_id, {
+          caption,
+          parse_mode: 'HTML',
+          reply_markup: keyboard
+        }).catch(async () => {
           await ctx.reply(caption, {
             parse_mode: 'HTML',
             reply_markup: keyboard
           });
-        }
+        });
       } else {
         await ctx.reply(caption, {
           parse_mode: 'HTML',
@@ -566,16 +563,16 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       logger.userAction(userId, 'view_saved_book', { bookId });
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error viewing saved book', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка при завантаженні');
-    }
+      ctx.answerCbQuery('❌ Помилка при завантаженні');
+    });
     return;
   });
   
   // Обробка перегляду книги з компактного списку
   bot.action(/view_book_(\d+)/, async (ctx: BotContext) => {
-    try {
+    (async () => {
       const match = ctx.match;
       if (!match || !match[1]) {
         await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
@@ -598,18 +595,16 @@ export default (bot: Telegraf<BotContext>) => {
       const keyboard = getEnhancedBookKeyboard(book, isSaved);
       
       if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
-        try {
-          await ctx.replyWithPhoto(book.photo_file_id, {
-            caption,
-            parse_mode: 'HTML',
-            reply_markup: keyboard
-          });
-        } catch (photoError) {
+        await ctx.replyWithPhoto(book.photo_file_id, {
+          caption,
+          parse_mode: 'HTML',
+          reply_markup: keyboard
+        }).catch(async () => {
           await ctx.reply(caption, {
             parse_mode: 'HTML',
             reply_markup: keyboard
           });
-        }
+        });
       } else {
         await ctx.reply(caption, {
           parse_mode: 'HTML',
@@ -618,10 +613,10 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       logger.userAction(userId || 0, 'view_book_from_list', { bookId });
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error viewing book from list', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка при завантаженні');
-    }
+      ctx.answerCbQuery('❌ Помилка при завантаженні');
+    });
     return;
   });
   
@@ -629,7 +624,7 @@ export default (bot: Telegraf<BotContext>) => {
   bot.action(/download_pdf_(\d+)/, async (ctx: BotContext) => {
     const { withTimeout, ErrorType, sendErrorToUser } = await import('../utils/errorHandler');
     
-    try {
+    (async () => {
       const match = ctx.match;
       if (!match || !match[1]) {
         await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
@@ -659,17 +654,16 @@ export default (bot: Telegraf<BotContext>) => {
           await ctx.answerCbQuery('❌ Файл недоступний');
         }
       }, 30000, 'PDF download timeout');
-      
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error downloading PDF', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await sendErrorToUser(ctx, error, '❌ Помилка при завантаженні файлу. Спробуйте пізніше.');
-    }
+      sendErrorToUser(ctx, error, '❌ Помилка при завантаженні файлу. Спробуйте пізніше.');
+    });
     return;
   });
   
   // Обробка кнопки "Прослухати Аудіокнигу" - відправляє аудіофайл
   bot.action(/download_audio_(\d+)/, async (ctx: BotContext) => {
-    try {
+    (async () => {
       const match = ctx.match;
       if (!match || !match[1]) {
         await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
@@ -719,16 +713,16 @@ export default (bot: Telegraf<BotContext>) => {
       } else {
         await ctx.answerCbQuery('❌ Аудіокнига недоступна');
       }
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error sending audio', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка при відправці аудіо');
-    }
+      ctx.answerCbQuery('❌ Помилка при відправці аудіо');
+    });
     return;
   });
   
   // Обробка кнопки "Відгуки"
   bot.action(/reviews_(\d+)/, async (ctx: BotContext) => {
-    try {
+    (async () => {
       const match = ctx.match;
       if (!match || !match[1]) {
         await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
@@ -766,16 +760,16 @@ export default (bot: Telegraf<BotContext>) => {
       
       await ctx.reply(reviewsText, { parse_mode: 'HTML' });
       await ctx.answerCbQuery();
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error showing reviews', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка при отриманні відгуків');
-    }
+      ctx.answerCbQuery('❌ Помилка при отриманні відгуків');
+    });
     return;
   });
   
   // Обробка кнопки "Схожі книги"
   bot.action(/similar_(\d+)/, async (ctx: BotContext) => {
-    try {
+    (async () => {
       const match = ctx.match;
       if (!match || !match[1]) {
         await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
@@ -804,10 +798,10 @@ export default (bot: Telegraf<BotContext>) => {
       );
       
       await ctx.answerCbQuery();
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error showing similar books', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка при пошуку схожих книг');
-    }
+      ctx.answerCbQuery('❌ Помилка при пошуку схожих книг');
+    });
     return;
   });
   
@@ -846,7 +840,7 @@ export default (bot: Telegraf<BotContext>) => {
   
   // Обробники фільтрів каталогу
   bot.action('catalog_genres', async (ctx: BotContext) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery();
       const genres = await cache.getOrSet(
         CACHE_KEYS.GENRES,
@@ -858,14 +852,14 @@ export default (bot: Telegraf<BotContext>) => {
       await ctx.reply('📚 Оберіть жанр:', {
         reply_markup: keyboard
       });
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error showing genres', error);
-      await ctx.answerCbQuery('❌ Помилка');
-    }
+      ctx.answerCbQuery('❌ Помилка');
+    });
   });
   
   bot.action('catalog_rating', async (ctx: BotContext) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery('⭐ Завантаження книг з високим рейтингом...');
       
       const books = await getHighRatedBooks(4, 10);
@@ -902,14 +896,14 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       logger.userAction(ctx.from!.id, 'catalog_rating');
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error showing high rated books', error);
-      await ctx.answerCbQuery('❌ Помилка');
-    }
+      ctx.answerCbQuery('❌ Помилка');
+    });
   });
   
   bot.action('catalog_new', async (ctx: BotContext) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery('🆕 Завантаження новинок...');
       
       const books = await cache.getOrSet(
@@ -950,14 +944,14 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       logger.userAction(ctx.from!.id, 'catalog_new');
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error showing new books', error);
-      await ctx.answerCbQuery('❌ Помилка');
-    }
+      ctx.answerCbQuery('❌ Помилка');
+    });
   });
   
   bot.action('catalog_tags', async (ctx: BotContext) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery();
       const allTags = await getAllTags();
       
@@ -988,14 +982,14 @@ export default (bot: Telegraf<BotContext>) => {
       );
       
       logger.userAction(ctx.from!.id, 'catalog_tags');
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error showing tags catalog', error);
-      await ctx.answerCbQuery('❌ Помилка');
-    }
+      ctx.answerCbQuery('❌ Помилка');
+    });
   });
   
   bot.action('catalog_alpha', async (ctx: BotContext) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery('🔤 Завантаження книг за алфавітом...');
       
       const { books, total } = await getBooksSortedByTitle(10, 0);
@@ -1036,14 +1030,14 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       logger.userAction(ctx.from!.id, 'catalog_alpha');
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error showing books by title', error);
-      await ctx.answerCbQuery('❌ Помилка');
-    }
+      ctx.answerCbQuery('❌ Помилка');
+    });
   });
   
   bot.action('catalog_audio', async (ctx: BotContext) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery('🎧 Завантаження аудіокниг...');
       
       const books = await getBooksWithAudio(10);
@@ -1080,14 +1074,14 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       logger.userAction(ctx.from!.id, 'catalog_audio');
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error showing audio books', error);
-      await ctx.answerCbQuery('❌ Помилка');
-    }
+      ctx.answerCbQuery('❌ Помилка');
+    });
   });
   
   bot.action('catalog_downloads', async (ctx: BotContext) => {
-    try {
+    (async () => {
       await ctx.answerCbQuery('📥 Завантаження популярних книг...');
       
       const books = await getMostDownloadedBooks(10);
@@ -1124,15 +1118,15 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       logger.userAction(ctx.from!.id, 'catalog_downloads');
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error showing most downloaded books', error);
-      await ctx.answerCbQuery('❌ Помилка');
-    }
+      ctx.answerCbQuery('❌ Помилка');
+    });
   });
   
   // Обробка перегляду книг за тегом з каталогу
   bot.action(/view_tag_(\d+)/, async (ctx: BotContext) => {
-    try {
+    (async () => {
       const match = ctx.match;
       if (!match || !match[1]) {
         await ctx.answerCbQuery('❌ Помилка');
@@ -1185,15 +1179,15 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       logger.userAction(ctx.from!.id, 'view_tag', { tagId, tagName: tag.name });
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error showing books by tag', error);
-      await ctx.answerCbQuery('❌ Помилка');
-    }
+      ctx.answerCbQuery('❌ Помилка');
+    });
   });
   
   // Обробка пошуку за тегом
   bot.action(/search_tag_(\d+)/, async (ctx: BotContext) => {
-    try {
+    (async () => {
       const match = ctx.match;
       if (!match || !match[1]) {
         await ctx.answerCbQuery('❌ Помилка');
@@ -1251,11 +1245,11 @@ export default (bot: Telegraf<BotContext>) => {
       }
       
       logger.userAction(ctx.from!.id, 'search_by_tag', { tagName: tag.name, resultsCount: books.length });
-    } catch (error) {
+    })().catch((error) => {
       logger.error('Error searching by tag', error);
-      await ctx.answerCbQuery('❌ Помилка пошуку');
-      await ctx.reply(ERRORS.GENERIC);
-    }
+      ctx.answerCbQuery('❌ Помилка пошуку');
+      ctx.reply(ERRORS.GENERIC);
+    });
   });
 
   logger.info('User handlers registered (including AI features and promo codes)');

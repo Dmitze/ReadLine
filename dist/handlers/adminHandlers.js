@@ -41,7 +41,7 @@ exports.default = (bot) => {
     logger_1.logger.info('Admin handlers registered');
     bot.command('admin', async (ctx) => {
         logger_1.logger.info('/admin command received', { userId: ctx.from?.id });
-        try {
+        (async () => {
             if (!ctx.from?.id) {
                 await ctx.reply('❌ Не вдалося ідентифікувати користувача.');
                 return;
@@ -68,15 +68,14 @@ exports.default = (bot) => {
                 parse_mode: 'HTML',
                 reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(pendingReviews.length, pendingFeedback.length)
             });
-        }
-        catch (error) {
+        })().catch((error) => {
             logger_1.logger.error('Error in admin command', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.reply('❌ Виникла помилка при отриманні даних адміністратора.');
-        }
+            ctx.reply('❌ Виникла помилка при отриманні даних адміністратора.');
+        });
         return;
     });
     bot.action('add_book', async (ctx) => {
-        try {
+        (async () => {
             await ctx.answerCbQuery('Відкриваємо форму додавання книги...');
             const adminCheck = await (0, models_1.isAdmin)(ctx.from.id);
             if (!adminCheck) {
@@ -84,15 +83,14 @@ exports.default = (bot) => {
                 return;
             }
             ctx.scene.enter('ADD_BOOK_SCENE');
-        }
-        catch (error) {
+        })().catch((error) => {
             logger_1.logger.error('Error entering add book scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.reply('❌ Виникла помилка при переході до додавання книги.');
-        }
+            ctx.reply('❌ Виникла помилка при переході до додавання книги.');
+        });
         return;
     });
     bot.action('manage_books', async (ctx) => {
-        try {
+        (async () => {
             await ctx.answerCbQuery('Завантаження списку книг...');
             const adminCheck = await (0, models_1.isAdmin)(ctx.from.id);
             if (!adminCheck) {
@@ -100,15 +98,14 @@ exports.default = (bot) => {
                 return;
             }
             ctx.scene.enter('MANAGE_BOOKS_SCENE');
-        }
-        catch (error) {
+        })().catch((error) => {
             logger_1.logger.error('Error entering manage books scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.reply('❌ Виникла помилка при переході до управління книгами.');
-        }
+            ctx.reply('❌ Виникла помилка при переході до управління книгами.');
+        });
         return;
     });
     bot.action('manage_promo_codes', async (ctx) => {
-        try {
+        (async () => {
             await ctx.answerCbQuery('Завантаження системи промокодів...');
             const adminCheck = await (0, models_1.isAdmin)(ctx.from.id);
             if (!adminCheck) {
@@ -116,15 +113,14 @@ exports.default = (bot) => {
                 return;
             }
             ctx.scene.enter('PROMO_ADMIN_SCENE');
-        }
-        catch (error) {
+        })().catch((error) => {
             logger_1.logger.error('Error entering promo admin scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.reply('❌ Виникла помилка при переході до керування промокодами.');
-        }
+            ctx.reply('❌ Виникла помилка при переході до керування промокодами.');
+        });
         return;
     });
     bot.action('admin_stats', async (ctx) => {
-        try {
+        (async () => {
             await ctx.answerCbQuery('Завантаження статистики...');
             const adminCheck = await (0, models_1.isAdmin)(ctx.from.id);
             if (!adminCheck) {
@@ -136,15 +132,14 @@ exports.default = (bot) => {
             await ctx.reply(`📊 *Статистика бібліотеки:*\n\n` +
                 `📚 Всього книг: ${stats.totalBooks}\n` +
                 `📝 Відгуків на модерацію: ${pendingReviews.length}`, { parse_mode: 'Markdown' });
-        }
-        catch (error) {
+        })().catch((error) => {
             logger_1.logger.error('Error getting admin stats', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.reply('❌ Виникла помилка при отриманні статистики.');
-        }
+            ctx.reply('❌ Виникла помилка при отриманні статистики.');
+        });
         return;
     });
     bot.action('moderate_reviews', async (ctx) => {
-        try {
+        (async () => {
             await ctx.answerCbQuery('Завантаження відгуків...');
             const adminCheck = await (0, models_1.isAdmin)(ctx.from.id);
             if (!adminCheck) {
@@ -192,15 +187,14 @@ exports.default = (bot) => {
                     logger_1.logger.error('Error getting book for review', bookError instanceof Error ? bookError : new Error(String(bookError)), { reviewId: review.id });
                 }
             }
-        }
-        catch (error) {
+        })().catch((error) => {
             logger_1.logger.error('Error showing pending reviews', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.reply('❌ Виникла помилка при отриманні відгуків.');
-        }
+            ctx.reply('❌ Виникла помилка при отриманні відгуків.');
+        });
         return;
     });
     bot.action(/publish_review_(\d+)/, async (ctx) => {
-        try {
+        (async () => {
             if (!ctx.from?.id) {
                 await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача.');
                 return;
@@ -227,15 +221,14 @@ exports.default = (bot) => {
             else {
                 await ctx.answerCbQuery('⚠️ Відгук не знайдено');
             }
-        }
-        catch (error) {
+        })().catch((error) => {
             logger_1.logger.error('Error publishing review', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.answerCbQuery('❌ Помилка при публікації відгуку');
-        }
+            ctx.answerCbQuery('❌ Помилка при публікації відгуку');
+        });
         return;
     });
     bot.action(/delete_review_(\d+)/, async (ctx) => {
-        try {
+        (async () => {
             if (!ctx.from?.id) {
                 await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача.');
                 return;
@@ -262,15 +255,14 @@ exports.default = (bot) => {
             else {
                 await ctx.answerCbQuery('⚠️ Відгук не знайдено');
             }
-        }
-        catch (error) {
+        })().catch((error) => {
             logger_1.logger.error('Error deleting review', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.answerCbQuery('❌ Помилка при видаленні відгуку');
-        }
+            ctx.answerCbQuery('❌ Помилка при видаленні відгуку');
+        });
         return;
     });
     bot.action('view_feedback', async (ctx) => {
-        try {
+        (async () => {
             await ctx.answerCbQuery('Завантаження нових повідомлень...');
             const adminCheck = await (0, models_1.isAdmin)(ctx.from.id);
             if (!adminCheck) {
@@ -352,16 +344,15 @@ exports.default = (bot) => {
                     [telegraf_1.Markup.button.callback('🏠 Головна', 'home')]
                 ]).reply_markup
             });
-        }
-        catch (error) {
+        })().catch((error) => {
             logger_1.logger.error('Error showing feedback messages', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.reply('❌ Виникла помилка при отриманні повідомлень.\n\n' +
+            ctx.reply('❌ Виникла помилка при отриманні повідомлень.\n\n' +
                 `Деталі: ${error instanceof Error ? error.message : String(error)}`);
-        }
+        });
         return;
     });
     bot.action(/reply_feedback_(\d+)/, async (ctx) => {
-        try {
+        (async () => {
             if (!ctx.from?.id) {
                 await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача.');
                 return;
@@ -390,15 +381,14 @@ exports.default = (bot) => {
                 userName: message.user_name || 'Користувач',
                 originalMessage: message.message
             });
-        }
-        catch (error) {
+        })().catch((error) => {
             logger_1.logger.error('Error opening reply form', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.answerCbQuery('❌ Помилка при відкритті форми відповіді');
-        }
+            ctx.answerCbQuery('❌ Помилка при відкритті форми відповіді');
+        });
         return;
     });
     bot.action(/mark_feedback_read_(\d+)/, async (ctx) => {
-        try {
+        (async () => {
             if (!ctx.from?.id) {
                 await ctx.answerCbQuery('❌ Не вдалося ідентифікувати користувача.');
                 return;
@@ -429,15 +419,14 @@ exports.default = (bot) => {
                 }
             }
             await ctx.answerCbQuery('✅ Позначено прочитаним!');
-        }
-        catch (error) {
+        })().catch((error) => {
             logger_1.logger.error('Error marking feedback as read', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.answerCbQuery('❌ Помилка при оновленні статусу');
-        }
+            ctx.answerCbQuery('❌ Помилка при оновленні статусу');
+        });
         return;
     });
     bot.action('admin_back', async (ctx) => {
-        try {
+        (async () => {
             await ctx.answerCbQuery();
             const adminCheck = await (0, models_1.isAdmin)(ctx.from.id);
             if (!adminCheck) {
@@ -461,15 +450,14 @@ exports.default = (bot) => {
                 parse_mode: 'Markdown',
                 reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(pendingReviews.length, pendingFeedback.length)
             });
-        }
-        catch (error) {
+        })().catch((error) => {
             logger_1.logger.error('Error returning to admin panel', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.answerCbQuery('❌ Помилка');
-        }
+            ctx.answerCbQuery('❌ Помилка');
+        });
         return;
     });
     bot.action('promo_back', async (ctx) => {
-        try {
+        (async () => {
             await ctx.answerCbQuery();
             await ctx.scene.leave();
             const adminCheck = await (0, models_1.isAdmin)(ctx.from.id);
@@ -494,15 +482,14 @@ exports.default = (bot) => {
                 parse_mode: 'Markdown',
                 reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(pendingReviews.length, pendingFeedback.length)
             });
-        }
-        catch (error) {
+        })().catch((error) => {
             logger_1.logger.error('Error returning to admin panel from promo', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.answerCbQuery('❌ Помилка');
-        }
+            ctx.answerCbQuery('❌ Помилка');
+        });
         return;
     });
     bot.action('view_feedback_history', async (ctx) => {
-        try {
+        (async () => {
             await ctx.answerCbQuery('Завантаження історії повідомлень...');
             const adminCheck = await (0, models_1.isAdmin)(ctx.from.id);
             if (!adminCheck) {
@@ -569,11 +556,10 @@ exports.default = (bot) => {
                     [telegraf_1.Markup.button.callback('🏠 Головна', 'home')]
                 ]).reply_markup
             });
-        }
-        catch (error) {
+        })().catch((error) => {
             logger_1.logger.error('Error showing feedback history', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
-            await ctx.reply('❌ Виникла помилка при отриманні історії повідомлень.');
-        }
+            ctx.reply('❌ Виникла помилка при отриманні історії повідомлень.');
+        });
         return;
     });
 };

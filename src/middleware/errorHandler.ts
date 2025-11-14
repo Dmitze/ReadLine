@@ -6,11 +6,11 @@ export class ErrorHandler {
   constructor(private logger: ILogger) {}
 
   async handleSceneError(ctx: BotContext, error: Error | Result<any, Error>): Promise<void> {
-    const actualError = error instanceof Error ? error : error;
+    const actualError = error instanceof Error ? error : (error as any).error || new Error('Unknown error');
 
     this.logger.error('Scene error', actualError);
 
-    const errorMessage = this.getErrorMessage(actualError);
+    const errorMessage = this.getErrorMessage(actualError instanceof Error ? actualError : new Error(String(actualError)));
     try {
       await ctx.reply(`❌ ${errorMessage}`);
     } catch (sendError) {
