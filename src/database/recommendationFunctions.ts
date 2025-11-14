@@ -152,8 +152,10 @@ export const getUserReadingStats = (userId: number): Promise<{
 };
 
 // Get books based on user behavior (saved + highly rated)
+// ✅ ВИПРАВЛЕНО: Улучшена логика для новых пользователей без сохраненных книг
 export const getBooksBasedOnBehavior = (userId: number, limit: number = 10): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
+    // Спочатку спробуємо отримати книги за жанрами які користувач вже зберіг
     db.all(
       `SELECT b.*, 
               (SELECT COUNT(*) FROM saved_books WHERE book_id = b.id) as save_count,
@@ -171,8 +173,32 @@ export const getBooksBasedOnBehavior = (userId: number, limit: number = 10): Pro
        LIMIT ?`,
       [userId, userId, limit],
       (err, rows: Book[]) => {
-        if (err) reject(err);
-        else resolve(rows);
+        if (err) {
+          reject(err);
+          return;
+        }
+        
+        // Якщо знайшли достатньо - повертаємо
+        if (rows && rows.length > 0) {
+          resolve(rows);
+        } else {
+          // Якщо користувач новий або немає збережених книг - повертаємо топ книги
+          db.all(
+            `SELECT b.*, 
+                    (SELECT COUNT(*) FROM saved_books WHERE book_id = b.id) as save_count,
+                    (SELECT AVG(rating) FROM reviews WHERE book_id = b.id) as avg_rating
+             FROM books b
+             WHERE b.is_available = 1
+             AND b.id NOT IN (SELECT book_id FROM saved_books WHERE user_id = ?)
+             ORDER BY b.rating DESC, b.downloads_count DESC
+             LIMIT ?`,
+            [userId, limit],
+            (err2, rows2: Book[]) => {
+              if (err2) reject(err2);
+              else resolve(rows2 || []);
+            }
+          );
+        }
       }
     );
   });
@@ -260,8 +286,14 @@ export const getSmartRecommendations = async (userId: number, limit: number = 10
     const allRecommendations: Book[] = [];
     const seenIds = new Set<number>();
 
+    // Розраховуємо точний розподіл книг для запиту
+    // 40% - Behavior, 30% - Collaborative, 30% - Contextual
+    const behaviorCount = Math.ceil(limit * 0.4);
+    const collaborativeCount = Math.ceil(limit * 0.3);
+    const contextualCount = limit - behaviorCount - collaborativeCount; // Решта
+
     // 1. Get behavior-based recommendations (40%)
-    const behaviorBooks = await getBooksBasedOnBehavior(userId, Math.ceil(limit * 0.4));
+    const behaviorBooks = await getBooksBasedOnBehavior(userId, behaviorCount);
     for (const book of behaviorBooks) {
       if (!seenIds.has(book.id!)) {
         seenIds.add(book.id!);
@@ -270,7 +302,7 @@ export const getSmartRecommendations = async (userId: number, limit: number = 10
     }
 
     // 2. Get collaborative recommendations (30%)
-    const collaborativeBooks = await getCollaborativeRecommendations(userId, Math.ceil(limit * 0.3));
+    const collaborativeBooks = await getCollaborativeRecommendations(userId, collaborativeCount);
     for (const book of collaborativeBooks) {
       if (!seenIds.has(book.id!)) {
         seenIds.add(book.id!);
@@ -279,7 +311,7 @@ export const getSmartRecommendations = async (userId: number, limit: number = 10
     }
 
     // 3. Get contextual recommendations (30%)
-    const contextualBooks = await getContextualRecommendations(userId, Math.ceil(limit * 0.3));
+    const contextualBooks = await getContextualRecommendations(userId, contextualCount);
     for (const book of contextualBooks) {
       if (!seenIds.has(book.id!)) {
         seenIds.add(book.id!);
@@ -291,6 +323,31 @@ export const getSmartRecommendations = async (userId: number, limit: number = 10
     if (allRecommendations.length < limit) {
       const topBooks = await getTopBooks(limit - allRecommendations.length);
       for (const book of topBooks) {
+        if (!seenIds.has(book.id!)) {
+          seenIds.add(book.id!);
+          allRecommendations.push(book);
+        }
+      }
+    }
+
+    // Якщо все ще не вистачає - додаємо свіжі книги
+    if (allRecommendations.length < limit) {
+      const newestBooks = await new Promise<Book[]>((resolve, reject) => {
+        db.all(
+          `SELECT * FROM books 
+           WHERE is_available = 1
+           AND id NOT IN (SELECT book_id FROM saved_books WHERE user_id = ?)
+           ORDER BY created_at DESC
+           LIMIT ?`,
+          [userId, limit - allRecommendations.length],
+          (err, rows: Book[]) => {
+            if (err) reject(err);
+            else resolve(rows || []);
+          }
+        );
+      });
+      
+      for (const book of newestBooks) {
         if (!seenIds.has(book.id!)) {
           seenIds.add(book.id!);
           allRecommendations.push(book);
