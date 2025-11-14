@@ -5,16 +5,19 @@
     "lib": ["ES2020", "dom"],
     "outDir": "./dist",
     "rootDir": "./src",
-    // ✅ ПОСТУПОВО ВКЛЮЧАЄМО STRICT MODE
-    // ФАЗА 1 (Листопад 2025): Максимально безпечні checks
-    "strict": false,
-    "noImplicitAny": false,
+    // ✅ FULL STRICT MODE ENABLED (14 Nov 2025)
+    // REFACTOR-005: Complete type safety for new code
+    "strict": true,
+    "noImplicitAny": true,
     "strictNullChecks": true,
-    "strictFunctionTypes": false,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
     "noImplicitThis": true,
+    "alwaysStrict": true,
     "noImplicitReturns": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
