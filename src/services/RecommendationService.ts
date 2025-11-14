@@ -46,10 +46,12 @@ export class RecommendationService {
       // Отримати книги за жанрами
       const recommendations = new Map<number, any>();
       for (const genre of genres) {
-        const books = await this.bookRepository.findByGenre(genre, limit * 2, 0);
-        for (const book of books) {
-          if (!savedBooks.find(s => s.book_id === book.id)) {
-            recommendations.set(book.id, book);
+        const books = await this.bookRepository.findByGenre(genre);
+        // Pagination is applied manually
+        for (const book of books.slice(0, limit * 2)) {
+          const bookId = book.id ?? 0;
+          if (bookId && !savedBooks.find(s => s.book_id === bookId)) {
+            recommendations.set(bookId, book);
           }
         }
       }
@@ -77,8 +79,8 @@ export class RecommendationService {
    */
   async getRecommendationsByGenre(genre: string, limit: number = 10): Promise<Result<any[]>> {
     try {
-      const books = await this.bookRepository.findByGenre(genre, limit, 0);
-      return new Ok(books);
+      const books = await this.bookRepository.findByGenre(genre);
+      return new Ok(books.slice(0, limit));
     } catch (error) {
       return new Err(error instanceof Error ? error : new Error('Failed to get genre recommendations'));
     }
@@ -97,9 +99,10 @@ export class RecommendationService {
       const filtered: any[] = [];
 
       for (const book of allBooks) {
+        if (!book.id) continue;
         const reviews = await this.reviewRepository.findByBookId(book.id);
         if (reviews.length > 0) {
-          const avgRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length;
+          const avgRating = reviews.reduce((sum, r) => sum + (r.rating ?? 0), 0) / reviews.length;
           if (avgRating >= minRating) {
             filtered.push({ ...book, rating: avgRating });
           }
@@ -123,21 +126,20 @@ export class RecommendationService {
         return new Ok([]);
       }
 
-      // Отримати остаток переглянуті книги
-      const recentBooks = savedBooks
-        .sort((a, b) => new Date(b.saved_at || 0).getTime() - new Date(a.saved_at || 0).getTime())
-        .slice(0, 5);
+      // Отримати остаток переглянуті книги (відсортовані за ID - найнові першими)
+      const recentBooks = savedBooks.slice(0, 5);
 
       const recommendations = new Map<number, any>();
 
       for (const saved of recentBooks) {
         const book = await this.bookRepository.findById(saved.book_id);
-        if (book) {
+        if (book && book.id) {
           // Отримати книги того ж автора або жанру
-          const byGenre = await this.bookRepository.findByGenre(book.genre, limit * 2, 0);
-          for (const recommended of byGenre) {
-            if (recommended.id !== book.id && !savedBooks.find(s => s.book_id === recommended.id)) {
-              recommendations.set(recommended.id, recommended);
+          const byGenre = await this.bookRepository.findByGenre(book.genre);
+          for (const recommended of byGenre.slice(0, limit * 2)) {
+            const recId = recommended.id ?? 0;
+            if (recId && recId !== book.id && !savedBooks.find(s => s.book_id === recId)) {
+              recommendations.set(recId, recommended);
             }
           }
         }
@@ -159,7 +161,7 @@ export class RecommendationService {
         return new Err(new Error(`Book with id ${bookId} not found`));
       }
 
-      const similarBooks = await this.bookRepository.findByGenre(book.genre, limit + 1, 0);
+      const similarBooks = await this.bookRepository.findByGenre(book.genre);
       const filtered = similarBooks.filter(b => b.id !== bookId).slice(0, limit);
 
       return new Ok(filtered);
