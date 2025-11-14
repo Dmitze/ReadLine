@@ -370,6 +370,7 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
             return;
         }
     }
+    return;
 }, async (ctx) => {
     if (ctx.message && 'text' in ctx.message && ctx.message.text === '❌ Скасувати') {
         await ctx.reply('❌ Додавання книги скасовано');
@@ -651,9 +652,10 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
             return ctx.scene?.leave();
         }
     }
-}, async (ctx) => {
+}, async (_ctx) => {
+    return;
 });
-addBookScene.use(async (ctx, next) => {
+addBookScene.use(async (_ctx, next) => {
     await next();
 });
 addBookScene.action('confirm_book', async (ctx) => {
