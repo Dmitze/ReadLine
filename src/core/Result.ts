@@ -10,6 +10,7 @@
  * Success result
  */
 export class Ok<T, E = Error> {
+  readonly ok: true = true;
   readonly success: true = true;
   readonly value: T;
 
@@ -66,6 +67,7 @@ export class Ok<T, E = Error> {
  * Error result
  */
 export class Err<T, E = Error> {
+  readonly ok: false = false;
   readonly success: false = false;
   readonly error: E;
 
