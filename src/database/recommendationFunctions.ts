@@ -212,9 +212,10 @@ export const getCollaborativeRecommendations = (userId: number, limit: number = 
 
 // Get contextual recommendations based on time of day
 export const getContextualRecommendations = (userId: number, limit: number = 5): Promise<Book[]> => {
-  const hour = new Date().getHours();
-  const { TIME_OF_DAY } = require('../constants');
-  let genrePreference: string[] = [];
+  return (async () => {
+    const hour = new Date().getHours();
+    const { TIME_OF_DAY } = await import('../constants');
+    let genrePreference: string[] = [];
   
   // Morning (6-12): Motivational, Business, Self-help
   if (hour >= TIME_OF_DAY.MORNING_START && hour < TIME_OF_DAY.AFTERNOON_START) {
@@ -250,7 +251,8 @@ export const getContextualRecommendations = (userId: number, limit: number = 5):
       }
     );
   });
-};
+  })();
+  };
 
 // Get smart recommendations combining all methods
 export const getSmartRecommendations = async (userId: number, limit: number = 10): Promise<Book[]> => {

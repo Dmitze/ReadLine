@@ -316,11 +316,11 @@ bot.action('view_new_books', async (ctx) => {
 });
 bot.action('random_book', async (ctx) => {
     await ctx.answerCbQuery('🎲 Вибираю випадкову книгу');
-    const { getRandomBook } = require('./database/recommendationFunctions');
+    const { getRandomBook } = await Promise.resolve().then(() => __importStar(require('./database/recommendationFunctions')));
     const book = await getRandomBook();
     if (book) {
-        const { formatBookCaption } = require('./utils/helpers');
-        const { getEnhancedBookKeyboard } = require('./keyboards/mainKeyboards');
+        const { formatBookCaption } = await Promise.resolve().then(() => __importStar(require('./utils/helpers')));
+        const { getEnhancedBookKeyboard } = await Promise.resolve().then(() => __importStar(require('./keyboards/mainKeyboards')));
         const caption = await formatBookCaption(book);
         if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
             await ctx.replyWithPhoto(book.photo_file_id, {
@@ -382,10 +382,10 @@ bot.action('back_to_admin', async (ctx) => {
     }
 });
 let notificationScheduler = null;
-const shutdown = (signal) => {
+const shutdown = async (signal) => {
     logger_1.logger.info(`Received ${signal}, shutting down gracefully`);
     if (notificationScheduler) {
-        const { stopNotificationScheduler } = require('./utils/notifications');
+        const { stopNotificationScheduler } = await Promise.resolve().then(() => __importStar(require('./utils/notifications')));
         stopNotificationScheduler(notificationScheduler);
     }
     bot.stop(signal);
@@ -405,10 +405,10 @@ logger_1.logger.info('Starting bot launch');
             dropPendingUpdates: true
         });
         logger_1.logger.info('Bot launched successfully', { username: bot.botInfo?.username });
-        const { startNotificationScheduler } = require('./utils/notifications');
+        const { startNotificationScheduler } = await Promise.resolve().then(() => __importStar(require('./utils/notifications')));
         notificationScheduler = startNotificationScheduler(bot);
         logger_1.logger.info('Notification scheduler started');
-        const { startAutoBackup } = require('./utils/autoBackup');
+        const { startAutoBackup } = await Promise.resolve().then(() => __importStar(require('./utils/autoBackup')));
         startAutoBackup();
         logger_1.logger.info('Automatic backup scheduler started');
     }

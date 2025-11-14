@@ -3,15 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getBackKeyboard = exports.getEnhancedBookKeyboard = exports.getAdaptiveBookKeyboard = exports.getGenreKeyboard = exports.getAdaptiveGenreKeyboard = exports.getMainMenuKeyboard = exports.getAdaptiveMainMenuKeyboard = exports.getKeyboardConfig = exports.detectDeviceType = void 0;
 const telegraf_1 = require("telegraf");
 const detectDeviceType = (ctx) => {
-    const userId = ctx.from?.id;
-    if (userId) {
-        try {
-            const { getUserKeyboardPreference } = require('../utils/userPreferences');
-            return getUserKeyboardPreference(userId);
-        }
-        catch (error) {
-        }
-    }
     return 'mobile';
 };
 exports.detectDeviceType = detectDeviceType;

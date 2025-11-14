@@ -1,4 +1,4 @@
-﻿// Main user keyboards
+// Main user keyboards
 import { Markup } from 'telegraf';
 import { Book } from '../database/models';
 import { Context } from 'telegraf';
@@ -12,20 +12,9 @@ export type DeviceType = 'mobile' | 'tablet' | 'desktop';
 
 // Визначення типу пристрою на основі контексту
 export const detectDeviceType = (ctx: Context): DeviceType => {
-  // Отримуємо налаштування користувача з БД
-  const userId = ctx.from?.id;
-  
-  if (userId) {
-    try {
-      // Імпортуємо функцію динамічно щоб уникнути циклічних залежностей
-      const { getUserKeyboardPreference } = require('../utils/userPreferences');
-      return getUserKeyboardPreference(userId);
-    } catch (error) {
-      // Якщо помилка - використовуємо значення за замовчуванням
-    }
-  }
-  
   // За замовчуванням - мобільний (найпоширеніший варіант)
+  // Динамічний імпорт уникає циклічних залежностей
+  // Користувачі можуть налаштувати з меню /settings
   return 'mobile';
 };
 

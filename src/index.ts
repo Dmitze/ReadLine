@@ -385,12 +385,12 @@ bot.action('view_new_books', async (ctx) => {
 bot.action('random_book', async (ctx) => {
   await ctx.answerCbQuery('🎲 Вибираю випадкову книгу');
   // Викликаємо обробник випадкової книги
-  const { getRandomBook } = require('./database/recommendationFunctions');
+  const { getRandomBook } = await import('./database/recommendationFunctions');
   const book = await getRandomBook();
   
   if (book) {
-    const { formatBookCaption } = require('./utils/helpers');
-    const { getEnhancedBookKeyboard } = require('./keyboards/mainKeyboards');
+    const { formatBookCaption } = await import('./utils/helpers');
+    const { getEnhancedBookKeyboard } = await import('./keyboards/mainKeyboards');
     const caption = await formatBookCaption(book);
     
     if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
@@ -469,12 +469,12 @@ bot.action('back_to_admin', async (ctx) => {
 // Graceful shutdown
 let notificationScheduler: NodeJS.Timeout | null = null;
 
-const shutdown = (signal: string) => {
+const shutdown = async (signal: string) => {
   logger.info(`Received ${signal}, shutting down gracefully`);
   
   // Зупиняємо планувальник сповіщень
   if (notificationScheduler) {
-    const { stopNotificationScheduler } = require('./utils/notifications');
+    const { stopNotificationScheduler } = await import('./utils/notifications');
     stopNotificationScheduler(notificationScheduler);
   }
   
@@ -505,12 +505,12 @@ logger.info('Starting bot launch');
     logger.info('Bot launched successfully', { username: bot.botInfo?.username });
     
     // Запускаємо планувальник сповіщень (Завдання 31)
-    const { startNotificationScheduler } = require('./utils/notifications');
+    const { startNotificationScheduler } = await import('./utils/notifications');
     notificationScheduler = startNotificationScheduler(bot);
     logger.info('Notification scheduler started');
     
     // ✅ ВИПРАВЛЕНО #70: запускаємо автоматичний backup
-    const { startAutoBackup } = require('./utils/autoBackup');
+    const { startAutoBackup } = await import('./utils/autoBackup');
     startAutoBackup();
     logger.info('Automatic backup scheduler started');
     

@@ -3,6 +3,7 @@
  */
 
 import { Book, Review } from '../database/models';
+import { VALIDATION, CONFIG } from '../constants';
 
 /**
  * Результат валідації
@@ -19,7 +20,6 @@ export interface ValidationResult {
 export function validateBookData(
   data: Partial<Omit<Book, 'id' | 'created_at'>>
 ): ValidationResult {
-  const { VALIDATION } = require('../constants');
   const errors: string[] = [];
 
   // Обов'язкові поля
@@ -80,7 +80,6 @@ export function validateBookData(
 export function validateReviewData(
   data: Partial<Omit<Review, 'id' | 'created_at'>>
 ): ValidationResult {
-  const { VALIDATION } = require('../constants');
   const errors: string[] = [];
 
   if (!data.book_id || data.book_id <= 0) {
@@ -115,7 +114,6 @@ export function validateReviewData(
  * ✅ ВИПРАВЛЕНО: використовуємо константи
  */
 export function validateSearchQuery(query: string): ValidationResult {
-  const { CONFIG } = require('../constants');
   const errors: string[] = [];
 
   if (!query || query.trim().length === 0) {

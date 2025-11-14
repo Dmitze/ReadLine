@@ -104,8 +104,8 @@ export const removeBookTag = (bookId: number, tagId: number): Promise<void> => {
 // Пошук книг за тегом
 // ✅ ВИПРАВЛЕНО #16: використовуємо sanitization utility
 export const searchBooksByTag = (tagName: string, limit: number = 10): Promise<any[]> => {
-  return new Promise((resolve, reject) => {
-    const { sanitizeTag } = require('../utils/sanitization');
+  return new Promise(async (resolve, reject) => {
+    const { sanitizeTag } = await import('../utils/sanitization');
     const sanitizedTagName = sanitizeTag(tagName);
     
     if (!sanitizedTagName || sanitizedTagName.length < 2) {
