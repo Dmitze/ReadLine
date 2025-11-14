@@ -21,13 +21,13 @@ export function sanitizeSqlParam(value: string): string {
 
 /**
  * Санітизація тегів
- * Дозволяє тільки букви, цифри, пробіли та дефіси
+ * Дозволяє букви, цифри, пробіли, дефіси та апострофи
  */
 export function sanitizeTag(tag: string): string {
   if (!tag) return '';
   
   return tag
-    .replace(/[^a-zA-Zа-яА-ЯіІїЇєЄґҐ0-9\s\-]/g, '')
+    .replace(/[^a-zA-Zа-яА-ЯіІїЇєЄґҐ0-9\s\-']/g, '')
     .trim()
     .substring(0, 50); // Обмежуємо довжину
 }
