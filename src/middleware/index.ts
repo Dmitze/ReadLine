@@ -4,8 +4,6 @@
  * REFACTOR-015: CORS + Security Headers
  */
 
-export { ErrorHandler } from './errorHandler';
-
 // REFACTOR-013: Rate Limiting Middleware
 export {
   RateLimiter,

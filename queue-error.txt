@@ -1,4 +1,0 @@
-
-> readline-library-bot@1.0.0 test
-> jest --testPathPattern=queue
-
