@@ -51,23 +51,48 @@ exports.default = (bot) => {
                 await ctx.reply('❌ У вас немає доступу до адмін-панелі.');
                 return;
             }
-            const stats = await (0, models_1.getAdminStats)();
-            const pendingReviews = await (0, models_1.getPendingReviews)();
-            const pendingFeedback = await (0, models_1.getPendingFeedbackMessages)();
-            const reviewsAlert = pendingReviews.length > 0
-                ? `📝 Відгуків на модерацію: *${pendingReviews.length}* 🔔`
-                : '✅ Всі відгуки оброблені';
-            const feedbackAlert = pendingFeedback.length > 0
-                ? `📞 Нових повідомлень: *${pendingFeedback.length}* 🔔`
-                : '✅ Всі повідомлення прочитані';
-            await ctx.reply(`🛠️ <b>Панель адміністратора</b>\n\n` +
-                `📊 <b>Статистика:</b>\n` +
-                `📚 Книг в каталозі: ${stats.totalBooks}\n` +
-                `${reviewsAlert}\n` +
-                `${feedbackAlert}`, {
-                parse_mode: 'HTML',
-                reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(pendingReviews.length, pendingFeedback.length)
-            });
+            try {
+                const stats = await (0, models_1.getExtendedAdminStats)();
+                const pendingReviews = await (0, models_1.getPendingReviews)();
+                const pendingFeedback = await (0, models_1.getPendingFeedbackMessages)();
+                const reviewsAlert = pendingReviews.length > 0
+                    ? `📝 Відгуків на модерацію: <b>${pendingReviews.length}</b> 🔔`
+                    : '✅ Всі відгуки оброблені';
+                const feedbackAlert = pendingFeedback.length > 0
+                    ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
+                    : '✅ Всі повідомлення прочитані';
+                let panelText = `🛠️ <b>Панель адміністратора</b>\n\n`;
+                panelText += `📊 <b>Статистика:</b>\n`;
+                panelText += `📚 Книг в каталозі: ${stats.totalBooks}\n`;
+                panelText += `👥 Унікальних користувачів: ${stats.totalUsers}\n`;
+                panelText += `⭐ Середня оцінка: ${stats.avgRating}\n`;
+                panelText += `${reviewsAlert}\n`;
+                panelText += `${feedbackAlert}`;
+                await ctx.reply(panelText, {
+                    parse_mode: 'HTML',
+                    reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(pendingReviews.length, pendingFeedback.length)
+                });
+            }
+            catch (error) {
+                logger_1.logger.error('Error in admin command', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+                const basicStats = await (0, models_1.getAdminStats)();
+                const pendingReviews = await (0, models_1.getPendingReviews)();
+                const pendingFeedback = await (0, models_1.getPendingFeedbackMessages)();
+                const reviewsAlert = pendingReviews.length > 0
+                    ? `📝 Відгуків на модерацію: <b>${pendingReviews.length}</b> 🔔`
+                    : '✅ Всі відгуки оброблені';
+                const feedbackAlert = pendingFeedback.length > 0
+                    ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
+                    : '✅ Всі повідомлення прочитані';
+                await ctx.reply(`🛠️ <b>Панель адміністратора</b>\n\n` +
+                    `📊 <b>Статистика:</b>\n` +
+                    `📚 Книг в каталозі: ${basicStats.totalBooks}\n` +
+                    `${reviewsAlert}\n` +
+                    `${feedbackAlert}`, {
+                    parse_mode: 'HTML',
+                    reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(pendingReviews.length, pendingFeedback.length)
+                });
+            }
         })().catch((error) => {
             logger_1.logger.error('Error in admin command', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
             ctx.reply('❌ Виникла помилка при отриманні даних адміністратора.');
@@ -121,17 +146,50 @@ exports.default = (bot) => {
     });
     bot.action('admin_stats', async (ctx) => {
         (async () => {
-            await ctx.answerCbQuery('Завантаження статистики...');
+            await ctx.answerCbQuery('Завантаження розширеної статистики...');
             const adminCheck = await (0, models_1.isAdmin)(ctx.from.id);
             if (!adminCheck) {
                 await ctx.reply('❌ У вас немає доступу до цієї функції.');
                 return;
             }
-            const stats = await (0, models_1.getAdminStats)();
-            const pendingReviews = await (0, models_1.getPendingReviews)();
-            await ctx.reply(`📊 *Статистика бібліотеки:*\n\n` +
-                `📚 Всього книг: ${stats.totalBooks}\n` +
-                `📝 Відгуків на модерацію: ${pendingReviews.length}`, { parse_mode: 'Markdown' });
+            const stats = await (0, models_1.getExtendedAdminStats)();
+            let statsText = `📊 <b>РОЗШИРЕНА СТАТИСТИКА БІБЛІОТЕКИ</b>\n\n`;
+            statsText += `📈 <b>Основні показники:</b>\n`;
+            statsText += `📚 Всього книг: ${stats.totalBooks}\n`;
+            statsText += `👥 Унікальних користувачів: ${stats.totalUsers}\n`;
+            statsText += `💾 Збережено книг: ${stats.totalSavedBooks}\n`;
+            statsText += `⭐ Середня оцінка: ${stats.avgRating}\n\n`;
+            statsText += `📝 <b>Контент:</b>\n`;
+            statsText += `💬 Всього відгуків: ${stats.totalReviews}\n`;
+            statsText += `❌ На модерацію: ${stats.pendingReviews}\n`;
+            statsText += `📞 Повідомлень зворотного зв'язку: ${stats.totalFeedback}\n`;
+            statsText += `🔔 Нових повідомлень: ${stats.pendingFeedback}\n\n`;
+            statsText += `📅 <b>Активність:</b>\n`;
+            statsText += `🆕 Нових користувачів сьогодні: ${stats.newUsersToday}\n`;
+            statsText += `📖 Нових книг цього місяця: ${stats.newBooksThisMonth}\n`;
+            statsText += `✅ Активних користувачів (30 днів): ${stats.activeUsersThisMonth}\n\n`;
+            if (stats.topGenres.length > 0) {
+                statsText += `📂 <b>Топ жанри:</b>\n`;
+                stats.topGenres.forEach((g, i) => {
+                    statsText += `${i + 1}. ${g.genre} (${g.count} книг)\n`;
+                });
+                statsText += `\n`;
+            }
+            if (stats.topRatedBooks.length > 0 && stats.topRatedBooks.some(b => b.rating)) {
+                statsText += `⭐ <b>Топ книги за рейтингом:</b>\n`;
+                stats.topRatedBooks.forEach((b, i) => {
+                    if (b.rating) {
+                        statsText += `${i + 1}. ${b.title} (${b.rating}/5) - ${b.author}\n`;
+                    }
+                });
+            }
+            await ctx.reply(statsText, {
+                parse_mode: 'HTML',
+                reply_markup: telegraf_1.Markup.inlineKeyboard([
+                    [telegraf_1.Markup.button.callback('🔄 Оновити', 'admin_stats')],
+                    [telegraf_1.Markup.button.callback('🏠 Назад до адмін-панелі', 'admin_back')]
+                ]).reply_markup
+            });
         })().catch((error) => {
             logger_1.logger.error('Error getting admin stats', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
             ctx.reply('❌ Виникла помилка при отриманні статистики.');
@@ -437,17 +495,17 @@ exports.default = (bot) => {
             const pendingReviews = await (0, models_1.getPendingReviews)();
             const pendingFeedback = await (0, models_1.getPendingFeedbackMessages)();
             const reviewsAlert = pendingReviews.length > 0
-                ? `📝 Відгуків на модерацію: *${pendingReviews.length}* 🔔`
+                ? `📝 Відгуків на модерацію: <b>${pendingReviews.length}</b> 🔔`
                 : '✅ Всі відгуки оброблені';
             const feedbackAlert = pendingFeedback.length > 0
-                ? `📞 Нових повідомлень: *${pendingFeedback.length}* 🔔`
+                ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
                 : '✅ Всі повідомлення прочитані';
             await ctx.editMessageText(`🛠️ <b>Панель адміністратора</b>\n\n` +
-                `📊 *Статистика:*\n` +
+                `📊 <b>Статистика:</b>\n` +
                 `📚 Книг в каталозі: ${stats.totalBooks}\n` +
                 `${reviewsAlert}\n` +
                 `${feedbackAlert}`, {
-                parse_mode: 'Markdown',
+                parse_mode: 'HTML',
                 reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(pendingReviews.length, pendingFeedback.length)
             });
         })().catch((error) => {
@@ -469,17 +527,17 @@ exports.default = (bot) => {
             const pendingReviews = await (0, models_1.getPendingReviews)();
             const pendingFeedback = await (0, models_1.getPendingFeedbackMessages)();
             const reviewsAlert = pendingReviews.length > 0
-                ? `📝 Відгуків на модерацію: *${pendingReviews.length}* 🔔`
+                ? `📝 Відгуків на модерацію: <b>${pendingReviews.length}</b> 🔔`
                 : '✅ Всі відгуки оброблені';
             const feedbackAlert = pendingFeedback.length > 0
-                ? `📞 Нових повідомлень: *${pendingFeedback.length}* 🔔`
+                ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
                 : '✅ Всі повідомлення прочитані';
             await ctx.reply(`🛠️ <b>Панель адміністратора</b>\n\n` +
-                `📊 *Статистика:*\n` +
+                `📊 <b>Статистика:</b>\n` +
                 `📚 Книг в каталозі: ${stats.totalBooks}\n` +
                 `${reviewsAlert}\n` +
                 `${feedbackAlert}`, {
-                parse_mode: 'Markdown',
+                parse_mode: 'HTML',
                 reply_markup: (0, adminKeyboards_1.getAdminMenuKeyboard)(pendingReviews.length, pendingFeedback.length)
             });
         })().catch((error) => {
