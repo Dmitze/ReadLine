@@ -3,6 +3,7 @@ import {
   isAdmin, 
   getBookById, 
   getAdminStats, 
+  getExtendedAdminStats,
   getPendingReviews, 
   getPendingFeedbackMessages, 
   getAllFeedbackMessages, 
@@ -33,33 +34,63 @@ export default (bot: Telegraf<BotContext>) => {
         return;
       }
       
-      const stats = await getAdminStats();
-      
-      // Отримуємо кількість відгуків на модерацію
-      const pendingReviews = await getPendingReviews();
-      
-      // Отримуємо кількість непрочитаних повідомлень зворотного зв'язку
-      const pendingFeedback = await getPendingFeedbackMessages();
+      try {
+        const stats = await getExtendedAdminStats();
         
-      const reviewsAlert = pendingReviews.length > 0
-        ? `📝 Відгуків на модерацію: *${pendingReviews.length}* 🔔`
-        : '✅ Всі відгуки оброблені';
+        // Отримуємо кількість відгуків на модерацію
+        const pendingReviews = await getPendingReviews();
         
-      const feedbackAlert = pendingFeedback.length > 0
-        ? `📞 Нових повідомлень: *${pendingFeedback.length}* 🔔`
-        : '✅ Всі повідомлення прочитані';
-      
-      await ctx.reply(
-         `🛠️ <b>Панель адміністратора</b>\n\n` +
-         `📊 <b>Статистика:</b>\n` +
-         `📚 Книг в каталозі: ${stats.totalBooks}\n` +
-         `${reviewsAlert}\n` +
-         `${feedbackAlert}`,
-         {
-           parse_mode: 'HTML',
+        // Отримуємо кількість непрочитаних повідомлень зворотного зв'язку
+        const pendingFeedback = await getPendingFeedbackMessages();
+          
+        const reviewsAlert = pendingReviews.length > 0
+          ? `📝 Відгуків на модерацію: <b>${pendingReviews.length}</b> 🔔`
+          : '✅ Всі відгуки оброблені';
+          
+        const feedbackAlert = pendingFeedback.length > 0
+          ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
+          : '✅ Всі повідомлення прочитані';
+        
+        let panelText = `🛠️ <b>Панель адміністратора</b>\n\n`;
+        panelText += `📊 <b>Статистика:</b>\n`;
+        panelText += `📚 Книг в каталозі: ${stats.totalBooks}\n`;
+        panelText += `👥 Унікальних користувачів: ${stats.totalUsers}\n`;
+        panelText += `⭐ Середня оцінка: ${stats.avgRating}\n`;
+        panelText += `${reviewsAlert}\n`;
+        panelText += `${feedbackAlert}`;
+        
+        await ctx.reply(panelText, {
+          parse_mode: 'HTML',
           reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
-        }
-      );
+        });
+      } catch (error) {
+        logger.error('Error in admin command', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+        
+        // Fallback на базову статистику якщо щось пішло не так
+        const basicStats = await getAdminStats();
+        const pendingReviews = await getPendingReviews();
+        const pendingFeedback = await getPendingFeedbackMessages();
+        
+        const reviewsAlert = pendingReviews.length > 0
+          ? `📝 Відгуків на модерацію: <b>${pendingReviews.length}</b> 🔔`
+          : '✅ Всі відгуки оброблені';
+          
+        const feedbackAlert = pendingFeedback.length > 0
+          ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
+          : '✅ Всі повідомлення прочитані';
+        
+        await ctx.reply(
+          `🛠️ <b>Панель адміністратора</b>\n\n` +
+          `📊 <b>Статистика:</b>\n` +
+          `📚 Книг в каталозі: ${basicStats.totalBooks}\n` +
+          `${reviewsAlert}\n` +
+          `${feedbackAlert}`,
+          {
+            parse_mode: 'HTML',
+            reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
+          }
+        );
+      }
     })().catch((error) => {
       logger.error('Error in admin command', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
       ctx.reply('❌ Виникла помилка при отриманні даних адміністратора.');
@@ -127,7 +158,7 @@ export default (bot: Telegraf<BotContext>) => {
   // Статистика
   bot.action('admin_stats', async (ctx) => {
     (async () => {
-      await ctx.answerCbQuery('Завантаження статистики...');
+      await ctx.answerCbQuery('Завантаження розширеної статистики...');
       
       const adminCheck = await isAdmin(ctx.from.id);
       if (!adminCheck) {
@@ -135,15 +166,56 @@ export default (bot: Telegraf<BotContext>) => {
         return;
       }
       
-      const stats = await getAdminStats();
-      const pendingReviews = await getPendingReviews();
+      const stats = await getExtendedAdminStats();
       
-      await ctx.reply(
-        `📊 *Статистика бібліотеки:*\n\n` +
-        `📚 Всього книг: ${stats.totalBooks}\n` +
-        `📝 Відгуків на модерацію: ${pendingReviews.length}`,
-        { parse_mode: 'Markdown' }
-      );
+      let statsText = `📊 <b>РОЗШИРЕНА СТАТИСТИКА БІБЛІОТЕКИ</b>\n\n`;
+      
+      // Основна статистика
+      statsText += `📈 <b>Основні показники:</b>\n`;
+      statsText += `📚 Всього книг: ${stats.totalBooks}\n`;
+      statsText += `👥 Унікальних користувачів: ${stats.totalUsers}\n`;
+      statsText += `💾 Збережено книг: ${stats.totalSavedBooks}\n`;
+      statsText += `⭐ Середня оцінка: ${stats.avgRating}\n\n`;
+      
+      // Відгуки та зворотний зв'язок
+      statsText += `📝 <b>Контент:</b>\n`;
+      statsText += `💬 Всього відгуків: ${stats.totalReviews}\n`;
+      statsText += `❌ На модерацію: ${stats.pendingReviews}\n`;
+      statsText += `📞 Повідомлень зворотного зв'язку: ${stats.totalFeedback}\n`;
+      statsText += `🔔 Нових повідомлень: ${stats.pendingFeedback}\n\n`;
+      
+      // Активність за період
+      statsText += `📅 <b>Активність:</b>\n`;
+      statsText += `🆕 Нових користувачів сьогодні: ${stats.newUsersToday}\n`;
+      statsText += `📖 Нових книг цього місяця: ${stats.newBooksThisMonth}\n`;
+      statsText += `✅ Активних користувачів (30 днів): ${stats.activeUsersThisMonth}\n\n`;
+      
+      // Топ жанри
+      if (stats.topGenres.length > 0) {
+        statsText += `📂 <b>Топ жанри:</b>\n`;
+        stats.topGenres.forEach((g, i) => {
+          statsText += `${i + 1}. ${g.genre} (${g.count} книг)\n`;
+        });
+        statsText += `\n`;
+      }
+      
+      // Топ-рейтингові книги
+      if (stats.topRatedBooks.length > 0 && stats.topRatedBooks.some(b => b.rating)) {
+        statsText += `⭐ <b>Топ книги за рейтингом:</b>\n`;
+        stats.topRatedBooks.forEach((b, i) => {
+          if (b.rating) {
+            statsText += `${i + 1}. ${b.title} (${b.rating}/5) - ${b.author}\n`;
+          }
+        });
+      }
+      
+      await ctx.reply(statsText, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback('🔄 Оновити', 'admin_stats')],
+          [Markup.button.callback('🏠 Назад до адмін-панелі', 'admin_back')]
+        ]).reply_markup
+      });
     })().catch((error) => {
       logger.error('Error getting admin stats', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
       ctx.reply('❌ Виникла помилка при отриманні статистики.');
@@ -542,21 +614,21 @@ export default (bot: Telegraf<BotContext>) => {
       const pendingFeedback = await getPendingFeedbackMessages();
         
       const reviewsAlert = pendingReviews.length > 0
-        ? `📝 Відгуків на модерацію: *${pendingReviews.length}* 🔔`
+        ? `📝 Відгуків на модерацію: <b>${pendingReviews.length}</b> 🔔`
         : '✅ Всі відгуки оброблені';
         
       const feedbackAlert = pendingFeedback.length > 0
-        ? `📞 Нових повідомлень: *${pendingFeedback.length}* 🔔`
+        ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
         : '✅ Всі повідомлення прочитані';
       
       await ctx.editMessageText(
         `🛠️ <b>Панель адміністратора</b>\n\n` +
-        `📊 *Статистика:*\n` +
+        `📊 <b>Статистика:</b>\n` +
         `📚 Книг в каталозі: ${stats.totalBooks}\n` +
         `${reviewsAlert}\n` +
         `${feedbackAlert}`,
         {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
         }
       );
@@ -584,21 +656,21 @@ export default (bot: Telegraf<BotContext>) => {
       const pendingFeedback = await getPendingFeedbackMessages();
         
       const reviewsAlert = pendingReviews.length > 0
-        ? `📝 Відгуків на модерацію: *${pendingReviews.length}* 🔔`
+        ? `📝 Відгуків на модерацію: <b>${pendingReviews.length}</b> 🔔`
         : '✅ Всі відгуки оброблені';
         
       const feedbackAlert = pendingFeedback.length > 0
-        ? `📞 Нових повідомлень: *${pendingFeedback.length}* 🔔`
+        ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
         : '✅ Всі повідомлення прочитані';
       
       await ctx.reply(
         `🛠️ <b>Панель адміністратора</b>\n\n` +
-        `📊 *Статистика:*\n` +
+        `📊 <b>Статистика:</b>\n` +
         `📚 Книг в каталозі: ${stats.totalBooks}\n` +
         `${reviewsAlert}\n` +
         `${feedbackAlert}`,
         {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
         }
       );
