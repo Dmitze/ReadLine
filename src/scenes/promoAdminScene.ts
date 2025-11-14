@@ -2,44 +2,49 @@
  * Promo Admin Scene - сцена керування промокодами для адміна
  */
 
-import { Scenes, Markup } from 'telegraf';
+import { Scenes } from 'telegraf';
 import { BotContext } from '../types/telegraf';
 import { logger } from '../utils/logger';
-import {
+import { 
   addPromoCode,
-  getPromoCodeStats,
+  getExtendedPromoStats,
   getAllPromoCodes,
   getPromoCodeByCode,
-  getDiscountTypeText,
-  deletePromoCode
+  getDiscountTypeText
 } from '../database/promoCodeFunctions';
 
 const promoAdminScene = new Scenes.BaseScene<BotContext>('PROMO_ADMIN_SCENE');
 
 // Вхід в сцену
 promoAdminScene.enter(async (ctx) => {
-  const stats = await getPromoCodeStats();
-  
-  await ctx.reply(
-     `🎁 <b>КЕРУВАННЯ ПРОМОКОДАМИ</b>\n\n` +
-     `📊 <b>Статистика:</b>\n` +
-     `• Всього промокодів: ${stats.total}\n` +
-     `• Доступно: ${stats.available}\n` +
-     `• Використано: ${stats.used}\n` +
-     `• Користувачів отримали: ${stats.usedByUsers}\n\n` +
-     `Оберіть дію:`,
-     {
-       parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '➕ Додати промокод', callback_data: 'promo_add' }],
-          [{ text: '📋 Список промокодів', callback_data: 'promo_list' }],
-          [{ text: '📊 Детальна статистика', callback_data: 'promo_stats' }],
-          [{ text: '⬅️ Назад до адмінки', callback_data: 'promo_back' }]
-        ]
-      }
-    }
-  );
+  try {
+    const stats = await getExtendedPromoStats();
+    
+    await ctx.reply(
+       `🎁 <b>КЕРУВАННЯ ПРОМОКОДАМИ</b>\n\n` +
+       `📊 <b>Статистика:</b>\n` +
+       `• Всього промокодів: ${stats.total}\n` +
+       `• Доступно: ${stats.available}\n` +
+       `• Використано: ${stats.used}\n` +
+       `• Користувачів отримали: ${stats.usedByUsers}\n` +
+       `• Використання: ${stats.usagePercent}%\n\n` +
+       `Оберіть дію:`,
+       {
+         parse_mode: 'HTML',
+        reply_markup: {
+           inline_keyboard: [
+             [{ text: '➕ Додати промокод', callback_data: 'promo_add' }],
+             [{ text: '📊 Розширена статистика', callback_data: 'promo_stats' }],
+             [{ text: '📋 Список промокодів', callback_data: 'promo_list' }],
+             [{ text: '⬅️ Назад до адмінки', callback_data: 'promo_back' }]
+           ]
+         }
+       }
+     );
+  } catch (error) {
+    logger.error('Error loading promo stats on enter', error);
+    await ctx.reply('❌ Помилка при завантаженні статистики');
+  }
 });
 
 // Додавання промокоду
@@ -112,32 +117,76 @@ promoAdminScene.action('promo_list', async (ctx) => {
 promoAdminScene.action('promo_stats', async (ctx) => {
   await ctx.answerCbQuery('Завантаження статистики...');
   
-  const stats = await getPromoCodeStats();
-  const usagePercent = stats.total > 0 ? Math.round((stats.used / stats.total) * 100) : 0;
-  
-  await ctx.editMessageText(
-    `📊 <b>ДЕТАЛЬНА СТАТИСТИКА ПРОМОКОДІВ</b>\n\n` +
-    `📈 <b>Загальна інформація:</b>\n` +
-    `• Всього створено: ${stats.total}\n` +
-    `• Активних: ${stats.total}\n` +
-    `• Доступних: ${stats.available}\n` +
-    `• Використано: ${stats.used}\n\n` +
-    `👥 <b>Користувачі:</b>\n` +
-    `• Отримали промокод: ${stats.usedByUsers}\n\n` +
-    `📊 <b>Використання:</b>\n` +
-    `• Відсоток використання: ${usagePercent}%\n` +
-    `• Залишилось: ${stats.available} промокодів\n\n` +
-    `🔗 <b>Партнер:</b> Yakaboo.ua`,
-    {
+  try {
+    const stats = await getExtendedPromoStats();
+    
+    // Формуємо основну інформацію
+    let messageText = `📊 <b>РОЗШИРЕНА СТАТИСТИКА ПРОМОКОДІВ</b>\n\n`;
+    
+    // Загальна інформація
+    messageText += `📈 <b>Загальна інформація:</b>\n`;
+    messageText += `• Всього створено: ${stats.total}\n`;
+    messageText += `• Доступних: ${stats.available}\n`;
+    messageText += `• Використано: ${stats.used}\n`;
+    messageText += `• Відсоток використання: ${stats.usagePercent}%\n\n`;
+    
+    // Користувачі
+    messageText += `👥 <b>Користувачі:</b>\n`;
+    messageText += `• Отримали промокод: ${stats.usedByUsers}\n`;
+    messageText += `• Середнє використання на користувача: ${stats.avgUsage > 0 ? stats.avgUsage : '—'}\n\n`;
+    
+    // По типам знижок
+    if (stats.byDiscountType.length > 0) {
+      messageText += `💰 <b>За типами знижок:</b>\n`;
+      stats.byDiscountType.forEach(dt => {
+        messageText += `• ${dt.type}: ${dt.count} (макс. ${dt.totalValue})\n`;
+      });
+      messageText += `\n`;
+    }
+    
+    // Нові промокоди
+    messageText += `🆕 <b>Нові промокоди:</b>\n`;
+    messageText += `• Сьогодні: ${stats.createdToday}\n`;
+    messageText += `• Цього тижня: ${stats.createdThisWeek}\n\n`;
+    
+    // Топ промокоди
+    if (stats.topPromos.length > 0 && stats.topPromos.some(p => p.used > 0)) {
+      messageText += `🏆 <b>Топ промокоди:</b>\n`;
+      stats.topPromos.forEach((promo, i) => {
+        if (promo.used > 0) {
+          messageText += `${i + 1}. <code>${promo.code}</code> — ${promo.used} ${promo.used === 1 ? 'використання' : 'використань'}\n`;
+        }
+      });
+      messageText += `\n`;
+    }
+    
+    messageText += `🔗 <b>Партнер:</b> Yakaboo.ua`;
+    
+    await ctx.editMessageText(messageText, {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
           [{ text: '🔄 Оновити', callback_data: 'promo_stats' }],
+          [{ text: '📋 Список промокодів', callback_data: 'promo_list' }],
           [{ text: '⬅️ Назад', callback_data: 'promo_back_to_menu' }]
         ]
       }
-    }
-  );
+    });
+  } catch (error) {
+    logger.error('Error loading extended promo stats', error);
+    await ctx.editMessageText(
+      '❌ Помилка при завантаженні статистики',
+      {
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '🔄 Спробувати знову', callback_data: 'promo_stats' }],
+            [{ text: '⬅️ Назад', callback_data: 'promo_back_to_menu' }]
+          ]
+        }
+      }
+    );
+  }
 });
 
 // Повернення до меню
