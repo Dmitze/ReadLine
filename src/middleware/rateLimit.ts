@@ -103,11 +103,11 @@ class RateLimiter {
 
 // Rate limit конфігурація
 const RATE_LIMITS = {
-  MESSAGE_MAX: 20,
+  MESSAGE_MAX: 60,
   MESSAGE_WINDOW: 60000,
-  COMMAND_MAX: 10,
+  COMMAND_MAX: 30,
   COMMAND_WINDOW: 60000,
-  CALLBACK_MAX: 30,
+  CALLBACK_MAX: 90,
   CALLBACK_WINDOW: 60000,
 } as const;
 
