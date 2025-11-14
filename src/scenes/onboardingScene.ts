@@ -18,7 +18,7 @@ onboardingScene.enter(async (ctx: BotContext) => {
   
   await ctx.reply(
     `👋 *Вітаємо, ${userName}!*\n\n` +
-    `Я ReadLine - твій особистий бібліотечний помічник! 📚\n\n` +
+    `Я Warrior's Library - твій особистий бібліотечний помічник! 📚\n\n` +
     `Давай швидко познайомимося та налаштуємо бота під тебе.\n\n` +
     `Це займе лише 1 хвилину! ⏱️`,
     {
@@ -240,7 +240,7 @@ onboardingScene.action('onboarding_genres_done', async (ctx: BotContext) => {
 onboardingScene.action(['onboarding_skip', 'onboarding_finish'], async (ctx: BotContext) => {
   const userId = ctx.from?.id;
   
-  await ctx.answerCbQuery('👋 Вітаємо в ReadLine!');
+  await ctx.answerCbQuery('👋 Вітаємо в Warrior\'s Library!');
   
   // Позначаємо онбординг як завершений навіть якщо пропустили
    if (userId) {
@@ -252,7 +252,7 @@ onboardingScene.action(['onboarding_skip', 'onboarding_finish'], async (ctx: Bot
    }
   
   await ctx.reply(
-    `🎉 *Ласкаво просимо до ReadLine!*\n\n` +
+    `🎉 *Ласкаво просимо до Warrior's Library!*\n\n` +
     `Тепер ти можеш:\n` +
     `📖 Шукати книги через каталог\n` +
     `🔍 Використовувати швидкий пошук\n` +
