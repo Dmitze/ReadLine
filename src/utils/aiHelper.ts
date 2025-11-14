@@ -262,49 +262,7 @@ export function isAIEnabled(): boolean {
 
 
 
-/**
- * Генерація тегів (заглушка)
- */
-export async function generateTags(title: string, description: string, genre: string): Promise<string[]> {
-  const tags: string[] = [];
-  
-  // Додаємо жанр як тег
-  tags.push(genre.toLowerCase());
-  
-  // Простий аналіз ключових слів
-  const text = `${title} ${description}`.toLowerCase();
-  
-  if (text.includes('кохан') || text.includes('любов')) tags.push('кохання');
-  if (text.includes('війн') || text.includes('бій')) tags.push('війна');
-  if (text.includes('магі') || text.includes('чар')) tags.push('магія');
-  if (text.includes('пригод')) tags.push('пригоди');
-  if (text.includes('детектив') || text.includes('злочин')) tags.push('детектив');
-  
-  return [...new Set(tags)].slice(0, 5);
-}
 
-/**
- * Покращення опису (заглушка)
- */
-export async function improveDescription(description: string): Promise<string> {
-  // Просто повертаємо оригінальний опис
-  return description;
-}
-
-/**
- * Розпізнавання інформації з обкладинки (заглушка)
- */
-export async function extractBookInfoFromCover(_photoFileId: string): Promise<{
-  title?: string;
-  author?: string;
-  genre?: string;
-  confidence?: 'high' | 'medium' | 'low';
-}> {
-  // Заглушка - повертаємо порожній результат
-  return {
-    confidence: 'low'
-  };
-}
 
 /**
  * Визначення жанру з опису (заглушка)
@@ -340,7 +298,7 @@ export async function detectGenreFromDescription(description: string): Promise<s
 
 // ✅ ВИПРАВЛЕНО #47: rate limiting для AI (per-user, не глобальний)
 const aiRequestsByUser = new Map<number, number[]>();
-const AI_RATE_LIMIT = 10; // запитів
+const AI_RATE_LIMIT = 30; // запитів
 const AI_RATE_WINDOW = 60000; // за хвилину
 
 function checkAiRateLimitPerUser(userId: number): boolean {
@@ -395,7 +353,7 @@ export async function askAI(question: string, userId?: number): Promise<string> 
       body: JSON.stringify({
         contents: [{
           parts: [{
-            text: `Ти - помічник бібліотеки ReadLine. Відповідай українською мовою на будь-які питання користувача. Ти можеш:
+            text: `Ти - помічник бібліотеки Warrior's Library. Відповідай українською мовою на будь-які питання користувача. Ти можеш:
 - Рекомендувати книги (наприклад "дай топ 10 фантастичних книг")
 - Розповідати про авторів (наприклад "хто такий Гоголь")
 - Відповідати на загальні питання про літературу
@@ -487,10 +445,117 @@ export async function getMoodBasedBooks(mood: string, allBooks: Book[]): Promise
 }
 
 /**
- * Інтерактивний вибір книг (заглушка)
+ * Інтерактивний вибір книг - реальний AI підбір
+ * Вибирає цікаві книги на основі вподобань користувача
  */
-export async function interactiveBookSelection(_userAnswers: any, allBooks: Book[]): Promise<Book[]> {
-  // Повертаємо перші 5 книг як заглушку
-  return allBooks.slice(0, 5);
+export async function interactiveBookSelection(userAnswers: any, allBooks: Book[]): Promise<Book[]> {
+  const { interest, mood, format } = userAnswers;
+  
+  // Фільтруємо лише доступні книги
+  let candidates = allBooks.filter(book => book.is_available);
+  
+  if (candidates.length === 0) {
+    return [];
+  }
+  
+  // 1. ФІЛЬТР за інтересами
+  const interestFilters: { [key: string]: (book: Book) => boolean } = {
+    interest_fiction: (book) => 
+      book.genre && (
+        book.genre.toLowerCase().includes('романтик') ||
+        book.genre.toLowerCase().includes('драма') ||
+        book.genre.toLowerCase().includes('художн') ||
+        book.genre.toLowerCase().includes('любов')
+      ),
+    interest_nonfiction: (book) =>
+      book.genre && (
+        book.genre.toLowerCase().includes('біографія') ||
+        book.genre.toLowerCase().includes('самовдосконален') ||
+        book.genre.toLowerCase().includes('історія') ||
+        book.genre.toLowerCase().includes('наука') ||
+        book.genre.toLowerCase().includes('бізнес')
+      ),
+    interest_educational: (book) =>
+      book.genre && (
+        book.genre.toLowerCase().includes('навчальн') ||
+        book.genre.toLowerCase().includes('психологія') ||
+        book.genre.toLowerCase().includes('саморозвиток') ||
+        book.genre.toLowerCase().includes('філософія')
+      ),
+    interest_any: () => true
+  };
+  
+  const filterFunc = interestFilters[interest] || interestFilters.interest_any;
+  candidates = candidates.filter(filterFunc);
+  
+  if (candidates.length === 0) {
+    // Повертаємось до всіх доступних книг, якщо нічого не знайдено за жанром
+    candidates = allBooks.filter(book => book.is_available);
+  }
+  
+  // 2. ФІЛЬТР за настроєм
+  const moodScores: { [key: string]: (book: Book) => number } = {
+    mood_happy: (book) => {
+      let score = 0;
+      const genre = book.genre?.toLowerCase() || '';
+      if (genre.includes('комед')) score += 20;
+      if (genre.includes('романтик')) score += 15;
+      if (genre.includes('пригод')) score += 10;
+      if ((book.rating || 0) > 4.5) score += 10;
+      return score;
+    },
+    mood_calm: (book) => {
+      let score = 0;
+      const genre = book.genre?.toLowerCase() || '';
+      if (genre.includes('класич')) score += 20;
+      if (genre.includes('поезія')) score += 15;
+      if (genre.includes('філософ')) score += 10;
+      if ((book.rating || 0) > 3.5) score += 5;
+      return score;
+    },
+    mood_thoughtful: (book) => {
+      let score = 0;
+      const genre = book.genre?.toLowerCase() || '';
+      if (genre.includes('філософ')) score += 20;
+      if (genre.includes('психолог')) score += 15;
+      if (genre.includes('драма')) score += 10;
+      if ((book.rating || 0) > 4) score += 5;
+      return score;
+    },
+    mood_energetic: (book) => {
+      let score = 0;
+      const genre = book.genre?.toLowerCase() || '';
+      if (genre.includes('пригод')) score += 20;
+      if (genre.includes('детектив')) score += 15;
+      if (genre.includes('фантаст')) score += 10;
+      if ((book.downloads_count || 0) > 50) score += 5;
+      return score;
+    },
+    mood_any: (book) => (book.rating || 0) * 10 + (book.downloads_count || 0)
+  };
+  
+  const scoreFunc = moodScores[mood] || moodScores.mood_any;
+  
+  // 3. СОРТУВАННЯ за комбінацією факторів
+  candidates.sort((a, b) => {
+    let scoreA = scoreFunc(a);
+    let scoreB = scoreFunc(b);
+    
+    // Базовий рейтинг та популярність
+    scoreA += (a.rating || 0) * 5;
+    scoreB += (b.rating || 0) * 5;
+    
+    scoreA += Math.min((a.downloads_count || 0) / 10, 50);
+    scoreB += Math.min((b.downloads_count || 0) / 10, 50);
+    
+    return scoreB - scoreA;
+  });
+  
+  // 4. ФІЛЬТР за форматом (опціонально, якщо є інформація про файли)
+  // Поки що просто рекомендуємо топ книги незалежно від формату
+  
+  // Беремо топ 5-7 книг
+  const maxBooks = Math.min(7, candidates.length);
+  return candidates.slice(0, maxBooks);
 }
 
