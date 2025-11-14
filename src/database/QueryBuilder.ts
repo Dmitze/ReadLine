@@ -339,16 +339,16 @@ export class QueryBuilder {
  * Builder для INSERT запитів
  */
 export class InsertBuilder {
-  private table: string = '';
-  private columns: string[] = [];
-  private values: any[][] = [];
+  private tableName: string = '';
+  private columnNames: string[] = [];
+  private rowValues: any[][] = [];
   private parameters: any[] = [];
 
   /**
    * Встановити таблицю
    */
   into(table: string): this {
-    this.table = this.escapeIdentifier(table);
+    this.tableName = this.escapeIdentifier(table);
     return this;
   }
 
@@ -356,7 +356,7 @@ export class InsertBuilder {
    * Встановити стовпці
    */
   columns(...columns: string[]): this {
-    this.columns = columns.map(col => this.escapeIdentifier(col));
+    this.columnNames = columns.map(col => this.escapeIdentifier(col));
     return this;
   }
 
@@ -364,7 +364,7 @@ export class InsertBuilder {
    * Додати рядок значень
    */
   values(...vals: any[]): this {
-    this.values.push(vals);
+    this.rowValues.push(vals);
     this.parameters.push(...vals);
     return this;
   }
@@ -373,9 +373,9 @@ export class InsertBuilder {
    * Отримати SQL запит
    */
   toSql(): string {
-    const placeholders = this.columns.map(() => '?').join(', ');
-    const valueSets = this.values.map(() => `(${placeholders})`).join(', ');
-    return `INSERT INTO ${this.table} (${this.columns.join(', ')}) VALUES ${valueSets}`;
+    const placeholders = this.columnNames.map(() => '?').join(', ');
+    const valueSets = this.rowValues.map(() => `(${placeholders})`).join(', ');
+    return `INSERT INTO ${this.tableName} (${this.columnNames.join(', ')}) VALUES ${valueSets}`;
   }
 
   /**
@@ -407,7 +407,7 @@ export class InsertBuilder {
  * Builder для UPDATE запитів
  */
 export class UpdateBuilder {
-  private table: string = '';
+  private tableName: string = '';
   private setValues: Map<string, any> = new Map();
   private whereConditions: WhereCondition[] = [];
   private parameters: any[] = [];
@@ -416,7 +416,7 @@ export class UpdateBuilder {
    * Встановити таблицю
    */
   table(table: string): this {
-    this.table = this.escapeIdentifier(table);
+    this.tableName = this.escapeIdentifier(table);
     return this;
   }
 
@@ -456,7 +456,7 @@ export class UpdateBuilder {
       .map(col => `${col} = ?`)
       .join(', ');
 
-    let sql = `UPDATE ${this.table} SET ${setClause}`;
+    let sql = `UPDATE ${this.tableName} SET ${setClause}`;
 
     if (this.whereConditions.length > 0) {
       const conditions = this.buildWhereConditions();
@@ -504,7 +504,7 @@ export class UpdateBuilder {
  * Builder для DELETE запитів
  */
 export class DeleteBuilder {
-  private table: string = '';
+  private tableName: string = '';
   private whereConditions: WhereCondition[] = [];
   private parameters: any[] = [];
 
@@ -512,7 +512,7 @@ export class DeleteBuilder {
    * Встановити таблицю
    */
   from(table: string): this {
-    this.table = this.escapeIdentifier(table);
+    this.tableName = this.escapeIdentifier(table);
     return this;
   }
 
@@ -539,7 +539,7 @@ export class DeleteBuilder {
    * Отримати SQL запит
    */
   toSql(): string {
-    let sql = `DELETE FROM ${this.table}`;
+    let sql = `DELETE FROM ${this.tableName}`;
 
     if (this.whereConditions.length > 0) {
       const conditions = this.buildWhereConditions();
