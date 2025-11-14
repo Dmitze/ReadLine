@@ -2,6 +2,7 @@ import { Scenes, Markup } from 'telegraf';
 import { getBookById, updateBook, deleteBook } from '../database/models';
 import { logger } from '../utils/logger';
 import { BotContext, WizardState } from '../types/telegraf';
+import { handleResult } from '../utils/resultHandler';
 
 const editBookScene = new Scenes.WizardScene(
   'EDIT_BOOK_SCENE',
@@ -14,8 +15,7 @@ const editBookScene = new Scenes.WizardScene(
       return ctx.scene.leave();
     }
     
-    try {
-      const book = await getBookById(bookId);
+    const book = await getBookById(bookId);
       
       if (!book) {
         await ctx.reply('❌ Книга не знайдена');
@@ -53,10 +53,6 @@ const editBookScene = new Scenes.WizardScene(
       });
       
       return ctx.wizard.next();
-    } catch (error) {
-      logger.error('Error loading book for edit', error instanceof Error ? error : new Error(String(error)));
-      await ctx.reply('❌ Помилка при завантаженні книги');
-      return ctx.scene.leave();
     }
   },
   
@@ -85,49 +81,42 @@ const editBookScene = new Scenes.WizardScene(
     
     if (action === 'save_changes') {
       // Зберігаємо зміни
-      try {
-        const updates = state.updates || {};
-        
-        if (Object.keys(updates).length === 0) {
-          await ctx.answerCbQuery('Немає змін для збереження');
-          await ctx.reply(
-            'ℹ️ Ви не внесли жодних змін.\n\n' +
-            'Оберіть поле для редагування з меню вище або натисніть "❌ Скасувати".'
-          );
-          return;
-        }
-        
-        await updateBook(state.book.id, updates);
-        await ctx.answerCbQuery('✅ Зміни збережено!');
-        
-        // Показуємо що саме змінено
-        const changedFields = Object.keys(updates).map(key => {
-          const fieldNames: Record<string, string> = {
-            title: 'Назва',
-            author: 'Автор',
-            genre: 'Жанр',
-            description: 'Опис',
-            photo_file_id: 'Фото',
-            is_available: 'Доступність'
-          };
-          return `✅ ${fieldNames[key] || key}`;
-        }).join('\n');
-        
+      const updates = state.updates || {};
+      
+      if (Object.keys(updates).length === 0) {
+        await ctx.answerCbQuery('Немає змін для збереження');
         await ctx.reply(
-          `✅ *Книгу успішно оновлено!*\n\n` +
-          `Змінено:\n${changedFields}`,
-          { parse_mode: 'Markdown' }
+          'ℹ️ Ви не внесли жодних змін.\n\n' +
+          'Оберіть поле для редагування з меню вище або натисніть "❌ Скасувати".'
         );
-        
-        logger.adminAction(ctx.from!.id, 'edit_book', { bookId: state.book.id, updates });
-        
-        return ctx.scene.leave();
-      } catch (error) {
-        logger.error('Error saving book changes', error instanceof Error ? error : new Error(String(error)));
-        await ctx.answerCbQuery('❌ Помилка збереження');
-        await ctx.reply('❌ Помилка при збереженні змін');
-        return ctx.scene.leave();
+        return;
       }
+      
+      await updateBook(state.book.id, updates);
+      await ctx.answerCbQuery('✅ Зміни збережено!');
+      
+      // Показуємо що саме змінено
+      const changedFields = Object.keys(updates).map(key => {
+        const fieldNames: Record<string, string> = {
+          title: 'Назва',
+          author: 'Автор',
+          genre: 'Жанр',
+          description: 'Опис',
+          photo_file_id: 'Фото',
+          is_available: 'Доступність'
+        };
+        return `✅ ${fieldNames[key] || key}`;
+      }).join('\n');
+      
+      await ctx.reply(
+        `✅ *Книгу успішно оновлено!*\n\n` +
+        `Змінено:\n${changedFields}`,
+        { parse_mode: 'Markdown' }
+      );
+      
+      logger.adminAction(ctx.from!.id, 'edit_book', { bookId: state.book.id, updates });
+      
+      return ctx.scene.leave();
     }
     
     // Зберігаємо яке поле редагуємо
