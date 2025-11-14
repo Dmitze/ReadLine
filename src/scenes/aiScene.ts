@@ -1,37 +1,28 @@
 import { Scenes, Markup } from 'telegraf';
-import { isAIEnabled, askAI } from '../utils/aiHelper';
+import { askAI } from '../utils/aiHelper';
 import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
 
 const aiScene = new Scenes.BaseScene('AI_SCENE');
 
 aiScene.enter(async (ctx: BotContext) => {
-  if (!isAIEnabled()) {
-     await ctx.reply(
-       '❌ <b>AI-помічник недоступний</b>\n\n' +
-       'Для використання AI-помічника адміністратор повинен додати <code>GEMINI_API_KEY</code> в <code>.env</code> файл.\n\n' +
-       '💡 Як налаштувати:\n' +
-       '1. Отримайте API ключ на https://makersuite.google.com/app/apikey\n' +
-       '2. Додайте в .env: <code>GEMINI_API_KEY=ваш_ключ</code>\n' +
-       '3. Перезапустіть бота',
-       { parse_mode: 'HTML' }
-     );
-     return ctx.scene?.leave();
-   }
-  
   await ctx.reply(
-    '🤖 <b>AI-ПОМІЧНИК АКТИВОВАНО</b>\n\n' +
-    'Я можу допомогти вам з:\n' +
-    '📚 Рекомендаціями книг\n' +
-    '🔍 Пошуком книг за описом\n' +
-    '✍️ Інформацією про авторів\n' +
-    '📖 Поясненням жанрів\n' +
-    '💡 Відповідями на питання про літературу\n\n' +
-    '✍️ <b>Напишіть ваше питання:</b>\n\n' +
-    '💡 <b>Приклади:</b>\n' +
-    '• "Порекомендуй книгу про космос"\n' +
-    '• "Розкажи про жанр фантастика"\n' +
-    '• "Хто такий Тарас Шевченко?"',
+    '<b>🤖 AI-ПОМІЧНИК ЧИТАЛЬНОГО ЗАЛУ</b>\n\n' +
+    '<i>Розумний помічник для роботи з книгами та літературою</i>\n\n' +
+    '<b>Я можу допомогти вам з:</b>\n' +
+    '📚 <b>Рекомендаціями книг</b> - знайду ідеальну книгу для вас\n' +
+    '🔍 <b>Пошуком книг</b> - опишіть, що вас цікавить\n' +
+    '✍️ <b>Інформацією про авторів</b> - розповім про письменників\n' +
+    '📖 <b>Поясненням жанрів</b> - допоможу розібратися в стилях\n' +
+    '💡 <b>Питаннями про літературу</b> - відповідам на будь-які питання\n\n' +
+    '━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+    '<b>✍️ Напишіть ваше питання:</b>\n\n' +
+    '<b>💡 Приклади запитань:</b>\n' +
+    '• "Порекомендуй книгу про космос та пригоди"\n' +
+    '• "Розкажи про жанр фантастика та його особливості"\n' +
+    '• "Хто такий Тарас Шевченко та які його найкращі твори?"\n' +
+    '• "Які книги подобаються любителям детективів?"\n' +
+    '• "Дай топ 5 класичних романів"',
     { 
       parse_mode: 'HTML',
       reply_markup: Markup.keyboard([['⬅️ Назад до меню']]).resize().reply_markup
@@ -59,7 +50,7 @@ aiScene.hears('⬅️ Назад до меню', async (ctx: BotContext) => {
 });
 
 aiScene.on('text', async (ctx: BotContext) => {
-  const { withTimeout, retryOperation, sendErrorToUser } = await import('../utils/errorHandler');
+  const { withTimeout, retryOperation } = await import('../utils/errorHandler');
   const { CONFIG } = await import('../constants');
   
   if (!('text' in ctx.message)) {
@@ -85,10 +76,11 @@ aiScene.on('text', async (ctx: BotContext) => {
    // Видаляємо "думаю" повідомлення (ігноруємо помилки)
    await ctx.deleteMessage(thinkingMsg.message_id).catch(() => {});
   
-  // Відправляємо відповідь (без parse_mode щоб уникнути помилок з спецсимволами)
+  // Відправляємо відповідь з Markdown форматуванням
   await ctx.reply(
     `🤖 AI-ПОМІЧНИК:\n\n${answer}\n\n` +
-    '❓ Задайте ще питання або натисніть "⬅️ Назад до меню"'
+    '❓ Задайте ще питання або натисніть "⬅️ Назад до меню"',
+    { parse_mode: 'Markdown' }
   );
 });
 
