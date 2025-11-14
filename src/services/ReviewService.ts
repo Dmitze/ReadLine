@@ -54,9 +54,7 @@ export class ReviewService {
         user_id: input.user_id,
         rating: input.rating,
         comment: input.comment || '',
-        is_published: false,
-        created_at: new Date(),
-        updated_at: new Date()
+        is_published: false
       });
 
       return new Ok(reviewId);
@@ -96,8 +94,7 @@ export class ReviewService {
 
       await this.reviewRepository.update(reviewId, {
         rating: input.rating || review.rating,
-        comment: input.comment || review.comment,
-        updated_at: new Date()
+        comment: input.comment || review.comment
       });
 
       return new Ok(undefined);
