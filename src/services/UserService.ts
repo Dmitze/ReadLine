@@ -34,14 +34,11 @@ export class UserService {
 
       if (!user && input) {
         const userId = await this.userRepository.insert({
-          telegram_id: input.telegram_id,
+          user_id: input.telegram_id,
           username: input.username,
           first_name: input.first_name,
           last_name: input.last_name,
-          language: input.language || 'uk',
-          is_admin: false,
-          created_at: new Date(),
-          updated_at: new Date()
+          is_admin: false
         });
 
         user = await this.userRepository.findById(userId);
@@ -101,9 +98,7 @@ export class UserService {
         username: input.username || user.username,
         first_name: input.first_name || user.first_name,
         last_name: input.last_name || user.last_name,
-        language: input.language || user.language,
-        is_admin: input.is_admin !== undefined ? input.is_admin : user.is_admin,
-        updated_at: new Date()
+        is_admin: input.is_admin !== undefined ? input.is_admin : user.is_admin
       });
 
       return new Ok(undefined);
@@ -179,7 +174,7 @@ export class UserService {
   }
 
   /**
-   * Отримати мову користувача
+   * Отримати мову користувача (default: 'uk')
    */
   async getUserLanguage(userId: number): Promise<Result<string>> {
     try {
@@ -187,14 +182,14 @@ export class UserService {
       if (!user) {
         return new Err(new Error(`User with id ${userId} not found`));
       }
-      return new Ok(user.language || 'uk');
+      return new Ok('uk'); // Default language
     } catch (error) {
       return new Err(error instanceof Error ? error : new Error('Failed to fetch user language'));
     }
   }
 
   /**
-   * Оновити мову користувача
+   * Оновити мову користувача (placeholder - not yet in DB)
    */
   async setUserLanguage(userId: number, language: string): Promise<Result<void>> {
     try {
@@ -203,7 +198,8 @@ export class UserService {
         return new Err(new Error(`User with id ${userId} not found`));
       }
 
-      await this.userRepository.update(userId, { language });
+      // TODO: Language field is not yet in the users table
+      // await this.userRepository.update(userId, { language });
       return new Ok(undefined);
     } catch (error) {
       return new Err(error instanceof Error ? error : new Error('Failed to set user language'));
