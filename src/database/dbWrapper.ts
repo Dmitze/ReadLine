@@ -3,7 +3,10 @@
  * Усуває дублювання коду з models.ts
  */
 
-import { Database } from 'sqlite3';
+import { Database as SqliteDatabase } from 'sqlite3';
+
+export type { SqliteDatabase as Database };
+export { DatabaseWrapper };
 
 export class DatabaseWrapper {
   constructor(private db: Database) {}
