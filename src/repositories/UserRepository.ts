@@ -217,4 +217,15 @@ export class UserRepository extends BaseRepository<User> {
       throw error;
     }
   }
+
+  /**
+   * Aliases for compatibility with services
+   */
+  async findByTelegramId(userId: number): Promise<User | undefined> {
+    return this.getByTelegramId(userId);
+  }
+
+  async findAdmins(): Promise<User[]> {
+    return this.getAllAdmins();
+  }
 }

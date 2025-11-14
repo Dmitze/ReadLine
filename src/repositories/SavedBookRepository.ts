@@ -146,4 +146,21 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
       throw error;
     }
   }
+
+  /**
+   * Aliases for compatibility with services
+   */
+  async findByUserId(userId: number): Promise<SavedBook[]> {
+    return this.getByUserId(userId);
+  }
+
+  async deleteByBookId(bookId: number): Promise<number> {
+    try {
+      const query = 'DELETE FROM saved_books WHERE book_id = ?';
+      return await this.db.delete(query, [bookId]);
+    } catch (error) {
+      logger.error('Error deleting saved books by book id', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
 }

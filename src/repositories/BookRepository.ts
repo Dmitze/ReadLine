@@ -302,4 +302,23 @@ export class BookRepository extends BaseRepository<Book> {
       throw error;
     }
   }
+
+  /**
+   * Aliases for compatibility with services
+   */
+  async findByQuery(searchTerm: string, limit?: number): Promise<Book[]> {
+    return this.search(searchTerm, limit || 10);
+  }
+
+  async findMostRated(limit?: number): Promise<Book[]> {
+    return this.getTopRated(limit || 10);
+  }
+
+  async findNewest(limit?: number): Promise<Book[]> {
+    return this.getNewest(limit || 10);
+  }
+
+  async findByGenre(genre: string): Promise<Book[]> {
+    return this.getByGenre(genre);
+  }
 }

@@ -156,4 +156,18 @@ export abstract class BaseRepository<T extends { id?: number }> {
       throw error;
     }
   }
+
+  /**
+   * Alias for getById for compatibility
+   */
+  async findById(id: number): Promise<T | undefined> {
+    return this.getById(id);
+  }
+
+  /**
+   * Alias for getAll for compatibility
+   */
+  async findAll(limit?: number, offset?: number): Promise<T[]> {
+    return this.getAll(limit, offset);
+  }
 }

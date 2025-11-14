@@ -1,12 +1,10 @@
 /**
- * Services Index
- * 
- * Central export point for all application services
- * Services contain business logic and orchestrate repository operations
+ * Services barrel export
+ * REFACTOR-003: Service Layer
  */
 
-export { BaseService } from './BaseService';
-export { BookService } from './BookService';
-export { UserService } from './UserService';
-export { ReviewService } from './ReviewService';
-export { AudioService } from './AudioService';
+export { BookService, type CreateBookInput, type UpdateBookInput, type BookFilters } from './BookService';
+export { UserService, type CreateUserInput, type UpdateUserInput } from './UserService';
+export { ReviewService, type CreateReviewInput, type UpdateReviewInput } from './ReviewService';
+export { AudioService, type CreateAudioInput, type UpdateAudioInput } from './AudioService';
+export { RecommendationService, type RecommendationRequest } from './RecommendationService';

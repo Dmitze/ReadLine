@@ -1,206 +1,212 @@
 /**
- * UserService - Business logic for user operations
- * 
- * Responsibilities:
- * - User creation and management
- * - User profile operations
- * - Admin management
- * - User statistics and activity tracking
+ * User Service - Бізнес-логіка для роботи з користувачами
+ * REFACTOR-003: Service Layer
  */
 
-import { BaseService } from './BaseService';
 import { UserRepository } from '../repositories/UserRepository';
-import { SavedBookRepository } from '../repositories/SavedBookRepository';
-import { ReviewRepository } from '../repositories/ReviewRepository';
-import { ILogger } from '../core/types';
-import { Result } from '../core/Result';
-import { Admin as User } from '../database/models';
+import { Result, Ok, Err } from '../core/Result';
 
-/**
- * Service for user-related operations
- */
-export class UserService extends BaseService {
+export interface CreateUserInput {
+  telegram_id: number;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  language?: string;
+}
+
+export interface UpdateUserInput {
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  language?: string;
+  is_admin?: boolean;
+}
+
+export class UserService {
+  constructor(private userRepository: UserRepository) {}
+
   /**
-   * Create a new UserService instance
-   * @param userRepository - Repository for user operations
-   * @param savedBookRepository - Repository for saved books
-   * @param reviewRepository - Repository for reviews
-   * @param logger - Logger instance
+   * Отримати або створити користувача
    */
-  constructor(
-    private userRepository: UserRepository,
-    private savedBookRepository: SavedBookRepository,
-    private reviewRepository: ReviewRepository,
-    logger: ILogger
-  ) {
-    super(logger);
+  async getOrCreateUser(telegramId: number, input?: CreateUserInput): Promise<Result<any>> {
+    try {
+      let user = await this.userRepository.findByTelegramId(telegramId);
+
+      if (!user && input) {
+        const userId = await this.userRepository.insert({
+          telegram_id: input.telegram_id,
+          username: input.username,
+          first_name: input.first_name,
+          last_name: input.last_name,
+          language: input.language || 'uk',
+          is_admin: false,
+          created_at: new Date(),
+          updated_at: new Date()
+        });
+
+        user = await this.userRepository.findById(userId);
+      }
+
+      if (!user) {
+        return new Err(new Error(`User with telegram_id ${telegramId} not found`));
+      }
+
+      return new Ok(user);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to get or create user'));
+    }
   }
 
   /**
-   * Get or create user by Telegram ID
-   * @param telegramId - User's Telegram ID
-   * @param username - User's Telegram username (optional)
-   * @returns Result with user
+   * Отримати користувача за ID
    */
-  async getOrCreateUser(telegramId: number, username?: string): Promise<Result<User>> {
-    return this.executeAsync(
-      async () => {
-        let user = await this.userRepository.getByTelegramId(telegramId);
-
-        if (!user) {
-          // Create new user
-          const newUser: Omit<User, 'id'> = {
-            user_id: telegramId,
-            username: username || undefined,
-            created_at: new Date().toISOString(),
-          };
-
-          const userId = await this.userRepository.create(newUser);
-          user = await this.userRepository.getById(userId);
-
-          if (!user) {
-            throw new Error(`Failed to create user with Telegram ID ${telegramId}`);
-          }
-        }
-
-        return user;
-      },
-      `getOrCreateUser(${telegramId})`
-    );
+  async getUserById(userId: number): Promise<Result<any>> {
+    try {
+      const user = await this.userRepository.findById(userId);
+      if (!user) {
+        return new Err(new Error(`User with id ${userId} not found`));
+      }
+      return new Ok(user);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch user'));
+    }
   }
 
   /**
-   * Update user last seen timestamp
-   * @param telegramId - User's Telegram ID
-   * @returns Result with updated user
+   * Отримати користувача за Telegram ID
    */
-  async updateLastSeen(telegramId: number): Promise<Result<User | null>> {
-    return this.executeAsync(
-      async () => {
-        const user = await this.userRepository.getByTelegramId(telegramId);
-        if (!user) return null;
-
-        // Update logic would depend on repository implementation
-        return user;
-      },
-      `updateLastSeen(${telegramId})`
-    );
+  async getUserByTelegramId(telegramId: number): Promise<Result<any>> {
+    try {
+      const user = await this.userRepository.findByTelegramId(telegramId);
+      if (!user) {
+        return new Err(new Error(`User with telegram_id ${telegramId} not found`));
+      }
+      return new Ok(user);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch user'));
+    }
   }
 
   /**
-   * Get user's saved books
-   * @param userId - User ID
-   * @returns Result with user's saved books
+   * Оновити користувача
    */
-  async getUserSavedBooks(userId: number): Promise<Result<number[]>> {
-    return this.executeAsync(
-      async () => {
-        const saved = await this.savedBookRepository.getByUserId(userId);
-        // Extract book IDs from SavedBook objects
-        return saved.map((s) => s.book_id);
-      },
-      `getUserSavedBooks(${userId})`
-    );
+  async updateUser(userId: number, input: UpdateUserInput): Promise<Result<void>> {
+    try {
+      const user = await this.userRepository.findById(userId);
+      if (!user) {
+        return new Err(new Error(`User with id ${userId} not found`));
+      }
+
+      await this.userRepository.update(userId, {
+        username: input.username || user.username,
+        first_name: input.first_name || user.first_name,
+        last_name: input.last_name || user.last_name,
+        language: input.language || user.language,
+        is_admin: input.is_admin !== undefined ? input.is_admin : user.is_admin,
+        updated_at: new Date()
+      });
+
+      return new Ok(undefined);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to update user'));
+    }
   }
 
   /**
-   * Get user's review count
-   * @param userId - User ID
-   * @returns Result with review count
+   * Промоувати користувача в адміни
    */
-  async getUserReviewCount(userId: number): Promise<Result<number>> {
-    return this.executeAsync(
-      async () => {
-        const reviews = await this.reviewRepository.getByUserId(userId);
-        return reviews.length;
-      },
-      `getUserReviewCount(${userId})`
-    );
+  async promoteToAdmin(userId: number): Promise<Result<void>> {
+    try {
+      const user = await this.userRepository.findById(userId);
+      if (!user) {
+        return new Err(new Error(`User with id ${userId} not found`));
+      }
+
+      if (user.is_admin) {
+        return new Err(new Error('User is already an admin'));
+      }
+
+      await this.userRepository.update(userId, { is_admin: true });
+      return new Ok(undefined);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to promote user'));
+    }
   }
 
   /**
-   * Get user statistics
-   * @param userId - User ID
-   * @returns Result with user stats
+   * Позбавити адмін прав
    */
-  async getUserStats(
-    userId: number
-  ): Promise<
-    Result<{
-      totalSavedBooks: number;
-      totalReviews: number;
-      averageRating: number;
-    }>
-  > {
-    return this.executeAsync(
-      async () => {
-        const savedBooks = await this.savedBookRepository.getByUserId(userId);
-        const reviews = await this.reviewRepository.getByUserId(userId);
+  async revokeAdmin(userId: number): Promise<Result<void>> {
+    try {
+      const user = await this.userRepository.findById(userId);
+      if (!user) {
+        return new Err(new Error(`User with id ${userId} not found`));
+      }
 
-        const averageRating =
-          reviews.length > 0
-            ? reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length
-            : 0;
+      if (!user.is_admin) {
+        return new Err(new Error('User is not an admin'));
+      }
 
-        return {
-          totalSavedBooks: savedBooks.length,
-          totalReviews: reviews.length,
-          averageRating: Math.round(averageRating * 100) / 100,
-        };
-      },
-      `getUserStats(${userId})`
-    );
+      await this.userRepository.update(userId, { is_admin: false });
+      return new Ok(undefined);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to revoke admin'));
+    }
   }
 
   /**
-   * Make user an admin
-   * @param userId - User ID
-   * @returns Result with success status
+   * Отримати всіх адмінів
    */
-  async makeUserAdmin(userId: number): Promise<Result<number>> {
-    return this.executeAsync(
-      async () => {
-        const user = await this.userRepository.getById(userId);
-        if (!user) {
-          throw new Error(`User with ID ${userId} not found`);
-        }
-
-        return await this.userRepository.update(userId, { username: user.username });
-      },
-      `makeUserAdmin(${userId})`
-    );
+  async getAllAdmins(): Promise<Result<any[]>> {
+    try {
+      const admins = await this.userRepository.findAdmins();
+      return new Ok(admins);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch admins'));
+    }
   }
 
   /**
-   * Get all admin users
-   * @returns Result with list of admin users
+   * Отримати кількість користувачів
    */
-  async getAllAdmins(): Promise<Result<User[]>> {
-    return this.executeAsync(
-      async () => await this.userRepository.getAllAdmins(),
-      'getAllAdmins'
-    );
+  async getUserCount(): Promise<Result<number>> {
+    try {
+      const count = await this.userRepository.count();
+      return new Ok(count);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to count users'));
+    }
   }
 
   /**
-   * Get total active user count
-   * @returns Result with user count
+   * Отримати мову користувача
    */
-  async getActiveUserCount(): Promise<Result<number>> {
-    return this.executeAsync(
-      async () => await this.userRepository.getActiveCount(),
-      'getActiveUserCount'
-    );
+  async getUserLanguage(userId: number): Promise<Result<string>> {
+    try {
+      const user = await this.userRepository.findById(userId);
+      if (!user) {
+        return new Err(new Error(`User with id ${userId} not found`));
+      }
+      return new Ok(user.language || 'uk');
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch user language'));
+    }
   }
 
   /**
-   * Get total user count
-   * @returns Result with user count
+   * Оновити мову користувача
    */
-  async getTotalUserCount(): Promise<Result<number>> {
-    return this.executeAsync(
-      async () => await this.userRepository.getTotalCount(),
-      'getTotalUserCount'
-    );
+  async setUserLanguage(userId: number, language: string): Promise<Result<void>> {
+    try {
+      const user = await this.userRepository.findById(userId);
+      if (!user) {
+        return new Err(new Error(`User with id ${userId} not found`));
+      }
+
+      await this.userRepository.update(userId, { language });
+      return new Ok(undefined);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to set user language'));
+    }
   }
 }

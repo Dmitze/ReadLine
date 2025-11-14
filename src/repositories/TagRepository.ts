@@ -1,5 +1,4 @@
 import { BaseRepository } from './BaseRepository';
-import { IDatabase } from '../core/types';
 
 /**
  * Tag entity interface
@@ -330,5 +329,21 @@ export class TagRepository extends BaseRepository<Tag> {
       return existing.id;
     }
     return this.createTag(name);
+  }
+
+  /**
+   * Aliases for compatibility with services
+   */
+  async findByBookId(bookId: number): Promise<Tag[]> {
+    return this.getBookTags(bookId);
+  }
+
+  async addTagToBook(bookId: number, tagId: number): Promise<void> {
+    return this.addBookTag(bookId, tagId);
+  }
+
+  async deleteByBookId(bookId: number): Promise<number> {
+    await this.clearBookTags(bookId);
+    return 1;
   }
 }

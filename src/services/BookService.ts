@@ -1,231 +1,276 @@
 /**
- * BookService - Business logic for book operations
- * 
- * Responsibilities:
- * - Book search and discovery
- * - Book recommendations
- * - Genre management
- * - Book metadata operations
+ * Book Service - Бізнес-логіка для роботи з книгами
+ * REFACTOR-003: Service Layer
  */
 
-import { BaseService } from './BaseService';
 import { BookRepository } from '../repositories/BookRepository';
 import { ReviewRepository } from '../repositories/ReviewRepository';
 import { SavedBookRepository } from '../repositories/SavedBookRepository';
-import { ILogger } from '../core/types';
-import { Result } from '../core/Result';
-import { Book } from '../database/models';
+import { TagRepository } from '../repositories/TagRepository';
+import { Result, Ok, Err } from '../core/Result';
 
-/**
- * Service for book-related operations
- */
-export class BookService extends BaseService {
-  /**
-   * Create a new BookService instance
-   * @param bookRepository - Repository for book operations
-   * @param reviewRepository - Repository for review operations
-   * @param savedBookRepository - Repository for saved books
-   * @param logger - Logger instance
-   */
+export interface CreateBookInput {
+  title: string;
+  author: string;
+  genre: string;
+  description: string;
+  photo_file_id?: string;
+  file_type: 'physical' | 'file' | 'audio' | 'link';
+  file_path?: string;
+  file_size?: number;
+}
+
+export interface UpdateBookInput {
+  title?: string;
+  author?: string;
+  genre?: string;
+  description?: string;
+  photo_file_id?: string;
+}
+
+export interface BookFilters {
+  genre?: string;
+  searchQuery?: string;
+  limit?: number;
+  offset?: number;
+  sortBy?: 'rating' | 'date' | 'title';
+  userId?: number;
+}
+
+export class BookService {
   constructor(
     private bookRepository: BookRepository,
     private reviewRepository: ReviewRepository,
     private savedBookRepository: SavedBookRepository,
-    logger: ILogger
-  ) {
-    super(logger);
+    private tagRepository: TagRepository
+  ) {}
+
+  /**
+   * Створити нову книгу
+   */
+  async createBook(input: CreateBookInput): Promise<Result<number>> {
+    try {
+      if (!input.title || !input.author || !input.genre) {
+        return new Err(new Error('Missing required book fields: title, author, genre'));
+      }
+
+      const bookId = await this.bookRepository.insert({
+        title: input.title,
+        author: input.author,
+        genre: input.genre,
+        description: input.description,
+        photo_file_id: input.photo_file_id || 'default_cover',
+        file_type: input.file_type,
+        file_url: input.file_path,
+        online_link: undefined,
+        audio_file_id: undefined,
+        file_name: undefined
+      });
+
+      return new Ok(bookId);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to create book'));
+    }
   }
 
   /**
-   * Search books by query string
-   * Searches in title, author, and description
-   * @param query - Search query
-   * @param limit - Maximum results (default: 20)
-   * @returns Result with matching books
+   * Отримати книгу за ID
    */
-  async searchBooks(query: string, limit: number = 20): Promise<Result<Book[]>> {
-    return this.executeAsync(
-      async () => {
-        if (!query || query.trim().length === 0) {
-          return [];
-        }
+  async getBookById(bookId: number): Promise<Result<any>> {
+    try {
+      const book = await this.bookRepository.findById(bookId);
+      
+      if (!book) {
+        return new Err(new Error(`Book with id ${bookId} not found`));
+      }
 
-        const trimmedQuery = query.trim().toLowerCase();
-        return await this.bookRepository.search(trimmedQuery, limit);
-      },
-      `searchBooks(${query})`
-    );
+      const reviews = await this.reviewRepository.findByBookId(bookId);
+      const rating = reviews.length > 0
+        ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length).toFixed(1)
+        : '0';
+
+      return new Ok({
+        ...book,
+        reviews_count: reviews.length,
+        rating
+      });
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch book'));
+    }
   }
 
   /**
-   * Get books by genre with pagination
-   * @param genre - Genre name
-   * @param limit - Results per page (default: 10)
-   * @param offset - Pagination offset (default: 0)
-   * @returns Result with books in genre
+   * Оновити книгу
    */
-  async getBooksByGenre(
-    genre: string,
-    limit: number = 10,
-    offset: number = 0
-  ): Promise<Result<{ books: Book[]; total: number }>> {
-    return this.executeAsync(
-      async () => {
-        if (!genre || genre.trim().length === 0) {
-          return { books: [], total: 0 };
-        }
+  async updateBook(bookId: number, input: UpdateBookInput): Promise<Result<void>> {
+    try {
+      const book = await this.bookRepository.findById(bookId);
+      if (!book) {
+        return new Err(new Error(`Book with id ${bookId} not found`));
+      }
 
-        return await this.bookRepository.getByGenreWithPagination(genre, limit, offset);
-      },
-      `getBooksByGenre(${genre})`
-    );
+      await this.bookRepository.update(bookId, {
+        title: input.title || book.title,
+        author: input.author || book.author,
+        genre: input.genre || book.genre,
+        description: input.description || book.description,
+        photo_file_id: input.photo_file_id || book.photo_file_id,
+        updated_at: new Date()
+      });
+
+      return new Ok(undefined);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to update book'));
+    }
   }
 
   /**
-   * Get top-rated books
-   * @param limit - Number of books to return (default: 10)
-   * @returns Result with top-rated books
+   * Видалити книгу
    */
-  async getTopRatedBooks(limit: number = 10): Promise<Result<Book[]>> {
-    return this.executeAsync(
-      async () => await this.bookRepository.getTopRated(limit),
-      `getTopRatedBooks(${limit})`
-    );
+  async deleteBook(bookId: number): Promise<Result<void>> {
+    try {
+      const book = await this.bookRepository.findById(bookId);
+      if (!book) {
+        return new Err(new Error(`Book with id ${bookId} not found`));
+      }
+
+      // Видалити всі пов'язані дані
+      await this.reviewRepository.deleteByBookId(bookId);
+      await this.savedBookRepository.deleteByBookId(bookId);
+      await this.tagRepository.deleteByBookId(bookId);
+      await this.bookRepository.delete(bookId);
+
+      return new Ok(undefined);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to delete book'));
+    }
   }
 
   /**
-   * Get newest books
-   * @param limit - Number of books to return (default: 10)
-   * @returns Result with newest books
+   * Пошук книг
    */
-  async getNewestBooks(limit: number = 10): Promise<Result<Book[]>> {
-    return this.executeAsync(
-      async () => await this.bookRepository.getNewest(limit),
-      `getNewestBooks(${limit})`
-    );
+  async searchBooks(filters: BookFilters): Promise<Result<any[]>> {
+    try {
+      let query = `SELECT * FROM books WHERE 1=1`;
+      const params: any[] = [];
+
+      if (filters.genre) {
+        query += ` AND genre LIKE ?`;
+        params.push(`%${filters.genre}%`);
+      }
+
+      if (filters.searchQuery) {
+        query += ` AND (title LIKE ? OR author LIKE ? OR description LIKE ?)`;
+        const searchTerm = `%${filters.searchQuery}%`;
+        params.push(searchTerm, searchTerm, searchTerm);
+      }
+
+      if (filters.sortBy === 'rating') {
+        query += ` ORDER BY (SELECT AVG(rating) FROM reviews WHERE book_id = books.id) DESC`;
+      } else if (filters.sortBy === 'date') {
+        query += ` ORDER BY created_at DESC`;
+      } else {
+        query += ` ORDER BY title ASC`;
+      }
+
+      const limit = filters.limit || 20;
+      const offset = filters.offset || 0;
+      query += ` LIMIT ? OFFSET ?`;
+      params.push(limit, offset);
+
+      const books = await this.bookRepository.findByQuery(query, params);
+      return new Ok(books);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to search books'));
+    }
   }
 
   /**
-   * Get a random book for recommendation
-   * @returns Result with random book
+   * Отримати популярні книги
    */
-  async getRandomBook(): Promise<Result<Book | null>> {
-    return this.executeAsync(
-      async () => await this.bookRepository.getRandom(),
-      'getRandomBook'
-    );
+  async getPopularBooks(limit: number = 10): Promise<Result<any[]>> {
+    try {
+      const books = await this.bookRepository.findMostRated(limit);
+      return new Ok(books);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch popular books'));
+    }
   }
 
   /**
-   * Get book details including rating
-   * @param bookId - Book ID
-   * @returns Result with book and its average rating
+   * Отримати нові книги
    */
-  async getBookDetails(bookId: number): Promise<Result<Book & { averageRating: number } | null>> {
-    return this.executeAsync(
-      async () => {
-        const book = await this.bookRepository.getById(bookId);
-        if (!book) return null;
-
-        const averageRating = await this.reviewRepository.getAverageRating(bookId);
-        return { ...book, averageRating };
-      },
-      `getBookDetails(${bookId})`
-    );
+  async getNewBooks(limit: number = 10): Promise<Result<any[]>> {
+    try {
+      const books = await this.bookRepository.findNewest(limit);
+      return new Ok(books);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch new books'));
+    }
   }
 
   /**
-   * Get all available genres
-   * @returns Result with list of genres
+   * Отримати книги за жанром
    */
-  async getAllGenres(): Promise<Result<string[]>> {
-    return this.executeAsync(
-      async () => await this.bookRepository.getAllGenres(),
-      'getAllGenres'
-    );
+  async getBooksByGenre(genre: string, limit: number = 20, offset: number = 0): Promise<Result<any[]>> {
+    try {
+      const books = await this.bookRepository.findByGenre(genre, limit, offset);
+      return new Ok(books);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch books by genre'));
+    }
   }
 
   /**
-   * Increment book download counter
-   * @param bookId - Book ID
-   * @returns Result with success status
+   * Отримати схожі книги
    */
-  async incrementDownloadCount(bookId: number): Promise<Result<void>> {
-    return this.executeAsync(
-      async () => {
-        await this.bookRepository.incrementDownloads(bookId);
-      },
-      `incrementDownloadCount(${bookId})`
-    );
+  async getSimilarBooks(bookId: number, limit: number = 5): Promise<Result<any[]>> {
+    try {
+      const book = await this.bookRepository.findById(bookId);
+      if (!book) {
+        return new Err(new Error(`Book with id ${bookId} not found`));
+      }
+
+      const similarBooks = await this.bookRepository.findByGenre(book.genre, limit + 1, 0);
+      const filtered = similarBooks.filter(b => b.id !== bookId).slice(0, limit);
+
+      return new Ok(filtered);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch similar books'));
+    }
   }
 
   /**
-   * Check if book is saved by user
-   * @param userId - User ID
-   * @param bookId - Book ID
-   * @returns Result with boolean
+   * Додати тег до книги
    */
-  async isBookSaved(userId: number, bookId: number): Promise<Result<boolean>> {
-    return this.executeAsync(
-      async () => await this.savedBookRepository.isSaved(userId, bookId),
-      `isBookSaved(${userId}, ${bookId})`
-    );
+  async addTagToBook(bookId: number, tagId: number): Promise<Result<void>> {
+    try {
+      const book = await this.bookRepository.findById(bookId);
+      if (!book) {
+        return new Err(new Error(`Book with id ${bookId} not found`));
+      }
+
+      const tag = await this.tagRepository.findById(tagId);
+      if (!tag) {
+        return new Err(new Error(`Tag with id ${tagId} not found`));
+      }
+
+      await this.tagRepository.addTagToBook(bookId, tagId);
+      return new Ok(undefined);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to add tag to book'));
+    }
   }
 
   /**
-   * Save a book for user
-   * @param userId - User ID
-   * @param bookId - Book ID
-   * @returns Result with save status
+   * Отримати теги книги
    */
-  async saveBook(userId: number, bookId: number): Promise<Result<boolean>> {
-    return this.executeAsync(
-      async () => {
-        // Check if already saved
-        const isSaved = await this.savedBookRepository.isSaved(userId, bookId);
-        if (isSaved) {
-          return true; // Already saved
-        }
-
-        await this.savedBookRepository.save(userId, bookId);
-        return true;
-      },
-      `saveBook(${userId}, ${bookId})`
-    );
-  }
-
-  /**
-   * Remove book from saved list
-   * @param userId - User ID
-   * @param bookId - Book ID
-   * @returns Result with remove status
-   */
-  async removeBookFromSaved(userId: number, bookId: number): Promise<Result<number>> {
-    return this.executeAsync(
-      async () => await this.savedBookRepository.remove(userId, bookId),
-      `removeBookFromSaved(${userId}, ${bookId})`
-    );
-  }
-
-  /**
-   * Get user's most saved books
-   * @param limit - Number of books (default: 10)
-   * @returns Result with most saved books
-   */
-  async getMostSavedBooks(limit: number = 10): Promise<Result<Book[]>> {
-    return this.executeAsync(
-      async () => {
-        const mostSaved = await this.savedBookRepository.getMostSaved(limit);
-
-        // mostSaved returns objects with { bookId, saveCount } structure
-        const books: Book[] = [];
-        for (const item of mostSaved) {
-          const book = await this.bookRepository.getById(item.bookId);
-          if (book) books.push(book);
-        }
-        return books;
-      },
-      `getMostSavedBooks(${limit})`
-    );
+  async getBookTags(bookId: number): Promise<Result<any[]>> {
+    try {
+      const tags = await this.tagRepository.findByBookId(bookId);
+      return new Ok(tags);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch book tags'));
+    }
   }
 }

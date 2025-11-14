@@ -9,9 +9,9 @@ import { Scenes } from 'telegraf';
  * Розширений контекст бота
  */
 export interface BotContext extends Context {
-  scene?: Scenes.SceneContextScene<BotContext, Scenes.WizardSessionData>;
-  wizard?: Scenes.WizardContextWizard<any>;
-  session?: SessionData;
+  scene: Scenes.SceneContextScene<BotContext, Scenes.WizardSessionData>;
+  wizard: Scenes.WizardContextWizard<WizardState>;
+  session: SessionData;
   match?: RegExpMatchArray;
 }
 
@@ -81,6 +81,9 @@ export interface WizardState {
   // RateBookScene
   rating?: number;
   comment?: string;
+  
+  // Index signature для динамічного доступу (REFACTOR-006)
+  [key: string]: any;
 }
 
 /**

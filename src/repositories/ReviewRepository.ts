@@ -243,4 +243,44 @@ export class ReviewRepository extends BaseRepository<Review> {
       throw error;
     }
   }
+
+  /**
+   * Aliases for compatibility with services
+   */
+  async findByBookId(bookId: number): Promise<Review[]> {
+    return this.getByBookId(bookId);
+  }
+
+  async findByUserId(userId: number): Promise<Review[]> {
+    return this.getByUserId(userId);
+  }
+
+  async findPending(): Promise<Review[]> {
+    return this.getPending();
+  }
+
+  async findByUserAndBook(userId: number, bookId: number): Promise<Review | undefined> {
+    try {
+      const query = `
+        SELECT * FROM reviews 
+        WHERE user_id = ? AND book_id = ? 
+        ORDER BY created_at DESC
+        LIMIT 1
+      `;
+      return await this.db.get<Review>(query, [userId, bookId]);
+    } catch (error) {
+      logger.error('Error getting user book review', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
+
+  async deleteByBookId(bookId: number): Promise<number> {
+    try {
+      const query = 'DELETE FROM reviews WHERE book_id = ?';
+      return await this.db.delete(query, [bookId]);
+    } catch (error) {
+      logger.error('Error deleting book reviews', error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    }
+  }
 }

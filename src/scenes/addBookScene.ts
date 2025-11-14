@@ -365,81 +365,82 @@ const addBookScene = new Scenes.WizardScene(
     const state = ctx.wizard?.state as WizardState;
     
     if (ctx.callbackQuery && 'data' in ctx.callbackQuery) {
-      const action = ctx.callbackQuery.data;
-      
-      if (action === 'show_all_genres') {
-        // Показати всі жанри
-        const allGenres = [...popularGenres, ...otherGenres];
-        const keyboard = [];
-        for (let i = 0; i < allGenres.length; i += 3) {
-          const row = allGenres.slice(i, i + 3).map(genre => 
-            ({ text: genre, callback_data: `genre_all_${allGenres.indexOf(genre)}` })
-          );
-          keyboard.push(row);
-        }
-        keyboard.push([{ text: '✅ Далі', callback_data: 'genres_done' }]);
+        const action = ctx.callbackQuery.data;
         
-        await ctx.editMessageText(
-          `${getProgress(2)}\n📚 Оберіть жанри з повного списку (1-5 жанрів):`,
-          { reply_markup: { inline_keyboard: keyboard } }
-        );
-        return;
-      }
-      
-      if (action === 'genres_done') {
-        if (!state.selectedGenres || state.selectedGenres.length === 0) {
-          await ctx.answerCbQuery('❌ Оберіть хоча б один жанр');
+        if (action === 'show_all_genres') {
+          // Показати всі жанри
+          const allGenres = [...popularGenres, ...otherGenres];
+          const keyboard: any[] = [];
+          for (let i = 0; i < allGenres.length; i += 3) {
+            const row = allGenres.slice(i, i + 3).map(genre => 
+              ({ text: genre, callback_data: `genre_all_${allGenres.indexOf(genre)}` })
+            );
+            keyboard.push(row);
+          }
+          keyboard.push([{ text: '✅ Далі', callback_data: 'genres_done' }]);
+        
+          await ctx.editMessageText(
+            `${getProgress(2)}\n📚 Оберіть жанри з повного списку (1-5 жанрів):`,
+            { reply_markup: { inline_keyboard: keyboard } }
+          );
           return;
         }
-        
-        state.genre = state.selectedGenres.join(', ');
-        await ctx.answerCbQuery('✅ Жанри обрано');
-        await ctx.editMessageText(`📚 Жанри обрано: ${state.genre}`);
-        autoSaveState(state);
-        logUserAction(ctx, 'selected_genres', { genres: state.selectedGenres });
-        
-        await ctx.reply(
-          `${getProgress(3)}\n📝 Введіть короткий опис книги (макс. 1000 символів):\n\n` +
-          `${examples.description}`
-        );
-        return ctx.wizard.next();
-      }
       
-      if (action.startsWith('genre_popular_') || action.startsWith('genre_all_')) {
-        const genreIndex = parseInt(action.split('_')[2]);
-        const genres = action.startsWith('genre_popular_') ? popularGenres : [...popularGenres, ...otherGenres];
-        
-        const selectedGenre = genres[genreIndex];
-        
-        if (!state.selectedGenres) {
-          state.selectedGenres = [];
-        }
-        
-        const index = state.selectedGenres.indexOf(selectedGenre);
-        if (index > -1) {
-          state.selectedGenres.splice(index, 1);
-          await ctx.answerCbQuery(`❌ ${selectedGenre} видалено`);
-        } else {
-          if (state.selectedGenres.length >= 5) {
-            await ctx.answerCbQuery('❌ Максимум 5 жанрів');
+        if (action === 'genres_done') {
+          if (!state.selectedGenres || state.selectedGenres.length === 0) {
+            await ctx.answerCbQuery('❌ Оберіть хоча б один жанр');
             return;
           }
-          state.selectedGenres.push(selectedGenre);
-          await ctx.answerCbQuery(`✅ ${selectedGenre} додано (${state.selectedGenres.length}/5)`);
+        
+          state.genre = state.selectedGenres.join(', ');
+          await ctx.answerCbQuery('✅ Жанри обрано');
+          await ctx.editMessageText(`📚 Жанри обрано: ${state.genre}`);
+          autoSaveState(state);
+          logUserAction(ctx, 'selected_genres', { genres: state.selectedGenres });
+        
+          await ctx.reply(
+            `${getProgress(3)}\n📝 Введіть короткий опис книги (макс. 1000 символів):\n\n` +
+            `${examples.description}`
+          );
+          return ctx.wizard.next();
         }
+      
+        if (action.startsWith('genre_popular_') || action.startsWith('genre_all_')) {
+          const genreIndex = parseInt(action.split('_')[2]);
+          const genres = action.startsWith('genre_popular_') ? popularGenres : [...popularGenres, ...otherGenres];
         
-        // Оновити повідомлення з поточним станом
-        const selectedText = state.selectedGenres.length > 0 
-          ? `\n\n✅ Вибрано: ${state.selectedGenres.join(', ')}` 
-          : '';
+          const selectedGenre = genres[genreIndex];
         
-        await ctx.editMessageText(
-          `${getProgress(2)}\n📚 Оберіть жанри книги (1-5 жанрів):${selectedText}`,
-          { reply_markup: (ctx.update as any).callback_query?.message?.reply_markup }
-        );
-        return;
-      }
+          if (!state.selectedGenres) {
+            state.selectedGenres = [];
+          }
+        
+          const index = state.selectedGenres.indexOf(selectedGenre);
+          if (index > -1) {
+            state.selectedGenres.splice(index, 1);
+            await ctx.answerCbQuery(`❌ ${selectedGenre} видалено`);
+          } else {
+            if (state.selectedGenres.length >= 5) {
+              await ctx.answerCbQuery('❌ Максимум 5 жанрів');
+              return;
+            }
+            state.selectedGenres.push(selectedGenre);
+            await ctx.answerCbQuery(`✅ ${selectedGenre} додано (${state.selectedGenres.length}/5)`);
+          }
+        
+          // Оновити повідомлення з поточним станом
+          const selectedText = state.selectedGenres.length > 0 
+            ? `\n\n✅ Вибрано: ${state.selectedGenres.join(', ')}` 
+            : '';
+        
+          await ctx.editMessageText(
+            `${getProgress(2)}\n📚 Оберіть жанри книги (1-5 жанрів):${selectedText}`,
+            { reply_markup: (ctx.update as any).callback_query?.message?.reply_markup }
+          );
+          return;
+        }
     }
+    return;
   },
   
   // Крок 4: Опис + AI перевірка опису
@@ -777,13 +778,14 @@ const addBookScene = new Scenes.WizardScene(
   },
   
   // Крок 9: Підтвердження (викликається тільки через showBookPreview)
-  async (ctx: BotContext) => {
+  async (_ctx: BotContext) => {
     // Цей крок використовується тільки для обробки callback'ів підтвердження
+    return;
   }
 );
 
 // Глобальний обробник помилок
-addBookScene.use(async (ctx, next) => {
+addBookScene.use(async (_ctx, next) => {
   await next();
 });
 

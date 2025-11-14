@@ -1,278 +1,200 @@
 /**
- * AudioService - Business logic for audio operations
- * 
- * Responsibilities:
- * - Audio chapter management
- * - Listening progress tracking
- * - User listening statistics
- * - Audio metadata operations
+ * Audio Service - Бізнес-логіка для роботи з аудіокнигами
+ * REFACTOR-003: Service Layer
  */
 
-import { BaseService } from './BaseService';
 import { AudioRepository } from '../repositories/AudioRepository';
 import { BookRepository } from '../repositories/BookRepository';
-import { ILogger } from '../core/types';
-import { Result } from '../core/Result';
-import { AudioChapter, ListeningProgress } from '../database/models';
+import { Result, Ok, Err } from '../core/Result';
 
-/**
- * Service for audio-related operations
- */
-export class AudioService extends BaseService {
-  /**
-   * Create a new AudioService instance
-   * @param audioRepository - Repository for audio operations
-   * @param bookRepository - Repository for book operations
-   * @param logger - Logger instance
-   */
+export interface CreateAudioInput {
+  book_id: number;
+  file_id: string;
+  duration: number;
+  narrator?: string;
+  quality?: 'low' | 'medium' | 'high';
+}
+
+export interface UpdateAudioInput {
+  duration?: number;
+  narrator?: string;
+  quality?: 'low' | 'medium' | 'high';
+}
+
+export class AudioService {
   constructor(
     private audioRepository: AudioRepository,
-    private bookRepository: BookRepository,
-    logger: ILogger
-  ) {
-    super(logger);
+    private bookRepository: BookRepository
+  ) {}
+
+  /**
+   * Додати аудіоверсію книги
+   */
+  async addAudioVersion(input: CreateAudioInput): Promise<Result<number>> {
+    try {
+      const book = await this.bookRepository.findById(input.book_id);
+      if (!book) {
+        return new Err(new Error(`Book with id ${input.book_id} not found`));
+      }
+
+      if (!input.file_id) {
+        return new Err(new Error('Audio file_id is required'));
+      }
+
+      if (input.duration <= 0) {
+        return new Err(new Error('Duration must be greater than 0'));
+      }
+
+      const audioId = await this.audioRepository.insert({
+        book_id: input.book_id,
+        file_id: input.file_id,
+        duration: input.duration,
+        narrator: input.narrator || 'Unknown',
+        quality: input.quality || 'medium',
+        created_at: new Date(),
+        updated_at: new Date()
+      });
+
+      return new Ok(audioId);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to add audio version'));
+    }
   }
 
   /**
-   * Create audio chapter for a book
-   * @param bookId - Book ID
-   * @param title - Chapter title
-   * @param duration - Duration in seconds
-   * @param fileId - File ID from Telegram
-   * @param chapterNumber - Chapter number
-   * @returns Result with created audio
+   * Отримати аудіоверсію за ID
    */
-  async createAudioChapter(
-    bookId: number,
-    title: string,
-    duration: number,
-    fileId: string,
-    chapterNumber: number = 1
-  ): Promise<Result<number>> {
-    return this.executeAsync(
-      async () => {
-        // Check if book exists
-        const book = await this.bookRepository.getById(bookId);
-        if (!book) {
-          throw new Error(`Book with ID ${bookId} not found`);
-        }
-
-        if (!title || title.trim().length === 0) {
-          throw new Error('Chapter title cannot be empty');
-        }
-
-        if (duration <= 0) {
-          throw new Error('Duration must be positive');
-        }
-
-        const chapter: AudioChapter = {
-          book_id: bookId,
-          title: title.trim(),
-          duration,
-          file_id: fileId,
-          chapter_number: chapterNumber,
-          created_at: new Date().toISOString(),
-        };
-
-        const chapterId = await this.audioRepository.createChapter(chapter);
-        return chapterId;
-      },
-      `createAudioChapter(${bookId}, ${title})`
-    );
+  async getAudioById(audioId: number): Promise<Result<any>> {
+    try {
+      const audio = await this.audioRepository.findById(audioId);
+      if (!audio) {
+        return new Err(new Error(`Audio with id ${audioId} not found`));
+      }
+      return new Ok(audio);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch audio'));
+    }
   }
 
   /**
-   * Get chapters for a book
-   * @param bookId - Book ID
-   * @returns Result with book chapters
+   * Отримати аудіоверсії книги
    */
-  async getBookChapters(bookId: number): Promise<Result<AudioChapter[]>> {
-    return this.executeAsync(
-      async () => await this.audioRepository.getBookChapters(bookId),
-      `getBookChapters(${bookId})`
-    );
+  async getBookAudio(bookId: number): Promise<Result<any[]>> {
+    try {
+      const book = await this.bookRepository.findById(bookId);
+      if (!book) {
+        return new Err(new Error(`Book with id ${bookId} not found`));
+      }
+
+      const audioVersions = await this.audioRepository.findByBookId(bookId);
+      return new Ok(audioVersions);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch audio versions'));
+    }
   }
 
   /**
-   * Get chapter details
-   * @param chapterId - Chapter ID
-   * @returns Result with chapter
+   * Оновити аудіоверсію
    */
-  async getChapterDetails(chapterId: number): Promise<Result<AudioChapter | null>> {
-    return this.executeAsync(
-      async () => await this.audioRepository.getChapterById(chapterId),
-      `getChapterDetails(${chapterId})`
-    );
+  async updateAudio(audioId: number, input: UpdateAudioInput): Promise<Result<void>> {
+    try {
+      const audio = await this.audioRepository.findById(audioId);
+      if (!audio) {
+        return new Err(new Error(`Audio with id ${audioId} not found`));
+      }
+
+      if (input.duration && input.duration <= 0) {
+        return new Err(new Error('Duration must be greater than 0'));
+      }
+
+      await this.audioRepository.update(audioId, {
+        duration: input.duration || audio.duration,
+        narrator: input.narrator || audio.narrator,
+        quality: input.quality || audio.quality,
+        updated_at: new Date()
+      });
+
+      return new Ok(undefined);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to update audio'));
+    }
   }
 
   /**
-   * Save user's listening progress
-   * @param userId - User ID
-   * @param bookId - Book ID
-   * @param chapterId - Current chapter ID
-   * @param position - Current position in seconds
-   * @returns Result with success status
+   * Видалити аудіоверсію
    */
-  async saveListeningProgress(
-    userId: number,
-    bookId: number,
-    chapterId: number,
-    position: number
-  ): Promise<Result<void>> {
-    return this.executeAsync(
-      async () => {
-        // Validate position
-        if (position < 0) {
-          throw new Error('Current position cannot be negative');
-        }
+  async deleteAudio(audioId: number): Promise<Result<void>> {
+    try {
+      const audio = await this.audioRepository.findById(audioId);
+      if (!audio) {
+        return new Err(new Error(`Audio with id ${audioId} not found`));
+      }
 
-        // Check if chapter exists
-        const chapter = await this.audioRepository.getChapterById(chapterId);
-        if (!chapter) {
-          throw new Error(`Chapter with ID ${chapterId} not found`);
-        }
-
-        if (position > chapter.duration) {
-          throw new Error('Current position cannot exceed chapter duration');
-        }
-
-        const progress: ListeningProgress = {
-          user_id: userId,
-          book_id: bookId,
-          chapter_id: chapterId,
-          position,
-          total_listened: position,
-          last_listened_at: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-        };
-
-        await this.audioRepository.saveListeningProgress(progress);
-      },
-      `saveListeningProgress(${userId}, ${bookId})`
-    );
+      await this.audioRepository.delete(audioId);
+      return new Ok(undefined);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to delete audio'));
+    }
   }
 
   /**
-   * Get user's listening progress for a book
-   * @param userId - User ID
-   * @param bookId - Book ID
-   * @returns Result with listening progress
+   * Отримати аудіо за автором/наратором
    */
-  async getListeningProgress(
-    userId: number,
-    bookId: number
-  ): Promise<Result<ListeningProgress | null>> {
-    return this.executeAsync(
-      async () => await this.audioRepository.getListeningProgress(userId, bookId),
-      `getListeningProgress(${userId}, ${bookId})`
-    );
+  async getAudioByNarrator(narrator: string): Promise<Result<any[]>> {
+    try {
+      const audioVersions = await this.audioRepository.findByNarrator(narrator);
+      return new Ok(audioVersions);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch audio by narrator'));
+    }
   }
 
   /**
-   * Get user's total listening time
-   * @param userId - User ID
-   * @returns Result with total listening time in seconds
+   * Отримати всі аудіоверсії з якістю
    */
-  async getUserTotalListeningTime(userId: number): Promise<Result<number>> {
-    return this.executeAsync(
-      async () => await this.audioRepository.getUserTotalListeningTime(userId),
-      `getUserTotalListeningTime(${userId})`
-    );
+  async getAudioByQuality(quality: 'low' | 'medium' | 'high'): Promise<Result<any[]>> {
+    try {
+      const audioVersions = await this.audioRepository.findByQuality(quality);
+      return new Ok(audioVersions);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch audio by quality'));
+    }
   }
 
   /**
-   * Get user's listening statistics
-   * @param userId - User ID
-   * @returns Result with listening stats
+   * Отримати загальну тривалість всіх аудіокниг
    */
-  async getUserListeningStats(
-    userId: number
-  ): Promise<
-    Result<{
-      totalBooks: number;
-      totalDuration: number;
-      averageDuration: number;
-    }>
-  > {
-    return this.executeAsync(
-      async () => {
-        const progress = await this.audioRepository.getUserListeningProgress(userId);
-        const totalBooks = new Set(progress.map((p) => p.book_id)).size;
-        const totalDuration = progress.reduce((sum, p) => sum + (p.position || 0), 0);
-
-        return {
-          totalBooks,
-          totalDuration,
-          averageDuration: totalBooks > 0 ? totalDuration / totalBooks : 0,
-        };
-      },
-      `getUserListeningStats(${userId})`
-    );
+  async getTotalAudioDuration(): Promise<Result<number>> {
+    try {
+      const allAudio = await this.audioRepository.findAll();
+      const totalDuration = allAudio.reduce((sum, a) => sum + (a.duration || 0), 0);
+      return new Ok(totalDuration);
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to calculate total duration'));
+    }
   }
 
   /**
-   * Get most listened audiobooks
-   * @param limit - Number of books (default: 10)
-   * @returns Result with most listened audiobooks (book IDs)
+   * Отримати статистику аудіокниг
    */
-  async getMostListenedAudiobooks(limit: number = 10): Promise<Result<number[]>> {
-    return this.executeAsync(
-      async () => {
-        const progress = await this.audioRepository.getUserListeningProgress(0); // This would need adjustment
-        // Group by book_id and sort by total listening time
-        const bookStats = new Map<number, number>();
-        progress.forEach((p) => {
-          bookStats.set(p.book_id, (bookStats.get(p.book_id) || 0) + (p.position || 0));
-        });
+  async getAudioStats(): Promise<Result<any>> {
+    try {
+      const allAudio = await this.audioRepository.findAll();
+      const totalDuration = allAudio.reduce((sum, a) => sum + (a.duration || 0), 0);
+      const byQuality = {
+        low: allAudio.filter(a => a.quality === 'low').length,
+        medium: allAudio.filter(a => a.quality === 'medium').length,
+        high: allAudio.filter(a => a.quality === 'high').length
+      };
 
-        return Array.from(bookStats.entries())
-          .sort(([, a], [, b]) => b - a)
-          .slice(0, limit)
-          .map(([bookId]) => bookId);
-      },
-      `getMostListenedAudiobooks(${limit})`
-    );
-  }
-
-  /**
-   * Update chapter metadata
-   * @param chapterId - Chapter ID
-   * @param updates - Updated fields
-   * @returns Result with success status
-   */
-  async updateChapter(
-    chapterId: number,
-    updates: Partial<Omit<AudioChapter, 'id'>>
-  ): Promise<Result<number>> {
-    return this.executeAsync(
-      async () => {
-        const chapter = await this.audioRepository.getChapterById(chapterId);
-        if (!chapter) {
-          throw new Error(`Chapter with ID ${chapterId} not found`);
-        }
-
-        return await this.audioRepository.updateChapter(chapterId, updates);
-      },
-      `updateChapter(${chapterId})`
-    );
-  }
-
-  /**
-   * Delete a chapter
-   * @param chapterId - Chapter ID
-   * @returns Result with success status
-   */
-  async deleteChapter(chapterId: number): Promise<Result<number>> {
-    return this.executeAsync(
-      async () => {
-        const chapter = await this.audioRepository.getChapterById(chapterId);
-        if (!chapter) {
-          throw new Error(`Chapter with ID ${chapterId} not found`);
-        }
-
-        return await this.audioRepository.deleteChapter(chapterId);
-      },
-      `deleteChapter(${chapterId})`
-    );
+      return new Ok({
+        total_count: allAudio.length,
+        total_duration: totalDuration,
+        by_quality: byQuality,
+        average_duration: allAudio.length > 0 ? totalDuration / allAudio.length : 0
+      });
+    } catch (error) {
+      return new Err(error instanceof Error ? error : new Error('Failed to fetch audio statistics'));
+    }
   }
 }

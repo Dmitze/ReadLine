@@ -1,5 +1,4 @@
 import { BaseRepository } from './BaseRepository';
-import { IDatabase } from '../core/types';
 
 /**
  * AudioChapter entity interface
@@ -287,5 +286,31 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
       'DELETE FROM listening_progress WHERE user_id = ?',
       [userId]
     );
+  }
+
+  /**
+   * Aliases for compatibility with services
+   */
+  async findById(id: number): Promise<AudioChapter | undefined> {
+    const result = await this.getChapterById(id);
+    return result || undefined;
+  }
+
+  async findByBookId(bookId: number): Promise<AudioChapter[]> {
+    return this.getBookChapters(bookId);
+  }
+
+  async findByNarrator(_narrator: string): Promise<AudioChapter[]> {
+    // Placeholder for compatibility - narrator info not stored
+    return [];
+  }
+
+  async findByQuality(_quality: string): Promise<AudioChapter[]> {
+    // Placeholder for compatibility - quality not tracked
+    return [];
+  }
+
+  async findAll(limit?: number, offset?: number): Promise<AudioChapter[]> {
+    return this.getAll(limit, offset);
   }
 }
