@@ -42,6 +42,22 @@ export interface AdminStats {
   totalBooks: number;
 }
 
+export interface ExtendedAdminStats {
+  totalBooks: number;
+  totalUsers: number;
+  totalReviews: number;
+  totalFeedback: number;
+  totalSavedBooks: number;
+  avgRating: number;
+  pendingReviews: number;
+  pendingFeedback: number;
+  newUsersToday: number;
+  newBooksThisMonth: number;
+  activeUsersThisMonth: number;
+  topGenres: { genre: string; count: number }[];
+  topRatedBooks: { title: string; rating: number; author: string }[];
+}
+
 export interface Review {
   id?: number;
   book_id: number;
@@ -492,6 +508,123 @@ export const getAdminStats = (): Promise<AdminStats> => {
       if (err) reject(err);
       else resolve(row);
     });
+  });
+};
+
+// Розширена статистика для адміна
+export const getExtendedAdminStats = (): Promise<ExtendedAdminStats> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // Базова статистика по книгам
+      const basicStats = await new Promise<any>((res, rej) => {
+        db.get(
+          `SELECT 
+            (SELECT COUNT(*) FROM books) as totalBooks,
+            (SELECT COUNT(DISTINCT user_id) FROM saved_books) as totalUsers,
+            (SELECT COUNT(*) FROM reviews) as totalReviews,
+            (SELECT COUNT(*) FROM feedback_messages) as totalFeedback,
+            (SELECT COUNT(*) FROM saved_books) as totalSavedBooks,
+            (SELECT AVG(rating) FROM reviews) as avgRating,
+            (SELECT COUNT(*) FROM reviews WHERE is_published = 0) as pendingReviews,
+            (SELECT COUNT(*) FROM feedback_messages WHERE status = 'pending') as pendingFeedback
+           FROM books LIMIT 1`,
+          [],
+          (err, row) => {
+            if (err) rej(err);
+            else res(row || {});
+          }
+        );
+      });
+
+      // Нові користувачі сьогодні
+      const newUsersToday = await new Promise<number>((res, rej) => {
+        db.get(
+          `SELECT COUNT(DISTINCT user_id) as count FROM saved_books 
+           WHERE DATE(created_at) = DATE('now')`,
+          [],
+          (err, row: any) => {
+            if (err) rej(err);
+            else res(row?.count || 0);
+          }
+        );
+      });
+
+      // Нові книги цього місяця
+      const newBooksThisMonth = await new Promise<number>((res, rej) => {
+        db.get(
+          `SELECT COUNT(*) as count FROM books 
+           WHERE datetime(created_at) > datetime('now', '-30 days')`,
+          [],
+          (err, row: any) => {
+            if (err) rej(err);
+            else res(row?.count || 0);
+          }
+        );
+      });
+
+      // Активні користувачі цього місяця
+      const activeUsersThisMonth = await new Promise<number>((res, rej) => {
+        db.get(
+          `SELECT COUNT(DISTINCT user_id) as count FROM saved_books 
+           WHERE datetime(created_at) > datetime('now', '-30 days')`,
+          [],
+          (err, row: any) => {
+            if (err) rej(err);
+            else res(row?.count || 0);
+          }
+        );
+      });
+
+      // Топ жанри
+      const topGenres = await new Promise<any[]>((res, rej) => {
+        db.all(
+          `SELECT genre, COUNT(*) as count FROM books 
+           GROUP BY genre ORDER BY count DESC LIMIT 5`,
+          [],
+          (err, rows) => {
+            if (err) rej(err);
+            else res(rows || []);
+          }
+        );
+      });
+
+      // Топ-рейтингові книги
+      const topRatedBooks = await new Promise<any[]>((res, rej) => {
+        db.all(
+          `SELECT title, author, rating FROM books 
+           WHERE rating IS NOT NULL AND is_available = 1
+           ORDER BY rating DESC LIMIT 5`,
+          [],
+          (err, rows) => {
+            if (err) rej(err);
+            else res(rows || []);
+          }
+        );
+      });
+
+      resolve({
+        totalBooks: basicStats.totalBooks || 0,
+        totalUsers: basicStats.totalUsers || 0,
+        totalReviews: basicStats.totalReviews || 0,
+        totalFeedback: basicStats.totalFeedback || 0,
+        totalSavedBooks: basicStats.totalSavedBooks || 0,
+        avgRating: basicStats.avgRating ? parseFloat(basicStats.avgRating).toFixed(2) as any : 0,
+        pendingReviews: basicStats.pendingReviews || 0,
+        pendingFeedback: basicStats.pendingFeedback || 0,
+        newUsersToday,
+        newBooksThisMonth,
+        activeUsersThisMonth,
+        topGenres: topGenres.map(g => ({ genre: g.genre, count: g.count })),
+        topRatedBooks: topRatedBooks.map(b => ({ 
+          title: b.title, 
+          rating: b.rating, 
+          author: b.author 
+        }))
+      });
+    } catch (error) {
+      logger.error('Error getting extended admin stats', error instanceof Error ? error : new Error(String(error)));
+      reject(error);
+    }
   });
 };
 
