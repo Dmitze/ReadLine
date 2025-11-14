@@ -58,17 +58,14 @@ function logUserAction(ctx: BotContext, action: string, data?: any) {
 
 // Обробка помилок файлів
 async function handleFileUpload(ctx: BotContext, operation: () => Promise<void>) {
-  try {
-    await operation();
-  } catch (error) {
+  return await operation().then(() => true).catch((error) => {
     if (error instanceof Error && error.message.includes('file')) {
-      await ctx.reply('❌ Помилка при завантаженні файлу. Спробуйте інший файл.');
+      ctx.reply('❌ Помилка при завантаженні файлу. Спробуйте інший файл.');
       return false;
     } else {
       throw error;
     }
-  }
-  return true;
+  });
 }
 
 // Автозбереження стану
@@ -787,116 +784,96 @@ const addBookScene = new Scenes.WizardScene(
 
 // Глобальний обробник помилок
 addBookScene.use(async (ctx, next) => {
-  try {
-    await next();
-  } catch (error) {
-    logger.error('Scene error:', error instanceof Error ? error : new Error(String(error)));
-    await ctx.reply(
-      '❌ Сталася неочікувана помилка. ' +
-      'Будь ласка, спробуйте ще раз або почніть спочатку командою /cancel.'
-    );
-  }
+  await next();
 });
 
 // Обробники дій
 addBookScene.action('confirm_book', async (ctx: BotContext) => {
   const state = ctx.wizard?.state as WizardState;
   
-  try {
-    await ctx.answerCbQuery('✅ Книга додається...');
-    
-    let file_type = 'physical';
-    if (state.bookFile) file_type = 'file';
-    else if (state.bookAudio) file_type = 'audio';
-    else if (state.bookLink) file_type = 'link';
-    
-    const bookData: any = {
-      title: state.title,
-      author: state.author,
-      genre: state.genre,
-      description: state.description,
-      photo_file_id: state.photoFileId || 'default_book_cover',
-      file_type: file_type
-    };
-    
-    if (state.bookFile) {
-      bookData.file_url = state.bookFile;
-      bookData.file_name = state.bookFileName;
-    }
-    if (state.bookAudio) {
-      bookData.audio_file_id = state.bookAudio;
-    }
-    if (state.bookLink) {
-      bookData.online_link = state.bookLink;
-    }
-
-    // Логування для діагностики
-    logger.info('Saving book with data:', {
-      hasFile: !!state.bookFile,
-      hasAudio: !!state.bookAudio,
-      hasLink: !!state.bookLink,
-      fileId: state.bookFile?.substring(0, 20),
-      audioId: state.bookAudio?.substring(0, 20),
-      link: state.bookLink
-    });
-
-    // Валідація даних
-    const validation = validateBookData(bookData);
-    if (!validation.isValid) {
-      await ctx.reply('❌ Помилка валідації: ' + validation.errors.join(', '));
-      return ctx.scene?.leave();
-    }
-
-    const bookId = await addBook(bookData);
-    
-    if (state.selectedTags && state.selectedTags.length > 0) {
-      for (const tagId of state.selectedTags) {
-        try {
-          await addBookTag(bookId, tagId);
-        } catch (error) {
-          logger.error('Error adding tag', error instanceof Error ? error : new Error(String(error)));
-        }
-      }
-    }
-    
-    const finalCaption = await formatBookCaption({...bookData, id: bookId, is_available: true});
-    if (bookData.photo_file_id && bookData.photo_file_id !== 'default_book_cover') {
-      await ctx.replyWithPhoto(bookData.photo_file_id, {
-        caption: finalCaption,
-        parse_mode: 'HTML'
-      });
-    } else {
-      await ctx.reply(finalCaption, { parse_mode: 'HTML' });
-    }
-    
-    logUserAction(ctx, 'book_published', {
-      title: state.title,
-      formats: {
-        hasFile: !!state.bookFile,
-        hasAudio: !!state.bookAudio, 
-        hasLink: !!state.bookLink
-      },
-      tagsCount: state.selectedTags?.length || 0
-    });
-    
-    // Прибираємо клавіатуру "Скасувати" і показуємо inline кнопку
-    await ctx.reply('✅ Книга успішно опублікована!', {
-      reply_markup: {
-        remove_keyboard: true,
-        inline_keyboard: [
-          [{ text: '🏠 Назад до адмін-панелі', callback_data: 'back_to_admin' }]
-        ]
-      }
-    });
-    
-    return ctx.scene.leave();
-  } catch (error) {
-    logger.error('Error saving book', error instanceof Error ? error : new Error(String(error)));
-    await ctx.reply('❌ Помилка при додаванні книги', {
-      reply_markup: { remove_keyboard: true }
-    });
-    return ctx.scene.leave();
+  await ctx.answerCbQuery('✅ Книга додається...');
+  
+  let file_type = 'physical';
+  if (state.bookFile) file_type = 'file';
+  else if (state.bookAudio) file_type = 'audio';
+  else if (state.bookLink) file_type = 'link';
+  
+  const bookData: any = {
+    title: state.title,
+    author: state.author,
+    genre: state.genre,
+    description: state.description,
+    photo_file_id: state.photoFileId || 'default_book_cover',
+    file_type: file_type
+  };
+  
+  if (state.bookFile) {
+    bookData.file_url = state.bookFile;
+    bookData.file_name = state.bookFileName;
   }
+  if (state.bookAudio) {
+    bookData.audio_file_id = state.bookAudio;
+  }
+  if (state.bookLink) {
+    bookData.online_link = state.bookLink;
+  }
+
+  // Логування для діагностики
+  logger.info('Saving book with data:', {
+    hasFile: !!state.bookFile,
+    hasAudio: !!state.bookAudio,
+    hasLink: !!state.bookLink,
+    fileId: state.bookFile?.substring(0, 20),
+    audioId: state.bookAudio?.substring(0, 20),
+    link: state.bookLink
+  });
+
+  // Валідація даних
+  const validation = validateBookData(bookData);
+  if (!validation.isValid) {
+    await ctx.reply('❌ Помилка валідації: ' + validation.errors.join(', '));
+    return ctx.scene?.leave();
+  }
+
+  const bookId = await addBook(bookData);
+  
+  if (state.selectedTags && state.selectedTags.length > 0) {
+    for (const tagId of state.selectedTags) {
+      await addBookTag(bookId, tagId);
+    }
+  }
+  
+  const finalCaption = await formatBookCaption({...bookData, id: bookId, is_available: true});
+  if (bookData.photo_file_id && bookData.photo_file_id !== 'default_book_cover') {
+    await ctx.replyWithPhoto(bookData.photo_file_id, {
+      caption: finalCaption,
+      parse_mode: 'HTML'
+    });
+  } else {
+    await ctx.reply(finalCaption, { parse_mode: 'HTML' });
+  }
+  
+  logUserAction(ctx, 'book_published', {
+    title: state.title,
+    formats: {
+      hasFile: !!state.bookFile,
+      hasAudio: !!state.bookAudio, 
+      hasLink: !!state.bookLink
+    },
+    tagsCount: state.selectedTags?.length || 0
+  });
+  
+  // Прибираємо клавіатуру "Скасувати" і показуємо inline кнопку
+  await ctx.reply('✅ Книга успішно опублікована!', {
+    reply_markup: {
+      remove_keyboard: true,
+      inline_keyboard: [
+        [{ text: '🏠 Назад до адмін-панелі', callback_data: 'back_to_admin' }]
+      ]
+    }
+  });
+  
+  return ctx.scene.leave();
 });
 
 addBookScene.action('cancel_book', async (ctx: BotContext) => {
@@ -1012,57 +989,47 @@ addBookScene.action('continue_adding', async (ctx) => {
 
 // Обробник кнопки "Назад до адмін-панелі"
 addBookScene.action('back_to_admin', async (ctx: BotContext) => {
-  try {
-    await ctx.answerCbQuery();
-    
-    const { isAdmin, getAdminStats, getPendingReviews, getPendingFeedbackMessages } = await lazyLoadModule('../database/models');
-    const { getAdminMenuKeyboard } = await lazyLoadModule('../keyboards/adminKeyboards');
-    
-    const adminCheck = await isAdmin(ctx.from!.id);
-    if (!adminCheck) {
-      await ctx.reply('❌ У вас немає доступу до адмін-панелі.');
-      return ctx.scene.leave();
-    }
-    
-    const stats = await getAdminStats();
-    const pendingReviews = await getPendingReviews();
-    const pendingFeedback = await getPendingFeedbackMessages();
-      
-    const reviewsAlert = pendingReviews.length > 0
-      ? `📝 Відгуків на модерацію: <b>${pendingReviews.length}</b> 🔔`
-      : '✅ Всі відгуки оброблені';
-      
-    const feedbackAlert = pendingFeedback.length > 0
-      ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
-      : '✅ Всі повідомлення прочитані';
-    
-    // Видаляємо попереднє повідомлення
-    try {
-      await ctx.deleteMessage();
-    } catch (error) {
-      // Ігноруємо помилку, якщо повідомлення вже видалено
-    }
-    
-    // Показуємо адмін-панель ДО виходу зі сцени
-    await ctx.reply(
-      `🛠️ <b>Панель адміністратора</b>\n\n` +
-      `📊 <b>Статистика:</b>\n` +
-      `📚 Книг в каталозі: ${stats.totalBooks}\n` +
-      `${reviewsAlert}\n` +
-      `${feedbackAlert}`,
-      {
-        parse_mode: 'HTML',
-        reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
-      }
-    );
-    
-    // Виходимо зі сцени ПІСЛЯ показу адмін-панелі
-    await ctx.scene.leave();
-  } catch (error) {
-    logger.error('Error in back_to_admin handler', error instanceof Error ? error : new Error(String(error)));
-    await ctx.reply('❌ Помилка при поверненні до адмін-панелі');
-    await ctx.scene.leave();
+  await ctx.answerCbQuery();
+  
+  const { isAdmin, getAdminStats, getPendingReviews, getPendingFeedbackMessages } = await lazyLoadModule('../database/models');
+  const { getAdminMenuKeyboard } = await lazyLoadModule('../keyboards/adminKeyboards');
+  
+  const adminCheck = await isAdmin(ctx.from!.id);
+  if (!adminCheck) {
+    await ctx.reply('❌ У вас немає доступу до адмін-панелі.');
+    return ctx.scene!.leave();
   }
+  
+  const stats = await getAdminStats();
+  const pendingReviews = await getPendingReviews();
+  const pendingFeedback = await getPendingFeedbackMessages();
+    
+  const reviewsAlert = pendingReviews.length > 0
+    ? `📝 Відгуків на модерацію: <b>${pendingReviews.length}</b> 🔔`
+    : '✅ Всі відгуки оброблені';
+    
+  const feedbackAlert = pendingFeedback.length > 0
+    ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
+    : '✅ Всі повідомлення прочитані';
+  
+  // Видаляємо попереднє повідомлення (ігноруємо помилки)
+  await ctx.deleteMessage().catch(() => {});
+  
+  // Показуємо адмін-панель ДО виходу зі сцени
+  await ctx.reply(
+    `🛠️ <b>Панель адміністратора</b>\n\n` +
+    `📊 <b>Статистика:</b>\n` +
+    `📚 Книг в каталозі: ${stats.totalBooks}\n` +
+    `${reviewsAlert}\n` +
+    `${feedbackAlert}`,
+    {
+      parse_mode: 'HTML',
+      reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
+    }
+  );
+  
+  // Виходимо зі сцени ПІСЛЯ показу адмін-панелі
+  await ctx.scene!.leave();
 });
 
 // Обробка команди /cancel
