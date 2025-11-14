@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.addAdminReply = exports.updateFeedbackStatus = exports.markFeedbackAsRead = exports.getAllFeedbackMessages = exports.getPendingFeedbackMessages = exports.addFeedbackMessage = exports.getNewestBooks = exports.getMostDownloadedBooks = exports.getTopBooks = exports.areBooksaved = exports.isBookSaved = exports.getSavedBooks = exports.unsaveBook = exports.saveBook = exports.deleteReview = exports.publishReview = exports.getPendingReviews = exports.getBookReviews = exports.addReview = exports.incrementDownloads = exports.deleteBook = exports.updateBook = exports.searchBooks = exports.getBooksWithPagination = exports.getBooksByGenreWithPagination = exports.getAdminStats = exports.getAllAdmins = exports.isAdmin = exports.addAdmin = exports.getGenres = exports.getBookById = exports.getAllAvailableBooks = exports.getAllBooks = exports.getBooksByGenre = exports.addBook = exports.initDatabase = exports.db = void 0;
+exports.addAdminReply = exports.updateFeedbackStatus = exports.markFeedbackAsRead = exports.getAllFeedbackMessages = exports.getPendingFeedbackMessages = exports.addFeedbackMessage = exports.getNewestBooks = exports.getMostDownloadedBooks = exports.getTopBooks = exports.areBooksaved = exports.isBookSaved = exports.getSavedBooks = exports.unsaveBook = exports.saveBook = exports.deleteReview = exports.publishReview = exports.getPendingReviews = exports.getBookReviews = exports.addReview = exports.incrementDownloads = exports.deleteBook = exports.updateBook = exports.searchBooks = exports.getBooksWithPagination = exports.getBooksByGenreWithPagination = exports.getExtendedAdminStats = exports.getAdminStats = exports.getAllAdmins = exports.isAdmin = exports.addAdmin = exports.getGenres = exports.getBookById = exports.getAllAvailableBooks = exports.getAllBooks = exports.getBooksByGenre = exports.addBook = exports.initDatabase = exports.db = void 0;
 const sqlite3_1 = __importDefault(require("sqlite3"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
@@ -359,6 +359,99 @@ const getAdminStats = () => {
     });
 };
 exports.getAdminStats = getAdminStats;
+const getExtendedAdminStats = () => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const basicStats = await new Promise((res, rej) => {
+                exports.db.get(`SELECT 
+            (SELECT COUNT(*) FROM books) as totalBooks,
+            (SELECT COUNT(DISTINCT user_id) FROM saved_books) as totalUsers,
+            (SELECT COUNT(*) FROM reviews) as totalReviews,
+            (SELECT COUNT(*) FROM feedback_messages) as totalFeedback,
+            (SELECT COUNT(*) FROM saved_books) as totalSavedBooks,
+            (SELECT AVG(rating) FROM reviews) as avgRating,
+            (SELECT COUNT(*) FROM reviews WHERE is_published = 0) as pendingReviews,
+            (SELECT COUNT(*) FROM feedback_messages WHERE status = 'pending') as pendingFeedback
+           FROM books LIMIT 1`, [], (err, row) => {
+                    if (err)
+                        rej(err);
+                    else
+                        res(row || {});
+                });
+            });
+            const newUsersToday = await new Promise((res, rej) => {
+                exports.db.get(`SELECT COUNT(DISTINCT user_id) as count FROM saved_books 
+           WHERE DATE(created_at) = DATE('now')`, [], (err, row) => {
+                    if (err)
+                        rej(err);
+                    else
+                        res(row?.count || 0);
+                });
+            });
+            const newBooksThisMonth = await new Promise((res, rej) => {
+                exports.db.get(`SELECT COUNT(*) as count FROM books 
+           WHERE datetime(created_at) > datetime('now', '-30 days')`, [], (err, row) => {
+                    if (err)
+                        rej(err);
+                    else
+                        res(row?.count || 0);
+                });
+            });
+            const activeUsersThisMonth = await new Promise((res, rej) => {
+                exports.db.get(`SELECT COUNT(DISTINCT user_id) as count FROM saved_books 
+           WHERE datetime(created_at) > datetime('now', '-30 days')`, [], (err, row) => {
+                    if (err)
+                        rej(err);
+                    else
+                        res(row?.count || 0);
+                });
+            });
+            const topGenres = await new Promise((res, rej) => {
+                exports.db.all(`SELECT genre, COUNT(*) as count FROM books 
+           GROUP BY genre ORDER BY count DESC LIMIT 5`, [], (err, rows) => {
+                    if (err)
+                        rej(err);
+                    else
+                        res(rows || []);
+                });
+            });
+            const topRatedBooks = await new Promise((res, rej) => {
+                exports.db.all(`SELECT title, author, rating FROM books 
+           WHERE rating IS NOT NULL AND is_available = 1
+           ORDER BY rating DESC LIMIT 5`, [], (err, rows) => {
+                    if (err)
+                        rej(err);
+                    else
+                        res(rows || []);
+                });
+            });
+            resolve({
+                totalBooks: basicStats.totalBooks || 0,
+                totalUsers: basicStats.totalUsers || 0,
+                totalReviews: basicStats.totalReviews || 0,
+                totalFeedback: basicStats.totalFeedback || 0,
+                totalSavedBooks: basicStats.totalSavedBooks || 0,
+                avgRating: basicStats.avgRating ? parseFloat(basicStats.avgRating).toFixed(2) : 0,
+                pendingReviews: basicStats.pendingReviews || 0,
+                pendingFeedback: basicStats.pendingFeedback || 0,
+                newUsersToday,
+                newBooksThisMonth,
+                activeUsersThisMonth,
+                topGenres: topGenres.map(g => ({ genre: g.genre, count: g.count })),
+                topRatedBooks: topRatedBooks.map(b => ({
+                    title: b.title,
+                    rating: b.rating,
+                    author: b.author
+                }))
+            });
+        }
+        catch (error) {
+            logger_1.logger.error('Error getting extended admin stats', error instanceof Error ? error : new Error(String(error)));
+            reject(error);
+        }
+    });
+};
+exports.getExtendedAdminStats = getExtendedAdminStats;
 const getBooksByGenreWithPagination = (genre, limit = 5, offset = 0) => {
     return new Promise((resolve, reject) => {
         exports.db.get('SELECT COUNT(*) as total FROM books WHERE genre = ?', [genre], (err, countRow) => {
