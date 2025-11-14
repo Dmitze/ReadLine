@@ -11,10 +11,13 @@ const aiAssistantScene = new Scenes.WizardScene(
   // Крок 1: Що цікавить?
   async (ctx) => {
     await ctx.reply(
-      '🤖 *Давай знайдемо ідеальну книгу!*\n\n' +
-      'Що тебе цікавить сьогодні?',
+      '<b>🤖 AI-ПОМІЧНИК</b>\n\n' +
+      '<b>Давай знайдемо ідеальну книгу!</b>\n\n' +
+      'Цей помічник допоможе вам знайти ідеальну книгу на основі ваших вподобань та настрою. ' +
+      'Відповідайте на кілька простих запитань, і я підберу для вас найкращі рекомендації.\n\n' +
+      '<b>Що тебе цікавить сьогодні?</b>',
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
             [{ text: '🎭 Художня література', callback_data: 'interest_fiction' }],
@@ -29,7 +32,7 @@ const aiAssistantScene = new Scenes.WizardScene(
     return ctx.wizard.next();
   },
   
-  // Крок 2: Скільки часу?
+  // Крок 2: Як хочеш користуватися книгою?
   async (ctx) => {
     if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) {
       await ctx.reply('❌ Будь ласка, оберіть варіант за допомогою кнопок');
@@ -49,15 +52,16 @@ const aiAssistantScene = new Scenes.WizardScene(
 
     await ctx.answerCbQuery();
     await ctx.editMessageText(
-      '⏰ *Скільки часу маєш на читання?*',
+      '<b>📱 Як ти хочеш користуватися книгою?</b>\n\n' +
+      'В телеграмі книгу можна скачати, прослухати як аудіокнигу або перейти по посиланню:',
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
-            [{ text: '📖 Коротка (< 200 стор)', callback_data: 'length_short' }],
-            [{ text: '📚 Середня (200-400 стор)', callback_data: 'length_medium' }],
-            [{ text: '📕 Довга (> 400 стор)', callback_data: 'length_long' }],
-            [{ text: '🤷 Не важливо', callback_data: 'length_any' }],
+            [{ text: '⬇️ Скачати', callback_data: 'format_download' }],
+            [{ text: '🎧 Прослухати', callback_data: 'format_audio' }],
+            [{ text: '🔗 Посилання', callback_data: 'format_link' }],
+            [{ text: '🤷 Будь-що', callback_data: 'format_any' }],
             [{ text: '⬅️ Назад', callback_data: 'back' }]
           ]
         }
@@ -81,13 +85,14 @@ const aiAssistantScene = new Scenes.WizardScene(
     }
 
     const state = ctx.wizard.state as WizardState;
-    state.aiLength = data;
+    state.aiFormat = data;
 
     await ctx.answerCbQuery();
     await ctx.editMessageText(
-      '😊 *Який настрій?*',
+      '<b>😊 Який ваш настрій сьогодні?</b>\n\n' +
+      'Це допоможе мені підібрати книгу, яка ідеально вам підійде:',
       {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
             [{ text: '😊 Веселий', callback_data: 'mood_happy' }],
@@ -135,7 +140,7 @@ const aiAssistantScene = new Scenes.WizardScene(
     // AI підбирає книги
     const books = await interactiveBookSelection({
       interest: state.aiInterest || 'interest_any',
-      length: state.aiLength || 'length_any',
+      format: state.aiFormat || 'format_any',
       mood: state.aiMood || 'mood_any'
     }, allBooks);
 
@@ -145,28 +150,28 @@ const aiAssistantScene = new Scenes.WizardScene(
     }
 
     await ctx.reply(
-      `✨ *Знайшов ${books.length} ідеальних ${books.length === 1 ? 'варіант' : 'варіанти'}!*\n\n` +
-      'Ось чому саме ці книги:',
-      { parse_mode: 'Markdown' }
+      `<b>✨ Знайшов ${books.length} ідеальних ${books.length === 1 ? 'варіант' : 'варіанти'}!</b>\n\n` +
+      '<b>Ось чому саме ці книги вам будуть цікаві:</b>',
+      { parse_mode: 'HTML' }
     );
 
     // Показуємо книги з поясненнями
     for (const book of books) {
       const caption = 
-        `📖 *${book.title}*\n` +
-        `👤 ${book.author}\n` +
-        `📚 ${book.genre}\n\n` +
-        `🤖 Рекомендовано на основі ваших вподобань`;
+        `<b>📖 ${book.title}</b>\n` +
+        `<b>Автор:</b> ${book.author}\n` +
+        `<b>Жанр:</b> ${book.genre}\n\n` +
+        `🤖 <i>Рекомендовано на основі ваших вподобань та настрою</i>`;
 
       if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
         await ctx.replyWithPhoto(book.photo_file_id, {
           caption,
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           reply_markup: getEnhancedBookKeyboard(book)
         });
       } else {
         await ctx.reply(caption, {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           reply_markup: getEnhancedBookKeyboard(book)
         });
       }
@@ -177,7 +182,7 @@ const aiAssistantScene = new Scenes.WizardScene(
 
     logger.userAction(ctx.from?.id || 0, 'ai_assistant_selection', {
       interest: state.aiInterest,
-      length: state.aiLength,
+      format: state.aiFormat,
       mood: state.aiMood,
       booksFound: books.length
     });
@@ -191,7 +196,7 @@ aiAssistantScene.leave((ctx) => {
   const state = ctx.wizard?.state as WizardState;
   if (state) {
     delete state.aiInterest;
-    delete state.aiLength;
+    delete state.aiFormat;
     delete state.aiMood;
   }
   logger.debug('AIAssistantScene cleanup completed', { userId: ctx.from?.id });
