@@ -47,12 +47,10 @@ export class AudioService {
 
       const audioId = await this.audioRepository.insert({
         book_id: input.book_id,
+        chapter_number: 1,
+        title: `Audio ${input.file_id}`,
         file_id: input.file_id,
-        duration: input.duration,
-        narrator: input.narrator || 'Unknown',
-        quality: input.quality || 'medium',
-        created_at: new Date(),
-        updated_at: new Date()
+        duration: input.duration
       });
 
       return new Ok(audioId);
@@ -108,10 +106,7 @@ export class AudioService {
       }
 
       await this.audioRepository.update(audioId, {
-        duration: input.duration || audio.duration,
-        narrator: input.narrator || audio.narrator,
-        quality: input.quality || audio.quality,
-        updated_at: new Date()
+        duration: input.duration || audio.duration
       });
 
       return new Ok(undefined);
@@ -181,16 +176,10 @@ export class AudioService {
     try {
       const allAudio = await this.audioRepository.findAll();
       const totalDuration = allAudio.reduce((sum, a) => sum + (a.duration || 0), 0);
-      const byQuality = {
-        low: allAudio.filter(a => a.quality === 'low').length,
-        medium: allAudio.filter(a => a.quality === 'medium').length,
-        high: allAudio.filter(a => a.quality === 'high').length
-      };
 
       return new Ok({
         total_count: allAudio.length,
         total_duration: totalDuration,
-        by_quality: byQuality,
         average_duration: allAudio.length > 0 ? totalDuration / allAudio.length : 0
       });
     } catch (error) {
