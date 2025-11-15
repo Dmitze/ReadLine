@@ -82,7 +82,7 @@ export class AICircuitBreaker {
       successThreshold: config.successThreshold || 2,
       timeout: config.timeout || 60000,
       onStateChange: (state, metrics) => {
-        logger.warn(`${name}: Circuit breaker state changed to ${state}`, metrics);
+        logger.warn(`${name}: Circuit breaker state changed to ${state}`, metrics as unknown as Record<string, unknown>);
       },
     });
 
@@ -176,14 +176,14 @@ export class AICircuitBreaker {
       this.totalResponseTime += responseTime;
       this.responseCount++;
 
-      logger.debug(`AI-API request completed` + (context ? ` (${context})` : '') + ` in ${responseTime}ms`);
+      logger.debug('AI-API request completed' + (context ? ` (${context})` : '') + ` in ${responseTime}ms`);
 
       return result;
     } catch (error) {
       const responseTime = Date.now() - startTime;
 
       if (error instanceof Error && error.message.includes('Circuit breaker is OPEN')) {
-        logger.error(`AI-API: Circuit breaker is OPEN` + (context ? ` (${context})` : ''));
+        logger.error('AI-API: Circuit breaker is OPEN' + (context ? ` (${context})` : ''));
 
         if (this.onFallback) {
           return (await this.onFallback('Circuit breaker open')) as T;
@@ -191,7 +191,7 @@ export class AICircuitBreaker {
       }
 
       logger.error(
-        `AI-API request failed` + (context ? ` (${context})` : '') + ` after ${responseTime}ms`,
+        'AI-API request failed' + (context ? ` (${context})` : '') + ` after ${responseTime}ms`,
         error instanceof Error ? error : new Error(String(error))
       );
 
