@@ -71,13 +71,13 @@ profileScene.enter(async (ctx) => {
     });
     const allGenres = [...new Set([...stats.favoriteGenres, ...Array.from(genresFromBooks)])];
     if (allGenres.length > 0) {
-        profileText += `\n<b>📚 Улюблені жанри:</b>\n`;
+        profileText += '\n<b>📚 Улюблені жанри:</b>\n';
         allGenres.slice(0, 5).forEach((genre, i) => {
             profileText += `${i + 1}. ${genre}\n`;
         });
     }
     else {
-        profileText += `\n<i>📚 Улюблені жанри ще не встановлені</i>\n`;
+        profileText += '\n<i>📚 Улюблені жанри ще не встановлені</i>\n';
     }
     if (savedBooks.length > 0) {
         const allUserTags = new Set();
@@ -86,7 +86,7 @@ profileScene.enter(async (ctx) => {
             bookTags.forEach(tag => allUserTags.add(tag.name));
         }
         if (allUserTags.size > 0) {
-            profileText += `\n<b>🏷️ Ваші інтереси (теги):</b>\n`;
+            profileText += '\n<b>🏷️ Ваші інтереси (теги):</b>\n';
             const tagsArray = Array.from(allUserTags).slice(0, 10);
             profileText += tagsArray.map(tag => `#${tag}`).join(' ') + '\n';
         }
@@ -118,16 +118,16 @@ profileScene.action('show_stats', async (ctx) => {
     statsText += `⭐ Залишено відгуків: ${stats.reviewsCount}\n`;
     statsText += `🎧 Прослухано: ${hours}г ${minutes}хв\n\n`;
     if (stats.favoriteGenres.length > 0) {
-        statsText += `📚 *Улюблені жанри:*\n`;
+        statsText += '📚 *Улюблені жанри:*\n';
         stats.favoriteGenres.forEach((genre, index) => {
             statsText += `${index + 1}. ${genre}\n`;
         });
-        statsText += `\n`;
+        statsText += '\n';
     }
     else {
-        statsText += `📚 *Улюблені жанри:* не встановлені\n\n`;
+        statsText += '📚 *Улюблені жанри:* не встановлені\n\n';
     }
-    statsText += `💡 Продовжуйте читати та слухати!`;
+    statsText += '💡 Продовжуйте читати та слухати!';
     await ctx.reply(statsText, { parse_mode: 'HTML' });
     logger_1.logger.userAction(userId, 'view_stats');
 });
@@ -178,8 +178,8 @@ profileScene.action('show_personal_collection', async (ctx) => {
         }
     }
     else {
-        await ctx.reply(`📚 <b>Персональна підбірка для вас</b>\n\n` +
-            `🤖 Створено на основі ваших вподобань, тегів та рейтингів\n` +
+        await ctx.reply('📚 <b>Персональна підбірка для вас</b>\n\n' +
+            '🤖 Створено на основі ваших вподобань, тегів та рейтингів\n' +
             `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`, { parse_mode: 'HTML' });
     }
     const { formatBookCaption } = await Promise.resolve().then(() => __importStar(require('../utils/helpers')));
