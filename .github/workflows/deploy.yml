@@ -1,0 +1,105 @@
+name: Deploy ReadLine to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '18.x'
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://readline.your-domain.com
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run tests
+        run: npm test
+        
+      - name: Build project
+        run: npm run build
+        
+      - name: Create deployment package
+        run: |
+          mkdir -p deploy
+          cp -r dist package.json package-lock.json deploy/
+          cd deploy && tar -czf ../deploy.tar.gz .
+          
+      - name: Upload to server via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: "deploy.tar.gz"
+          target: "/tmp"
+          
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            
+            # Configuration
+            APP_DIR="${{ secrets.APP_DIR || '/opt/readline' }}"
+            BACKUP_DIR="$APP_DIR/backups"
+            
+            # Create backup
+            mkdir -p "$BACKUP_DIR"
+            if [ -d "$APP_DIR/dist" ]; then
+              tar -czf "$BACKUP_DIR/backup_$(date +%Y%m%d_%H%M%S).tar.gz" -C "$APP_DIR" dist
+            fi
+            
+            # Extract new version
+            cd "$APP_DIR"
+            tar -xzf /tmp/deploy.tar.gz
+            
+            # Install production dependencies
+            npm ci --production
+            
+            # Restart with PM2
+            pm2 restart readline-bot || pm2 start dist/index.js --name readline-bot
+            
+            # Health check
+            sleep 5
+            pm2 status readline-bot
+            
+            # Clean up
+            rm /tmp/deploy.tar.gz
+            
+            echo "✅ Deployment successful!"
+            
+      - name: Notify deployment success
+        if: success()
+        run: |
+          echo "🎉 Deployment completed successfully!"
+          echo "Version: ${{ github.sha }}"
+          echo "Branch: ${{ github.ref }}"
+          
+      - name: Notify deployment failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Please check the logs above"
