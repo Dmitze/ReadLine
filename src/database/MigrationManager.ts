@@ -57,7 +57,7 @@ export class MigrationManager {
 
     const results = await this.runner.runPending();
 
-    console.log(`\n✅ Migration complete!`);
+    console.log('\n✅ Migration complete!');
     console.log(`📦 ${results.length} migrations executed`);
     console.log(`⏱️  Total time: ${results.reduce((sum, r) => sum + r.duration, 0)}ms\n`);
 
@@ -75,7 +75,7 @@ export class MigrationManager {
 
     const results = await this.runner.rollback(targetVersion);
 
-    console.log(`\n✅ Rollback complete!`);
+    console.log('\n✅ Rollback complete!');
     console.log(`🔙 ${results.length} migrations rolled back\n`);
 
     return {
@@ -191,7 +191,7 @@ export class MigrationManager {
       const duration = Date.now() - startTime;
 
       await this.db.run(
-        `INSERT INTO schema_migrations (version, name, duration_ms) VALUES (?, ?, ?)`,
+        'INSERT INTO schema_migrations (version, name, duration_ms) VALUES (?, ?, ?)',
         [version, migration.name, duration]
       );
 
