@@ -32,7 +32,7 @@ export const getUserNotificationSettings = (userId: number): Promise<Notificatio
         notification_time as preferredTime
       FROM users 
       WHERE user_id = ?
-    `, [userId], (err, result: any) => {
+    `, [userId], (err, result: NotificationSettings | undefined) => {
       if (err) {
         reject(err);
         return;
@@ -42,7 +42,7 @@ export const getUserNotificationSettings = (userId: number): Promise<Notificatio
         resolve({
           userId: result.userId,
           frequency: result.frequency || 'weekly',
-          enabled: result.enabled !== 0,
+          enabled: result.enabled !== false,
           lastNotificationAt: result.lastNotificationAt ? new Date(result.lastNotificationAt) : undefined,
           preferredTime: result.preferredTime || '10:00'
         });
@@ -186,7 +186,7 @@ export const getPersonalizedNotification = async (userId: number): Promise<strin
           WHERE genre IN (${favoriteGenres.map(() => '?').join(',')})
           AND created_at > datetime('now', '-${NEW_BOOKS_DAYS} days')
           AND is_available = 1
-        `, favoriteGenres, (err, row: any) => {
+        `, favoriteGenres, (err, row: { count: number } | undefined) => {
           if (err) reject(err);
           else resolve(row);
         });
@@ -196,7 +196,7 @@ export const getPersonalizedNotification = async (userId: number): Promise<strin
         return (
           `👋 Привіт, ${firstName}!\n\n` +
           `📚 Є новинка! Додано ${newBooks.count} ${newBooks.count === 1 ? 'нова книга' : 'нові книги'} в твоїх улюблених жанрах.\n\n` +
-          `Хочеш подивитися? 👀`
+          'Хочеш подивитися? 👀'
         );
       }
     }
@@ -210,7 +210,7 @@ export const getPersonalizedNotification = async (userId: number): Promise<strin
         WHERE sb.user_id = ?
         AND b.audio_file_id IS NOT NULL
         LIMIT 1
-      `, [userId], (err, row: any) => {
+      `, [userId], (err, row: { title?: string } | undefined) => {
         if (err) reject(err);
         else resolve(row);
       });
@@ -220,7 +220,7 @@ export const getPersonalizedNotification = async (userId: number): Promise<strin
       return (
         `👋 Привіт, ${firstName}!\n\n` +
         `🎧 Ти почав слухати "${unfinishedAudio.title}".\n\n` +
-        `Продовжимо? 🎵`
+        'Продовжимо? 🎵'
       );
     }
     
@@ -234,8 +234,8 @@ export const getPersonalizedNotification = async (userId: number): Promise<strin
     if (daysSinceLastActive > DAYS_INACTIVE_THRESHOLD) {
       return (
         `👋 Давно не бачилися, ${firstName}!\n\n` +
-        `📚 У нас є багато цікавих книг.\n` +
-        `Може час знайти щось нове для читання? 📖`
+        '📚 У нас є багато цікавих книг.\n' +
+        'Може час знайти щось нове для читання? 📖'
       );
     }
     
