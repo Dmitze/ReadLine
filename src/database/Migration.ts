@@ -166,7 +166,7 @@ export class MigrationRunner {
           name: record.name
         });
 
-        console.log(`✅ Rolled back`);
+        console.log('✅ Rolled back');
       } catch (error) {
         console.error(`❌ Rollback failed: ${record.version}`);
         throw error;
