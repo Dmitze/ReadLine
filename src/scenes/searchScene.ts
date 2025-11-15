@@ -295,7 +295,7 @@ searchScene.on('text', async (ctx: BotContext) => {
   if (books.length === SEARCH_LIMIT) {
     await ctx.reply(
       `ℹ️ Показано перші ${SEARCH_LIMIT} результатів.\n` +
-      `Уточніть пошуковий запит для більш точних результатів.`
+      'Уточніть пошуковий запит для більш точних результатів.'
     );
   }
   
