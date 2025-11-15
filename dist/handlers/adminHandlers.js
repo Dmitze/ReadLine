@@ -61,8 +61,8 @@ exports.default = (bot) => {
                 const feedbackAlert = pendingFeedback.length > 0
                     ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
                     : '✅ Всі повідомлення прочитані';
-                let panelText = `🛠️ <b>Панель адміністратора</b>\n\n`;
-                panelText += `📊 <b>Статистика:</b>\n`;
+                let panelText = '🛠️ <b>Панель адміністратора</b>\n\n';
+                panelText += '📊 <b>Статистика:</b>\n';
                 panelText += `📚 Книг в каталозі: ${stats.totalBooks}\n`;
                 panelText += `👥 Унікальних користувачів: ${stats.totalUsers}\n`;
                 panelText += `⭐ Середня оцінка: ${stats.avgRating}\n`;
@@ -84,8 +84,8 @@ exports.default = (bot) => {
                 const feedbackAlert = pendingFeedback.length > 0
                     ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
                     : '✅ Всі повідомлення прочитані';
-                await ctx.reply(`🛠️ <b>Панель адміністратора</b>\n\n` +
-                    `📊 <b>Статистика:</b>\n` +
+                await ctx.reply('🛠️ <b>Панель адміністратора</b>\n\n' +
+                    '📊 <b>Статистика:</b>\n' +
                     `📚 Книг в каталозі: ${basicStats.totalBooks}\n` +
                     `${reviewsAlert}\n` +
                     `${feedbackAlert}`, {
@@ -168,30 +168,30 @@ exports.default = (bot) => {
                 return;
             }
             const stats = await (0, models_1.getExtendedAdminStats)();
-            let statsText = `📊 <b>РОЗШИРЕНА СТАТИСТИКА БІБЛІОТЕКИ</b>\n\n`;
-            statsText += `📈 <b>Основні показники:</b>\n`;
+            let statsText = '📊 <b>РОЗШИРЕНА СТАТИСТИКА БІБЛІОТЕКИ</b>\n\n';
+            statsText += '📈 <b>Основні показники:</b>\n';
             statsText += `📚 Всього книг: ${stats.totalBooks}\n`;
             statsText += `👥 Унікальних користувачів: ${stats.totalUsers}\n`;
             statsText += `💾 Збережено книг: ${stats.totalSavedBooks}\n`;
             statsText += `⭐ Середня оцінка: ${stats.avgRating}\n\n`;
-            statsText += `📝 <b>Контент:</b>\n`;
+            statsText += '📝 <b>Контент:</b>\n';
             statsText += `💬 Всього відгуків: ${stats.totalReviews}\n`;
             statsText += `❌ На модерацію: ${stats.pendingReviews}\n`;
             statsText += `📞 Повідомлень зворотного зв'язку: ${stats.totalFeedback}\n`;
             statsText += `🔔 Нових повідомлень: ${stats.pendingFeedback}\n\n`;
-            statsText += `📅 <b>Активність:</b>\n`;
+            statsText += '📅 <b>Активність:</b>\n';
             statsText += `🆕 Нових користувачів сьогодні: ${stats.newUsersToday}\n`;
             statsText += `📖 Нових книг цього місяця: ${stats.newBooksThisMonth}\n`;
             statsText += `✅ Активних користувачів (30 днів): ${stats.activeUsersThisMonth}\n\n`;
             if (stats.topGenres.length > 0) {
-                statsText += `📂 <b>Топ жанри:</b>\n`;
+                statsText += '📂 <b>Топ жанри:</b>\n';
                 stats.topGenres.forEach((g, i) => {
                     statsText += `${i + 1}. ${g.genre} (${g.count} книг)\n`;
                 });
-                statsText += `\n`;
+                statsText += '\n';
             }
             if (stats.topRatedBooks.length > 0 && stats.topRatedBooks.some(b => b.rating)) {
-                statsText += `⭐ <b>Топ книги за рейтингом:</b>\n`;
+                statsText += '⭐ <b>Топ книги за рейтингом:</b>\n';
                 stats.topRatedBooks.forEach((b, i) => {
                     if (b.rating) {
                         statsText += `${i + 1}. ${b.title} (${b.rating}/5) - ${b.author}\n`;
@@ -248,7 +248,7 @@ exports.default = (bot) => {
                         reviewText += `💬 Коментар:\n"${safeComment}"\n\n`;
                     }
                     else {
-                        reviewText += `💬 Коментар: <i>(відсутній)</i>\n\n`;
+                        reviewText += '💬 Коментар: <i>(відсутній)</i>\n\n';
                     }
                     reviewText += `📅 Дата: ${safeDate}`;
                     await ctx.reply(reviewText, {
@@ -358,7 +358,7 @@ exports.default = (bot) => {
                 });
                 return;
             }
-            await ctx.reply(`📞 <b>Нові повідомлення зворотного зв'язку</b>\n\n` +
+            await ctx.reply('📞 <b>Нові повідомлення зворотного зв\'язку</b>\n\n' +
                 `Нових: ${messages.length}\n` +
                 `Всього в історії: ${allMessages.length}`, { parse_mode: 'Markdown' });
             for (const msg of messages) {
@@ -366,7 +366,7 @@ exports.default = (bot) => {
                     if (!msg.message || msg.message.trim() === '') {
                         logger_1.logger.warn('Empty feedback message', { messageId: msg.id });
                         await ctx.reply(`⚠️ *Повідомлення #${msg.id}*\n\n` +
-                            `❌ Текст повідомлення відсутній або пошкоджений.\n\n` +
+                            '❌ Текст повідомлення відсутній або пошкоджений.\n\n' +
                             `👤 Від: ${msg.user_name || 'Користувач'}\n` +
                             `🆔 User ID: \`${msg.user_id}\``, { parse_mode: 'Markdown' });
                         continue;
@@ -515,8 +515,8 @@ exports.default = (bot) => {
             const feedbackAlert = pendingFeedback.length > 0
                 ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
                 : '✅ Всі повідомлення прочитані';
-            await ctx.editMessageText(`🛠️ <b>Панель адміністратора</b>\n\n` +
-                `📊 <b>Статистика:</b>\n` +
+            await ctx.editMessageText('🛠️ <b>Панель адміністратора</b>\n\n' +
+                '📊 <b>Статистика:</b>\n' +
                 `📚 Книг в каталозі: ${stats.totalBooks}\n` +
                 `${reviewsAlert}\n` +
                 `${feedbackAlert}`, {
@@ -547,8 +547,8 @@ exports.default = (bot) => {
             const feedbackAlert = pendingFeedback.length > 0
                 ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
                 : '✅ Всі повідомлення прочитані';
-            await ctx.reply(`🛠️ <b>Панель адміністратора</b>\n\n` +
-                `📊 <b>Статистика:</b>\n` +
+            await ctx.reply('🛠️ <b>Панель адміністратора</b>\n\n' +
+                '📊 <b>Статистика:</b>\n' +
                 `📚 Книг в каталозі: ${stats.totalBooks}\n` +
                 `${reviewsAlert}\n` +
                 `${feedbackAlert}`, {
@@ -576,7 +576,7 @@ exports.default = (bot) => {
                     'Ще немає жодного повідомлення зворотного зв\'язку.', { parse_mode: 'Markdown' });
                 return;
             }
-            await ctx.reply(`📜 <b>Історія повідомлень зворотного зв'язку</b>\n\n` +
+            await ctx.reply('📜 <b>Історія повідомлень зворотного зв\'язку</b>\n\n' +
                 `Всього повідомлень: ${messages.length}\n` +
                 `Нових: ${messages.filter(m => m.status === 'pending').length}\n` +
                 `Прочитаних: ${messages.filter(m => m.status === 'read').length}\n` +
