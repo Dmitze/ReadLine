@@ -35,11 +35,11 @@ export const getPersonalizedRecommendations = async (userId: number): Promise<st
     }
     
     const question = 
-      `На основі історії користувача, порекомендуй 3-5 книг українською мовою. ` +
-      `Для кожної книги вкажи:\n` +
-      `📖 Назву та автора\n` +
-      `💡 Чому ця книга підійде\n` +
-      `🎯 Жанр\n\n` +
+      'На основі історії користувача, порекомендуй 3-5 книг українською мовою. ' +
+      'Для кожної книги вкажи:\n' +
+      '📖 Назву та автора\n' +
+      '💡 Чому ця книга підійде\n' +
+      '🎯 Жанр\n\n' +
       `Контекст: ${context}`;
     
     const recommendations = await askAI(question, userId);
@@ -75,7 +75,7 @@ export const getContextualRecommendations = async (): Promise<string> => {
   
   const question = 
     `${timeContext}\n` +
-    `Дай 3-4 рекомендації українською мовою з назвою, автором та коротким поясненням.`;
+    'Дай 3-4 рекомендації українською мовою з назвою, автором та коротким поясненням.';
   
   try {
     const recommendations = await askAI(question);
@@ -106,7 +106,7 @@ export const getMoodBasedRecommendations = async (mood: string): Promise<string>
   const question = 
     `Користувач в настрої: ${mood}. ` +
     `Порекомендуй 3-4 ${moodDescription} українською мовою. ` +
-    `Для кожної книги вкажи назву, автора та чому вона підійде.`;
+    'Для кожної книги вкажи назву, автора та чому вона підійде.';
   
   try {
     const recommendations = await askAI(question);
@@ -124,8 +124,8 @@ export const getMoodBasedRecommendations = async (mood: string): Promise<string>
 export const getSimilarBookRecommendations = async (bookTitle: string, bookAuthor: string): Promise<string> => {
   const question = 
     `Користувачу сподобалась книга "${bookTitle}" автора ${bookAuthor}. ` +
-    `Порекомендуй 4-5 схожих книг українською мовою. ` +
-    `Для кожної вкажи назву, автора та чому вона схожа.`;
+    'Порекомендуй 4-5 схожих книг українською мовою. ' +
+    'Для кожної вкажи назву, автора та чому вона схожа.';
   
   try {
     const recommendations = await askAI(question);
