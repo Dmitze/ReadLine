@@ -292,7 +292,7 @@ export class BookRepository extends BaseRepository<Book> {
       const params: any[] = [author];
 
       if (limit !== undefined) {
-        query += ` LIMIT ?`;
+        query += ' LIMIT ?';
         params.push(limit);
       }
 
