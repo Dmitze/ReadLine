@@ -1,5 +1,12 @@
 import { db, Book } from './models';
 
+/**
+ * SQL Parameter Types - replaces 'any'
+ * Supported types for SQL query parameters
+ */
+export type SQLParameter = string | number | boolean | null | undefined;
+export type SQLParameters = SQLParameter[];
+
 export interface CatalogFilters {
   genre?: string;
   hasAudio?: boolean;
@@ -10,11 +17,15 @@ export interface CatalogFilters {
   offset?: number;
 }
 
+interface CountRow {
+  total: number;
+}
+
 // Отримати книги з фільтрами та сортуванням
 export const getBooksWithFilters = (filters: CatalogFilters): Promise<{ books: Book[], total: number }> => {
   return new Promise((resolve, reject) => {
     let query = 'SELECT * FROM books WHERE is_available = 1';
-    const params: any[] = [];
+    const params: SQLParameters = [];
     
     if (filters.genre) {
       query += ' AND genre = ?';
@@ -52,7 +63,7 @@ export const getBooksWithFilters = (filters: CatalogFilters): Promise<{ books: B
     
     const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) as total');
     
-    db.get(countQuery, params, (err, countRow: any) => {
+    db.get(countQuery, params, (err, countRow: CountRow | undefined) => {
       if (err) {
         reject(err);
         return;
@@ -65,7 +76,7 @@ export const getBooksWithFilters = (filters: CatalogFilters): Promise<{ books: B
       
       db.all(query, params, (err, rows: Book[]) => {
         if (err) reject(err);
-        else resolve({ books: rows, total: countRow.total });
+        else resolve({ books: rows, total: countRow?.total || 0 });
       });
     });
   });
@@ -107,14 +118,14 @@ export const getHighRatedBooks = (minRating: number = 4, limit: number = 10): Pr
 // Отримати книги за алфавітом
 export const getBooksSortedByTitle = (limit: number = 10, offset: number = 0): Promise<{ books: Book[], total: number }> => {
   return new Promise((resolve, reject) => {
-    db.get('SELECT COUNT(*) as total FROM books WHERE is_available = 1', [], (err, countRow: any) => {
+    db.get('SELECT COUNT(*) as total FROM books WHERE is_available = 1', [], (err, countRow: CountRow | undefined) => {
       if (err) {
         reject(err);
         return;
       }
       
       db.all(
-        `SELECT * FROM books WHERE is_available = 1 ORDER BY title ASC LIMIT ? OFFSET ?`,
+        'SELECT * FROM books WHERE is_available = 1 ORDER BY title ASC LIMIT ? OFFSET ?',
         [limit, offset],
         (err, rows: Book[]) => {
           if (err) reject(err);
