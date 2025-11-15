@@ -5,7 +5,7 @@
  * Enhanced repository with query optimization, caching, and batch operations
  */
 
-import { DatabaseWrapper } from '../database/dbWrapper';
+import { DatabaseWrapper, SQLParameters } from '../database/dbWrapper';
 import { QueryOptimizer } from '../database/QueryOptimizer';
 import { logger } from '../utils/logger';
 
@@ -152,11 +152,11 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
       }
 
       if (options.limit) {
-        query += ` LIMIT ?`;
+        query += ' LIMIT ?';
         params.push(options.limit);
 
         if (options.offset) {
-          query += ` OFFSET ?`;
+          query += ' OFFSET ?';
           params.push(options.offset);
         }
       }
@@ -269,7 +269,7 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
       // Invalidate cache
       this.queryOptimizer.invalidateTableCache(this.tableName);
 
-      return await this.db.insert(query, values);
+      return await this.db.insert(query, values as SQLParameters);
     } catch (error) {
       logger.error('Error inserting entity', error instanceof Error ? error : new Error(String(error)));
       throw error;
@@ -282,7 +282,7 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
   async update(id: number, data: Partial<Omit<T, 'id'>>): Promise<number> {
     try {
       const keys = Object.keys(data);
-      const values = Object.values(data);
+      const values = Object.values(data) as SQLParameters;
       values.push(id);
       const setClause = keys.map((key) => `${key} = ?`).join(', ');
       const query = `UPDATE ${this.tableName} SET ${setClause} WHERE id = ?`;
