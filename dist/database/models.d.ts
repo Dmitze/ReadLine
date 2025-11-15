@@ -7,8 +7,13 @@ export interface Book {
     description: string;
     photo_file_id: string;
     file_url?: string;
+    pdf_file_id?: string;
     audio_file_id?: string;
+    audio_duration?: number;
+    audio_external_link?: string;
+    narrator?: string;
     online_link?: string;
+    external_link?: string;
     file_type?: string;
     file_name?: string;
     rating?: number;
