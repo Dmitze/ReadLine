@@ -109,7 +109,7 @@ const editBookScene = new Scenes.WizardScene(
       }).join('\n');
       
       await ctx.reply(
-        `✅ *Книгу успішно оновлено!*\n\n` +
+        '✅ *Книгу успішно оновлено!*\n\n' +
         `Змінено:\n${changedFields}`,
         { parse_mode: 'Markdown' }
       );
@@ -223,11 +223,11 @@ const editBookScene = new Scenes.WizardScene(
         // Показуємо меню редагування з оновленою інформацією
         const { Markup } = await import('telegraf');
         await ctx.editMessageText(
-          `📝 *Редагування книги*\n\n` +
+          '📝 *Редагування книги*\n\n' +
           `📖 ${state.book.title}\n` +
           `👤 ${state.book.author}\n\n` +
           `✅ Жанр змінено на: ${selectedGenre}\n\n` +
-          `Оберіть що хочете змінити або збережіть зміни:`,
+          'Оберіть що хочете змінити або збережіть зміни:',
           {
             parse_mode: 'Markdown',
             reply_markup: Markup.inlineKeyboard([
@@ -259,11 +259,11 @@ const editBookScene = new Scenes.WizardScene(
         // Показуємо меню редагування
         const { Markup } = await import('telegraf');
         await ctx.editMessageText(
-          `📝 *Редагування книги*\n\n` +
+          '📝 *Редагування книги*\n\n' +
           `📖 ${state.book.title}\n` +
           `👤 ${state.book.author}\n\n` +
           `✅ Доступність змінено на: ${isAvailable ? 'Доступна' : 'Недоступна'}\n\n` +
-          `Оберіть що хочете змінити або збережіть зміни:`,
+          'Оберіть що хочете змінити або збережіть зміни:',
           {
             parse_mode: 'Markdown',
             reply_markup: Markup.inlineKeyboard([
