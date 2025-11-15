@@ -430,9 +430,19 @@ export async function askAI(question: string, userId?: number): Promise<string> 
 }
 
 /**
+ * User preferences for AI recommendations
+ */
+export interface UserPreferences {
+  favoriteGenres?: string[];
+  readingHistory?: number[];
+  preferredAuthors?: string[];
+  [key: string]: unknown;
+}
+
+/**
  * Рекомендації книг від AI (заглушка)
  */
-export async function getBookRecommendations(_userPreferences: any): Promise<AIBookRecommendation[]> {
+export async function getBookRecommendations(_userPreferences: UserPreferences): Promise<AIBookRecommendation[]> {
   // Повертаємо порожній масив - рекомендації будуть з бази даних
   return [];
 }
@@ -445,10 +455,21 @@ export async function getMoodBasedBooks(mood: string, allBooks: Book[]): Promise
 }
 
 /**
+ * User answers for interactive selection
+ */
+export interface UserAnswers {
+  interest?: string;
+  mood?: string;
+  length?: string;
+  format?: string;
+  [key: string]: unknown;
+}
+
+/**
  * Інтерактивний вибір книг - реальний AI підбір
  * Вибирає цікаві книги на основі вподобань користувача
  */
-export async function interactiveBookSelection(userAnswers: any, allBooks: Book[]): Promise<Book[]> {
+export async function interactiveBookSelection(userAnswers: UserAnswers, allBooks: Book[]): Promise<Book[]> {
   const { interest, mood, format } = userAnswers;
   
   // Фільтруємо лише доступні книги
