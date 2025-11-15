@@ -152,8 +152,8 @@ export async function displayTopBooks(
   
   await ctx.reply(
      `🏆 <b>ТОП-${limitedBooks.length} КНИГ ЗА РЕЙТИНГОМ</b>\n\n` +
-     `Найкращі книги нашої бібліотеки за оцінками читачів:\n\n` +
-     `Оберіть книгу для детального перегляду:`,
+     'Найкращі книги нашої бібліотеки за оцінками читачів:\n\n' +
+     'Оберіть книгу для детального перегляду:',
      { parse_mode: 'HTML' }
    );
   
@@ -194,9 +194,9 @@ export async function displayNewBooks(
   const limitedBooks = books.slice(0, limit);
   
   await ctx.reply(
-    `🆕 <b>НОВИНКИ БІБЛІОТЕКИ</b>\n\n` +
+    '🆕 <b>НОВИНКИ БІБЛІОТЕКИ</b>\n\n' +
     `Останні ${limitedBooks.length} додані ${limitedBooks.length === 1 ? 'книга' : 'книг'}:\n\n` +
-    `Оберіть книгу для детального перегляду:`,
+    'Оберіть книгу для детального перегляду:',
     { parse_mode: 'HTML' }
   );
   
@@ -241,9 +241,9 @@ export async function displaySavedBooks(
   const { Markup } = await import('telegraf');
   
   await ctx.reply(
-    `💾 <b>МОЯ БІБЛІОТЕКА</b>\n\n` +
+    '💾 <b>МОЯ БІБЛІОТЕКА</b>\n\n' +
     `У вас збережено ${books.length} ${books.length === 1 ? 'книга' : 'книг'}:\n\n` +
-    `Оберіть книгу для перегляду:`,
+    'Оберіть книгу для перегляду:',
     { parse_mode: 'HTML' }
   );
   
@@ -281,13 +281,13 @@ export async function displaySearchResults(
 ): Promise<void> {
   if (books.length === 0) {
      await ctx.reply(
-       `📭 <b>Нічого не знайдено</b>\n\n` +
+       '📭 <b>Нічого не знайдено</b>\n\n' +
        `За запитом "${searchTerm}" книг не знайдено.\n\n` +
-       `💡 <b>Спробуйте:</b>\n` +
-       `• Використати інші ключові слова\n` +
-       `• Перевірити правильність назви\n` +
-       `• Шукати за автором або жанром\n` +
-       `• Скоротити запит (мінімум 2 символи)`,
+       '💡 <b>Спробуйте:</b>\n' +
+       '• Використати інші ключові слова\n' +
+       '• Перевірити правильність назви\n' +
+       '• Шукати за автором або жанром\n' +
+       '• Скоротити запит (мінімум 2 символи)',
        { parse_mode: 'HTML' }
      );
      return;
@@ -298,7 +298,7 @@ export async function displaySearchResults(
     : `Знайдено ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}`;
 
   await displayBookList(ctx, books, {
-    title: `🔍 РЕЗУЛЬТАТИ ПОШУКУ`,
+    title: '🔍 РЕЗУЛЬТАТИ ПОШУКУ',
     subtitle: `Запит: "${searchTerm}"\n${resultsText}`,
   });
 }
