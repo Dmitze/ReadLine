@@ -58,7 +58,7 @@ export const ensureKeyboardTypeColumn = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     try {
       // Перевіряємо чи існує колонка
-      db.all(`PRAGMA table_info(users)`, [], (err, columns: Array<{ name: string }>) => {
+      db.all('PRAGMA table_info(users)', [], (err, columns: Array<{ name: string }>) => {
         if (err) {
           logger.error('Error checking keyboard_type column', err);
           resolve(); // Не блокуємо запуск бота
