@@ -9,6 +9,7 @@ import swaggerJsdoc from 'swagger-jsdoc';
 import { ServiceContainer } from '../core/ServiceContainer';
 import swaggerOptions from './swagger';
 import { Result } from '../core/Result';
+import { logger } from '../utils/logger';
 
 export interface RestAPIConfig {
   port: number;
@@ -62,7 +63,7 @@ export class RestAPI {
 
     // Request logging
     this.app.use((req: Request, res: Response, next: NextFunction) => {
-      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+      logger.info('API Request', { method: req.method, path: req.path });
       next();
     });
   }
@@ -83,7 +84,7 @@ export class RestAPI {
       })
     );
 
-    console.log('📚 Swagger documentation available at /api-docs');
+    logger.info('Swagger documentation available at /api-docs');
   }
 
   /**
@@ -294,7 +295,7 @@ export class RestAPI {
       }
     });
 
-    console.log(`✅ API routes registered at ${prefix}`);
+    logger.info('API routes registered', { prefix });
   }
 
   /**
@@ -313,7 +314,7 @@ export class RestAPI {
 
     // Global error handler
     this.app.use((error: any, req: Request, res: Response, next: NextFunction) => {
-      console.error('❌ API Error:', error);
+      logger.error('API Error', error as Error);
 
       res.status(error.status || 500).json({
         success: false,
@@ -329,8 +330,10 @@ export class RestAPI {
   async start(): Promise<void> {
     return new Promise((resolve) => {
       this.app.listen(this.port, this.host, () => {
-        console.log(`\n🚀 REST API Server running at http://${this.host}:${this.port}`);
-        console.log(`📚 Swagger docs at http://${this.host}:${this.port}/api-docs\n`);
+        logger.info('REST API Server started', { 
+          url: `http://${this.host}:${this.port}`,
+          swagger: `http://${this.host}:${this.port}/api-docs`
+        });
         resolve();
       });
     });
