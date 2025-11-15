@@ -8,15 +8,25 @@
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "dev:watch": "nodemon",
+    "dev:lint": "npm run lint && npm run dev:watch",
+    "dev:test": "npm run test:watch",
+    "dev:full": "npm run lint && npm run test && npm run dev",
     "init-admin": "node dist/init-admin.js",
     "backup": "node scripts/backup-db.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "lint": "eslint . --ext .ts",
+    "test:detectLeaks": "jest --detectOpenHandles --detectLeaks",
+    "lint": "eslint .",
     "lint:fix": "eslint . --ext .ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\""
+    "format:check": "prettier --check \"src/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist coverage .cache",
+    "prebuild": "npm run clean",
+    "prestart": "npm run build",
+    "ci": "npm run lint && npm run test:coverage && npm run build",
+    "deploy": "npm run ci && npm start"
   },
   "dependencies": {
     "@types/swagger-ui-express": "^4.1.8",
@@ -29,16 +39,42 @@
     "sqlite3": "^5.1.6",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "telegraf": "^4.16.3"
+    "telegraf": "^4.16.3",
+    "winston": "^3.18.3",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.22.0",
+    "@modelcontextprotocol/server-filesystem": "^2025.8.21",
+    "@modelcontextprotocol/server-memory": "^2025.9.25",
     "@types/fast-levenshtein": "^0.0.4",
     "@types/jest": "^29.5.8",
-    "@types/node": "^20.19.24",
+    "@types/node": "^20.19.25",
     "@types/sqlite3": "^3.1.8",
+    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/parser": "^8.46.4",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "husky": "^8.0.3",
     "jest": "^29.7.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.6.2",
     "ts-jest": "^29.1.1",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.2"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "npm run lint:fix",
+      "npm run format",
+      "npm run test -- --findRelatedTests --bail"
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged",
+      "pre-push": "npm run ci"
+    }
   }
 }
