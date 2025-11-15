@@ -3,6 +3,7 @@ import { getAllBooks, deleteBook, getBookById } from '../database/models';
 import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
 import { handleResult } from '../utils/resultHandler';
+import { getBookIdText } from '../utils/helpers';
 
 const manageBooksScene = new Scenes.BaseScene('MANAGE_BOOKS_SCENE');
 
@@ -106,13 +107,13 @@ manageBooksScene.action(/genre_filter_(\d+)/, async (ctx: BotContext) => {
   
   for (const book of booksToShow) {
     const bookText = `
-📖 *${book.title}*
+📖 *${book.title}*${getBookIdText(book.id)}
 👤 ${book.author}
 ⭐ ${book.rating || 0}/5
     `.trim();
     
     await ctx.reply(bookText, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard([
         [
           Markup.button.callback('✏️ Редагувати', `edit_book_${book.id}`),
@@ -149,14 +150,14 @@ manageBooksScene.action('show_all_books', async (ctx: BotContext) => {
   
   for (const book of booksToShow) {
     const bookText = `
-📖 *${book.title}*
+📖 *${book.title}*${getBookIdText(book.id)}
 👤 ${book.author}
 📚 ${book.genre}
 ⭐ ${book.rating || 0}/5
     `.trim();
     
     await ctx.reply(bookText, {
-      parse_mode: 'Markdown',
+      parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard([
         [
           Markup.button.callback('✏️ Редагувати', `edit_book_${book.id}`),
@@ -288,24 +289,24 @@ manageBooksScene.command('find', async (ctx) => {
   }
   
   await ctx.reply(`🔍 Знайдено ${books.length} книг:`);
-  
-  for (const book of books) {
-    const bookText = `
-📖 *${book.title}*
-👤 ${book.author}
-📚 ${book.genre}
-    `.trim();
-    
-    await ctx.reply(bookText, {
-      parse_mode: 'Markdown',
-      reply_markup: Markup.inlineKeyboard([
-        [
-          Markup.button.callback('✏️ Редагувати', `edit_book_${book.id}`),
-          Markup.button.callback('🗑️ Видалити', `delete_book_${book.id}`)
-        ]
-      ]).reply_markup
-    });
-  }
+   
+   for (const book of books) {
+     const bookText = `
+  📖 *${book.title}*${getBookIdText(book.id)}
+  👤 ${book.author}
+  📚 ${book.genre}
+     `.trim();
+     
+     await ctx.reply(bookText, {
+       parse_mode: 'HTML',
+       reply_markup: Markup.inlineKeyboard([
+         [
+           Markup.button.callback('✏️ Редагувати', `edit_book_${book.id}`),
+           Markup.button.callback('🗑️ Видалити', `delete_book_${book.id}`)
+         ]
+       ]).reply_markup
+     });
+   }
 });
 
 // Масове редагування - показати всі книги з чекбоксами

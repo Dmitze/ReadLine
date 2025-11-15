@@ -23,6 +23,9 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
   // Красивий заголовок
   let caption = `━━━━━━━━━━━━━━━━━━━━━\n`;
   caption += `📖 <b>${safeTitle}</b>\n`;
+  if (book.id) {
+    caption += `🆔 ID: <code>${book.id}</code>\n`;
+  }
   caption += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
   
   // Автор
@@ -64,6 +67,42 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
       caption += ` 💬 ${book.reviews_count} ${getReviewsWord(book.reviews_count)}`;
     }
     caption += `\n\n`;
+  }
+  
+  // ✅ НОВЕ: Розширена інформація про книгу (розподіл рейтингів, вікові обмеження, варнінги)
+  if (book.id) {
+    try {
+      const { getBookDetailedStats } = await import('../database/models');
+      const stats = await getBookDetailedStats(book.id);
+      
+      // Розподіл рейтингів
+      if (stats && stats.rating_distribution && stats.rating_distribution.percentages) {
+        const { percentages } = stats.rating_distribution;
+        caption += `📊 <b>Розподіл оцінок:</b>\n`;
+        caption += `   5⭐ ${percentages.rating_5_percent.toFixed(0)}%  4⭐ ${percentages.rating_4_percent.toFixed(0)}%  3⭐ ${percentages.rating_3_percent.toFixed(0)}%\n`;
+        caption += `   2⭐ ${percentages.rating_2_percent.toFixed(0)}%  1⭐ ${percentages.rating_1_percent.toFixed(0)}%\n\n`;
+      }
+      
+      // Вікове обмеження
+      if (stats && stats.recommended_age && stats.recommended_age > 0) {
+        const ageLabel = getAgeLabel(stats.recommended_age);
+        caption += `🔞 <b>Вік:</b> ${ageLabel}\n`;
+      }
+      
+      // Тригери вмісту (варнінги)
+      if (stats && stats.content_warnings && stats.content_warnings.length > 0) {
+        const warnings = Array.isArray(stats.content_warnings) ? stats.content_warnings : 
+                        (typeof stats.content_warnings === 'string' ? JSON.parse(stats.content_warnings) : []);
+        if (warnings.length > 0) {
+          caption += `⚠️ <b>Варнінги:</b> ${warnings.map((w: string) => getWarningLabel(w)).join(', ')}\n`;
+        }
+      }
+      
+      caption += `\n`;
+    } catch (error) {
+      const { logger } = await import('./logger');
+      logger.error('Error loading extended book info in formatBookCaption', error instanceof Error ? error : new Error(String(error)));
+    }
   }
   
   // Опис
@@ -148,6 +187,35 @@ function getGenreEmoji(genre: string): string {
   return genreMap[genre] || '📖';
 }
 
+// ✅ НОВЕ: Отримати мітку вікового обмеження
+function getAgeLabel(age: number): string {
+  const ageMap: { [key: number]: string } = {
+    0: '✅ Для всіх',
+    6: '🟢 6+',
+    12: '🟡 12+',
+    16: '🟠 16+',
+    18: '🔴 18+'
+  };
+  return ageMap[age] || 'Невідомо';
+}
+
+// ✅ НОВЕ: Отримати мітку для варнінгу вмісту
+function getWarningLabel(warning: string): string {
+  const warningMap: { [key: string]: string } = {
+    'violence': 'Насильство',
+    'explicit_content': 'Експліцитний контент',
+    'sexual_scenes': 'Сексуальні сцени',
+    'mature_themes': 'Дорослі теми',
+    'strong_language': 'Грубе мовлення',
+    'psychological_horror': 'Психологічний жах',
+    'substance_abuse': 'Зловживання',
+    'child_abuse': 'Насильство над дітьми',
+    'discrimination': 'Дискримінація',
+    'self_harm': 'Самозалік'
+  };
+  return warningMap[warning] || warning;
+}
+
 // Правильне відмінювання слова "відгук"
 function getReviewsWord(count: number): string {
   if (count % 10 === 1 && count % 100 !== 11) return 'відгук';
@@ -169,6 +237,12 @@ export const escapeHtml = (text: string): string => {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+};
+
+// ✅ НОВЕ: Отримати ID як текст для вставки в caption
+export const getBookIdText = (bookId?: number): string => {
+  if (!bookId) return '';
+  return `\n🆔 ID: <code>${bookId}</code>`;
 };
 
 /**

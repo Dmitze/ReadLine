@@ -231,30 +231,28 @@ exports.default = (bot) => {
                 await ctx.reply(`📚 Знайдено ${total} ${total === 1 ? 'книгу' : 'книг'} в жанрі "${messageText}".\n` +
                     `Показано перші ${books.length}:`);
                 for (const book of books) {
-                    const caption = `📖 <b>${book.title}</b>
-         👤 Автор: ${book.author}
-         🎭 Жанр: ${book.genre}
-         📖 Опис:  ${book.description}
-         ✅ Статус: ${book.is_available ? 'Доступна' : 'Недоступна'}`;
+                    const caption = await (0, helpers_1.formatBookCaption)(book);
+                    const userId = ctx.from?.id;
+                    const isSaved = userId ? await (0, models_1.isBookSaved)(userId, book.id) : false;
                     if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
                         try {
                             await ctx.replyWithPhoto(book.photo_file_id, {
                                 caption,
                                 parse_mode: 'HTML',
-                                reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, false)
+                                reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
                             });
                         }
                         catch (error) {
                             await ctx.reply(caption, {
                                 parse_mode: 'HTML',
-                                reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, false)
+                                reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
                             });
                         }
                     }
                     else {
                         await ctx.reply(caption, {
                             parse_mode: 'HTML',
-                            reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, false)
+                            reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
                         });
                     }
                 }
@@ -297,25 +295,27 @@ exports.default = (bot) => {
             await ctx.reply(`📚 Жанр "${genre}" - сторінка ${page}:`);
             for (const book of books) {
                 const caption = await (0, helpers_1.formatBookCaption)(book);
+                const userId = ctx.from?.id;
+                const isSaved = userId ? await (0, models_1.isBookSaved)(userId, book.id) : false;
                 if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
                     try {
                         await ctx.replyWithPhoto(book.photo_file_id, {
                             caption,
                             parse_mode: 'HTML',
-                            reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, false)
+                            reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
                         });
                     }
                     catch (error) {
                         await ctx.reply(caption, {
                             parse_mode: 'HTML',
-                            reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, false)
+                            reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
                         });
                     }
                 }
                 else {
                     await ctx.reply(caption, {
                         parse_mode: 'HTML',
-                        reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, false)
+                        reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
                     });
                 }
             }

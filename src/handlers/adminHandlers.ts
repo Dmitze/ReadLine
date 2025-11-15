@@ -155,6 +155,25 @@ export default (bot: Telegraf<BotContext>) => {
     return;
   });
   
+  // ✅ НОВЕ: Керування розширеною інформацією про книги
+  bot.action('manage_extended_book_info', async (ctx: BotContext) => {
+    (async () => {
+      await ctx.answerCbQuery('Завантаження керування інформацією про книги...');
+      
+      const adminCheck = await isAdmin(ctx.from.id);
+      if (!adminCheck) {
+        await ctx.reply('❌ У вас немає доступу до цієї функції.');
+        return;
+      }
+      
+      ctx.scene.enter('EDIT_EXTENDED_BOOK_INFO_SCENE');
+    })().catch((error) => {
+      logger.error('Error entering edit extended book info scene', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
+      ctx.reply('❌ Виникла помилка при переході до редагування інформації про книги.');
+    });
+    return;
+  });
+  
   // Статистика
   bot.action('admin_stats', async (ctx) => {
     (async () => {

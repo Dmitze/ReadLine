@@ -4,6 +4,7 @@ import { getEnhancedBookKeyboard } from '../keyboards/mainKeyboards';
 import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
 import { handleResult } from '../utils/resultHandler';
+import { getBookIdText } from '../utils/helpers';
 
 const SEARCH_LIMIT = 10;
 
@@ -188,7 +189,7 @@ searchScene.on('text', async (ctx: BotContext) => {
     for (const book of books) {
       const isSaved = userId ? await isBookSaved(userId, book.id!) : false;
       const caption = 
-        `📖 *${book.title}*\n` +
+        `📖 *${book.title}*${getBookIdText(book.id).replace(/\n/g, '\n')}\n` +
         `👤 ${book.author}\n` +
         `📚 ${book.genre}\n\n` +
         `${book.description?.substring(0, 150) || 'Немає опису'}...`;
@@ -267,7 +268,7 @@ searchScene.on('text', async (ctx: BotContext) => {
   
   for (const book of books) {
     const isSaved = userId ? await isBookSaved(userId, book.id!) : false;
-    const caption = `📖 <b>${book.title}</b>\n👤 Автор: ${book.author}\n📚 Жанр: ${book.genre}\n📝 ${book.description?.substring(0, 100) || 'Немає опису'}...`;
+    const caption = `📖 <b>${book.title}</b>${getBookIdText(book.id)}\n👤 Автор: ${book.author}\n📚 Жанр: ${book.genre}\n📝 ${book.description?.substring(0, 100) || 'Немає опису'}...`;
 
     if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
       await ctx.replyWithPhoto(book.photo_file_id, {

@@ -56,6 +56,9 @@ const formatBookCaption = async (book, tags) => {
     const safeDescription = escapeHtml(book.description);
     let caption = `━━━━━━━━━━━━━━━━━━━━━\n`;
     caption += `📖 <b>${safeTitle}</b>\n`;
+    if (book.id) {
+        caption += `🆔 ID: <code>${book.id}</code>\n`;
+    }
     caption += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
     caption += `👤 <b>Автор:</b> ${safeAuthor}\n`;
     const genreEmoji = getGenreEmoji(book.genre);
@@ -91,6 +94,34 @@ const formatBookCaption = async (book, tags) => {
             caption += ` 💬 ${book.reviews_count} ${getReviewsWord(book.reviews_count)}`;
         }
         caption += `\n\n`;
+    }
+    if (book.id) {
+        try {
+            const { getBookDetailedStats } = await Promise.resolve().then(() => __importStar(require('../database/models')));
+            const stats = await getBookDetailedStats(book.id);
+            if (stats && stats.rating_distribution && stats.rating_distribution.percentages) {
+                const { percentages } = stats.rating_distribution;
+                caption += `📊 <b>Розподіл оцінок:</b>\n`;
+                caption += `   5⭐ ${percentages.rating_5_percent.toFixed(0)}%  4⭐ ${percentages.rating_4_percent.toFixed(0)}%  3⭐ ${percentages.rating_3_percent.toFixed(0)}%\n`;
+                caption += `   2⭐ ${percentages.rating_2_percent.toFixed(0)}%  1⭐ ${percentages.rating_1_percent.toFixed(0)}%\n\n`;
+            }
+            if (stats && stats.recommended_age && stats.recommended_age > 0) {
+                const ageLabel = getAgeLabel(stats.recommended_age);
+                caption += `🔞 <b>Вік:</b> ${ageLabel}\n`;
+            }
+            if (stats && stats.content_warnings && stats.content_warnings.length > 0) {
+                const warnings = Array.isArray(stats.content_warnings) ? stats.content_warnings :
+                    (typeof stats.content_warnings === 'string' ? JSON.parse(stats.content_warnings) : []);
+                if (warnings.length > 0) {
+                    caption += `⚠️ <b>Варнінги:</b> ${warnings.map((w) => getWarningLabel(w)).join(', ')}\n`;
+                }
+            }
+            caption += `\n`;
+        }
+        catch (error) {
+            const { logger } = await Promise.resolve().then(() => __importStar(require('./logger')));
+            logger.error('Error loading extended book info in formatBookCaption', error instanceof Error ? error : new Error(String(error)));
+        }
     }
     caption += `📝 <b>Опис:</b>\n${safeDescription}\n\n`;
     caption += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
@@ -152,6 +183,31 @@ function getGenreEmoji(genre) {
         'Філософія': '🤔'
     };
     return genreMap[genre] || '📖';
+}
+function getAgeLabel(age) {
+    const ageMap = {
+        0: '✅ Для всіх',
+        6: '🟢 6+',
+        12: '🟡 12+',
+        16: '🟠 16+',
+        18: '🔴 18+'
+    };
+    return ageMap[age] || 'Невідомо';
+}
+function getWarningLabel(warning) {
+    const warningMap = {
+        'violence': 'Насильство',
+        'explicit_content': 'Експліцитний контент',
+        'sexual_scenes': 'Сексуальні сцени',
+        'mature_themes': 'Дорослі теми',
+        'strong_language': 'Грубе мовлення',
+        'psychological_horror': 'Психологічний жах',
+        'substance_abuse': 'Зловживання',
+        'child_abuse': 'Насильство над дітьми',
+        'discrimination': 'Дискримінація',
+        'self_harm': 'Самозалік'
+    };
+    return warningMap[warning] || warning;
 }
 function getReviewsWord(count) {
     if (count % 10 === 1 && count % 100 !== 11)

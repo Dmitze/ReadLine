@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
 import { validateReviewData } from '../utils/validation';
 import { handleResult } from '../utils/resultHandler';
+import { getBookIdText } from '../utils/helpers';
 
 const rateBookScene = new Scenes.WizardScene(
   'RATE_BOOK_SCENE',
@@ -23,7 +24,7 @@ const rateBookScene = new Scenes.WizardScene(
     }
     
     await ctx.reply(
-      `⭐ <b>Оцініть книгу</b>\n\n📖 ${book.title}\n👤 ${book.author}\n\nОберіть рейтинг (1-5 зірок):`,
+      `⭐ <b>Оцініть книгу</b>\n\n📖 ${book.title}${getBookIdText(book.id)}\n👤 ${book.author}\n\nОберіть рейтинг (1-5 зірок):`,
       {
         parse_mode: 'HTML',
         reply_markup: {

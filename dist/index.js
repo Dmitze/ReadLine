@@ -54,6 +54,7 @@ const onboardingScene_1 = __importDefault(require("./scenes/onboardingScene"));
 const settingsScene_1 = __importDefault(require("./scenes/settingsScene"));
 const aiAssistantScene_1 = __importDefault(require("./scenes/aiAssistantScene"));
 const promoAdminScene_1 = __importDefault(require("./scenes/promoAdminScene"));
+const editExtendedBookInfoScene_1 = __importDefault(require("./scenes/editExtendedBookInfoScene"));
 function validateEnvVariables() {
     const errors = [];
     const warnings = [];
@@ -155,7 +156,8 @@ const stage = new telegraf_1.Scenes.Stage([
     onboardingScene_1.default,
     settingsScene_1.default,
     aiAssistantScene_1.default,
-    promoAdminScene_1.default
+    promoAdminScene_1.default,
+    editExtendedBookInfoScene_1.default
 ]);
 const mainKeyboards_1 = require("./keyboards/mainKeyboards");
 bot.use((0, telegraf_1.session)());

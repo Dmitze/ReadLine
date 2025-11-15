@@ -33,7 +33,7 @@ import {
   getEnhancedBookKeyboard,
   getMainMenuKeyboard
 } from '../keyboards/mainKeyboards';
-import { formatBookCaption } from '../utils/helpers';
+import { formatBookCaption, getBookIdText } from '../utils/helpers';
 import { 
   displayTopBooks, 
   displayNewBooks, 
@@ -325,35 +325,33 @@ export default (bot: Telegraf<BotContext>) => {
         );
         
         for (const book of books) {
-           const caption = `📖 <b>${book.title}</b>
-         👤 Автор: ${book.author}
-         🎭 Жанр: ${book.genre}
-         📖 Опис:  ${book.description}
-         ✅ Статус: ${book.is_available ? 'Доступна' : 'Недоступна'}`;
+           const caption = await formatBookCaption(book);
+           const userId = ctx.from?.id;
+           const isSaved = userId ? await isBookSaved(userId, book.id!) : false;
 
-          // Перевіряємо чи є валідний photo_file_id
-          if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
-            try {
-              await ctx.replyWithPhoto(book.photo_file_id, {
-                caption,
-                parse_mode: 'HTML',
-                reply_markup: getEnhancedBookKeyboard(book, false)
-              });
-            } catch (error) {
-              // Якщо помилка з фото - відправляємо текстом
-              await ctx.reply(caption, {
-                parse_mode: 'HTML',
-                reply_markup: getEnhancedBookKeyboard(book, false)
-              });
-            }
-          } else {
-            // Якщо немає фото - відправляємо текстом
-            await ctx.reply(caption, {
-              parse_mode: 'HTML',
-              reply_markup: getEnhancedBookKeyboard(book, false)
-            });
-          }
-        }
+           // Перевіряємо чи є валідний photo_file_id
+           if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
+             try {
+               await ctx.replyWithPhoto(book.photo_file_id, {
+                 caption,
+                 parse_mode: 'HTML',
+                 reply_markup: getEnhancedBookKeyboard(book, isSaved)
+               });
+             } catch (error) {
+               // Якщо помилка з фото - відправляємо текстом
+               await ctx.reply(caption, {
+                 parse_mode: 'HTML',
+                 reply_markup: getEnhancedBookKeyboard(book, isSaved)
+               });
+             }
+           } else {
+             // Якщо немає фото - відправляємо текстом
+             await ctx.reply(caption, {
+               parse_mode: 'HTML',
+               reply_markup: getEnhancedBookKeyboard(book, isSaved)
+             });
+           }
+         }
         
         // Якщо книг більше ніж показано, додаємо кнопки пагінації
         if (total > BOOKS_PER_PAGE) {
@@ -409,24 +407,26 @@ export default (bot: Telegraf<BotContext>) => {
       
       for (const book of books) {
         const caption = await formatBookCaption(book);
+        const userId = ctx.from?.id;
+        const isSaved = userId ? await isBookSaved(userId, book.id!) : false;
         
         if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
           try {
             await ctx.replyWithPhoto(book.photo_file_id, {
               caption,
               parse_mode: 'HTML',
-              reply_markup: getEnhancedBookKeyboard(book, false)
+              reply_markup: getEnhancedBookKeyboard(book, isSaved)
             });
           } catch (error) {
             await ctx.reply(caption, {
               parse_mode: 'HTML',
-              reply_markup: getEnhancedBookKeyboard(book, false)
+              reply_markup: getEnhancedBookKeyboard(book, isSaved)
             });
           }
         } else {
           await ctx.reply(caption, {
             parse_mode: 'HTML',
-            reply_markup: getEnhancedBookKeyboard(book, false)
+            reply_markup: getEnhancedBookKeyboard(book, isSaved)
           });
         }
       }
@@ -647,7 +647,8 @@ export default (bot: Telegraf<BotContext>) => {
         
         if (pdfFileId) {
           await ctx.telegram.sendDocument(ctx.from!.id, pdfFileId, {
-            caption: `📥 ${book.title}\n👤 ${book.author}\n\n✅ Файл завантажено!`
+            caption: `📥 ${book.title}${getBookIdText(book.id)}\n👤 ${book.author}\n\n✅ Файл завантажено!`,
+            parse_mode: 'HTML'
           });
           await ctx.answerCbQuery('📥 Файл надіслано вам у приватні повідомлення');
         } else {
@@ -686,22 +687,22 @@ export default (bot: Telegraf<BotContext>) => {
         await ctx.answerCbQuery('🎧 Відправляю аудіокнигу...');
         
         // Формуємо опис аудіокниги
-        let caption = `🎧 <b>${book.title}</b>\n`;
-        caption += `👤 ${book.author}\n`;
-        
-        if ((book as any).narrator) {
-          caption += `🎙️ Читає: ${(book as any).narrator}\n`;
-        }
-        
-        if ((book as any).audio_duration) {
-          const hours = Math.floor((book as any).audio_duration / 3600);
-          const minutes = Math.floor(((book as any).audio_duration % 3600) / 60);
-          if (hours > 0) {
-            caption += `⏱️ Тривалість: ${hours}г ${minutes}хв\n`;
-          } else {
-            caption += `⏱️ Тривалість: ${minutes}хв\n`;
-          }
-        }
+         let caption = `🎧 <b>${book.title}</b>${getBookIdText(book.id)}\n`;
+         caption += `👤 ${book.author}\n`;
+         
+         if ((book as any).narrator) {
+           caption += `🎙️ Читає: ${(book as any).narrator}\n`;
+         }
+         
+         if ((book as any).audio_duration) {
+           const hours = Math.floor((book as any).audio_duration / 3600);
+           const minutes = Math.floor(((book as any).audio_duration % 3600) / 60);
+           if (hours > 0) {
+             caption += `⏱️ Тривалість: ${hours}г ${minutes}хв\n`;
+           } else {
+             caption += `⏱️ Тривалість: ${minutes}хв\n`;
+           }
+         }
         
         // Відправляємо аудіофайл
         await ctx.replyWithAudio(audioFileId, {
@@ -743,7 +744,7 @@ export default (bot: Telegraf<BotContext>) => {
         return;
       }
       
-      let reviewsText = `📊 <b>Відгуки про книгу</b>\n\n📖 ${book.title}\n👤 ${book.author}\n`;
+      let reviewsText = `📊 <b>Відгуки про книгу</b>\n\n📖 ${book.title}${getBookIdText(book.id)}\n👤 ${book.author}\n`;
       reviewsText += `⭐ Середній рейтинг: ${book.rating?.toFixed(1) || 0}/5\n\n`;
       
       reviews.slice(0, 5).forEach((review, index) => {
@@ -793,7 +794,7 @@ export default (bot: Telegraf<BotContext>) => {
       
       await ctx.reply(
         `🔍 <b>Схожі книги</b> (жанр: ${book.genre}):\n\n` +
-        filtered.map((b, i) => `${i + 1}. 📖 ${b.title}\n   👤 ${b.author}`).join('\n\n'),
+        filtered.map((b, i) => `${i + 1}. 📖 ${b.title}${getBookIdText(b.id)}\n   👤 ${b.author}`).join('\n\n'),
         { parse_mode: 'HTML' }
       );
       

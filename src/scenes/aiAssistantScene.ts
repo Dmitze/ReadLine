@@ -4,6 +4,7 @@ import { BotContext, WizardState } from '../types/telegraf';
 import { interactiveBookSelection } from '../utils/aiHelper';
 import { getEnhancedBookKeyboard } from '../keyboards/mainKeyboards';
 import { logger } from '../utils/logger';
+import { getBookIdText } from '../utils/helpers';
 
 const aiAssistantScene = new Scenes.WizardScene(
   'AI_ASSISTANT_SCENE',
@@ -158,7 +159,7 @@ const aiAssistantScene = new Scenes.WizardScene(
     // Показуємо книги з поясненнями
     for (const book of books) {
       const caption = 
-        `<b>📖 ${book.title}</b>\n` +
+        `<b>📖 ${book.title}</b>${getBookIdText(book.id)}\n` +
         `<b>Автор:</b> ${book.author}\n` +
         `<b>Жанр:</b> ${book.genre}\n\n` +
         `🤖 <i>Рекомендовано на основі ваших вподобань та настрою</i>`;

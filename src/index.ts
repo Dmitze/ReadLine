@@ -27,6 +27,7 @@ import onboardingScene from './scenes/onboardingScene';
 import settingsScene from './scenes/settingsScene';
 import aiAssistantScene from './scenes/aiAssistantScene';
 import promoAdminScene from './scenes/promoAdminScene';
+import editExtendedBookInfoScene from './scenes/editExtendedBookInfoScene';
 
 // ✅ ВИПРАВЛЕНО: Валідація критичних env variables при старті
 function validateEnvVariables() {
@@ -166,7 +167,8 @@ const stage = new Scenes.Stage([
   onboardingScene as any,
   settingsScene as any,
   aiAssistantScene as any,
-  promoAdminScene as any
+  promoAdminScene as any,
+  editExtendedBookInfoScene as any
 ]);
 
 // Імпорт клавіатур (потрібно для middleware)

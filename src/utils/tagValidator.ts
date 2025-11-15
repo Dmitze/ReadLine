@@ -50,7 +50,7 @@ export const normalizeTag = (tag: string): string => {
   return tag
     .trim()
     .split(/\s+/)
-    .map((word) => {
+    .map((word, index) => {
       // Першу букву кожного слова - з великої літери
       return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
     })

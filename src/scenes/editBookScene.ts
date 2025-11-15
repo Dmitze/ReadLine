@@ -3,6 +3,7 @@ import { getBookById, updateBook, deleteBook } from '../database/models';
 import { logger } from '../utils/logger';
 import { BotContext, WizardState } from '../types/telegraf';
 import { handleResult } from '../utils/resultHandler';
+import { getBookIdText } from '../utils/helpers';
 
 const editBookScene = new Scenes.WizardScene(
   'EDIT_BOOK_SCENE',
@@ -26,7 +27,7 @@ const editBookScene = new Scenes.WizardScene(
       (ctx.wizard.state as any).book = book;
       
       const bookInfo = `
-📖 *Поточні дані книги:*
+📖 *Поточні дані книги:*${getBookIdText(book.id)}
 
 📚 Назва: ${book.title}
 👤 Автор: ${book.author}
@@ -38,7 +39,7 @@ const editBookScene = new Scenes.WizardScene(
       `.trim();
       
       await ctx.reply(bookInfo, {
-        parse_mode: 'Markdown',
+        parse_mode: 'HTML',
         reply_markup: Markup.inlineKeyboard([
           [Markup.button.callback('✏️ Назва', 'edit_title')],
           [Markup.button.callback('✏️ Автор', 'edit_author')],

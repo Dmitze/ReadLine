@@ -1,7 +1,7 @@
 import { Scenes } from 'telegraf';
 import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
-import { escapeHtml } from '../utils/helpers';
+import { escapeHtml, getBookIdText } from '../utils/helpers';
 import { 
   getSmartRecommendations
 } from '../database/recommendationFunctions';
