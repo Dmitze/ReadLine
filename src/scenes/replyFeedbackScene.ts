@@ -21,10 +21,10 @@ replyFeedbackScene.enter(async (ctx: BotContext) => {
   }
   
   await ctx.reply(
-     `✉️ <b>ВІДПОВІДЬ НА ПОВІДОМЛЕННЯ</b>\n\n` +
+     '✉️ <b>ВІДПОВІДЬ НА ПОВІДОМЛЕННЯ</b>\n\n' +
      `👤 Від: ${state.userName || 'Користувач'}\n` +
      `💬 Повідомлення:\n"${state.originalMessage}"\n\n` +
-     `📝 Введіть вашу відповідь:`,
+     '📝 Введіть вашу відповідь:',
      {
        parse_mode: 'HTML',
        reply_markup: Markup.keyboard([['❌ Скасувати']]).resize().reply_markup
@@ -53,14 +53,14 @@ replyFeedbackScene.on('text', async (ctx: BotContext) => {
   // Намагаємось надіслати повідомлення користувачу
   await ctx.telegram.sendMessage(
     state.userId!,
-    `📬 <b>ВІДПОВІДЬ ВІД АДМІНІСТРАТОРА</b>\n\n` +
+    '📬 <b>ВІДПОВІДЬ ВІД АДМІНІСТРАТОРА</b>\n\n' +
     `💬 Ваше повідомлення:\n"${state.originalMessage}"\n\n` +
     `✉️ Відповідь:\n${replyText}\n\n` +
-    `Дякуємо за звернення!`,
+    'Дякуємо за звернення!',
     { parse_mode: 'Markdown' }
   ).then(async () => {
     await ctx.reply(
-      `✅ *Відповідь надіслана!*\n\n` +
+      '✅ *Відповідь надіслана!*\n\n' +
       `👤 Користувач: ${state.userName}\n` +
       `✉️ Ваша відповідь:\n"${replyText}"`,
       { parse_mode: 'Markdown' }
@@ -93,22 +93,22 @@ replyFeedbackScene.on('text', async (ctx: BotContext) => {
     
     if (isBotBlocked) {
       await ctx.reply(
-        `⚠️ <b>Відповідь збережена в БД</b>\n\n` +
-        `❌ Користувач заблокував бота.\n` +
-        `Повідомлення не доставлено, але збережено в системі.`,
+        '⚠️ <b>Відповідь збережена в БД</b>\n\n' +
+        '❌ Користувач заблокував бота.\n' +
+        'Повідомлення не доставлено, але збережено в системі.',
         { parse_mode: 'Markdown' }
       );
     } else if (isChatDeleted) {
       await ctx.reply(
-        `⚠️ <b>Відповідь збережена в БД</b>\n\n` +
-        `❌ Чат з користувачем не знайдено (можливо видалив акаунт).\n` +
-        `Повідомлення не доставлено.`,
+        '⚠️ <b>Відповідь збережена в БД</b>\n\n' +
+        '❌ Чат з користувачем не знайдено (можливо видалив акаунт).\n' +
+        'Повідомлення не доставлено.',
         { parse_mode: 'Markdown' }
       );
     } else {
       await ctx.reply(
-        `⚠️ <b>Відповідь збережена в БД</b>\n\n` +
-        `❌ Помилка при надсиланні:\n` +
+        '⚠️ <b>Відповідь збережена в БД</b>\n\n' +
+        '❌ Помилка при надсиланні:\n' +
         `${errorMessage.substring(0, 150)}`,
         { parse_mode: 'Markdown' }
       );
