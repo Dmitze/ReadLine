@@ -190,14 +190,14 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
         'self_harm': 'Самозалік'
       };
 
-      let successMsg = `✅ <b>Успішно оновлено!</b>\n\n`;
+      let successMsg = '✅ <b>Успішно оновлено!</b>\n\n';
       successMsg += `📖 <b>${state.book.title}</b>${getBookIdText(state.book.id)}\n`;
       successMsg += `🔞 <b>Вік:</b> ${ageLabels[state.recommendedAge]}\n`;
 
       if (warnings.length > 0) {
         successMsg += `⚠️ <b>Варнінги:</b> ${warnings.map(w => warningLabels[w]).join(', ')}\n`;
       } else {
-        successMsg += `⚠️ <b>Варнінги:</b> Немає\n`;
+        successMsg += '⚠️ <b>Варнінги:</b> Немає\n';
       }
 
       await ctx.reply(successMsg, {
@@ -335,13 +335,13 @@ editExtendedBookInfoScene.action('view_current', async (ctx) => {
       if (Array.isArray(warnings) && warnings.length > 0) {
         msg += `⚠️ <b>Варнінги:</b> ${warnings.map((w: string) => warningLabels[w] || w).join(', ')}\n`;
       } else {
-        msg += `⚠️ <b>Варнінги:</b> Немає\n`;
+        msg += '⚠️ <b>Варнінги:</b> Немає\n';
       }
     } catch (error) {
-      msg += `⚠️ <b>Варнінги:</b> Не вдалося прочитати\n`;
+      msg += '⚠️ <b>Варнінги:</b> Не вдалося прочитати\n';
     }
   } else {
-    msg += `⚠️ <b>Варнінги:</b> Немає\n`;
+    msg += '⚠️ <b>Варнінги:</b> Немає\n';
   }
 
   await ctx.editMessageText(msg, {
