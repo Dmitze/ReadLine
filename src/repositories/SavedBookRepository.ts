@@ -32,7 +32,7 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
       `;
 
       const id = await this.db.insert(query, [userId, bookId]);
-      logger.info(`Book saved by user`, { userId, bookId });
+      logger.info('Book saved by user', { userId, bookId });
       return id;
     } catch (error) {
       logger.error('Error saving book', error instanceof Error ? error : new Error(String(error)));
@@ -65,7 +65,7 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
       const query = 'DELETE FROM saved_books WHERE user_id = ? AND book_id = ?';
       const changes = await this.db.delete(query, [userId, bookId]);
       if (changes > 0) {
-        logger.info(`Book removed from saved`, { userId, bookId });
+        logger.info('Book removed from saved', { userId, bookId });
       }
       return changes;
     } catch (error) {
