@@ -151,31 +151,31 @@ export class BookService {
    */
   async searchBooks(filters: BookFilters): Promise<Result<any[]>> {
     try {
-      let query = `SELECT * FROM books WHERE 1=1`;
+      let query = 'SELECT * FROM books WHERE 1=1';
       const params: any[] = [];
 
       if (filters.genre) {
-        query += ` AND genre LIKE ?`;
+        query += ' AND genre LIKE ?';
         params.push(`%${filters.genre}%`);
       }
 
       if (filters.searchQuery) {
-        query += ` AND (title LIKE ? OR author LIKE ? OR description LIKE ?)`;
+        query += ' AND (title LIKE ? OR author LIKE ? OR description LIKE ?)';
         const searchTerm = `%${filters.searchQuery}%`;
         params.push(searchTerm, searchTerm, searchTerm);
       }
 
       if (filters.sortBy === 'rating') {
-        query += ` ORDER BY (SELECT AVG(rating) FROM reviews WHERE book_id = books.id) DESC`;
+        query += ' ORDER BY (SELECT AVG(rating) FROM reviews WHERE book_id = books.id) DESC';
       } else if (filters.sortBy === 'date') {
-        query += ` ORDER BY created_at DESC`;
+        query += ' ORDER BY created_at DESC';
       } else {
-        query += ` ORDER BY title ASC`;
+        query += ' ORDER BY title ASC';
       }
 
       const limit = filters.limit || 20;
       const offset = filters.offset || 0;
-      query += ` LIMIT ? OFFSET ?`;
+      query += ' LIMIT ? OFFSET ?';
       params.push(limit, offset);
 
       // Using direct database call for complex filtered query
