@@ -5,7 +5,7 @@
  * Provides common database operations for all repositories
  */
 
-import { DatabaseWrapper } from '../database/dbWrapper';
+import { DatabaseWrapper, SQLParameters } from '../database/dbWrapper';
 import { logger } from '../utils/logger';
 
 /**
@@ -43,7 +43,7 @@ export abstract class BaseRepository<T extends { id?: number }> {
       const params: any[] = [];
 
       if (limit !== undefined && offset !== undefined) {
-        query += ` LIMIT ? OFFSET ?`;
+        query += ' LIMIT ? OFFSET ?';
         params.push(limit, offset);
       }
 
@@ -118,7 +118,7 @@ export abstract class BaseRepository<T extends { id?: number }> {
   async insert(data: Omit<T, 'id'>): Promise<number> {
     try {
       const keys = Object.keys(data);
-      const values = Object.values(data);
+      const values = Object.values(data) as SQLParameters;
       const placeholders = keys.map(() => '?').join(', ');
       const query = `INSERT INTO ${this.tableName} (${keys.join(', ')}) VALUES (${placeholders})`;
       return await this.db.insert(query, values);
@@ -134,7 +134,7 @@ export abstract class BaseRepository<T extends { id?: number }> {
   async update(id: number, data: Partial<Omit<T, 'id'>>): Promise<number> {
     try {
       const keys = Object.keys(data);
-      const values = Object.values(data);
+      const values = Object.values(data) as SQLParameters;
       values.push(id);
       const setClause = keys.map(key => `${key} = ?`).join(', ');
       const query = `UPDATE ${this.tableName} SET ${setClause} WHERE id = ?`;
