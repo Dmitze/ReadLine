@@ -68,9 +68,9 @@ settingsScene.action(/^keyboard_(mobile|tablet|desktop)$/, async (ctx) => {
     
     await ctx.answerCbQuery('✅ Збережено');
     await ctx.editMessageText(
-      `✅ <b>Тип клавіатури змінено</b>\n\n` +
+      '✅ <b>Тип клавіатури змінено</b>\n\n' +
       `Обрано: ${deviceNames[deviceType]}\n\n` +
-      `Зміни застосуються при наступному відкритті меню.`,
+      'Зміни застосуються при наступному відкритті меню.',
       {
         parse_mode: 'HTML',
         reply_markup: {
@@ -218,7 +218,7 @@ settingsScene.action(/^freq_(daily|every_4_days|weekly|disabled)$/, async (ctx) 
   
   await ctx.answerCbQuery('✅ Збережено');
   await ctx.editMessageText(
-    `✅ <b>Частота змінена</b>\n\n` +
+    '✅ <b>Частота змінена</b>\n\n' +
     `Нова частота: ${frequencyNames[frequency]}`,
     {
       parse_mode: 'HTML',
