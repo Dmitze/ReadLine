@@ -21,12 +21,12 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
   const safeDescription = escapeHtml(book.description);
   
   // Красивий заголовок
-  let caption = `━━━━━━━━━━━━━━━━━━━━━\n`;
+  let caption = '━━━━━━━━━━━━━━━━━━━━━\n';
   caption += `📖 <b>${safeTitle}</b>\n`;
   if (book.id) {
     caption += `🆔 ID: <code>${book.id}</code>\n`;
   }
-  caption += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  caption += '━━━━━━━━━━━━━━━━━━━━━\n\n';
   
   // Автор
   caption += `👤 <b>Автор:</b> ${safeAuthor}\n`;
@@ -54,7 +54,7 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
       logger.error('Error loading tags in formatBookCaption', error instanceof Error ? error : new Error(String(error)));
     }
   }
-  caption += `\n`;
+  caption += '\n';
   
   // Рейтинг з зірками
   if (book.rating && book.rating > 0) {
@@ -66,7 +66,7 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
     if (book.reviews_count && book.reviews_count > 0) {
       caption += ` 💬 ${book.reviews_count} ${getReviewsWord(book.reviews_count)}`;
     }
-    caption += `\n\n`;
+    caption += '\n\n';
   }
   
   // ✅ НОВЕ: Розширена інформація про книгу (розподіл рейтингів, вікові обмеження, варнінги)
@@ -78,7 +78,7 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
       // Розподіл рейтингів
       if (stats && stats.rating_distribution && stats.rating_distribution.percentages) {
         const { percentages } = stats.rating_distribution;
-        caption += `📊 <b>Розподіл оцінок:</b>\n`;
+        caption += '📊 <b>Розподіл оцінок:</b>\n';
         caption += `   5⭐ ${percentages.rating_5_percent.toFixed(0)}%  4⭐ ${percentages.rating_4_percent.toFixed(0)}%  3⭐ ${percentages.rating_3_percent.toFixed(0)}%\n`;
         caption += `   2⭐ ${percentages.rating_2_percent.toFixed(0)}%  1⭐ ${percentages.rating_1_percent.toFixed(0)}%\n\n`;
       }
@@ -98,7 +98,7 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
         }
       }
       
-      caption += `\n`;
+      caption += '\n';
     } catch (error) {
       const { logger } = await import('./logger');
       logger.error('Error loading extended book info in formatBookCaption', error instanceof Error ? error : new Error(String(error)));
@@ -109,22 +109,22 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
   caption += `📝 <b>Опис:</b>\n${safeDescription}\n\n`;
   
   // Розділювач
-  caption += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+  caption += '━━━━━━━━━━━━━━━━━━━━━\n\n';
   
   // Доступні формати з красивими іконками
   const availableFormats: string[] = [];
   
   // Перевіряємо файл книги (PDF/EPUB)
-  if ((book as any).pdf_file_id || (book.file_url && book.file_type === 'file')) {
+  if (book.pdf_file_id || (book.file_url && book.file_type === 'file')) {
     availableFormats.push('📄 PDF');
   }
   
   // Перевіряємо аудіо
-  if ((book as any).audio_file_id) {
+  if (book.audio_file_id) {
     let audioText = '🎧 Аудіо';
-    if ((book as any).audio_duration) {
-      const hours = Math.floor((book as any).audio_duration / 3600);
-      const minutes = Math.floor(((book as any).audio_duration % 3600) / 60);
+    if (book.audio_duration) {
+      const hours = Math.floor(book.audio_duration / 3600);
+      const minutes = Math.floor((book.audio_duration % 3600) / 60);
       if (hours > 0) {
         audioText += ` ⏱️ ${hours}г ${minutes}хв`;
       } else {
@@ -135,21 +135,21 @@ export const formatBookCaption = async (book: Book, tags?: Array<{name: string}>
   }
   
   // Перевіряємо онлайн-посилання
-  if ((book as any).online_link || (book as any).external_link || (book.file_url && book.file_type === 'link')) {
+  if (book.online_link || book.external_link || (book.file_url && book.file_type === 'link')) {
     availableFormats.push('🌐 Онлайн');
   }
   
   if (availableFormats.length > 0) {
-    caption += `📦 <b>Доступні формати:</b>\n`;
+    caption += '📦 <b>Доступні формати:</b>\n';
     availableFormats.forEach(format => {
       caption += `   ${format}\n`;
     });
-    caption += `\n`;
+    caption += '\n';
   }
   
   // Диктор для аудіокниг
-  if ((book as any).narrator) {
-    const safeNarrator = escapeHtml((book as any).narrator);
+  if (book.narrator) {
+    const safeNarrator = escapeHtml(book.narrator);
     caption += `🎙️ <b>Читає:</b> ${safeNarrator}\n\n`;
   }
   
@@ -249,12 +249,14 @@ export const getBookIdText = (bookId?: number): string => {
  *
  Animated loading messages
  */
-export async function showLoadingAnimation(ctx: any, message: string): Promise<number> {
+import { BotContext } from '../types/telegraf';
+
+export async function showLoadingAnimation(ctx: BotContext, message: string): Promise<number> {
   const loadingMsg = await ctx.reply(`⏳ ${message}...`);
   return loadingMsg.message_id;
 }
 
-export async function updateLoadingMessage(ctx: any, messageId: number, newText: string, emoji: string = '✅'): Promise<void> {
+export async function updateLoadingMessage(ctx: BotContext, messageId: number, newText: string, emoji: string = '✅'): Promise<void> {
   try {
     await ctx.telegram.editMessageText(
       ctx.chat.id,
