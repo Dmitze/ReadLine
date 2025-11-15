@@ -87,7 +87,7 @@ feedbackScene.on('text', async (ctx: BotContext) => {
     `👤 Від: ${safeName}\n` +
     `🆔 User ID: \`${userId}\`\n` +
     `📱 Username: ${userUsername ? '@' + safeUsername : 'немає'}\n\n` +
-    `💬 *Повідомлення:*\n` +
+    '💬 *Повідомлення:*\n' +
     `"${safeMessage}"\n\n` +
     `📅 Дата: ${escapeMarkdown(new Date().toLocaleString('uk-UA'))}`;
   
