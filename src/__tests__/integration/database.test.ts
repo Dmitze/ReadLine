@@ -4,6 +4,16 @@
  */
 
 describe('Database Integration Tests', () => {
+  afterAll(async () => {
+    // Clear all timers
+    jest.clearAllTimers();
+    jest.useRealTimers();
+    // Cleanup resources
+    await new Promise(resolve => {
+      const timer = setTimeout(resolve, 100);
+      timer.unref(); // Prevent timer from keeping process alive
+    });
+  });
   describe('Safe Query Execution', () => {
     it('should execute SELECT with parameters safely', () => {
       // Basic test - parameters should be validated
