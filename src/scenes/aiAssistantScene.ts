@@ -162,7 +162,7 @@ const aiAssistantScene = new Scenes.WizardScene(
         `<b>📖 ${book.title}</b>${getBookIdText(book.id)}\n` +
         `<b>Автор:</b> ${book.author}\n` +
         `<b>Жанр:</b> ${book.genre}\n\n` +
-        `🤖 <i>Рекомендовано на основі ваших вподобань та настрою</i>`;
+        '🤖 <i>Рекомендовано на основі ваших вподобань та настрою</i>';
 
       if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
         await ctx.replyWithPhoto(book.photo_file_id, {
