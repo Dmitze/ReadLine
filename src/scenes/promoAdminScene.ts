@@ -21,14 +21,14 @@ promoAdminScene.enter(async (ctx) => {
     const stats = await getExtendedPromoStats();
     
     await ctx.reply(
-       `🎁 <b>КЕРУВАННЯ ПРОМОКОДАМИ</b>\n\n` +
-       `📊 <b>Статистика:</b>\n` +
+       '🎁 <b>КЕРУВАННЯ ПРОМОКОДАМИ</b>\n\n' +
+       '📊 <b>Статистика:</b>\n' +
        `• Всього промокодів: ${stats.total}\n` +
        `• Доступно: ${stats.available}\n` +
        `• Використано: ${stats.used}\n` +
        `• Користувачів отримали: ${stats.usedByUsers}\n` +
        `• Використання: ${stats.usagePercent}%\n\n` +
-       `Оберіть дію:`,
+       'Оберіть дію:',
        {
          parse_mode: 'HTML',
         reply_markup: {
@@ -121,46 +121,46 @@ promoAdminScene.action('promo_stats', async (ctx) => {
     const stats = await getExtendedPromoStats();
     
     // Формуємо основну інформацію
-    let messageText = `📊 <b>РОЗШИРЕНА СТАТИСТИКА ПРОМОКОДІВ</b>\n\n`;
+    let messageText = '📊 <b>РОЗШИРЕНА СТАТИСТИКА ПРОМОКОДІВ</b>\n\n';
     
     // Загальна інформація
-    messageText += `📈 <b>Загальна інформація:</b>\n`;
+    messageText += '📈 <b>Загальна інформація:</b>\n';
     messageText += `• Всього створено: ${stats.total}\n`;
     messageText += `• Доступних: ${stats.available}\n`;
     messageText += `• Використано: ${stats.used}\n`;
     messageText += `• Відсоток використання: ${stats.usagePercent}%\n\n`;
     
     // Користувачі
-    messageText += `👥 <b>Користувачі:</b>\n`;
+    messageText += '👥 <b>Користувачі:</b>\n';
     messageText += `• Отримали промокод: ${stats.usedByUsers}\n`;
     messageText += `• Середнє використання на користувача: ${stats.avgUsage > 0 ? stats.avgUsage : '—'}\n\n`;
     
     // По типам знижок
     if (stats.byDiscountType.length > 0) {
-      messageText += `💰 <b>За типами знижок:</b>\n`;
+      messageText += '💰 <b>За типами знижок:</b>\n';
       stats.byDiscountType.forEach(dt => {
         messageText += `• ${dt.type}: ${dt.count} (макс. ${dt.totalValue})\n`;
       });
-      messageText += `\n`;
+      messageText += '\n';
     }
     
     // Нові промокоди
-    messageText += `🆕 <b>Нові промокоди:</b>\n`;
+    messageText += '🆕 <b>Нові промокоди:</b>\n';
     messageText += `• Сьогодні: ${stats.createdToday}\n`;
     messageText += `• Цього тижня: ${stats.createdThisWeek}\n\n`;
     
     // Топ промокоди
     if (stats.topPromos.length > 0 && stats.topPromos.some(p => p.used > 0)) {
-      messageText += `🏆 <b>Топ промокоди:</b>\n`;
+      messageText += '🏆 <b>Топ промокоди:</b>\n';
       stats.topPromos.forEach((promo, i) => {
         if (promo.used > 0) {
           messageText += `${i + 1}. <code>${promo.code}</code> — ${promo.used} ${promo.used === 1 ? 'використання' : 'використань'}\n`;
         }
       });
-      messageText += `\n`;
+      messageText += '\n';
     }
     
-    messageText += `🔗 <b>Партнер:</b> Yakaboo.ua`;
+    messageText += '🔗 <b>Партнер:</b> Yakaboo.ua';
     
     await ctx.editMessageText(messageText, {
       parse_mode: 'HTML',
@@ -230,9 +230,9 @@ promoAdminScene.on('text', async (ctx) => {
   const existing = await getPromoCodeByCode(code);
   if (existing) {
     await ctx.reply(
-      `❌ *Промокод вже існує!*\n\n` +
+      '❌ *Промокод вже існує!*\n\n' +
       `Код \`${code}\` вже додано раніше.\n` +
-      `Спробуйте інший код.`,
+      'Спробуйте інший код.',
       { parse_mode: 'Markdown' }
     );
     return;
@@ -248,12 +248,12 @@ promoAdminScene.on('text', async (ctx) => {
   }
   
   await ctx.reply(
-    `✅ *ПРОМОКОД УСПІШНО ДОДАНИЙ!*\n\n` +
+    '✅ *ПРОМОКОД УСПІШНО ДОДАНИЙ!*\n\n' +
     `🎫 *Код:* \`${newPromo.code}\`\n` +
     `📝 *Опис:* ${newPromo.description}\n` +
     `💰 *Тип:* ${getDiscountTypeText(newPromo.discount_type)}\n` +
     `🎯 *Значення:* ${newPromo.discount_value}${newPromo.discount_type === 'percentage' ? '%' : ' грн'}\n\n` +
-    `✨ Користувачі зможуть отримати цей промокод через кнопку "🎁 Отримати промокод"`,
+    '✨ Користувачі зможуть отримати цей промокод через кнопку "🎁 Отримати промокод"',
     { parse_mode: 'Markdown' }
   );
   
