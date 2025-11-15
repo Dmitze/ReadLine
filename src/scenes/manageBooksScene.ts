@@ -17,9 +17,9 @@ manageBooksScene.enter(async (ctx: BotContext) => {
   
   // Показуємо меню фільтрів
   await ctx.reply(
-    `📚 *Управління книгами*\n\n` +
+    '📚 *Управління книгами*\n\n' +
     `Всього книг: ${books.length}\n\n` +
-    `Оберіть спосіб пошуку:`,
+    'Оберіть спосіб пошуку:',
     {
       parse_mode: 'Markdown',
       reply_markup: Markup.inlineKeyboard([
@@ -220,11 +220,11 @@ manageBooksScene.action(/delete_book_(\d+)/, async (ctx: BotContext) => {
   
   // Показуємо підтвердження
   await ctx.reply(
-    `⚠️ *ПІДТВЕРДЖЕННЯ ВИДАЛЕННЯ*\n\n` +
-    `Ви впевнені, що хочете видалити книгу?\n\n` +
+    '⚠️ *ПІДТВЕРДЖЕННЯ ВИДАЛЕННЯ*\n\n' +
+    'Ви впевнені, що хочете видалити книгу?\n\n' +
     `📖 ${book.title}\n` +
     `👤 ${book.author}\n\n` +
-    `⚠️ Ця дія незворотна!`,
+    '⚠️ Ця дія незворотна!',
     {
       parse_mode: 'Markdown',
       reply_markup: Markup.inlineKeyboard([
@@ -256,7 +256,7 @@ manageBooksScene.action(/confirm_delete_(\d+)/, async (ctx: BotContext) => {
   
   await ctx.answerCbQuery('✅ Книгу видалено');
   await ctx.editMessageText(
-    `✅ *Книгу видалено*\n\n` +
+    '✅ *Книгу видалено*\n\n' +
     `📖 ${book.title}\n` +
     `👤 ${book.author}`,
     { parse_mode: 'Markdown' }
@@ -337,9 +337,9 @@ manageBooksScene.action('bulk_edit', async (ctx: BotContext) => {
   ]);
   
   await ctx.reply(
-    `📚 *МАСОВЕ РЕДАГУВАННЯ*\n\n` +
-    `Оберіть книги для редагування:\n` +
-    `(показано перші 10 книг)`,
+    '📚 *МАСОВЕ РЕДАГУВАННЯ*\n\n' +
+    'Оберіть книги для редагування:\n' +
+    '(показано перші 10 книг)',
     {
       parse_mode: 'Markdown',
       reply_markup: Markup.inlineKeyboard(bookButtons).reply_markup
@@ -401,9 +401,9 @@ manageBooksScene.action('bulk_edit_actions', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
   
   await ctx.reply(
-    `📚 *МАСОВЕ РЕДАГУВАННЯ*\n\n` +
+    '📚 *МАСОВЕ РЕДАГУВАННЯ*\n\n' +
     `Обрано книг: ${state.selectedBooks.length}\n\n` +
-    `Оберіть дію:`,
+    'Оберіть дію:',
     {
       parse_mode: 'Markdown',
       reply_markup: Markup.inlineKeyboard([
@@ -424,9 +424,9 @@ manageBooksScene.action('bulk_make_available', async (ctx: BotContext) => {
   // ✅ ВИПРАВЛЕНО #7: додано підтвердження перед bulk edit
   await ctx.answerCbQuery();
   await ctx.reply(
-    `⚠️ *ПІДТВЕРДЖЕННЯ*\n\n` +
+    '⚠️ *ПІДТВЕРДЖЕННЯ*\n\n' +
     `Ви впевнені, що хочете зробити доступними ${state.selectedBooks.length} ${state.selectedBooks.length === 1 ? 'книгу' : 'книг'}?\n\n` +
-    `Ця дія змінить статус всіх обраних книг.`,
+    'Ця дія змінить статус всіх обраних книг.',
     {
       parse_mode: 'Markdown',
       reply_markup: {
@@ -459,7 +459,7 @@ manageBooksScene.action('confirm_bulk_available', async (ctx: BotContext) => {
   });
   
   await ctx.editMessageText(
-    `✅ *Успішно оновлено!*\n\n` +
+    '✅ *Успішно оновлено!*\n\n' +
     `${state.selectedBooks.length} ${state.selectedBooks.length === 1 ? 'книга' : 'книг'} тепер доступні`,
     { parse_mode: 'Markdown' }
   );
@@ -479,9 +479,9 @@ manageBooksScene.action('bulk_make_unavailable', async (ctx: BotContext) => {
   // ✅ ВИПРАВЛЕНО #7: додано підтвердження
   await ctx.answerCbQuery();
   await ctx.reply(
-    `⚠️ *ПІДТВЕРДЖЕННЯ*\n\n` +
+    '⚠️ *ПІДТВЕРДЖЕННЯ*\n\n' +
     `Ви впевнені, що хочете зробити НЕДОСТУПНИМИ ${state.selectedBooks.length} ${state.selectedBooks.length === 1 ? 'книгу' : 'книг'}?\n\n` +
-    `⚠️ Користувачі не зможуть їх знайти та завантажити!`,
+    '⚠️ Користувачі не зможуть їх знайти та завантажити!',
     {
       parse_mode: 'Markdown',
       reply_markup: {
@@ -514,7 +514,7 @@ manageBooksScene.action('confirm_bulk_unavailable', async (ctx: BotContext) => {
   });
   
   await ctx.editMessageText(
-    `✅ *Успішно оновлено!*\n\n` +
+    '✅ *Успішно оновлено!*\n\n' +
     `${state.selectedBooks.length} ${state.selectedBooks.length === 1 ? 'книга' : 'книг'} тепер недоступні`,
     { parse_mode: 'Markdown' }
   );
@@ -560,7 +560,7 @@ manageBooksScene.action('bulk_add_tags', async (ctx: BotContext) => {
   ]);
   
   await ctx.reply(
-    `🏷️ *ДОДАТИ ТЕГИ*\n\n` +
+    '🏷️ *ДОДАТИ ТЕГИ*\n\n' +
     `Оберіть теги для додавання до ${state.selectedBooks.length} ${state.selectedBooks.length === 1 ? 'книги' : 'книг'}:`,
     {
       parse_mode: 'Markdown',
@@ -642,7 +642,7 @@ manageBooksScene.action('bulk_apply_tags', async (ctx: BotContext) => {
   }
   
   await ctx.reply(
-    `✅ *Успішно додано!*\n\n` +
+    '✅ *Успішно додано!*\n\n' +
     `${state.selectedTags.length} ${state.selectedTags.length === 1 ? 'тег' : 'теги'} додано до ` +
     `${state.selectedBooks.length} ${state.selectedBooks.length === 1 ? 'книги' : 'книг'}`,
     { parse_mode: 'Markdown' }
@@ -696,13 +696,13 @@ manageBooksScene.action('bulk_delete', async (ctx: BotContext) => {
   );
   
   await ctx.reply(
-    `⚠️ *УВАГА! ВИДАЛЕННЯ КНИГ*\n\n` +
+    '⚠️ *УВАГА! ВИДАЛЕННЯ КНИГ*\n\n' +
     `Ви збираєтесь видалити ${state.selectedBooks.length} книг:\n\n` +
     `${bookNames.slice(0, 10).join('\n')}` +
     `${state.selectedBooks.length > 10 ? `\n... та ще ${state.selectedBooks.length - 10} книг` : ''}\n\n` +
-    `⚠️ *Ця дія незворотна!*\n` +
-    `Всі дані про ці книги будуть видалені назавжди.\n\n` +
-    `Ви впевнені?`,
+    '⚠️ *Ця дія незворотна!*\n' +
+    'Всі дані про ці книги будуть видалені назавжди.\n\n' +
+    'Ви впевнені?',
     {
       parse_mode: 'Markdown',
       reply_markup: {
@@ -746,8 +746,8 @@ manageBooksScene.action('confirm_bulk_delete', async (ctx: BotContext) => {
   state.selectedBooks = [];
   
   await ctx.reply(
-    `✅ *ВИДАЛЕННЯ ЗАВЕРШЕНО*\n\n` +
-    `📊 Результати:\n` +
+    '✅ *ВИДАЛЕННЯ ЗАВЕРШЕНО*\n\n' +
+    '📊 Результати:\n' +
     `• Видалено: ${deletedCount} книг\n` +
     `${failedCount > 0 ? `• Помилки: ${failedCount} книг\n` : ''}` +
     `• Всього оброблено: ${totalBooks} книг`,
