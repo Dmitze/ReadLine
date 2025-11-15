@@ -165,7 +165,7 @@ export function sanitizeEmail(email: string): string | null {
 /**
  * Санітизація числового значення
  */
-export function sanitizeNumber(value: any, min?: number, max?: number): number | null {
+export function sanitizeNumber(value: unknown, min?: number, max?: number): number | null {
   const num = Number(value);
   
   if (isNaN(num)) {
@@ -186,7 +186,7 @@ export function sanitizeNumber(value: any, min?: number, max?: number): number |
 /**
  * Санітизація булевого значення
  */
-export function sanitizeBoolean(value: any): boolean {
+export function sanitizeBoolean(value: unknown): boolean {
   if (typeof value === 'boolean') {
     return value;
   }
