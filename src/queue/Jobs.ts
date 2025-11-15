@@ -4,6 +4,7 @@
 
 import { QueueManager, JobData, QueueConfig } from './Queue';
 import { Result, Ok, Err } from '../core/Result';
+import { logger } from '../utils/logger';
 
 /**
  * Email Job Types
@@ -167,7 +168,7 @@ export class JobHandlers {
   static async handleEmail(data: EmailJobData): Promise<any> {
     try {
       // Mock email sending
-      console.log(`📧 Sending email to ${data.to}: ${data.subject}`);
+      logger.info('Sending email', { to: data.to, subject: data.subject });
       
       // Simulate processing
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -186,7 +187,7 @@ export class JobHandlers {
    */
   static async handleReport(data: ReportJobData): Promise<any> {
     try {
-      console.log(`📊 Generating ${data.type} report for user ${data.userId}`);
+      logger.info('Generating report', { type: data.type, userId: data.userId });
       
       // Simulate report generation
       await new Promise(resolve => setTimeout(resolve, 2000));
@@ -207,7 +208,7 @@ export class JobHandlers {
    */
   static async handleNotification(data: NotificationJobData): Promise<any> {
     try {
-      console.log(`📢 Sending notification to user ${data.userId}: ${data.title}`);
+      logger.info('Sending notification', { userId: data.userId, title: data.title });
       
       // Simulate notification
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -226,7 +227,7 @@ export class JobHandlers {
    */
   static async handleExport(data: ExportJobData): Promise<any> {
     try {
-      console.log(`💾 Exporting ${data.dataType} as ${data.format} for user ${data.userId}`);
+      logger.info('Exporting data', { dataType: data.dataType, format: data.format, userId: data.userId });
       
       // Simulate export
       await new Promise(resolve => setTimeout(resolve, 1500));
@@ -247,7 +248,7 @@ export class JobHandlers {
    */
   static async handleAIProcessing(data: AIJobData): Promise<any> {
     try {
-      console.log(`🤖 Processing AI request for book ${data.bookId}: ${data.type}`);
+      logger.info('Processing AI request', { bookId: data.bookId, type: data.type });
       
       // Simulate AI processing
       await new Promise(resolve => setTimeout(resolve, 3000));
@@ -268,7 +269,7 @@ export class JobHandlers {
    */
   static async handleMaintenance(data: MaintenanceJobData): Promise<any> {
     try {
-      console.log(`🔧 Running maintenance: ${data.type}`);
+      logger.info('Running maintenance', { type: data.type });
       
       // Simulate maintenance
       await new Promise(resolve => setTimeout(resolve, 2000));
