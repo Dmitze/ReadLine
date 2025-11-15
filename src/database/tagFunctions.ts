@@ -1,7 +1,7 @@
 import { db } from './models';
 
 export interface Tag {
-  id?: number;
+  id: number;
   name: string;
   created_at?: string;
 }
@@ -44,7 +44,7 @@ export const addTag = async (name: string): Promise<number> => {
 // Отримати теги книги
 export const getBookTags = (bookId: number): Promise<Tag[]> => {
   return new Promise((resolve, reject) => {
-    const query = `SELECT t.* FROM tags t INNER JOIN book_tags bt ON t.id = bt.tag_id WHERE bt.book_id = ? ORDER BY t.name`;
+    const query = 'SELECT t.* FROM tags t INNER JOIN book_tags bt ON t.id = bt.tag_id WHERE bt.book_id = ? ORDER BY t.name';
     db.all(query, [bookId], (err, rows: Tag[]) => {
       if (err) reject(err);
       else resolve(rows);
