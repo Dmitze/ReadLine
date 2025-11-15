@@ -123,10 +123,10 @@ const env = envSchema.parse(process.env);
 ---
 
 ### ✅ Завдання 3: Замінити всі `any` на proper types
-**Статус:** ⏳ В ПРОЦЕСІ (40% виконано)
+**Статус:** ⏳ В ПРОЦЕСІ (70% виконано)
 **Пріоритет:** 🔴 КРИТИЧНИЙ  
-**Час витрачено:** 2 години  
-**Залишилось:** ~6 годин
+**Час витрачено:** 3.5 години  
+**Залишилось:** ~2 години
 
 **Проблема:**
 59 випадків використання `any` призводять до втрати type safety.
@@ -151,10 +151,14 @@ db.get(countQuery, params, (err, countRow: any) => {  // ✅ ВИПРАВЛЕН�
 - [x] 3.2. Типізувати БД responses (CountRow, Tag interface) ✅  
 - [x] 3.3. Замінити `any[]` на `SQLParameters` в dbWrapper ✅
 - [x] 3.4. Виправити BaseRepository та OptimizedRepository ✅
-- [x] 3.5. Build успішний ✅
-- [x] 3.6. Тести проходять (135 passing) ✅
-- [ ] 3.7. Виправити решту `any` типів в utils (TODO)
-- [ ] 3.8. Виправити `any` в validation та middleware (TODO)
+- [x] 3.5. Типізувати logger (LogMetadata) ✅
+- [x] 3.6. Типізувати helpers, sanitization, aiHelper ✅
+- [x] 3.7. Розширити Book interface (pdf_file_id, narrator, etc) ✅
+- [x] 3.8. Типізувати notifications ✅
+- [x] 3.9. Build успішний ✅
+- [x] 3.10. Тести проходять (135 passing) ✅
+- [ ] 3.11. Виправити `any` в validation та middleware (TODO)
+- [ ] 3.12. Виправити `any` в scenes (TODO)
 
 **Приклад виправлення:**
 ```typescript
@@ -727,13 +731,13 @@ const typeDefs = gql`
 
 ## 📊 ПРОГРЕС ВИКОНАННЯ
 
-### Загальний прогрес: 3.5/15 (23%)
+### Загальний прогрес: 3.7/15 (25%)
 
 | Завдання | Пріоритет | Статус | Прогрес |
 |----------|-----------|--------|---------|
 | 1. Memory leaks в тестах | 🔴 | ✅ | 6/6 |
 | 2. Environment validation | 🔴 | ✅ | 5/6 |
-| 3. Замінити `any` на types | 🔴 | ⏳ | 6/8 (75%)|
+| 3. Замінити `any` на types | 🔴 | ⏳ | 10/12 (83%)|
 | 4. SQL Injection захист | 🔴 | ❌ | 0/6 |
 | 5. Error handling | 🟡 | ❌ | 0/6 |
 | 6. Transaction handling | 🟡 | ❌ | 0/6 |
