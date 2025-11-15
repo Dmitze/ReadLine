@@ -19,6 +19,21 @@ describe('Queue System', () => {
     await queueRegistry.closeAll();
   });
 
+  afterAll(async () => {
+    // Force cleanup of any remaining connections
+    if (queueRegistry) {
+      await queueRegistry.closeAll();
+    }
+    // Clear all timers
+    jest.clearAllTimers();
+    jest.useRealTimers();
+    // Give time for cleanup
+    await new Promise(resolve => {
+      const timer = setTimeout(resolve, 100);
+      timer.unref(); // Prevent timer from keeping process alive
+    });
+  });
+
   describe('QueueManager', () => {
     it('should add job to queue', async () => {
       const emailQueue = queueRegistry.getEmailQueue();
