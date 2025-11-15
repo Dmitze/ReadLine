@@ -248,7 +248,7 @@ searchScene.on('text', async (ctx) => {
     }
     if (books.length === SEARCH_LIMIT) {
         await ctx.reply(`ℹ️ Показано перші ${SEARCH_LIMIT} результатів.\n` +
-            `Уточніть пошуковий запит для більш точних результатів.`);
+            'Уточніть пошуковий запит для більш точних результатів.');
     }
     logger_1.logger.userAction(ctx.from?.id || 0, 'search_completed', {
         searchTerm,
