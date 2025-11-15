@@ -5,6 +5,11 @@ import dotenv from 'dotenv';
 // Ініціалізація змінних оточення
 dotenv.config();
 
+// Validate environment variables at startup
+import { validateEnv } from './config/envSchema';
+const env = validateEnv();
+logger.info('Environment validation passed', { nodeEnv: env.NODE_ENV });
+
 // Імпорт utilities
 import { logger } from './utils/logger';
 import { rateLimitMessage, rateLimitCallback, rateLimitCommand } from './middleware/rateLimit';
@@ -62,8 +67,8 @@ function validateEnvVariables() {
 
 validateEnvVariables();
 
-// Ініціалізація бота
-const bot = new Telegraf<BotContext>(process.env.BOT_TOKEN);
+// Ініціалізація бота з validated env
+const bot = new Telegraf<BotContext>(env.BOT_TOKEN);
 
 // Middleware для логування та rate limiting
 bot.use(async (ctx, next) => {
@@ -214,7 +219,7 @@ bot.use(async (ctx, next) => {
   return next();
 });
 
-bot.use(stage.middleware() as any);
+bot.use(stage.middleware());
 
 // Імпорт user functions
 import { getOrCreateUser, isNewUser } from './database/userFunctions';
@@ -460,8 +465,8 @@ bot.action('back_to_admin', async (ctx) => {
     
     // Потім показуємо адмін-панель з inline клавіатурою
     await ctx.reply(
-      `🛠️ <b>Панель адміністратора</b>\n\n` +
-      `📊 <b>Статистика:</b>\n` +
+      '🛠️ <b>Панель адміністратора</b>\n\n' +
+      '📊 <b>Статистика:</b>\n' +
       `📚 Книг в каталозі: ${stats.totalBooks}\n` +
       `${reviewsAlert}\n` +
       `${feedbackAlert}`,
