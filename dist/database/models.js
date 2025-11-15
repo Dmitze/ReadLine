@@ -104,6 +104,7 @@ const initDatabase = () => {
           last_name TEXT,
           favorite_genres TEXT,
           keyboard_type TEXT DEFAULT 'mobile',
+          language_code TEXT DEFAULT 'uk',
           has_completed_onboarding BOOLEAN DEFAULT 0,
           last_notification_at DATETIME,
           notifications_enabled INTEGER DEFAULT 1,
@@ -235,7 +236,7 @@ const addBook = (bookData) => {
 exports.addBook = addBook;
 const getBooksByGenre = (genre) => {
     return new Promise((resolve, reject) => {
-        const query = `SELECT * FROM books WHERE genre = ?`;
+        const query = 'SELECT * FROM books WHERE genre = ?';
         exports.db.all(query, [genre], (err, rows) => {
             if (err)
                 reject(err);
@@ -247,7 +248,7 @@ const getBooksByGenre = (genre) => {
 exports.getBooksByGenre = getBooksByGenre;
 const getAllBooks = () => {
     return new Promise((resolve, reject) => {
-        const query = `SELECT * FROM books`;
+        const query = 'SELECT * FROM books';
         exports.db.all(query, [], (err, rows) => {
             if (err)
                 reject(err);
@@ -259,7 +260,7 @@ const getAllBooks = () => {
 exports.getAllBooks = getAllBooks;
 const getAllAvailableBooks = () => {
     return new Promise((resolve, reject) => {
-        const query = `SELECT * FROM books WHERE (is_available = 1 OR is_available IS NULL)`;
+        const query = 'SELECT * FROM books WHERE (is_available = 1 OR is_available IS NULL)';
         exports.db.all(query, [], (err, rows) => {
             if (err)
                 reject(err);
@@ -271,7 +272,7 @@ const getAllAvailableBooks = () => {
 exports.getAllAvailableBooks = getAllAvailableBooks;
 const getBookById = (id) => {
     return new Promise((resolve, reject) => {
-        const query = `SELECT * FROM books WHERE id = ?`;
+        const query = 'SELECT * FROM books WHERE id = ?';
         exports.db.get(query, [id], (err, row) => {
             if (err)
                 reject(err);
@@ -283,7 +284,7 @@ const getBookById = (id) => {
 exports.getBookById = getBookById;
 const getGenres = () => {
     return new Promise((resolve, reject) => {
-        const query = `SELECT DISTINCT genre FROM books`;
+        const query = 'SELECT DISTINCT genre FROM books';
         exports.db.all(query, [], (err, rows) => {
             if (err) {
                 reject(err);
@@ -312,7 +313,7 @@ const addAdmin = (userId, username) => {
             reject(new Error('User ID is required'));
             return;
         }
-        const query = `INSERT OR IGNORE INTO admins (user_id, username) VALUES (?, ?)`;
+        const query = 'INSERT OR IGNORE INTO admins (user_id, username) VALUES (?, ?)';
         exports.db.run(query, [userId, username], function (err) {
             if (err)
                 reject(err);
@@ -840,7 +841,7 @@ const getBookDetailedStats = (bookId) => {
                 });
             });
             const readersCount = await new Promise((res, rej) => {
-                exports.db.get(`SELECT COUNT(*) as count FROM saved_books WHERE book_id = ?`, [bookId], (err, row) => {
+                exports.db.get('SELECT COUNT(*) as count FROM saved_books WHERE book_id = ?', [bookId], (err, row) => {
                     if (err)
                         rej(err);
                     else
