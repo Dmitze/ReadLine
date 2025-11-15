@@ -74,7 +74,9 @@ aiScene.on('text', async (ctx: BotContext) => {
    );
    
    // Видаляємо "думаю" повідомлення (ігноруємо помилки)
-   await ctx.deleteMessage(thinkingMsg.message_id).catch(() => {});
+   await ctx.deleteMessage(thinkingMsg.message_id).catch((err) => {
+      logger.debug('Failed to delete thinking message', { error: err?.message });
+    });
   
   // Відправляємо відповідь з Markdown форматуванням
   await ctx.reply(
