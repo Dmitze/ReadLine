@@ -20,8 +20,13 @@ export interface Book {
   description: string;
   photo_file_id: string;
   file_url?: string; // Файл книги (PDF, EPUB, тощо)
+  pdf_file_id?: string; // PDF файл
   audio_file_id?: string; // Аудіофайл
+  audio_duration?: number; // Тривалість аудіо в секундах
+  audio_external_link?: string; // Посилання на аудіо
+  narrator?: string; // Диктор аудіокниги
   online_link?: string; // Онлайн посилання
+  external_link?: string; // Зовнішнє посилання
   file_type?: string; // 'physical' | 'link' | 'file' | 'audio'
   file_name?: string; // Назва файлу для завантаження
   rating?: number; // Середній рейтинг 0-5
@@ -238,6 +243,7 @@ export const initDatabase = (): Promise<void> => {
           last_name TEXT,
           favorite_genres TEXT,
           keyboard_type TEXT DEFAULT 'mobile',
+          language_code TEXT DEFAULT 'uk',
           has_completed_onboarding BOOLEAN DEFAULT 0,
           last_notification_at DATETIME,
           notifications_enabled INTEGER DEFAULT 1,
@@ -411,7 +417,7 @@ export const addBook = (bookData: Omit<Book, 'id' | 'is_available' | 'created_at
 
 export const getBooksByGenre = (genre: string): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
-    const query = `SELECT * FROM books WHERE genre = ?`;
+    const query = 'SELECT * FROM books WHERE genre = ?';
     db.all(query, [genre], (err, rows: Book[]) => {
       if (err) reject(err);
       else resolve(rows);
@@ -421,7 +427,7 @@ export const getBooksByGenre = (genre: string): Promise<Book[]> => {
 
 export const getAllBooks = (): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
-    const query = `SELECT * FROM books`;
+    const query = 'SELECT * FROM books';
     db.all(query, [], (err, rows: Book[]) => {
       if (err) reject(err);
       else resolve(rows);
@@ -432,7 +438,7 @@ export const getAllBooks = (): Promise<Book[]> => {
 // Get all available books (for AI search and recommendations)
 export const getAllAvailableBooks = (): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
-    const query = `SELECT * FROM books WHERE (is_available = 1 OR is_available IS NULL)`;
+    const query = 'SELECT * FROM books WHERE (is_available = 1 OR is_available IS NULL)';
     db.all(query, [], (err, rows: Book[]) => {
       if (err) reject(err);
       else resolve(rows);
@@ -442,7 +448,7 @@ export const getAllAvailableBooks = (): Promise<Book[]> => {
 
 export const getBookById = (id: number): Promise<Book | undefined> => {
   return new Promise((resolve, reject) => {
-    const query = `SELECT * FROM books WHERE id = ?`;
+    const query = 'SELECT * FROM books WHERE id = ?';
     db.get(query, [id], (err, row: Book) => {
       if (err) reject(err);
       else resolve(row);
@@ -452,7 +458,7 @@ export const getBookById = (id: number): Promise<Book | undefined> => {
 
 export const getGenres = (): Promise<string[]> => {
   return new Promise((resolve, reject) => {
-    const query = `SELECT DISTINCT genre FROM books`;
+    const query = 'SELECT DISTINCT genre FROM books';
     db.all(query, [], (err, rows: { genre: string }[]) => {
       if (err) {
         reject(err);
@@ -486,7 +492,7 @@ export const addAdmin = (userId: number, username?: string): Promise<number> => 
       return;
     }
     
-    const query = `INSERT OR IGNORE INTO admins (user_id, username) VALUES (?, ?)`;
+    const query = 'INSERT OR IGNORE INTO admins (user_id, username) VALUES (?, ?)';
     db.run(query, [userId, username], function(err) {
       if (err) reject(err);
       else resolve(this.lastID);
@@ -1137,7 +1143,7 @@ export const getBookDetailedStats = (bookId: number): Promise<any> => {
       // Отримуємо кількість читачів (користувачів, які зберегли книгу)
       const readersCount = await new Promise<number>((res, rej) => {
         db.get(
-          `SELECT COUNT(*) as count FROM saved_books WHERE book_id = ?`,
+          'SELECT COUNT(*) as count FROM saved_books WHERE book_id = ?',
           [bookId],
           (err, row: any) => {
             if (err) rej(err);
