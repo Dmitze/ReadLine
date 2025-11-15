@@ -37,7 +37,6 @@ const telegraf_1 = require("telegraf");
 const models_1 = require("../database/models");
 const mainKeyboards_1 = require("../keyboards/mainKeyboards");
 const logger_1 = require("../utils/logger");
-const helpers_1 = require("../utils/helpers");
 const SEARCH_LIMIT = 10;
 const searchScene = new telegraf_1.Scenes.BaseScene('SEARCH_SCENE');
 searchScene.enter(async (ctx) => {
@@ -162,7 +161,7 @@ searchScene.on('text', async (ctx) => {
         const { isBookSaved } = await Promise.resolve().then(() => __importStar(require('../database/models')));
         for (const book of books) {
             const isSaved = userId ? await isBookSaved(userId, book.id) : false;
-            const caption = `📖 *${book.title}*${(0, helpers_1.getBookIdText)(book.id).replace(/\n/g, '\n')}\n` +
+            const caption = `📖 *${book.title}*\n` +
                 `👤 ${book.author}\n` +
                 `📚 ${book.genre}\n\n` +
                 `${book.description?.substring(0, 150) || 'Немає опису'}...`;
@@ -225,7 +224,7 @@ searchScene.on('text', async (ctx) => {
     const userId = ctx.from?.id;
     for (const book of books) {
         const isSaved = userId ? await isBookSaved(userId, book.id) : false;
-        const caption = `📖 <b>${book.title}</b>${(0, helpers_1.getBookIdText)(book.id)}\n👤 Автор: ${book.author}\n📚 Жанр: ${book.genre}\n📝 ${book.description?.substring(0, 100) || 'Немає опису'}...`;
+        const caption = `📖 <b>${book.title}</b>\n👤 Автор: ${book.author}\n📚 Жанр: ${book.genre}\n📝 ${book.description?.substring(0, 100) || 'Немає опису'}...`;
         if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
             await ctx.replyWithPhoto(book.photo_file_id, {
                 caption,
