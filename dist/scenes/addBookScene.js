@@ -62,10 +62,10 @@ function getProgress(step, total = 9) {
     return `[${filled}${empty}] ${step}/${total} кроків`;
 }
 const examples = {
-    title: "Наприклад: *Гаррі Поттер і філософський камінь*",
-    author: "Наприклад: *Джоан Роулінг*",
-    description: "Опишіть сюжет, головних героїв, основну тему...",
-    link: "Наприклад: https://example.com/book.pdf"
+    title: 'Наприклад: *Гаррі Поттер і філософський камінь*',
+    author: 'Наприклад: *Джоан Роулінг*',
+    description: 'Опишіть сюжет, головних героїв, основну тему...',
+    link: 'Наприклад: https://example.com/book.pdf'
 };
 function logUserAction(ctx, action, data) {
     logger_1.logger.info('User action', {
@@ -131,7 +131,7 @@ async function showFormatSelection(ctx) {
     if (availableFormats.length > 0) {
         availableFormats.push([{ text: '✅ Далі до тегів', callback_data: 'skip_more_formats' }]);
         await ctx.reply(`✅ Додано: ${addedFormats.join(', ') || 'поки нічого'}\n\n` +
-            `Хочете додати ще формати?`, {
+            'Хочете додати ще формати?', {
             reply_markup: { inline_keyboard: availableFormats }
         });
     }
@@ -640,7 +640,7 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
             }
             await ctx.editMessageText(`${getProgress(8)}\n🏷️ *Додайте теги до книги (опціонально):*\n\n` +
                 `Оберіть один або кілька тегів, які підходять до цієї книги.${selectedText}\n\n` +
-                `Натисніть "Далі" коли закінчите або щоб пропустити цей крок.`, {
+                'Натисніть "Далі" коли закінчите або щоб пропустити цей крок.', {
                 parse_mode: 'HTML',
                 reply_markup: ctx.update.callback_query?.message?.reply_markup
             });
@@ -832,8 +832,8 @@ addBookScene.action('back_to_admin', async (ctx) => {
         ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
         : '✅ Всі повідомлення прочитані';
     await ctx.deleteMessage().catch(() => { });
-    await ctx.reply(`🛠️ <b>Панель адміністратора</b>\n\n` +
-        `📊 <b>Статистика:</b>\n` +
+    await ctx.reply('🛠️ <b>Панель адміністратора</b>\n\n' +
+        '📊 <b>Статистика:</b>\n' +
         `📚 Книг в каталозі: ${stats.totalBooks}\n` +
         `${reviewsAlert}\n` +
         `${feedbackAlert}`, {
