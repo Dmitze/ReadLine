@@ -10,16 +10,22 @@ enum LogLevel {
   ERROR = 'ERROR',
 }
 
+/**
+ * Metadata for log messages
+ * Replaces 'any' with structured type
+ */
+export type LogMetadata = Record<string, unknown>;
+
 class Logger {
   private isDevelopment = process.env.NODE_ENV !== 'production';
 
-  private formatMessage(level: LogLevel, message: string, meta?: any): string {
+  private formatMessage(level: LogLevel, message: string, meta?: LogMetadata): string {
     const timestamp = new Date().toISOString();
     const metaStr = meta ? `\n${JSON.stringify(meta, null, 2)}` : '';
     return `[${timestamp}] [${level}] ${message}${metaStr}`;
   }
 
-  private log(level: LogLevel, message: string, meta?: any): void {
+  private log(level: LogLevel, message: string, meta?: LogMetadata): void {
     const formatted = this.formatMessage(level, message, meta);
 
     switch (level) {
@@ -43,28 +49,28 @@ class Logger {
   /**
    * Debug логи - тільки в development
    */
-  debug(message: string, meta?: any): void {
+  debug(message: string, meta?: LogMetadata): void {
     this.log(LogLevel.DEBUG, message, meta);
   }
 
   /**
    * Інформаційні логи
    */
-  info(message: string, meta?: any): void {
+  info(message: string, meta?: LogMetadata): void {
     this.log(LogLevel.INFO, message, meta);
   }
 
   /**
    * Попередження
    */
-  warn(message: string, meta?: any): void {
+  warn(message: string, meta?: LogMetadata): void {
     this.log(LogLevel.WARN, message, meta);
   }
 
   /**
    * Помилки
    */
-  error(message: string, error?: Error | any, meta?: any): void {
+  error(message: string, error?: Error | unknown, meta?: LogMetadata): void {
     const errorMeta = error instanceof Error ? {
       name: error.name,
       message: error.message,
@@ -78,7 +84,7 @@ class Logger {
   /**
    * Логування запитів користувачів
    */
-  userAction(userId: number, action: string, details?: any): void {
+  userAction(userId: number, action: string, details?: LogMetadata): void {
     this.info(`User action: ${action}`, {
       userId,
       ...details,
@@ -88,7 +94,7 @@ class Logger {
   /**
    * Логування адмін дій
    */
-  adminAction(adminId: number, action: string, details?: any): void {
+  adminAction(adminId: number, action: string, details?: LogMetadata): void {
     this.warn(`Admin action: ${action}`, {
       adminId,
       ...details,
@@ -98,7 +104,7 @@ class Logger {
   /**
    * Логування database queries (debug)
    */
-  dbQuery(query: string, params?: any[]): void {
+  dbQuery(query: string, params?: unknown[]): void {
     this.debug('Database query', { query, params });
   }
 
