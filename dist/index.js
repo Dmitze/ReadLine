@@ -39,6 +39,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const telegraf_1 = require("telegraf");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
+const envSchema_1 = require("./config/envSchema");
+const env = (0, envSchema_1.validateEnv)();
+logger_1.logger.info('Environment validation passed', { nodeEnv: env.NODE_ENV });
 const logger_1 = require("./utils/logger");
 const rateLimit_1 = require("./middleware/rateLimit");
 const addBookScene_1 = __importDefault(require("./scenes/addBookScene"));
@@ -55,6 +58,7 @@ const settingsScene_1 = __importDefault(require("./scenes/settingsScene"));
 const aiAssistantScene_1 = __importDefault(require("./scenes/aiAssistantScene"));
 const promoAdminScene_1 = __importDefault(require("./scenes/promoAdminScene"));
 const editExtendedBookInfoScene_1 = __importDefault(require("./scenes/editExtendedBookInfoScene"));
+const models_1 = require("./database/models");
 function validateEnvVariables() {
     const errors = [];
     const warnings = [];
@@ -81,7 +85,7 @@ function validateEnvVariables() {
     logger_1.logger.info('Environment variables validated successfully');
 }
 validateEnvVariables();
-const bot = new telegraf_1.Telegraf(process.env.BOT_TOKEN);
+const bot = new telegraf_1.Telegraf(env.BOT_TOKEN);
 bot.use(async (ctx, next) => {
     logger_1.logger.info('Processing update', { updateId: ctx.update.update_id });
     await next();
@@ -121,13 +125,21 @@ bot.use(async (ctx, next) => {
     }
     return next();
 });
-bot.catch((err, ctx) => {
+bot.catch(async (err, ctx) => {
     logger_1.logger.error('Bot error', err instanceof Error ? err : new Error(String(err)), {
         updateId: ctx.update.update_id,
         userId: ctx.from?.id,
     });
+    if (ctx.callbackQuery) {
+        try {
+            await ctx.answerCbQuery('❌ Виникла помилка');
+        }
+        catch (cbError) {
+            logger_1.logger.error('Failed to answer callback query', cbError instanceof Error ? cbError : new Error(String(cbError)));
+        }
+    }
     try {
-        ctx.reply('❌ Виникла помилка при обробці вашого запиту.\n\n' +
+        await ctx.reply('❌ Виникла помилка при обробці вашого запиту.\n\n' +
             'Спробуйте:\n' +
             '• Надіслати /start для перезапуску\n' +
             '• Повторити дію пізніше\n' +
@@ -369,8 +381,8 @@ bot.action('back_to_admin', async (ctx) => {
         await ctx.reply('🔄 Повертаємось до адмін-панелі...', {
             reply_markup: { remove_keyboard: true }
         });
-        await ctx.reply(`🛠️ <b>Панель адміністратора</b>\n\n` +
-            `📊 <b>Статистика:</b>\n` +
+        await ctx.reply('🛠️ <b>Панель адміністратора</b>\n\n' +
+            '📊 <b>Статистика:</b>\n' +
             `📚 Книг в каталозі: ${stats.totalBooks}\n` +
             `${reviewsAlert}\n` +
             `${feedbackAlert}`, {
@@ -389,6 +401,23 @@ const shutdown = async (signal) => {
     if (notificationScheduler) {
         const { stopNotificationScheduler } = await Promise.resolve().then(() => __importStar(require('./utils/notifications')));
         stopNotificationScheduler(notificationScheduler);
+    }
+    try {
+        await new Promise((resolve, reject) => {
+            models_1.db.close((err) => {
+                if (err) {
+                    logger_1.logger.error('Error closing database', err);
+                    reject(err);
+                }
+                else {
+                    logger_1.logger.info('Database closed successfully');
+                    resolve();
+                }
+            });
+        });
+    }
+    catch (error) {
+        logger_1.logger.error('Failed to close database', error instanceof Error ? error : new Error(String(error)));
     }
     bot.stop(signal);
     process.exit(0);
