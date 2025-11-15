@@ -6,9 +6,10 @@ import { Scenes } from 'telegraf';
 
 /**
  * Розширений контекст бота
- * NOTE: Telegraf middleware система не дозволяє коректну типізацію
- * Використовуємо 'any' для сумісності із Telegraf сценами
+ * NOTE: Using 'any' for compatibility with Telegraf scenes system
+ * Telegraf's middleware typing is complex and doesn't work well with custom contexts
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type BotContext = any;
 
 /**
