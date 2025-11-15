@@ -65,7 +65,7 @@ export function validatePhoto(
     logger.warn('Invalid photo MIME type', { mimeType });
     return {
       isValid: false,
-      error: `Невірний формат фото. Дозволені: JPG, PNG, WEBP.`,
+      error: 'Невірний формат фото. Дозволені: JPG, PNG, WEBP.',
     };
   }
 
@@ -156,7 +156,7 @@ export function validateAudio(
     logger.warn('Invalid audio MIME type', { mimeType });
     return {
       isValid: false,
-      error: `Невірний формат аудіо. Дозволені: MP3, M4A, OGG.`,
+      error: 'Невірний формат аудіо. Дозволені: MP3, M4A, OGG.',
     };
   }
 
