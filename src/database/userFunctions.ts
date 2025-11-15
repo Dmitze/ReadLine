@@ -13,6 +13,7 @@ export interface User {
   username?: string;
   first_name?: string;
   last_name?: string;
+  language_code?: string;
   has_completed_onboarding: boolean;
   favorite_genres?: string; // JSON string of array
   created_at?: string;
