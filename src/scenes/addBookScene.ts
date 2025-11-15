@@ -8,11 +8,17 @@ import { validateBookData } from '../utils/validation';
 // AI функції видалені - тепер тільки ручний ввід
 
 // Кешування тегів
-let cachedTags: any[] = [];
+interface Tag {
+  id: number;
+  name: string;
+  created_at?: string;
+}
+
+let cachedTags: Tag[] = [];
 let tagsLastUpdated = 0;
 const TAGS_CACHE_DURATION = 5 * 60 * 1000; // 5 хвилин
 
-async function getCachedTags(): Promise<any[]> {
+async function getCachedTags(): Promise<Tag[]> {
   const now = Date.now();
   if (cachedTags.length === 0 || now - tagsLastUpdated > TAGS_CACHE_DURATION) {
     cachedTags = await getAllTags();
@@ -38,10 +44,10 @@ function getProgress(step: number, total: number = 9): string {
 
 // Приклади введення
 const examples = {
-  title: "Наприклад: *Гаррі Поттер і філософський камінь*",
-  author: "Наприклад: *Джоан Роулінг*", 
-  description: "Опишіть сюжет, головних героїв, основну тему...",
-  link: "Наприклад: https://example.com/book.pdf"
+  title: 'Наприклад: *Гаррі Поттер і філософський камінь*',
+  author: 'Наприклад: *Джоан Роулінг*', 
+  description: 'Опишіть сюжет, головних героїв, основну тему...',
+  link: 'Наприклад: https://example.com/book.pdf'
 };
 
 // Логування дій користувача
@@ -119,7 +125,7 @@ async function showFormatSelection(ctx: BotContext) {
     
     await ctx.reply(
       `✅ Додано: ${addedFormats.join(', ') || 'поки нічого'}\n\n` +
-      `Хочете додати ще формати?`,
+      'Хочете додати ще формати?',
       {
         reply_markup: { inline_keyboard: availableFormats }
       }
@@ -760,7 +766,7 @@ const addBookScene = new Scenes.WizardScene(
         await ctx.editMessageText(
           `${getProgress(8)}\n🏷️ *Додайте теги до книги (опціонально):*\n\n` +
           `Оберіть один або кілька тегів, які підходять до цієї книги.${selectedText}\n\n` +
-          `Натисніть "Далі" коли закінчите або щоб пропустити цей крок.`,
+          'Натисніть "Далі" коли закінчите або щоб пропустити цей крок.',
           {
             parse_mode: 'HTML',
             reply_markup: (ctx.update as any).callback_query?.message?.reply_markup
@@ -1019,8 +1025,8 @@ addBookScene.action('back_to_admin', async (ctx: BotContext) => {
   
   // Показуємо адмін-панель ДО виходу зі сцени
   await ctx.reply(
-    `🛠️ <b>Панель адміністратора</b>\n\n` +
-    `📊 <b>Статистика:</b>\n` +
+    '🛠️ <b>Панель адміністратора</b>\n\n' +
+    '📊 <b>Статистика:</b>\n' +
     `📚 Книг в каталозі: ${stats.totalBooks}\n` +
     `${reviewsAlert}\n` +
     `${feedbackAlert}`,
