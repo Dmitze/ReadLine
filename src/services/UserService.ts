@@ -5,6 +5,7 @@
 
 import { UserRepository } from '../repositories/UserRepository';
 import { Result, Ok, Err } from '../core/Result';
+import { logger } from '../utils/logger';
 
 export interface CreateUserInput {
   telegram_id: number;
@@ -38,6 +39,7 @@ export class UserService {
           username: input.username,
           first_name: input.first_name,
           last_name: input.last_name,
+          language_code: input.language || 'uk',
           is_admin: false
         });
 
@@ -189,7 +191,7 @@ export class UserService {
   }
 
   /**
-   * Оновити мову користувача (placeholder - not yet in DB)
+   * Оновити мову користувача
    */
   async setUserLanguage(userId: number, language: string): Promise<Result<void>> {
     try {
@@ -198,8 +200,8 @@ export class UserService {
         return new Err(new Error(`User with id ${userId} not found`));
       }
 
-      // TODO: Language field is not yet in the users table
-      // await this.userRepository.update(userId, { language });
+      await this.userRepository.update(userId, { language_code: language });
+      logger.info('User language updated', { userId, language });
       return new Ok(undefined);
     } catch (error) {
       return new Err(error instanceof Error ? error : new Error('Failed to set user language'));
