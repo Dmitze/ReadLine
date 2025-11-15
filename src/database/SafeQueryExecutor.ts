@@ -277,6 +277,12 @@ export class SafeQueryExecutor {
 
     this.queryLogs.push(log);
 
+
+// ✅ ВИПРАВЛЕНО: Обрізаємо старі логи щоб уникнути memory leak
+if (this.queryLogs.length > this.maxQueryLogs) {
+  this.queryLogs = this.queryLogs.slice(-this.maxQueryLogs);
+}
+
     // Обмежити розмір логів
     if (this.queryLogs.length > this.maxQueryLogs) {
       this.queryLogs.shift();

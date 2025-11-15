@@ -28,7 +28,7 @@ import settingsScene from './scenes/settingsScene';
 import aiAssistantScene from './scenes/aiAssistantScene';
 import promoAdminScene from './scenes/promoAdminScene';
 import editExtendedBookInfoScene from './scenes/editExtendedBookInfoScene';
-
+import { db } from './database/models';
 // ✅ ВИПРАВЛЕНО: Валідація критичних env variables при старті
 function validateEnvVariables() {
   const errors: string[] = [];
@@ -120,15 +120,23 @@ bot.use(async (ctx, next) => {
 });
 
 // Глобальний обробник помилок
-bot.catch((err, ctx) => {
+bot.catch(async (err, ctx) => {
   logger.error('Bot error', err instanceof Error ? err : new Error(String(err)), {
     updateId: ctx.update.update_id,
     userId: ctx.from?.id,
   });
   
-  // Спроба повідомити користувача про помилку
+  // ✅ ВИПРАВЛЕНО: Обробка callback queries
+  if (ctx.callbackQuery) {
+    try {
+      await ctx.answerCbQuery('❌ Виникла помилка');
+    } catch (cbError) {
+      logger.error('Failed to answer callback query', cbError instanceof Error ? cbError : new Error(String(cbError)));
+    }
+  }
+  
   try {
-    ctx.reply(
+    await ctx.reply(
       '❌ Виникла помилка при обробці вашого запиту.\n\n' +
       'Спробуйте:\n' +
       '• Надіслати /start для перезапуску\n' +
@@ -136,9 +144,9 @@ bot.catch((err, ctx) => {
       '• Зв\'язатися з адміністратором'
     );
   } catch (replyError) {
-     logger.error('Failed to send error message to user', replyError instanceof Error ? replyError : new Error(String(replyError)));
-   }
-  });
+    logger.error('Failed to send error message to user', replyError instanceof Error ? replyError : new Error(String(replyError)));
+  }
+});
   
   // Обробка необроблених promise rejections
   process.on('unhandledRejection', (reason, promise) => {
@@ -478,6 +486,23 @@ const shutdown = async (signal: string) => {
   if (notificationScheduler) {
     const { stopNotificationScheduler } = await import('./utils/notifications');
     stopNotificationScheduler(notificationScheduler);
+  }
+  
+  // ✅ ВИПРАВЛЕНО: Закриваємо БД перед виходом
+  try {
+    await new Promise<void>((resolve, reject) => {
+      db.close((err) => {
+        if (err) {
+          logger.error('Error closing database', err);
+          reject(err);
+        } else {
+          logger.info('Database closed successfully');
+          resolve();
+        }
+      });
+    });
+  } catch (error) {
+    logger.error('Failed to close database', error instanceof Error ? error : new Error(String(error)));
   }
   
   bot.stop(signal);
