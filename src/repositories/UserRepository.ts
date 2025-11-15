@@ -15,6 +15,7 @@ export interface User {
   username?: string;
   first_name?: string;
   last_name?: string;
+  language_code?: string;
   is_admin?: boolean;
   is_new?: boolean;
   created_at?: string;
