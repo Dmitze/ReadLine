@@ -1,7 +1,10 @@
 /**
  * Application Configuration
  * REFACTOR-018: Configuration Management
+ * Uses Zod-validated environment variables
  */
+
+import { env } from './envSchema';
 
 export interface AppConfig {
   // Bot
@@ -69,59 +72,60 @@ export interface AppConfig {
 export class ConfigManager {
   private config: AppConfig;
 
-  constructor(env: NodeJS.ProcessEnv = process.env) {
-    this.config = this.loadConfig(env);
+  constructor() {
+    this.config = this.loadConfig();
   }
 
   /**
    * Завантажити конфіг зі змінних оточення
+   * Uses validated env from envSchema
    */
-  private loadConfig(env: NodeJS.ProcessEnv): AppConfig {
+  private loadConfig(): AppConfig {
     return {
       bot: {
-        token: env.BOT_TOKEN || '',
-        webhook: env.BOT_WEBHOOK,
-        polling: env.BOT_POLLING !== 'false'
+        token: env.BOT_TOKEN,
+        webhook: undefined,
+        polling: true
       },
       database: {
-        path: env.DB_PATH || './database.sqlite',
+        path: env.DB_PATH,
         sqlite: {
-          memory: env.DB_MEMORY === 'true'
+          memory: false
         }
       },
       ai: {
-        enabled: env.AI_ENABLED === 'true',
-        provider: (env.AI_PROVIDER as any) || 'openai',
-        apiKey: env.AI_API_KEY,
-        timeout: parseInt(env.AI_TIMEOUT || '30000')
+        enabled: !!env.GEMINI_API_KEY,
+        provider: env.AI_PROVIDER as 'openai' | 'anthropic',
+        apiKey: env.GEMINI_API_KEY,
+        timeout: 30000
       },
       storage: {
-        uploadsDir: env.UPLOADS_DIR || './uploads',
-        maxFileSize: parseInt(env.MAX_FILE_SIZE || '52428800'), // 50MB
-        allowedMimeTypes: (env.ALLOWED_MIME_TYPES || 'application/pdf,audio/mpeg,audio/wav').split(',')
+        uploadsDir: './uploads',
+        maxFileSize: 52428800, // 50MB
+        allowedMimeTypes: ['application/pdf', 'audio/mpeg', 'audio/wav']
       },
       server: {
-        port: parseInt(env.SERVER_PORT || '3000'),
-        host: env.SERVER_HOST || '0.0.0.0'
+        port: env.PORT,
+        host: '0.0.0.0'
       },
       logging: {
-        level: (env.LOG_LEVEL as any) || 'info',
-        format: (env.LOG_FORMAT as any) || 'text',
-        file: env.LOG_FILE
+        level: env.LOG_LEVEL,
+        format: 'text',
+        file: undefined
       },
       features: {
-        audioBooks: env.FEATURE_AUDIO_BOOKS !== 'false',
-        aiAssistant: env.FEATURE_AI_ASSISTANT !== 'false',
-        recommendations: env.FEATURE_RECOMMENDATIONS !== 'false',
-        reviews: env.FEATURE_REVIEWS !== 'false',
-        promoCode: env.FEATURE_PROMO_CODE !== 'false'
+        audioBooks: true,
+        aiAssistant: true,
+        recommendations: true,
+        reviews: true,
+        promoCode: true
       },
       limits: {
-        booksPerPage: parseInt(env.BOOKS_PER_PAGE || '20'),
-        maxTags: parseInt(env.MAX_TAGS || '10'),
-        maxGenres: parseInt(env.MAX_GENRES || '5'),
-        sessionTimeout: parseInt(env.SESSION_TIMEOUT || '3600000'),
-        rateLimitPerMinute: parseInt(env.RATE_LIMIT_PER_MINUTE || '30')
+        booksPerPage: 20,
+        maxTags: 10,
+        maxGenres: 5,
+        sessionTimeout: 3600000,
+        rateLimitPerMinute: 30
       }
     };
   }
