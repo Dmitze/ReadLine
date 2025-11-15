@@ -488,8 +488,7 @@ exports.default = (bot) => {
                 const pdfFileId = book.pdf_file_id || book.file_url;
                 if (pdfFileId) {
                     await ctx.telegram.sendDocument(ctx.from.id, pdfFileId, {
-                        caption: `📥 ${book.title}${(0, helpers_1.getBookIdText)(book.id)}\n👤 ${book.author}\n\n✅ Файл завантажено!`,
-                        parse_mode: 'HTML'
+                        caption: `📥 ${book.title}\n👤 ${book.author}\n\n✅ Файл завантажено!`
                     });
                     await ctx.answerCbQuery('📥 Файл надіслано вам у приватні повідомлення');
                 }
@@ -520,7 +519,7 @@ exports.default = (bot) => {
             const audioFileId = book.audio_file_id;
             if (audioFileId) {
                 await ctx.answerCbQuery('🎧 Відправляю аудіокнигу...');
-                let caption = `🎧 <b>${book.title}</b>${(0, helpers_1.getBookIdText)(book.id)}\n`;
+                let caption = `🎧 <b>${book.title}</b>\n`;
                 caption += `👤 ${book.author}\n`;
                 if (book.narrator) {
                     caption += `🎙️ Читає: ${book.narrator}\n`;
@@ -568,7 +567,7 @@ exports.default = (bot) => {
                 await ctx.answerCbQuery('📝 Поки що немає відгуків', { show_alert: true });
                 return;
             }
-            let reviewsText = `📊 <b>Відгуки про книгу</b>\n\n📖 ${book.title}${(0, helpers_1.getBookIdText)(book.id)}\n👤 ${book.author}\n`;
+            let reviewsText = `📊 <b>Відгуки про книгу</b>\n\n📖 ${book.title}\n👤 ${book.author}\n`;
             reviewsText += `⭐ Середній рейтинг: ${book.rating?.toFixed(1) || 0}/5\n\n`;
             reviews.slice(0, 5).forEach((review, index) => {
                 reviewsText += `${index + 1}. ${'⭐'.repeat(review.rating)} - ${review.user_name || 'Користувач'}\n`;
@@ -608,7 +607,7 @@ exports.default = (bot) => {
                 return;
             }
             await ctx.reply(`🔍 <b>Схожі книги</b> (жанр: ${book.genre}):\n\n` +
-                filtered.map((b, i) => `${i + 1}. 📖 ${b.title}${(0, helpers_1.getBookIdText)(b.id)}\n   👤 ${b.author}`).join('\n\n'), { parse_mode: 'HTML' });
+                filtered.map((b, i) => `${i + 1}. 📖 ${b.title}\n   👤 ${b.author}`).join('\n\n'), { parse_mode: 'HTML' });
             await ctx.answerCbQuery();
         })().catch((error) => {
             logger_1.logger.error('Error showing similar books', error instanceof Error ? error : new Error(String(error)), { userId: ctx.from?.id });
