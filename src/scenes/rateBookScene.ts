@@ -62,8 +62,8 @@ const rateBookScene = new Scenes.WizardScene(
     
     await ctx.editMessageText(
       `✅ Ви обрали: ${'⭐'.repeat(rating)}\n\n` +
-      `💬 Хочете додати коментар? (опціонально)\n\n` +
-      `Напишіть ваш відгук або натисніть "Пропустити"`,
+      '💬 Хочете додати коментар? (опціонально)\n\n' +
+      'Напишіть ваш відгук або натисніть "Пропустити"',
       {
         reply_markup: {
           inline_keyboard: [
@@ -112,10 +112,10 @@ const rateBookScene = new Scenes.WizardScene(
     await addReview(reviewData);
     
     await ctx.reply(
-      `✅ *Дякуємо за відгук!*\n\n` +
+      '✅ *Дякуємо за відгук!*\n\n' +
       `⭐ Ваша оцінка: ${'⭐'.repeat(rating)}\n` +
       `💬 Коментар: ${comment || 'без коментаря'}\n\n` +
-      `📝 Відгук буде опублікований після модерації адміністратором.`,
+      '📝 Відгук буде опублікований після модерації адміністратором.',
       { parse_mode: 'Markdown' }
     );
     
