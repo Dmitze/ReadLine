@@ -33,7 +33,7 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.escapeHtml = exports.formatBookCaption = void 0;
+exports.getBookIdText = exports.escapeHtml = exports.formatBookCaption = void 0;
 exports.showLoadingAnimation = showLoadingAnimation;
 exports.updateLoadingMessage = updateLoadingMessage;
 exports.createProgressBar = createProgressBar;
@@ -232,6 +232,12 @@ const escapeHtml = (text) => {
         .replace(/'/g, '&#39;');
 };
 exports.escapeHtml = escapeHtml;
+const getBookIdText = (bookId) => {
+    if (!bookId)
+        return '';
+    return `\n🆔 ID: <code>${bookId}</code>`;
+};
+exports.getBookIdText = getBookIdText;
 async function showLoadingAnimation(ctx, message) {
     const loadingMsg = await ctx.reply(`⏳ ${message}...`);
     return loadingMsg.message_id;
