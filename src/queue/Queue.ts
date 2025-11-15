@@ -6,6 +6,7 @@
 import Queue, { Job, JobOptions } from 'bull';
 import Redis from 'ioredis';
 import { Result, Ok, Err } from '../core/Result';
+import { logger } from '../utils/logger';
 
 export interface QueueConfig {
   name: string;
@@ -167,7 +168,7 @@ export class QueueManager {
       }
 
       if (!job.isFailed()) {
-        return new Err(new Error(`Job is not in failed state`));
+        return new Err(new Error('Job is not in failed state'));
       }
 
       await job.retry();
@@ -236,19 +237,19 @@ export class QueueManager {
    */
   private setupEventListeners(): void {
     this.queue.on('completed', (job: Job) => {
-      console.log(`✅ Job completed: ${job.id}`);
+      logger.info('Job completed', { jobId: job.id });
     });
 
     this.queue.on('failed', (job: Job, error: Error) => {
-      console.error(`❌ Job failed: ${job.id} - ${error.message}`);
+      logger.error('Job failed', error, { jobId: job.id });
     });
 
     this.queue.on('stalled', (job: Job) => {
-      console.warn(`⚠️  Job stalled: ${job.id}`);
+      logger.warn('Job stalled', { jobId: job.id });
     });
 
     this.queue.on('error', (error: Error) => {
-      console.error(`❌ Queue error: ${error.message}`);
+      logger.error('Queue error', error instanceof Error ? error : new Error(String(error)));
     });
   }
 
