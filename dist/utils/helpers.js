@@ -54,12 +54,12 @@ const formatBookCaption = async (book, tags) => {
     const safeAuthor = escapeHtml(book.author);
     const safeGenre = escapeHtml(book.genre);
     const safeDescription = escapeHtml(book.description);
-    let caption = `━━━━━━━━━━━━━━━━━━━━━\n`;
+    let caption = '━━━━━━━━━━━━━━━━━━━━━\n';
     caption += `📖 <b>${safeTitle}</b>\n`;
     if (book.id) {
         caption += `🆔 ID: <code>${book.id}</code>\n`;
     }
-    caption += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    caption += '━━━━━━━━━━━━━━━━━━━━━\n\n';
     caption += `👤 <b>Автор:</b> ${safeAuthor}\n`;
     const genreEmoji = getGenreEmoji(book.genre);
     caption += `${genreEmoji} <b>Жанр:</b> ${safeGenre}\n`;
@@ -83,7 +83,7 @@ const formatBookCaption = async (book, tags) => {
             logger.error('Error loading tags in formatBookCaption', error instanceof Error ? error : new Error(String(error)));
         }
     }
-    caption += `\n`;
+    caption += '\n';
     if (book.rating && book.rating > 0) {
         const fullStars = Math.floor(book.rating);
         const halfStar = book.rating % 1 >= 0.5 ? '⭐' : '';
@@ -93,7 +93,7 @@ const formatBookCaption = async (book, tags) => {
         if (book.reviews_count && book.reviews_count > 0) {
             caption += ` 💬 ${book.reviews_count} ${getReviewsWord(book.reviews_count)}`;
         }
-        caption += `\n\n`;
+        caption += '\n\n';
     }
     if (book.id) {
         try {
@@ -101,7 +101,7 @@ const formatBookCaption = async (book, tags) => {
             const stats = await getBookDetailedStats(book.id);
             if (stats && stats.rating_distribution && stats.rating_distribution.percentages) {
                 const { percentages } = stats.rating_distribution;
-                caption += `📊 <b>Розподіл оцінок:</b>\n`;
+                caption += '📊 <b>Розподіл оцінок:</b>\n';
                 caption += `   5⭐ ${percentages.rating_5_percent.toFixed(0)}%  4⭐ ${percentages.rating_4_percent.toFixed(0)}%  3⭐ ${percentages.rating_3_percent.toFixed(0)}%\n`;
                 caption += `   2⭐ ${percentages.rating_2_percent.toFixed(0)}%  1⭐ ${percentages.rating_1_percent.toFixed(0)}%\n\n`;
             }
@@ -116,7 +116,7 @@ const formatBookCaption = async (book, tags) => {
                     caption += `⚠️ <b>Варнінги:</b> ${warnings.map((w) => getWarningLabel(w)).join(', ')}\n`;
                 }
             }
-            caption += `\n`;
+            caption += '\n';
         }
         catch (error) {
             const { logger } = await Promise.resolve().then(() => __importStar(require('./logger')));
@@ -124,7 +124,7 @@ const formatBookCaption = async (book, tags) => {
         }
     }
     caption += `📝 <b>Опис:</b>\n${safeDescription}\n\n`;
-    caption += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    caption += '━━━━━━━━━━━━━━━━━━━━━\n\n';
     const availableFormats = [];
     if (book.pdf_file_id || (book.file_url && book.file_type === 'file')) {
         availableFormats.push('📄 PDF');
@@ -147,11 +147,11 @@ const formatBookCaption = async (book, tags) => {
         availableFormats.push('🌐 Онлайн');
     }
     if (availableFormats.length > 0) {
-        caption += `📦 <b>Доступні формати:</b>\n`;
+        caption += '📦 <b>Доступні формати:</b>\n';
         availableFormats.forEach(format => {
             caption += `   ${format}\n`;
         });
-        caption += `\n`;
+        caption += '\n';
     }
     if (book.narrator) {
         const safeNarrator = escapeHtml(book.narrator);
