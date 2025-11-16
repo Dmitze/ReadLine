@@ -254,7 +254,7 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
           title: book.title
         });
       } else if (book.audio_external_link) {
-        let message = `🎧 <b>Аудіокнига</b>\n\n`;
+        let message = '🎧 <b>Аудіокнига</b>\n\n';
         message += `📖 ${book.title}\n`;
         message += `✍️ ${book.author}\n`;
         if (book.narrator) {
