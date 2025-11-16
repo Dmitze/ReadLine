@@ -4,19 +4,9 @@ import feedbackScene from '../../scenes/feedbackScene';
 
 describe('feedbackScene', () => {
   let scene: Scenes.BaseScene<BotContext>;
-  let mockCtx: Partial<BotContext>;
 
   beforeEach(() => {
     scene = feedbackScene;
-    mockCtx = {
-      reply: jest.fn().mockResolvedValue({}),
-      scene: {
-        leave: jest.fn().mockResolvedValue({}),
-      } as any,
-      message: {
-        text: 'Test feedback message',
-      } as any,
-    };
   });
 
   it('should be defined', () => {
