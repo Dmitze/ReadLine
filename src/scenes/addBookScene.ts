@@ -115,12 +115,10 @@ const addBookScene = new Scenes.WizardScene(
     // Клавіатура з популярними жанрами
     const keyboard = [];
     for (let i = 0; i < popularGenres.length; i += 4) {
-      const row = popularGenres
-        .slice(i, i + 4)
-        .map((genre) => ({
-          text: genre,
-          callback_data: `genre_popular_${popularGenres.indexOf(genre)}`,
-        }));
+      const row = popularGenres.slice(i, i + 4).map((genre) => ({
+        text: genre,
+        callback_data: `genre_popular_${popularGenres.indexOf(genre)}`,
+      }));
       keyboard.push(row);
     }
 
@@ -148,12 +146,10 @@ const addBookScene = new Scenes.WizardScene(
         const allGenres = [...popularGenres, ...otherGenres];
         const keyboard: any[] = [];
         for (let i = 0; i < allGenres.length; i += 3) {
-          const row = allGenres
-            .slice(i, i + 3)
-            .map((genre) => ({
-              text: genre,
-              callback_data: `genre_all_${allGenres.indexOf(genre)}`,
-            }));
+          const row = allGenres.slice(i, i + 3).map((genre) => ({
+            text: genre,
+            callback_data: `genre_all_${allGenres.indexOf(genre)}`,
+          }));
           keyboard.push(row);
         }
         keyboard.push([{ text: '✅ Далі', callback_data: 'genres_done' }]);
