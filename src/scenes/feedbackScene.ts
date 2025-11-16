@@ -16,10 +16,10 @@ feedbackScene.enter(async (ctx) => {
       '• Скарги або проблеми\n' +
       '• Пропозиції покращень\n' +
       '• Запити на додавання книг\n\n' +
-      '✍️ Напишіть ваше повідомлення:',
+      '✍️ Напишіть ваше повідомлення:\n\n' +
+      '💡 Або використовуйте /cancel для скасування',
     {
       parse_mode: 'Markdown',
-      reply_markup: Markup.keyboard([['⬅️ Назад до меню']]).resize().reply_markup,
     }
   );
 });
@@ -163,14 +163,7 @@ feedbackScene.command('cancel', async (ctx: BotContext) => {
 });
 
 // Обробка кнопки "Назад"
-feedbackScene.hears('⬅️ Назад до меню', async (ctx: BotContext) => {
-  await ctx.scene?.leave();
-  const { getMainMenuKeyboard } = await import('../keyboards/mainKeyboards');
-  await ctx.reply('👋 Повертаємось до головного меню', {
-    reply_markup: getMainMenuKeyboard(),
-  });
-  return;
-});
+// Removed obsolete keyboard handler - use /cancel command instead
 
 // Обробка команди /cancel
 feedbackScene.hears('/cancel', async (ctx: BotContext) => {

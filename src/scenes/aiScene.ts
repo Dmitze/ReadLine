@@ -22,10 +22,10 @@ aiScene.enter(async (ctx: BotContext) => {
       '• "Розкажи про жанр фантастика та його особливості"\n' +
       '• "Хто такий Тарас Шевченко та які його найкращі твори?"\n' +
       '• "Які книги подобаються любителям детективів?"\n' +
-      '• "Дай топ 5 класичних романів"',
+      '• "Дай топ 5 класичних романів"\n\n' +
+      '💡 Або використовуйте /cancel для виходу',
     {
       parse_mode: 'HTML',
-      reply_markup: Markup.keyboard([['⬅️ Назад до меню']]).resize().reply_markup,
     }
   );
 });
@@ -40,14 +40,7 @@ aiScene.command('cancel', async (ctx: BotContext) => {
   return;
 });
 
-aiScene.hears('⬅️ Назад до меню', async (ctx: BotContext) => {
-  await ctx.scene?.leave();
-  const { getMainMenuKeyboard } = await import('../keyboards/mainKeyboards');
-  await ctx.reply('👋 Повертаємось до головного меню', {
-    reply_markup: getMainMenuKeyboard(),
-  });
-  return;
-});
+// Removed obsolete keyboard handler - use /cancel command instead
 
 aiScene.on('text', async (ctx: BotContext) => {
   const { withTimeout, retryOperation } = await import('../utils/errorHandler');

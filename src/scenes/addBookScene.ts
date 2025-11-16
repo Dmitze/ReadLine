@@ -36,21 +36,13 @@ const addBookScene = new Scenes.WizardScene(
     await ctx.reply(
       `${getProgress(0)}\n📖 Введіть назву книги:\n\n` +
         `${examples.title}\n\n` +
-        '💡 Або натисніть /cancel для скасування',
-      {
-        reply_markup: Markup.keyboard([['❌ Скасувати']]).resize().reply_markup,
-      }
+        '💡 Або натисніть /cancel для скасування'
     );
     return ctx.wizard.next();
   },
 
   // Крок 1: Автор
   async (ctx: BotContext) => {
-    if (ctx.message && 'text' in ctx.message && ctx.message.text === '❌ Скасувати') {
-      await ctx.reply('❌ Додавання книги скасовано');
-      return ctx.scene?.leave();
-    }
-
     if (!ctx.message || !('text' in ctx.message)) {
       await ctx.reply('❌ Будь ласка, надішліть текст (назву книги).');
       return;
@@ -78,21 +70,13 @@ const addBookScene = new Scenes.WizardScene(
     await ctx.reply(
       `${getProgress(1)}\n👤 Введіть автора книги:\n\n` +
         `${examples.author}\n\n` +
-        '💡 Або натисніть /cancel для скасування',
-      {
-        reply_markup: Markup.keyboard([['❌ Скасувати']]).resize().reply_markup,
-      }
+        '💡 Або натисніть /cancel для скасування'
     );
     return ctx.wizard.next();
   },
 
   // Крок 2: Жанр
   async (ctx: BotContext) => {
-    if (ctx.message && 'text' in ctx.message && ctx.message.text === '❌ Скасувати') {
-      await ctx.reply('❌ Додавання книги скасовано');
-      return ctx.scene?.leave();
-    }
-
     if (!ctx.message || !('text' in ctx.message)) {
       await ctx.reply("❌ Будь ласка, надішліть текст (ім'я автора).");
       return;
@@ -223,11 +207,6 @@ const addBookScene = new Scenes.WizardScene(
 
   // Крок 4: Опис + AI перевірка опису
   async (ctx: BotContext) => {
-    if (ctx.message && 'text' in ctx.message && ctx.message.text === '❌ Скасувати') {
-      await ctx.reply('❌ Додавання книги скасовано');
-      return ctx.scene?.leave();
-    }
-
     if (!ctx.message || !('text' in ctx.message)) {
       await ctx.reply('❌ Будь ласка, надішліть текст (опис книги).');
       return;
@@ -300,7 +279,6 @@ const addBookScene = new Scenes.WizardScene(
           [{ text: '📄 Файл', callback_data: 'type_file' }],
           [{ text: '🎧 Аудіокнига', callback_data: 'type_audio' }],
           [{ text: '🔗 Посилання', callback_data: 'type_link' }],
-          [{ text: '❌ Скасувати', callback_data: 'cancel_add' }],
         ],
       },
     });

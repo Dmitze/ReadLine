@@ -24,17 +24,12 @@ replyFeedbackScene.enter(async (ctx: BotContext) => {
     '✉️ <b>ВІДПОВІДЬ НА ПОВІДОМЛЕННЯ</b>\n\n' +
       `👤 Від: ${state.userName || 'Користувач'}\n` +
       `💬 Повідомлення:\n"${state.originalMessage}"\n\n` +
-      '📝 Введіть вашу відповідь:',
+      '📝 Введіть вашу відповідь:\n\n' +
+      '💡 Або використовуйте /cancel для скасування',
     {
       parse_mode: 'HTML',
-      reply_markup: Markup.keyboard([['❌ Скасувати']]).resize().reply_markup,
     }
   );
-});
-
-replyFeedbackScene.hears('❌ Скасувати', async (ctx: BotContext) => {
-  await ctx.reply('❌ Відповідь скасована.');
-  return ctx.scene.leave();
 });
 
 // ✅ ВИПРАВЛЕНО #15: покращена обробка блокування бота
