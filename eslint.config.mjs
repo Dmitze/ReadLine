@@ -4,13 +4,13 @@ import tsparser from '@typescript-eslint/parser';
 export default [
   {
     files: ['**/*.ts'],
-    ignores: ['dist/**', 'node_modules/**', '*.js', 'coverage/**'],
+    ignores: ['dist/**', 'node_modules/**', '*.js', 'coverage/**', '**/*.d.ts'],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
         ecmaVersion: 2020,
         sourceType: 'module',
-        project: './tsconfig.json'
+        project: './tsconfig.eslint.json'
       },
       globals: {
         node: true,
