@@ -417,18 +417,21 @@ export const updateBookInfo = (bookId: number, field: string, value: any): Promi
 };
 
 /**
- * Search books
+ * Search books with case-insensitive and partial match support
  */
 export const searchBooks = (query: string, limit: number = 20): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
-    const searchPattern = `%${query}%`;
+    const searchPattern = `%${query.toLowerCase()}%`;
     const sql = `
       SELECT * FROM books 
-      WHERE title LIKE ? OR author LIKE ? OR description LIKE ? OR genre LIKE ?
+      WHERE LOWER(title) LIKE ? 
+         OR LOWER(author) LIKE ? 
+         OR LOWER(description) LIKE ? 
+         OR LOWER(genre) LIKE ?
       ORDER BY 
         CASE 
-          WHEN title LIKE ? THEN 1
-          WHEN author LIKE ? THEN 2
+          WHEN LOWER(title) LIKE ? THEN 1
+          WHEN LOWER(author) LIKE ? THEN 2
           ELSE 3
         END,
         rating DESC
