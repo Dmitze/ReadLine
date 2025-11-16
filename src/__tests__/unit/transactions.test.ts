@@ -103,12 +103,19 @@ describe('Transaction Manager', () => {
       ];
 
       dbWrapper.transaction = jest.fn(async (callback) => {
-        return await callback();
+        try {
+          return await callback();
+        } catch (error) {
+          throw error; // Transaction will rollback
+        }
       });
 
       const result = await manager.batch(operations);
 
       expect(result.isErr()).toBe(true);
+      if (result.isErr()) {
+        expect(result.error.message).toBe('Failed');
+      }
     });
   });
 
