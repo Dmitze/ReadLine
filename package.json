@@ -26,7 +26,8 @@
     "prebuild": "npm run clean",
     "prestart": "npm run build",
     "ci": "npm run lint && npm run test:coverage && npm run build",
-    "deploy": "npm run ci && npm start"
+    "deploy": "npm run ci && npm start",
+    "db:optimize": "ts-node scripts/optimize-db.ts"
   },
   "dependencies": {
     "@types/swagger-ui-express": "^4.1.8",
