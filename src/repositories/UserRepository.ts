@@ -29,6 +29,9 @@ export class UserRepository extends BaseRepository<User> {
 
   /**
    * Create a new user
+   * @param userData - User data without id, created_at, and last_seen
+   * @returns Promise with the new user ID
+   * @throws Error if creation fails
    */
   async create(userData: Omit<User, 'id' | 'created_at' | 'last_seen'>): Promise<number> {
     try {
@@ -59,6 +62,9 @@ export class UserRepository extends BaseRepository<User> {
 
   /**
    * Get user by Telegram user ID
+   * @param userId - Telegram user ID
+   * @returns Promise with user object or undefined if not found
+   * @throws Error if query fails
    */
   async getByTelegramId(userId: number): Promise<User | undefined> {
     try {
@@ -71,7 +77,11 @@ export class UserRepository extends BaseRepository<User> {
   }
 
   /**
-   * Update user
+   * Update user data
+   * @param userId - Telegram user ID
+   * @param updates - Partial user data to update
+   * @returns Promise with number of rows changed
+   * @throws Error if update fails
    */
   async update(
     userId: number,
