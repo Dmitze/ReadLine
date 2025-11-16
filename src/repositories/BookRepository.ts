@@ -17,6 +17,9 @@ export class BookRepository extends BaseRepository<Book> {
 
   /**
    * Create a new book
+   * @param book - Book data without id and created_at
+   * @returns Promise with the new book ID
+   * @throws Error if creation fails
    */
   async create(book: Omit<Book, 'id' | 'created_at'>): Promise<number> {
     try {
@@ -63,6 +66,10 @@ export class BookRepository extends BaseRepository<Book> {
 
   /**
    * Update a book
+   * @param bookId - The ID of the book to update
+   * @param updates - Partial book data to update
+   * @returns Promise with number of rows changed
+   * @throws Error if update fails
    */
   async update(
     bookId: number,
@@ -93,6 +100,9 @@ export class BookRepository extends BaseRepository<Book> {
 
   /**
    * Get books by genre
+   * @param genre - Genre name to filter by
+   * @returns Promise with array of books
+   * @throws Error if query fails
    */
   async getByGenre(genre: string): Promise<Book[]> {
     try {
@@ -106,6 +116,11 @@ export class BookRepository extends BaseRepository<Book> {
 
   /**
    * Get books by genre with pagination
+   * @param genre - Genre name to filter by
+   * @param limit - Maximum number of books to return (default: 5)
+   * @param offset - Number of books to skip (default: 0)
+   * @returns Promise with books array and total count
+   * @throws Error if query fails
    */
   async getByGenreWithPagination(
     genre: string,
@@ -151,7 +166,11 @@ export class BookRepository extends BaseRepository<Book> {
   }
 
   /**
-   * Search books
+   * Search books by title, author, or genre
+   * @param searchTerm - Search term to match against
+   * @param limit - Maximum number of results (default: 10)
+   * @returns Promise with array of matching books
+   * @throws Error if search fails
    */
   async search(
     searchTerm: string,
