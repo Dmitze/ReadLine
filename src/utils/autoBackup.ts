@@ -39,7 +39,7 @@ export async function createBackup(): Promise<boolean> {
       .replace(/[:.]/g, '-')
       .replace('T', '_')
       .split('.')[0];
-    
+
     const backupFileName = `library-backup-${timestamp}.db`;
     const backupPath = path.join(backupDir, backupFileName);
 
@@ -50,11 +50,11 @@ export async function createBackup(): Promise<boolean> {
     if (fs.existsSync(backupPath)) {
       const stats = fs.statSync(fullDbPath);
       const backupStats = fs.statSync(backupPath);
-      
+
       logger.info('Database backup created successfully', {
         originalSize: stats.size,
         backupSize: backupStats.size,
-        backupPath
+        backupPath,
       });
 
       // Очищаємо старі backup
@@ -75,19 +75,20 @@ export async function createBackup(): Promise<boolean> {
  */
 async function cleanOldBackups(backupDir: string): Promise<void> {
   try {
-    const backupFiles = fs.readdirSync(backupDir)
-      .filter(file => file.endsWith('.db'))
-      .map(file => ({
+    const backupFiles = fs
+      .readdirSync(backupDir)
+      .filter((file) => file.endsWith('.db'))
+      .map((file) => ({
         name: file,
         path: path.join(backupDir, file),
-        time: fs.statSync(path.join(backupDir, file)).mtime.getTime()
+        time: fs.statSync(path.join(backupDir, file)).mtime.getTime(),
       }))
       .sort((a, b) => b.time - a.time); // Сортуємо від нових до старих
 
     // Видаляємо файли старші за MAX_BACKUPS
     if (backupFiles.length > MAX_BACKUPS) {
       const toDelete = backupFiles.slice(MAX_BACKUPS);
-      
+
       for (const file of toDelete) {
         fs.unlinkSync(file.path);
         logger.info('Old backup deleted', { file: file.name });
@@ -104,7 +105,7 @@ async function cleanOldBackups(backupDir: string): Promise<void> {
 export function startAutoBackup(): NodeJS.Timeout {
   logger.info('Starting automatic backup scheduler', {
     interval: `${BACKUP_INTERVAL / (60 * 60 * 1000)} hours`,
-    maxBackups: MAX_BACKUPS
+    maxBackups: MAX_BACKUPS,
   });
 
   // Створюємо перший backup одразу

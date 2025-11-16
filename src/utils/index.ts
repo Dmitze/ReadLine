@@ -8,7 +8,7 @@ export {
   HttpCircuitBreaker,
   CircuitState,
   type CircuitMetrics,
-  type CircuitBreakerOptions
+  type CircuitBreakerOptions,
 } from './CircuitBreaker';
 
 export {
@@ -17,7 +17,7 @@ export {
   retrySync,
   retryWithBackoff,
   type RetryPolicy,
-  type RetryStats
+  type RetryStats,
 } from './RetryStrategy';
 
 export {
@@ -25,12 +25,7 @@ export {
   getAICircuitBreaker,
   resetAICircuitBreaker,
   type AICircuitBreakerConfig,
-  type AICircuitBreakerStats
+  type AICircuitBreakerStats,
 } from './AICircuitBreaker';
 
-export {
-  isValidTag,
-  normalizeTag,
-  sanitizeTag,
-  splitCompoundTag
-} from './tagValidator';
+export { isValidTag, normalizeTag, sanitizeTag, splitCompoundTag } from './tagValidator';

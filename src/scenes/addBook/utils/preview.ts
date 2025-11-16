@@ -27,18 +27,20 @@ export async function showFormatSelection(ctx: BotContext): Promise<void> {
   if (hasLink) addedFormats.push('🌐 Посилання');
 
   const availableFormats = [];
-  if (!hasFile) availableFormats.push([{ text: '📄 Додати файл книги', callback_data: 'add_more_file' }]);
-  if (!hasAudio) availableFormats.push([{ text: '🎧 Додати аудіофайл', callback_data: 'add_more_audio' }]);
-  if (!hasLink) availableFormats.push([{ text: '🌐 Додати посилання', callback_data: 'add_more_link' }]);
+  if (!hasFile)
+    availableFormats.push([{ text: '📄 Додати файл книги', callback_data: 'add_more_file' }]);
+  if (!hasAudio)
+    availableFormats.push([{ text: '🎧 Додати аудіофайл', callback_data: 'add_more_audio' }]);
+  if (!hasLink)
+    availableFormats.push([{ text: '🌐 Додати посилання', callback_data: 'add_more_link' }]);
 
   if (availableFormats.length > 0) {
     availableFormats.push([{ text: '✅ Далі до тегів', callback_data: 'skip_more_formats' }]);
 
     await ctx.reply(
-      `✅ Додано: ${addedFormats.join(', ') || 'поки нічого'}\n\n` +
-        'Хочете додати ще формати?',
+      `✅ Додано: ${addedFormats.join(', ') || 'поки нічого'}\n\n` + 'Хочете додати ще формати?',
       {
-        reply_markup: { inline_keyboard: availableFormats }
+        reply_markup: { inline_keyboard: availableFormats },
       }
     );
   } else {
@@ -54,9 +56,7 @@ export async function proceedToTags(ctx: BotContext): Promise<void> {
   if (allTags.length > 0) {
     const tagButtons = [];
     for (let i = 0; i < allTags.length; i += 2) {
-      const row = [
-        Markup.button.callback(allTags[i].name, `preview_tag_${allTags[i].id}`)
-      ];
+      const row = [Markup.button.callback(allTags[i].name, `preview_tag_${allTags[i].id}`)];
       if (i + 1 < allTags.length) {
         row.push(Markup.button.callback(allTags[i + 1].name, `preview_tag_${allTags[i + 1].id}`));
       }
@@ -65,7 +65,7 @@ export async function proceedToTags(ctx: BotContext): Promise<void> {
 
     tagButtons.push([
       Markup.button.callback('✅ Далі (без тегів)', 'preview_skip_tags'),
-      Markup.button.callback('❌ Скасувати', 'cancel_add')
+      Markup.button.callback('❌ Скасувати', 'cancel_add'),
     ]);
 
     if (!state.selectedTags) {
@@ -78,7 +78,7 @@ export async function proceedToTags(ctx: BotContext): Promise<void> {
         'Натисніть "Далі" коли закінчите або щоб пропустити цей крок.',
       {
         parse_mode: 'HTML',
-        reply_markup: Markup.inlineKeyboard(tagButtons).reply_markup
+        reply_markup: Markup.inlineKeyboard(tagButtons).reply_markup,
       }
     );
   } else {
@@ -95,7 +95,7 @@ export async function showBookPreview(ctx: BotContext): Promise<void> {
     author: state.author,
     genre: state.genre,
     description: state.description,
-    photo_file_id: state.photoFileId || 'default_book_cover'
+    photo_file_id: state.photoFileId || 'default_book_cover',
   };
 
   let tagsText = '';
@@ -131,20 +131,20 @@ export async function showBookPreview(ctx: BotContext): Promise<void> {
     [{ text: '✏️ Редагувати формати', callback_data: 'edit_formats' }],
     [
       { text: '✅ Підтвердити і опублікувати', callback_data: 'confirm_book' },
-      { text: '❌ Скасувати', callback_data: 'cancel_book' }
-    ]
+      { text: '❌ Скасувати', callback_data: 'cancel_book' },
+    ],
   ];
 
   if (bookData.photo_file_id && bookData.photo_file_id !== 'default_book_cover') {
     await ctx.replyWithPhoto(bookData.photo_file_id, {
       caption: previewText + '\n\n💡 Перевірте всі дані перед публікацією',
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: previewKeyboard }
+      reply_markup: { inline_keyboard: previewKeyboard },
     });
   } else {
     await ctx.reply(previewText + '\n\n💡 Перевірте всі дані перед публікацією', {
       parse_mode: 'HTML',
-      reply_markup: { inline_keyboard: previewKeyboard }
+      reply_markup: { inline_keyboard: previewKeyboard },
     });
   }
 }

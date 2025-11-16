@@ -16,22 +16,22 @@ describe('SQL Injection Protection', () => {
         'Harry Potter',
         'J.K. Rowling',
         'Science Fiction',
-        'Book about programming'
+        'Book about programming',
       ];
 
-      safeInputs.forEach(input => {
+      safeInputs.forEach((input) => {
         expect(InputSanitizer.checkSqlInjection(input)).toBe(false);
       });
     });
   });
-  
+
   describe('Table Name Validation', () => {
     it('should validate table names', () => {
       // Valid table names
       expect(/^[a-zA-Z_][a-zA-Z0-9_]*$/.test('books')).toBe(true);
       expect(/^[a-zA-Z_][a-zA-Z0-9_]*$/.test('users')).toBe(true);
       expect(/^[a-zA-Z_][a-zA-Z0-9_]*$/.test('book_tags')).toBe(true);
-      
+
       // Invalid table names (SQL injection attempts)
       expect(/^[a-zA-Z_][a-zA-Z0-9_]*$/.test('books; DROP TABLE users')).toBe(false);
       expect(/^[a-zA-Z_][a-zA-Z0-9_]*$/.test('books--')).toBe(false);

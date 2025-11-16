@@ -60,7 +60,10 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
 
       return await this.queryOptimizer.getOptimized<T>(query, [id], cacheKey, cacheTtl);
     } catch (error) {
-      logger.error(`Error getting ${this.tableName} by id`, error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        `Error getting ${this.tableName} by id`,
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -78,7 +81,10 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
       const key = cacheKey || `${this.tableName}:ids:${ids.join(',')}`;
       return await this.queryOptimizer.executeOptimized<T>(query, ids, key, 300000);
     } catch (error) {
-      logger.error('Error getting multiple entities by ids', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting multiple entities by ids',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -88,7 +94,8 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
    */
   async getPaginated(params: PaginationParams): Promise<PaginatedResult<T>> {
     try {
-      const cacheKey = params.cacheKey || `${this.tableName}:paginated:${params.limit}:${params.offset}`;
+      const cacheKey =
+        params.cacheKey || `${this.tableName}:paginated:${params.limit}:${params.offset}`;
       const cacheTtl = params.cacheTtl || 300000;
 
       // Get count and data in parallel
@@ -120,7 +127,10 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
         totalPages,
       };
     } catch (error) {
-      logger.error('Error getting paginated results', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting paginated results',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -161,12 +171,16 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
         }
       }
 
-      const cacheKey = options.cacheKey || `${this.tableName}:filtered:${JSON.stringify(options.where)}`;
+      const cacheKey =
+        options.cacheKey || `${this.tableName}:filtered:${JSON.stringify(options.where)}`;
       const cacheTtl = options.cacheTtl || 300000;
 
       return await this.queryOptimizer.executeOptimized<T>(query, params, cacheKey, cacheTtl);
     } catch (error) {
-      logger.error('Error getting filtered results', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting filtered results',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -186,7 +200,10 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
 
       return (result?.count || 0) > 0;
     } catch (error) {
-      logger.error('Error checking entity existence', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error checking entity existence',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -213,11 +230,19 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
       }
 
       const cacheKey = `${this.tableName}:count:${where ? JSON.stringify(where) : 'all'}`;
-      const result = await this.queryOptimizer.getOptimized<{ count: number }>(query, params, cacheKey, 300000);
+      const result = await this.queryOptimizer.getOptimized<{ count: number }>(
+        query,
+        params,
+        cacheKey,
+        300000
+      );
 
       return result?.count || 0;
     } catch (error) {
-      logger.error('Error counting entities', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error counting entities',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -234,7 +259,10 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
 
       return await this.queryOptimizer.batchInsert<Omit<T, 'id'>>(this.tableName, rows, 500);
     } catch (error) {
-      logger.error('Error in batch insert', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error in batch insert',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -251,7 +279,10 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
 
       return await this.queryOptimizer.batchUpdate<T & { id: number }>(this.tableName, rows, 500);
     } catch (error) {
-      logger.error('Error in batch update', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error in batch update',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -271,7 +302,10 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
 
       return await this.db.insert(query, values as SQLParameters);
     } catch (error) {
-      logger.error('Error inserting entity', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error inserting entity',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -293,7 +327,10 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
 
       return await this.db.update(query, values);
     } catch (error) {
-      logger.error('Error updating entity', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error updating entity',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -311,7 +348,10 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
 
       return await this.db.delete(query, [id]);
     } catch (error) {
-      logger.error('Error deleting entity', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error deleting entity',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -328,7 +368,10 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
 
       return result;
     } catch (error) {
-      logger.error('Error in transaction', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error in transaction',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }

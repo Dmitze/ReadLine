@@ -1,6 +1,6 @@
 /**
  * BaseService - Abstract base class for all application services
- * 
+ *
  * Provides common functionality for business logic services:
  * - Access to repositories
  * - Logging capabilities
@@ -40,10 +40,7 @@ export abstract class BaseService {
       if (result.isOk()) {
         this.logger.debug(`[${this.constructor.name}] Completed: ${operationName}`);
       } else {
-        this.logger.warn(
-          `[${this.constructor.name}] Failed: ${operationName}`,
-          result.error
-        );
+        this.logger.warn(`[${this.constructor.name}] Failed: ${operationName}`, result.error);
       }
 
       return result;
@@ -59,10 +56,7 @@ export abstract class BaseService {
    * @param operationName - Name of operation for logging
    * @returns Result containing the operation result or error
    */
-  protected executeSync<T>(
-    operation: () => T,
-    operationName: string
-  ): Result<T> {
+  protected executeSync<T>(operation: () => T, operationName: string): Result<T> {
     try {
       this.logger.debug(`[${this.constructor.name}] Starting: ${operationName}`);
       const result = operation();

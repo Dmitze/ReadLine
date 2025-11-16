@@ -1,7 +1,7 @@
 /**
  * Book Repository
  * REFACTOR-002: Repository Layer Separation
- * 
+ *
  * All database operations related to books
  */
 
@@ -59,7 +59,10 @@ export class BookRepository extends BaseRepository<Book> {
       logger.info(`Book created: ${title}`, { bookId });
       return bookId;
     } catch (error) {
-      logger.error('Error creating book', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error creating book',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -71,10 +74,7 @@ export class BookRepository extends BaseRepository<Book> {
    * @returns Promise with number of rows changed
    * @throws Error if update fails
    */
-  async update(
-    bookId: number,
-    updates: Partial<Omit<Book, 'id' | 'created_at'>>
-  ): Promise<number> {
+  async update(bookId: number, updates: Partial<Omit<Book, 'id' | 'created_at'>>): Promise<number> {
     try {
       if (Object.keys(updates).length === 0) {
         return 0;
@@ -93,7 +93,10 @@ export class BookRepository extends BaseRepository<Book> {
       }
       return changes;
     } catch (error) {
-      logger.error('Error updating book', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error updating book',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -109,7 +112,10 @@ export class BookRepository extends BaseRepository<Book> {
       const query = 'SELECT * FROM books WHERE genre = ? ORDER BY rating DESC';
       return await this.db.all<Book>(query, [genre]);
     } catch (error) {
-      logger.error('Error getting books by genre', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting books by genre',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -138,7 +144,10 @@ export class BookRepository extends BaseRepository<Book> {
 
       return { books, total };
     } catch (error) {
-      logger.error('Error getting books by genre with pagination', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting books by genre with pagination',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -160,7 +169,10 @@ export class BookRepository extends BaseRepository<Book> {
 
       return { books, total };
     } catch (error) {
-      logger.error('Error getting all books with pagination', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting all books with pagination',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -172,10 +184,7 @@ export class BookRepository extends BaseRepository<Book> {
    * @returns Promise with array of matching books
    * @throws Error if search fails
    */
-  async search(
-    searchTerm: string,
-    limit: number = 10
-  ): Promise<Book[]> {
+  async search(searchTerm: string, limit: number = 10): Promise<Book[]> {
     try {
       const pattern = `%${searchTerm}%`;
       const query = `
@@ -189,7 +198,10 @@ export class BookRepository extends BaseRepository<Book> {
 
       return await this.db.all<Book>(query, [pattern, pattern, pattern, limit]);
     } catch (error) {
-      logger.error('Error searching books', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error searching books',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -207,7 +219,10 @@ export class BookRepository extends BaseRepository<Book> {
       `;
       return await this.db.all<Book>(query, [limit]);
     } catch (error) {
-      logger.error('Error getting top rated books', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting top rated books',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -225,7 +240,10 @@ export class BookRepository extends BaseRepository<Book> {
       `;
       return await this.db.all<Book>(query, [limit]);
     } catch (error) {
-      logger.error('Error getting newest books', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting newest books',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -243,7 +261,10 @@ export class BookRepository extends BaseRepository<Book> {
       `;
       return await this.db.get<Book>(query, []);
     } catch (error) {
-      logger.error('Error getting random book', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting random book',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -261,7 +282,10 @@ export class BookRepository extends BaseRepository<Book> {
       const results = await this.db.all<{ genre: string }>(query, []);
       return results.map((r) => r.genre);
     } catch (error) {
-      logger.error('Error getting all genres', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting all genres',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -271,11 +295,13 @@ export class BookRepository extends BaseRepository<Book> {
    */
   async incrementDownloads(bookId: number): Promise<void> {
     try {
-      const query =
-        'UPDATE books SET downloads_count = downloads_count + 1 WHERE id = ?';
+      const query = 'UPDATE books SET downloads_count = downloads_count + 1 WHERE id = ?';
       await this.db.update(query, [bookId]);
     } catch (error) {
-      logger.error('Error incrementing downloads', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error incrementing downloads',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -293,7 +319,10 @@ export class BookRepository extends BaseRepository<Book> {
       `;
       return await this.db.all<Book>(query, [maxRating, limit]);
     } catch (error) {
-      logger.error('Error getting low rated books', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting low rated books',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -317,7 +346,10 @@ export class BookRepository extends BaseRepository<Book> {
 
       return await this.db.all<Book>(query, params);
     } catch (error) {
-      logger.error('Error getting books by author', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting books by author',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }

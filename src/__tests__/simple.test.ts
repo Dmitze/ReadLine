@@ -31,13 +31,13 @@ describe('String Operations', () => {
 describe('Array Operations', () => {
   it('should filter arrays', () => {
     const arr = [1, 2, 3, 4, 5];
-    const filtered = arr.filter(n => n > 2);
+    const filtered = arr.filter((n) => n > 2);
     expect(filtered).toEqual([3, 4, 5]);
   });
 
   it('should map arrays', () => {
     const arr = [1, 2, 3];
-    const mapped = arr.map(n => n * 2);
+    const mapped = arr.map((n) => n * 2);
     expect(mapped).toEqual([2, 4, 6]);
   });
 });

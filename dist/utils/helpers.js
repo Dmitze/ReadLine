@@ -65,7 +65,7 @@ const formatBookCaption = async (book, tags) => {
     caption += `${genreEmoji} <b>Жанр:</b> ${safeGenre}\n`;
     if (tags) {
         if (tags.length > 0) {
-            const tagNames = tags.map(t => `#${escapeHtml(t.name.replace(/\s+/g, '_'))}`).join(' ');
+            const tagNames = tags.map((t) => `#${escapeHtml(t.name.replace(/\s+/g, '_'))}`).join(' ');
             caption += `🏷️ <b>Теги:</b> ${tagNames}\n`;
         }
     }
@@ -74,7 +74,9 @@ const formatBookCaption = async (book, tags) => {
             const { getBookTags } = await Promise.resolve().then(() => __importStar(require('../database/tagFunctions')));
             const loadedTags = await getBookTags(book.id);
             if (loadedTags && loadedTags.length > 0) {
-                const tagNames = loadedTags.map(t => `#${escapeHtml(t.name.replace(/\s+/g, '_'))}`).join(' ');
+                const tagNames = loadedTags
+                    .map((t) => `#${escapeHtml(t.name.replace(/\s+/g, '_'))}`)
+                    .join(' ');
                 caption += `🏷️ <b>Теги:</b> ${tagNames}\n`;
             }
         }
@@ -110,8 +112,11 @@ const formatBookCaption = async (book, tags) => {
                 caption += `🔞 <b>Вік:</b> ${ageLabel}\n`;
             }
             if (stats && stats.content_warnings && stats.content_warnings.length > 0) {
-                const warnings = Array.isArray(stats.content_warnings) ? stats.content_warnings :
-                    (typeof stats.content_warnings === 'string' ? JSON.parse(stats.content_warnings) : []);
+                const warnings = Array.isArray(stats.content_warnings)
+                    ? stats.content_warnings
+                    : typeof stats.content_warnings === 'string'
+                        ? JSON.parse(stats.content_warnings)
+                        : [];
                 if (warnings.length > 0) {
                     caption += `⚠️ <b>Варнінги:</b> ${warnings.map((w) => getWarningLabel(w)).join(', ')}\n`;
                 }
@@ -148,7 +153,7 @@ const formatBookCaption = async (book, tags) => {
     }
     if (availableFormats.length > 0) {
         caption += '📦 <b>Доступні формати:</b>\n';
-        availableFormats.forEach(format => {
+        availableFormats.forEach((format) => {
             caption += `   ${format}\n`;
         });
         caption += '\n';
@@ -166,21 +171,21 @@ const formatBookCaption = async (book, tags) => {
 exports.formatBookCaption = formatBookCaption;
 function getGenreEmoji(genre) {
     const genreMap = {
-        'Фантастика': '🚀',
-        'Детектив': '🔍',
-        'Роман': '💕',
-        'Історична': '📜',
-        'Пригоди': '🗺️',
-        'Фентезі': '🐉',
-        'Наукова': '🔬',
-        'Біографія': '👤',
-        'Поезія': '✨',
-        'Класика': '📚',
-        'Трилер': '😱',
-        'Містика': '🔮',
-        'Драма': '🎭',
-        'Комедія': '😄',
-        'Філософія': '🤔'
+        Фантастика: '🚀',
+        Детектив: '🔍',
+        Роман: '💕',
+        Історична: '📜',
+        Пригоди: '🗺️',
+        Фентезі: '🐉',
+        Наукова: '🔬',
+        Біографія: '👤',
+        Поезія: '✨',
+        Класика: '📚',
+        Трилер: '😱',
+        Містика: '🔮',
+        Драма: '🎭',
+        Комедія: '😄',
+        Філософія: '🤔',
     };
     return genreMap[genre] || '📖';
 }
@@ -190,22 +195,22 @@ function getAgeLabel(age) {
         6: '🟢 6+',
         12: '🟡 12+',
         16: '🟠 16+',
-        18: '🔴 18+'
+        18: '🔴 18+',
     };
     return ageMap[age] || 'Невідомо';
 }
 function getWarningLabel(warning) {
     const warningMap = {
-        'violence': 'Насильство',
-        'explicit_content': 'Експліцитний контент',
-        'sexual_scenes': 'Сексуальні сцени',
-        'mature_themes': 'Дорослі теми',
-        'strong_language': 'Грубе мовлення',
-        'psychological_horror': 'Психологічний жах',
-        'substance_abuse': 'Зловживання',
-        'child_abuse': 'Насильство над дітьми',
-        'discrimination': 'Дискримінація',
-        'self_harm': 'Самозалік'
+        violence: 'Насильство',
+        explicit_content: 'Експліцитний контент',
+        sexual_scenes: 'Сексуальні сцени',
+        mature_themes: 'Дорослі теми',
+        strong_language: 'Грубе мовлення',
+        psychological_horror: 'Психологічний жах',
+        substance_abuse: 'Зловживання',
+        child_abuse: 'Насильство над дітьми',
+        discrimination: 'Дискримінація',
+        self_harm: 'Самозалік',
     };
     return warningMap[warning] || warning;
 }

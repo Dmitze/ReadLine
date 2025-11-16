@@ -20,13 +20,11 @@ export const BookFactory = {
     pageCount: 300,
     createdAt: new Date(),
     updatedAt: new Date(),
-    ...overrides
+    ...overrides,
   }),
 
   createMany: (count: number, overrides: Record<string, any> = {}) => {
-    return Array.from({ length: count }, (_, i) =>
-      BookFactory.create({ id: i + 1, ...overrides })
-    );
+    return Array.from({ length: count }, (_, i) => BookFactory.create({ id: i + 1, ...overrides }));
   },
 
   // Specific book types
@@ -40,7 +38,7 @@ export const BookFactory = {
     BookFactory.create({ genre: 'History', ...overrides }),
 
   unavailable: (overrides?: Record<string, any>) =>
-    BookFactory.create({ isAvailable: false, ...overrides })
+    BookFactory.create({ isAvailable: false, ...overrides }),
 };
 
 /**
@@ -59,21 +57,18 @@ export const UserFactory = {
     isBlocked: false,
     createdAt: new Date(),
     updatedAt: new Date(),
-    ...overrides
+    ...overrides,
   }),
 
   createMany: (count: number, overrides: Record<string, any> = {}) => {
-    return Array.from({ length: count }, (_, i) =>
-      UserFactory.create({ id: i + 1, ...overrides })
-    );
+    return Array.from({ length: count }, (_, i) => UserFactory.create({ id: i + 1, ...overrides }));
   },
 
   // Specific user types
-  admin: (overrides?: Record<string, any>) =>
-    UserFactory.create({ isAdmin: true, ...overrides }),
+  admin: (overrides?: Record<string, any>) => UserFactory.create({ isAdmin: true, ...overrides }),
 
   blocked: (overrides?: Record<string, any>) =>
-    UserFactory.create({ isBlocked: true, ...overrides })
+    UserFactory.create({ isBlocked: true, ...overrides }),
 };
 
 /**
@@ -90,7 +85,7 @@ export const ReviewFactory = {
     isPublished: true,
     createdAt: new Date(),
     updatedAt: new Date(),
-    ...overrides
+    ...overrides,
   }),
 
   createMany: (count: number, overrides: Record<string, any> = {}) => {
@@ -109,8 +104,7 @@ export const ReviewFactory = {
   highRating: (overrides?: Record<string, any>) =>
     ReviewFactory.create({ rating: 5, ...overrides }),
 
-  lowRating: (overrides?: Record<string, any>) =>
-    ReviewFactory.create({ rating: 1, ...overrides })
+  lowRating: (overrides?: Record<string, any>) => ReviewFactory.create({ rating: 1, ...overrides }),
 };
 
 /**
@@ -126,7 +120,7 @@ export const AudioBookFactory = {
     status: 'available',
     createdAt: new Date(),
     updatedAt: new Date(),
-    ...overrides
+    ...overrides,
   }),
 
   // Specific audio book types
@@ -134,7 +128,7 @@ export const AudioBookFactory = {
     AudioBookFactory.create({ status: 'available', ...overrides }),
 
   processing: (overrides?: Record<string, any>) =>
-    AudioBookFactory.create({ status: 'processing', ...overrides })
+    AudioBookFactory.create({ status: 'processing', ...overrides }),
 };
 
 /**
@@ -148,7 +142,7 @@ export const SavedBookFactory = {
     status: 'reading',
     progress: 50,
     savedAt: new Date(),
-    ...overrides
+    ...overrides,
   }),
 
   // Specific saved book types
@@ -159,7 +153,7 @@ export const SavedBookFactory = {
     SavedBookFactory.create({ status: 'completed', progress: 100, ...overrides }),
 
   toRead: (overrides?: Record<string, any>) =>
-    SavedBookFactory.create({ status: 'to_read', progress: 0, ...overrides })
+    SavedBookFactory.create({ status: 'to_read', progress: 0, ...overrides }),
 };
 
 /**
@@ -171,14 +165,14 @@ export const TagFactory = {
     name: 'test-tag',
     bookCount: 1,
     createdAt: new Date(),
-    ...overrides
+    ...overrides,
   }),
 
   createMany: (count: number, overrides: Record<string, any> = {}) => {
     return Array.from({ length: count }, (_, i) =>
       TagFactory.create({ id: i + 1, name: `tag-${i}`, ...overrides })
     );
-  }
+  },
 };
 
 /**
@@ -194,12 +188,11 @@ export const FeedbackFactory = {
     reply: null,
     createdAt: new Date(),
     updatedAt: new Date(),
-    ...overrides
+    ...overrides,
   }),
 
   // Specific feedback types
-  bug: (overrides?: Record<string, any>) =>
-    FeedbackFactory.create({ type: 'bug', ...overrides }),
+  bug: (overrides?: Record<string, any>) => FeedbackFactory.create({ type: 'bug', ...overrides }),
 
   feature: (overrides?: Record<string, any>) =>
     FeedbackFactory.create({ type: 'feature', ...overrides }),
@@ -207,8 +200,7 @@ export const FeedbackFactory = {
   suggestion: (overrides?: Record<string, any>) =>
     FeedbackFactory.create({ type: 'suggestion', ...overrides }),
 
-  read: (overrides?: Record<string, any>) =>
-    FeedbackFactory.create({ isRead: true, ...overrides })
+  read: (overrides?: Record<string, any>) => FeedbackFactory.create({ isRead: true, ...overrides }),
 };
 
 /**
@@ -224,7 +216,7 @@ export const PromoCodeFactory = {
     isActive: true,
     expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
     createdAt: new Date(),
-    ...overrides
+    ...overrides,
   }),
 
   // Specific promo types
@@ -235,11 +227,11 @@ export const PromoCodeFactory = {
     PromoCodeFactory.create({
       isActive: false,
       expiresAt: new Date(Date.now() - 1000),
-      ...overrides
+      ...overrides,
     }),
 
   unlimited: (overrides?: Record<string, any>) =>
-    PromoCodeFactory.create({ maxUses: 9999, ...overrides })
+    PromoCodeFactory.create({ maxUses: 9999, ...overrides }),
 };
 
 /**
@@ -253,5 +245,5 @@ export const Factories = {
   SavedBook: SavedBookFactory,
   Tag: TagFactory,
   Feedback: FeedbackFactory,
-  PromoCode: PromoCodeFactory
+  PromoCode: PromoCodeFactory,
 };

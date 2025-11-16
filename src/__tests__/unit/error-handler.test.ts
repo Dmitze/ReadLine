@@ -8,17 +8,13 @@ import {
   asyncHandler,
   retryOperation,
   withFallback,
-  withTimeout
+  withTimeout,
 } from '../../utils/errorHandler';
 
 describe('Error Handler', () => {
   describe('AppError', () => {
     it('should create custom error with type', () => {
-      const error = new AppError(
-        ErrorType.VALIDATION,
-        'Invalid input',
-        'User-friendly message'
-      );
+      const error = new AppError(ErrorType.VALIDATION, 'Invalid input', 'User-friendly message');
 
       expect(error.type).toBe(ErrorType.VALIDATION);
       expect(error.message).toBe('Invalid input');
@@ -106,7 +102,7 @@ describe('Error Handler', () => {
   describe('withTimeout', () => {
     it('should return result if operation completes in time', async () => {
       const operation = async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return 'done';
       };
 
@@ -116,7 +112,7 @@ describe('Error Handler', () => {
 
     it('should throw on timeout', async () => {
       const operation = async () => {
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
         return 'done';
       };
 

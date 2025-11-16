@@ -3,7 +3,17 @@
  * REFACTOR-016: SQL Injection Protection
  */
 
-export type WhereOperator = '=' | '!=' | '<' | '<=' | '>' | '>=' | 'LIKE' | 'IN' | 'NOT IN' | 'BETWEEN';
+export type WhereOperator =
+  | '='
+  | '!='
+  | '<'
+  | '<='
+  | '>'
+  | '>='
+  | 'LIKE'
+  | 'IN'
+  | 'NOT IN'
+  | 'BETWEEN';
 export type JoinType = 'INNER' | 'LEFT' | 'RIGHT' | 'FULL';
 export type OrderDirection = 'ASC' | 'DESC';
 
@@ -49,7 +59,7 @@ export class QueryBuilder {
    * Встановити стовпці для виділення
    */
   columns(...columns: string[]): this {
-    this.select = columns.map(col => this.escapeIdentifier(col));
+    this.select = columns.map((col) => this.escapeIdentifier(col));
     return this;
   }
 
@@ -60,7 +70,7 @@ export class QueryBuilder {
     this.joins.push({
       type,
       table: this.escapeIdentifier(table),
-      on: condition
+      on: condition,
     });
     return this;
   }
@@ -92,7 +102,7 @@ export class QueryBuilder {
     this.whereConditions.push({
       column: this.escapeIdentifier(column),
       operator: operator as WhereOperator,
-      value
+      value,
     });
 
     this.parameters.push(value);
@@ -112,7 +122,7 @@ export class QueryBuilder {
       column: this.escapeIdentifier(column),
       operator: operator as WhereOperator,
       value,
-      logic: 'AND'
+      logic: 'AND',
     });
 
     this.parameters.push(value);
@@ -132,7 +142,7 @@ export class QueryBuilder {
       column: this.escapeIdentifier(column),
       operator: operator as WhereOperator,
       value,
-      logic: 'OR'
+      logic: 'OR',
     });
 
     this.parameters.push(value);
@@ -146,7 +156,7 @@ export class QueryBuilder {
     this.whereConditions.push({
       column: this.escapeIdentifier(column),
       operator: 'IN',
-      value: values
+      value: values,
     });
 
     this.parameters.push(...values);
@@ -160,7 +170,7 @@ export class QueryBuilder {
     this.whereConditions.push({
       column: this.escapeIdentifier(column),
       operator: 'BETWEEN',
-      value: [min, max]
+      value: [min, max],
     });
 
     this.parameters.push(min, max);
@@ -171,7 +181,7 @@ export class QueryBuilder {
    * Додати GROUP BY
    */
   groupBy(...columns: string[]): this {
-    this.groupByColumns = columns.map(col => this.escapeIdentifier(col));
+    this.groupByColumns = columns.map((col) => this.escapeIdentifier(col));
     return this;
   }
 
@@ -181,7 +191,7 @@ export class QueryBuilder {
   orderBy(column: string, direction: OrderDirection = 'ASC'): this {
     this.orderByClauses.push({
       column: this.escapeIdentifier(column),
-      direction
+      direction,
     });
     return this;
   }
@@ -226,9 +236,7 @@ export class QueryBuilder {
 
     // Додати ORDER BY
     if (this.orderByClauses.length > 0) {
-      const orderClauses = this.orderByClauses
-        .map(o => `${o.column} ${o.direction}`)
-        .join(', ');
+      const orderClauses = this.orderByClauses.map((o) => `${o.column} ${o.direction}`).join(', ');
       sql += ` ORDER BY ${orderClauses}`;
     }
 
@@ -256,7 +264,7 @@ export class QueryBuilder {
   build(): { sql: string; parameters: any[] } {
     return {
       sql: this.toSql(),
-      parameters: this.getParameters()
+      parameters: this.getParameters(),
     };
   }
 
@@ -270,9 +278,7 @@ export class QueryBuilder {
 
         switch (condition.operator) {
           case 'IN':
-            const placeholders = (condition.value as any[])
-              .map(() => '?')
-              .join(', ');
+            const placeholders = (condition.value as any[]).map(() => '?').join(', ');
             return `${prefix}${condition.column} IN (${placeholders})`;
 
           case 'BETWEEN':
@@ -356,7 +362,7 @@ export class InsertBuilder {
    * Встановити стовпці
    */
   columns(...columns: string[]): this {
-    this.columnNames = columns.map(col => this.escapeIdentifier(col));
+    this.columnNames = columns.map((col) => this.escapeIdentifier(col));
     return this;
   }
 
@@ -391,7 +397,7 @@ export class InsertBuilder {
   build(): { sql: string; parameters: any[] } {
     return {
       sql: this.toSql(),
-      parameters: this.getParameters()
+      parameters: this.getParameters(),
     };
   }
 
@@ -441,7 +447,7 @@ export class UpdateBuilder {
     this.whereConditions.push({
       column: this.escapeIdentifier(column),
       operator: operator as WhereOperator,
-      value
+      value,
     });
 
     this.parameters.push(value);
@@ -453,7 +459,7 @@ export class UpdateBuilder {
    */
   toSql(): string {
     const setClause = Array.from(this.setValues.keys())
-      .map(col => `${col} = ?`)
+      .map((col) => `${col} = ?`)
       .join(', ');
 
     let sql = `UPDATE ${this.tableName} SET ${setClause}`;
@@ -479,7 +485,7 @@ export class UpdateBuilder {
   build(): { sql: string; parameters: any[] } {
     return {
       sql: this.toSql(),
-      parameters: this.getParameters()
+      parameters: this.getParameters(),
     };
   }
 
@@ -528,7 +534,7 @@ export class DeleteBuilder {
     this.whereConditions.push({
       column: this.escapeIdentifier(column),
       operator: operator as WhereOperator,
-      value
+      value,
     });
 
     this.parameters.push(value);
@@ -562,7 +568,7 @@ export class DeleteBuilder {
   build(): { sql: string; parameters: any[] } {
     return {
       sql: this.toSql(),
-      parameters: this.getParameters()
+      parameters: this.getParameters(),
     };
   }
 

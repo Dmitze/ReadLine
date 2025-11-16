@@ -11,7 +11,7 @@ describe('Services Integration Tests - Phase 3', () => {
         id: 1,
         title: 'Test Book',
         author: 'Test Author',
-        genre: 'Fiction'
+        genre: 'Fiction',
       };
 
       expect(mockBook.id).toBe(1);
@@ -21,17 +21,17 @@ describe('Services Integration Tests - Phase 3', () => {
     it('should search books by genre', () => {
       const books = [
         { id: 1, title: 'Book 1', genre: 'Fiction' },
-        { id: 2, title: 'Book 2', genre: 'Fiction' }
+        { id: 2, title: 'Book 2', genre: 'Fiction' },
       ];
 
-      const filtered = books.filter(b => b.genre === 'Fiction');
+      const filtered = books.filter((b) => b.genre === 'Fiction');
       expect(filtered).toHaveLength(2);
     });
 
     it('should fetch popular books', () => {
       const books = [
         { id: 1, title: 'Popular 1', rating: 5 },
-        { id: 2, title: 'Popular 2', rating: 4.5 }
+        { id: 2, title: 'Popular 2', rating: 4.5 },
       ];
 
       expect(books.length).toBeGreaterThan(0);
@@ -54,7 +54,7 @@ describe('Services Integration Tests - Phase 3', () => {
         id: 1,
         telegram_id: 12345,
         first_name: 'Test',
-        is_admin: false
+        is_admin: false,
       };
 
       expect(user.telegram_id).toBe(12345);
@@ -65,7 +65,7 @@ describe('Services Integration Tests - Phase 3', () => {
       const user = {
         id: 1,
         first_name: 'Test',
-        language: 'uk'
+        language: 'uk',
       };
 
       const updated = { ...user, language: 'en' };
@@ -87,7 +87,7 @@ describe('Services Integration Tests - Phase 3', () => {
         book_id: 1,
         user_id: 1,
         rating: 5,
-        comment: 'Great book!'
+        comment: 'Great book!',
       };
 
       expect(review.rating).toBe(5);
@@ -105,17 +105,17 @@ describe('Services Integration Tests - Phase 3', () => {
       const reviews = [
         { id: 1, book_id: 1, rating: 5 },
         { id: 2, book_id: 1, rating: 4 },
-        { id: 3, book_id: 1, rating: 5 }
+        { id: 3, book_id: 1, rating: 5 },
       ];
 
-      expect(reviews.filter(r => r.book_id === 1)).toHaveLength(3);
+      expect(reviews.filter((r) => r.book_id === 1)).toHaveLength(3);
     });
   });
 
   describe('Service Error Handling', () => {
     it('should handle database errors', () => {
       const error = new Error('Database connection failed');
-      
+
       expect(error.message).toContain('Database');
     });
 

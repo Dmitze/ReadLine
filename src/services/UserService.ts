@@ -43,7 +43,7 @@ export class UserService {
           first_name: input.first_name,
           last_name: input.last_name,
           language_code: input.language || 'uk',
-          is_admin: false
+          is_admin: false,
         });
 
         user = await this.userRepository.findById(userId);
@@ -103,7 +103,7 @@ export class UserService {
         username: input.username || user.username,
         first_name: input.first_name || user.first_name,
         last_name: input.last_name || user.last_name,
-        is_admin: input.is_admin !== undefined ? input.is_admin : user.is_admin
+        is_admin: input.is_admin !== undefined ? input.is_admin : user.is_admin,
       });
 
       return new Ok(undefined);

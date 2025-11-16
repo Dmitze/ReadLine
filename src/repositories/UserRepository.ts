@@ -1,7 +1,7 @@
 /**
  * User Repository
  * REFACTOR-002: Repository Layer Separation
- * 
+ *
  * All database operations related to users
  */
 
@@ -35,8 +35,14 @@ export class UserRepository extends BaseRepository<User> {
    */
   async create(userData: Omit<User, 'id' | 'created_at' | 'last_seen'>): Promise<number> {
     try {
-      const { user_id, username, first_name, last_name, is_admin = false, is_new = true } =
-        userData;
+      const {
+        user_id,
+        username,
+        first_name,
+        last_name,
+        is_admin = false,
+        is_new = true,
+      } = userData;
 
       const query = `
         INSERT INTO users (user_id, username, first_name, last_name, is_admin, is_new)
@@ -55,7 +61,10 @@ export class UserRepository extends BaseRepository<User> {
       logger.info(`User created: ${user_id}`, { id });
       return id;
     } catch (error) {
-      logger.error('Error creating user', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error creating user',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -71,7 +80,10 @@ export class UserRepository extends BaseRepository<User> {
       const query = 'SELECT * FROM users WHERE user_id = ?';
       return await this.db.get<User>(query, [userId]);
     } catch (error) {
-      logger.error('Error getting user by Telegram ID', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting user by Telegram ID',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -105,7 +117,10 @@ export class UserRepository extends BaseRepository<User> {
       }
       return changes;
     } catch (error) {
-      logger.error('Error updating user', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error updating user',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -118,7 +133,10 @@ export class UserRepository extends BaseRepository<User> {
       const user = await this.getByTelegramId(userId);
       return user?.is_new === true;
     } catch (error) {
-      logger.error('Error checking if user is new', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error checking if user is new',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -131,7 +149,10 @@ export class UserRepository extends BaseRepository<User> {
       const query = 'UPDATE users SET is_new = 0 WHERE user_id = ?';
       return await this.db.update(query, [userId]);
     } catch (error) {
-      logger.error('Error marking user as not new', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error marking user as not new',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -144,7 +165,10 @@ export class UserRepository extends BaseRepository<User> {
       const query = 'UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE user_id = ?';
       return await this.db.update(query, [userId]);
     } catch (error) {
-      logger.error('Error updating last seen', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error updating last seen',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -157,7 +181,10 @@ export class UserRepository extends BaseRepository<User> {
       const query = 'SELECT * FROM users WHERE is_admin = 1 ORDER BY created_at DESC';
       return await this.db.all<User>(query, []);
     } catch (error) {
-      logger.error('Error getting all admins', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting all admins',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -169,7 +196,10 @@ export class UserRepository extends BaseRepository<User> {
     try {
       return await this.count();
     } catch (error) {
-      logger.error('Error getting total user count', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting total user count',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -186,7 +216,10 @@ export class UserRepository extends BaseRepository<User> {
       const result = await this.db.get<{ count: number }>(query, [daysBack]);
       return result?.count || 0;
     } catch (error) {
-      logger.error('Error getting active count', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting active count',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -203,7 +236,10 @@ export class UserRepository extends BaseRepository<User> {
       `;
       return await this.db.all<User>(query, [date.toISOString()]);
     } catch (error) {
-      logger.error('Error getting new users', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting new users',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -224,7 +260,10 @@ export class UserRepository extends BaseRepository<User> {
       `;
       return await this.db.all<User>(query, [pattern, pattern, pattern, limit]);
     } catch (error) {
-      logger.error('Error searching users', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error searching users',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }

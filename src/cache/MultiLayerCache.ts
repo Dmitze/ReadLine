@@ -27,7 +27,7 @@ export class MultiLayerCache {
       memory: { enabled: true, ttl: 3600000 },
       strategy: 'LRU',
       maxSize: 1000,
-      ...config
+      ...config,
     };
 
     this.memoryCache = new MemoryCache(this.config.memory.ttl);
@@ -40,7 +40,7 @@ export class MultiLayerCache {
     if (!this.config.memory.enabled) return null;
 
     const value = this.memoryCache.get<T>(key);
-    
+
     if (value !== null) {
       // Оновити статистику доступу
       this.accessCount.set(key, (this.accessCount.get(key) || 0) + 1);
@@ -95,7 +95,7 @@ export class MultiLayerCache {
     switch (this.config.strategy) {
       case 'LRU':
         // Least Recently Used - видалити елемент з найменшою кількістю доступів
-        keyToRemove = keys.reduce((least, key) => 
+        keyToRemove = keys.reduce((least, key) =>
           (this.accessCount.get(key) || 0) < (this.accessCount.get(least) || 0) ? key : least
         );
         break;
@@ -133,11 +133,7 @@ export class MultiLayerCache {
   /**
    * Отримати або встановити значення
    */
-  async getOrSet<T>(
-    key: string,
-    factory: () => Promise<T>,
-    ttl?: number
-  ): Promise<T> {
+  async getOrSet<T>(key: string, factory: () => Promise<T>, ttl?: number): Promise<T> {
     if (!this.config.memory.enabled) {
       return factory();
     }
@@ -193,9 +189,9 @@ export class MultiLayerCache {
       strategy: this.config.strategy,
       size: stats.size,
       maxSize: this.config.maxSize,
-      utilization: (stats.size / this.config.maxSize * 100),
+      utilization: (stats.size / this.config.maxSize) * 100,
       memory: stats.memory,
-      topAccessed
+      topAccessed,
     };
   }
 

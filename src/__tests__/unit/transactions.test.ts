@@ -26,9 +26,9 @@ describe('Transaction Manager', () => {
       }),
       all: jest.fn(),
       get: jest.fn(),
-      transaction: jest.fn()
+      transaction: jest.fn(),
     };
-    
+
     dbWrapper = new DatabaseWrapper(mockDb as never);
     manager = new TransactionManager(dbWrapper);
   });
@@ -77,9 +77,18 @@ describe('Transaction Manager', () => {
     it('should execute multiple operations in order', async () => {
       const order: number[] = [];
       const operations = [
-        async () => { order.push(1); return 1; },
-        async () => { order.push(2); return 2; },
-        async () => { order.push(3); return 3; }
+        async () => {
+          order.push(1);
+          return 1;
+        },
+        async () => {
+          order.push(2);
+          return 2;
+        },
+        async () => {
+          order.push(3);
+          return 3;
+        },
       ];
 
       dbWrapper.transaction = jest.fn(async (callback) => {
@@ -98,8 +107,10 @@ describe('Transaction Manager', () => {
     it('should rollback all on error', async () => {
       const operations = [
         async () => 1,
-        async () => { throw new Error('Failed'); },
-        async () => 3
+        async () => {
+          throw new Error('Failed');
+        },
+        async () => 3,
       ];
 
       dbWrapper.transaction = jest.fn(async (callback) => {
@@ -156,9 +167,9 @@ describe('TransactionPatterns', () => {
         }
       }),
       all: jest.fn(),
-      get: jest.fn()
+      get: jest.fn(),
     };
-    
+
     dbWrapper = new DatabaseWrapper(mockDb as never);
     manager = new TransactionManager(dbWrapper);
     patterns = new TransactionPatterns(manager);
@@ -169,7 +180,7 @@ describe('TransactionPatterns', () => {
       const mainCreate = jest.fn(async () => 1);
       const relatedCreates = [
         jest.fn(async (id: number) => `related-${id}-1`),
-        jest.fn(async (id: number) => `related-${id}-2`)
+        jest.fn(async (id: number) => `related-${id}-2`),
       ];
 
       dbWrapper.transaction = jest.fn(async (callback) => {

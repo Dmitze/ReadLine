@@ -9,7 +9,7 @@ describe('Database Integration Tests', () => {
     jest.clearAllTimers();
     jest.useRealTimers();
     // Cleanup resources
-    await new Promise(resolve => {
+    await new Promise((resolve) => {
       const timer = setTimeout(resolve, 100);
       timer.unref(); // Prevent timer from keeping process alive
     });
@@ -40,7 +40,7 @@ describe('Database Integration Tests', () => {
       const table = 'books';
       const whereClause = 'genre = ?';
       const params = ['fiction'];
-      
+
       expect(table).toBe('books');
       expect(whereClause).toContain('?');
       expect(params[0]).toBe('fiction');
@@ -49,7 +49,7 @@ describe('Database Integration Tests', () => {
     it('should handle multiple WHERE conditions', () => {
       const conditions = ['genre = ?', 'rating > ?', 'is_available = ?'];
       const params = ['fiction', 4, true];
-      
+
       expect(conditions).toHaveLength(params.length);
       expect(params[0]).toBe('fiction');
       expect(params[1]).toBe(4);
@@ -59,7 +59,7 @@ describe('Database Integration Tests', () => {
     it('should escape column names', () => {
       const columns = ['title', 'author', 'genre'];
       expect(columns).toContain('title');
-      expect(columns.every(col => typeof col === 'string')).toBe(true);
+      expect(columns.every((col) => typeof col === 'string')).toBe(true);
     });
   });
 
@@ -68,9 +68,9 @@ describe('Database Integration Tests', () => {
       const bookData = {
         title: 'Test Book',
         author: 'Test Author',
-        genre: 'Fiction'
+        genre: 'Fiction',
       };
-      
+
       expect(bookData.title).toBeTruthy();
       expect(bookData.author).toBeTruthy();
       expect(bookData.genre).toBeTruthy();
@@ -79,7 +79,7 @@ describe('Database Integration Tests', () => {
     it('should sanitize string inputs', () => {
       const input = '  test  ';
       const sanitized = input.trim();
-      
+
       expect(sanitized).toBe('test');
       expect(sanitized).not.toContain('  ');
     });
@@ -87,7 +87,7 @@ describe('Database Integration Tests', () => {
     it('should validate email format', () => {
       const validEmail = 'user@example.com';
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      
+
       expect(emailRegex.test(validEmail)).toBe(true);
     });
   });
@@ -97,9 +97,9 @@ describe('Database Integration Tests', () => {
       const indexes = {
         books_genre: ['genre'],
         books_author: ['author'],
-        books_rating: ['rating', 'is_available']
+        books_rating: ['rating', 'is_available'],
       };
-      
+
       expect(indexes.books_genre).toContain('genre');
       expect(indexes.books_rating).toHaveLength(2);
     });
@@ -108,11 +108,11 @@ describe('Database Integration Tests', () => {
       const queryConditions = {
         genre: 'fiction',
         rating: { '>=': 4 },
-        isAvailable: true
+        isAvailable: true,
       };
-      
+
       expect(queryConditions.genre).toBe('fiction');
-      expect(queryConditions.rating['>='] ).toBe(4);
+      expect(queryConditions.rating['>=']).toBe(4);
       expect(queryConditions.isAvailable).toBe(true);
     });
   });

@@ -26,15 +26,17 @@ export const getAllTags = (): Promise<Tag[]> => {
 // ВАЖЛИВО: теги повинні бути однослівними (максимум 2 слова без пробілів)
 export const addTag = async (name: string): Promise<number> => {
   const { isValidTag, normalizeTag } = await import('../utils/tagValidator');
-  
+
   if (!isValidTag(name)) {
-    throw new Error(`Невалідна назва тегу: "${name}". Теги мають бути однослівними або двослівними без пробілів.`);
+    throw new Error(
+      `Невалідна назва тегу: "${name}". Теги мають бути однослівними або двослівними без пробілів.`
+    );
   }
-  
+
   const normalized = normalizeTag(name);
-  
+
   return new Promise((resolve, reject) => {
-    db.run('INSERT INTO tags (name) VALUES (?)', [normalized], function(err) {
+    db.run('INSERT INTO tags (name) VALUES (?)', [normalized], function (err) {
       if (err) reject(err);
       else resolve(this.lastID);
     });
@@ -44,7 +46,8 @@ export const addTag = async (name: string): Promise<number> => {
 // Отримати теги книги
 export const getBookTags = (bookId: number): Promise<Tag[]> => {
   return new Promise((resolve, reject) => {
-    const query = 'SELECT t.* FROM tags t INNER JOIN book_tags bt ON t.id = bt.tag_id WHERE bt.book_id = ? ORDER BY t.name';
+    const query =
+      'SELECT t.* FROM tags t INNER JOIN book_tags bt ON t.id = bt.tag_id WHERE bt.book_id = ? ORDER BY t.name';
     db.all(query, [bookId], (err, rows: Tag[]) => {
       if (err) reject(err);
       else resolve(rows);
@@ -59,7 +62,7 @@ export const getBooksTagsBatch = (bookIds: number[]): Promise<Map<number, Tag[]>
       resolve(new Map());
       return;
     }
-    
+
     const placeholders = bookIds.map(() => '?').join(',');
     const query = `
       SELECT bt.book_id, t.* 
@@ -68,15 +71,15 @@ export const getBooksTagsBatch = (bookIds: number[]): Promise<Map<number, Tag[]>
       WHERE bt.book_id IN (${placeholders})
       ORDER BY bt.book_id, t.name
     `;
-    
+
     db.all(query, bookIds, (err, rows: Array<Tag & { book_id: number }>) => {
       if (err) {
         reject(err);
         return;
       }
-      
+
       const result = new Map<number, Tag[]>();
-      rows.forEach(row => {
+      rows.forEach((row) => {
         const bookId = row.book_id;
         if (!result.has(bookId)) {
           result.set(bookId, []);
@@ -84,7 +87,7 @@ export const getBooksTagsBatch = (bookIds: number[]): Promise<Map<number, Tag[]>
         const { book_id, ...tag } = row;
         result.get(bookId)!.push(tag);
       });
-      
+
       resolve(result);
     });
   });
@@ -93,10 +96,14 @@ export const getBooksTagsBatch = (bookIds: number[]): Promise<Map<number, Tag[]>
 // Додати тег до книги
 export const addBookTag = (bookId: number, tagId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
-    db.run('INSERT OR IGNORE INTO book_tags (book_id, tag_id) VALUES (?, ?)', [bookId, tagId], (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
+    db.run(
+      'INSERT OR IGNORE INTO book_tags (book_id, tag_id) VALUES (?, ?)',
+      [bookId, tagId],
+      (err) => {
+        if (err) reject(err);
+        else resolve();
+      }
+    );
   });
 };
 
@@ -116,12 +123,12 @@ export const searchBooksByTag = (tagName: string, limit: number = 10): Promise<a
   return new Promise(async (resolve, reject) => {
     const { sanitizeTag } = await import('../utils/sanitization');
     const sanitizedTagName = sanitizeTag(tagName);
-    
+
     if (!sanitizedTagName || sanitizedTagName.length < 2) {
       resolve([]);
       return;
     }
-    
+
     const query = `SELECT DISTINCT b.* FROM books b
       INNER JOIN book_tags bt ON b.id = bt.book_id
       INNER JOIN tags t ON bt.tag_id = t.id

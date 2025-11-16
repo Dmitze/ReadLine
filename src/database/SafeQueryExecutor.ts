@@ -29,7 +29,20 @@ export class SafeQueryExecutor {
   private defaultTimeout: number = 30000;
   private maxQueryLogs: number = 1000;
 
-  constructor(private db: { all: (query: string, params: SQLParameters, callback: (err: Error | null, rows: unknown[]) => void) => void; run: (query: string, params: SQLParameters, callback: (this: { lastID: number; changes: number }, err: Error | null) => void) => void }) {}
+  constructor(
+    private db: {
+      all: (
+        query: string,
+        params: SQLParameters,
+        callback: (err: Error | null, rows: unknown[]) => void
+      ) => void;
+      run: (
+        query: string,
+        params: SQLParameters,
+        callback: (this: { lastID: number; changes: number }, err: Error | null) => void
+      ) => void;
+    }
+  ) {}
 
   /**
    * Виконати SELECT запит безпечно
@@ -93,11 +106,11 @@ export class SafeQueryExecutor {
       }
 
       const startTime = Date.now();
-      const result = await this.executeWithTimeout(
+      const result = (await this.executeWithTimeout(
         query,
         parameters,
         options.timeout || this.defaultTimeout
-      ) as { lastID?: number; changes?: number } | undefined;
+      )) as { lastID?: number; changes?: number } | undefined;
       const duration = Date.now() - startTime;
 
       const changes = result?.changes || 0;
@@ -105,7 +118,7 @@ export class SafeQueryExecutor {
 
       return new Ok({
         lastId: result?.lastID || 0,
-        changes
+        changes,
       });
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -132,11 +145,11 @@ export class SafeQueryExecutor {
       }
 
       const startTime = Date.now();
-      const result = await this.executeWithTimeout(
+      const result = (await this.executeWithTimeout(
         query,
         parameters,
         options.timeout || this.defaultTimeout
-      ) as { changes?: number } | undefined;
+      )) as { changes?: number } | undefined;
       const duration = Date.now() - startTime;
 
       const changes = result?.changes || 0;
@@ -164,9 +177,7 @@ export class SafeQueryExecutor {
   /**
    * Виконати транзакцію
    */
-  async executeTransaction<T>(
-    operations: Array<() => Promise<Result<any>>>
-  ): Promise<Result<T>> {
+  async executeTransaction<T>(operations: Array<() => Promise<Result<any>>>): Promise<Result<T>> {
     try {
       // Почати транзакцію
       await this.execute('BEGIN TRANSACTION', []);
@@ -210,11 +221,8 @@ export class SafeQueryExecutor {
     return Promise.race([
       this.execute(query, parameters),
       new Promise((_, reject) =>
-        setTimeout(
-          () => reject(new Error(`Query execution timeout after ${timeout}ms`)),
-          timeout
-        )
-      )
+        setTimeout(() => reject(new Error(`Query execution timeout after ${timeout}ms`)), timeout)
+      ),
     ]);
   }
 
@@ -229,10 +237,14 @@ export class SafeQueryExecutor {
           else resolve(rows);
         });
       } else {
-        this.db.run(query, parameters, function (this: { lastID: number; changes: number }, err: Error | null) {
-          if (err) reject(err);
-          else resolve({ lastID: this.lastID, changes: this.changes });
-        });
+        this.db.run(
+          query,
+          parameters,
+          function (this: { lastID: number; changes: number }, err: Error | null) {
+            if (err) reject(err);
+            else resolve({ lastID: this.lastID, changes: this.changes });
+          }
+        );
       }
     });
   }
@@ -274,16 +286,15 @@ export class SafeQueryExecutor {
       executedAt: new Date(),
       duration,
       rowsAffected: error ? undefined : rowsAffected,
-      error
+      error,
     };
 
     this.queryLogs.push(log);
 
-
-// ✅ ВИПРАВЛЕНО: Обрізаємо старі логи щоб уникнути memory leak
-if (this.queryLogs.length > this.maxQueryLogs) {
-  this.queryLogs = this.queryLogs.slice(-this.maxQueryLogs);
-}
+    // ✅ ВИПРАВЛЕНО: Обрізаємо старі логи щоб уникнути memory leak
+    if (this.queryLogs.length > this.maxQueryLogs) {
+      this.queryLogs = this.queryLogs.slice(-this.maxQueryLogs);
+    }
 
     // Обмежити розмір логів
     if (this.queryLogs.length > this.maxQueryLogs) {
@@ -316,7 +327,7 @@ if (this.queryLogs.length > this.maxQueryLogs) {
     slowestQuery?: QueryLog;
   } {
     const totalQueries = this.queryLogs.length;
-    const totalErrors = this.queryLogs.filter(log => log.error).length;
+    const totalErrors = this.queryLogs.filter((log) => log.error).length;
     const totalDuration = this.queryLogs.reduce((sum, log) => sum + log.duration, 0);
 
     const sortedByDuration = [...this.queryLogs].sort((a, b) => b.duration - a.duration);
@@ -326,7 +337,7 @@ if (this.queryLogs.length > this.maxQueryLogs) {
       totalErrors,
       totalDuration,
       averageDuration: totalQueries > 0 ? totalDuration / totalQueries : 0,
-      slowestQuery: sortedByDuration[0]
+      slowestQuery: sortedByDuration[0],
     };
   }
 }

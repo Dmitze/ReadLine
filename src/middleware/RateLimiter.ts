@@ -113,7 +113,7 @@ export class RateLimiter {
       maxRequests: config.maxRequests || 30,
       skipSuccessfulRequests: config.skipSuccessfulRequests ?? false,
       skipFailedRequests: config.skipFailedRequests ?? false,
-      keyGenerator: config.keyGenerator || defaultKeyGenerator
+      keyGenerator: config.keyGenerator || defaultKeyGenerator,
     };
 
     this.store = store || new MemoryRateLimitStore();
@@ -122,7 +122,7 @@ export class RateLimiter {
       totalRequests: 0,
       blockedRequests: 0,
       activeKeys: 0,
-      lastCleanup: new Date()
+      lastCleanup: new Date(),
     };
 
     // Cleanup expired entries periodically
@@ -158,10 +158,9 @@ export class RateLimiter {
       (ctx as any).rateLimit = { allowed, remaining };
 
       if (!allowed) {
-        await ctx.reply(
-          '⚠️ Занадто багато запитів. Спробуйте пізніше.',
-          { parse_mode: 'HTML' as const }
-        );
+        await ctx.reply('⚠️ Занадто багато запитів. Спробуйте пізніше.', {
+          parse_mode: 'HTML' as const,
+        });
         return;
       }
 
@@ -231,7 +230,7 @@ export class PerUserRateLimiter extends RateLimiter {
     super({
       windowMs,
       maxRequests,
-      keyGenerator: (ctx) => `user:${ctx.from?.id || 'unknown'}`
+      keyGenerator: (ctx) => `user:${ctx.from?.id || 'unknown'}`,
     });
   }
 }
@@ -248,8 +247,7 @@ export class PerCommandRateLimiter extends RateLimiter {
       {
         windowMs,
         maxRequests,
-        keyGenerator: (ctx) =>
-          `cmd:${command}:${ctx.from?.id || 'unknown'}`
+        keyGenerator: (ctx) => `cmd:${command}:${ctx.from?.id || 'unknown'}`,
       },
       new MemoryRateLimitStore()
     );
@@ -269,7 +267,7 @@ export class PerIPRateLimiter extends RateLimiter {
         // Extract IP from context if available
         const ip = (ctx as any).ip || 'unknown';
         return `ip:${ip}`;
-      }
+      },
     });
   }
 }
@@ -283,7 +281,7 @@ export class GlobalRateLimiter extends RateLimiter {
     super({
       windowMs,
       maxRequests,
-      keyGenerator: () => 'global'
+      keyGenerator: () => 'global',
     });
   }
 }
@@ -303,16 +301,14 @@ export class CompositeRateLimiter {
    * Check all limiters
    */
   async check(ctx: BotContext): Promise<{ allowed: boolean; remaining: number }> {
-    const results = await Promise.all(
-      this.limiters.map(limiter => limiter.check(ctx))
-    );
+    const results = await Promise.all(this.limiters.map((limiter) => limiter.check(ctx)));
 
-    const blocked = results.some(r => !r.allowed);
-    const remaining = Math.min(...results.map(r => r.remaining));
+    const blocked = results.some((r) => !r.allowed);
+    const remaining = Math.min(...results.map((r) => r.remaining));
 
     return {
       allowed: !blocked,
-      remaining: Math.max(0, remaining)
+      remaining: Math.max(0, remaining),
     };
   }
 
@@ -326,10 +322,9 @@ export class CompositeRateLimiter {
       (ctx as any).rateLimit = { allowed, remaining };
 
       if (!allowed) {
-        await ctx.reply(
-          '⚠️ Занадто багато запитів. Спробуйте пізніше.',
-          { parse_mode: 'HTML' as const }
-        );
+        await ctx.reply('⚠️ Занадто багато запитів. Спробуйте пізніше.', {
+          parse_mode: 'HTML' as const,
+        });
         return;
       }
 
@@ -357,5 +352,5 @@ export const createRateLimiters = () => ({
   composite: new CompositeRateLimiter(
     new GlobalRateLimiter(60000, 1000),
     new PerUserRateLimiter(60000, 30)
-  )
+  ),
 });

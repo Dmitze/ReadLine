@@ -26,23 +26,17 @@ export async function displayBookList(
   books: Book[],
   options: DisplayBooksOptions = {}
 ): Promise<void> {
-  const {
-    title,
-    subtitle,
-    isSaved = false,
-    showIndex = false,
-    indexPrefix = '',
-  } = options;
+  const { title, subtitle, isSaved = false, showIndex = false, indexPrefix = '' } = options;
 
   try {
     // Показати заголовок якщо є
-     if (title) {
-       let headerText = `<b>${title}</b>`;
-       if (subtitle) {
-         headerText += `\n\n${subtitle}`;
-       }
-       await ctx.reply(headerText, { parse_mode: 'HTML' });
-     }
+    if (title) {
+      let headerText = `<b>${title}</b>`;
+      if (subtitle) {
+        headerText += `\n\n${subtitle}`;
+      }
+      await ctx.reply(headerText, { parse_mode: 'HTML' });
+    }
 
     // Показати кожну книгу
     for (const [index, book] of books.entries()) {
@@ -77,7 +71,7 @@ export async function displaySingleBook(
     isSaved?: boolean;
     index?: number;
     indexPrefix?: string;
-    tags?: Array<{name: string}>;
+    tags?: Array<{ name: string }>;
   } = {}
 ): Promise<void> {
   const { isSaved = false, index, indexPrefix = '', tags } = options;
@@ -149,32 +143,29 @@ export async function displayTopBooks(
 
   const { Markup } = await import('telegraf');
   const limitedBooks = books.slice(0, limit);
-  
+
   await ctx.reply(
-     `🏆 <b>ТОП-${limitedBooks.length} КНИГ ЗА РЕЙТИНГОМ</b>\n\n` +
-     'Найкращі книги нашої бібліотеки за оцінками читачів:\n\n' +
-     'Оберіть книгу для детального перегляду:',
-     { parse_mode: 'HTML' }
-   );
-  
+    `🏆 <b>ТОП-${limitedBooks.length} КНИГ ЗА РЕЙТИНГОМ</b>\n\n` +
+      'Найкращі книги нашої бібліотеки за оцінками читачів:\n\n' +
+      'Оберіть книгу для детального перегляду:',
+    { parse_mode: 'HTML' }
+  );
+
   // Створюємо кнопки для кожної книги
   const keyboard = limitedBooks.map((book, index) => [
     Markup.button.callback(
       `${index + 1}. ⭐${book.rating?.toFixed(1) || '0.0'} ${book.title} - ${book.author}`,
       `view_book_${book.id}`
-    )
+    ),
   ]);
-  
+
   // Додаємо кнопку "Назад"
   keyboard.push([Markup.button.callback('🏠 На головну', 'home')]);
-  
-  await ctx.reply(
-     '📚 <b>Список топ книг:</b>',
-     {
-       parse_mode: 'HTML',
-       reply_markup: Markup.inlineKeyboard(keyboard).reply_markup
-     }
-   );
+
+  await ctx.reply('📚 <b>Список топ книг:</b>', {
+    parse_mode: 'HTML',
+    reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+  });
 }
 
 /**
@@ -192,46 +183,40 @@ export async function displayNewBooks(
 
   const { Markup } = await import('telegraf');
   const limitedBooks = books.slice(0, limit);
-  
+
   await ctx.reply(
     '🆕 <b>НОВИНКИ БІБЛІОТЕКИ</b>\n\n' +
-    `Останні ${limitedBooks.length} додані ${limitedBooks.length === 1 ? 'книга' : 'книг'}:\n\n` +
-    'Оберіть книгу для детального перегляду:',
+      `Останні ${limitedBooks.length} додані ${limitedBooks.length === 1 ? 'книга' : 'книг'}:\n\n` +
+      'Оберіть книгу для детального перегляду:',
     { parse_mode: 'HTML' }
   );
-  
+
   // Створюємо кнопки для кожної книги
   const keyboard = limitedBooks.map((book, index) => [
     Markup.button.callback(
       `${index + 1}. 📖 ${book.title} - ${book.author}`,
       `view_book_${book.id}`
-    )
+    ),
   ]);
-  
+
   // Додаємо кнопку "Назад"
   keyboard.push([Markup.button.callback('🏠 На головну', 'home')]);
-  
-  await ctx.reply(
-     '📚 <b>Список новинок:</b>',
-     {
-       parse_mode: 'HTML',
-       reply_markup: Markup.inlineKeyboard(keyboard).reply_markup
-     }
-   );
+
+  await ctx.reply('📚 <b>Список новинок:</b>', {
+    parse_mode: 'HTML',
+    reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+  });
 }
 
 /**
  * Показати збережені книги
  */
-export async function displaySavedBooks(
-  ctx: Context,
-  books: Book[]
-): Promise<void> {
+export async function displaySavedBooks(ctx: Context, books: Book[]): Promise<void> {
   if (books.length === 0) {
     await ctx.reply(
       '💾 <b>Ваша бібліотека порожня</b>\n\n' +
-      'Зберігайте цікаві книги натискаючи кнопку 💾 ЗБЕРЕГТИ при перегляді книги.\n\n' +
-      'Збережені книги завжди будуть доступні тут для швидкого доступу!',
+        'Зберігайте цікаві книги натискаючи кнопку 💾 ЗБЕРЕГТИ при перегляді книги.\n\n' +
+        'Збережені книги завжди будуть доступні тут для швидкого доступу!',
       { parse_mode: 'HTML' }
     );
     return;
@@ -239,33 +224,32 @@ export async function displaySavedBooks(
 
   // Показуємо компактний список з кнопками
   const { Markup } = await import('telegraf');
-  
+
   await ctx.reply(
     '💾 <b>МОЯ БІБЛІОТЕКА</b>\n\n' +
-    `У вас збережено ${books.length} ${books.length === 1 ? 'книга' : 'книг'}:\n\n` +
-    'Оберіть книгу для перегляду:',
+      `У вас збережено ${books.length} ${books.length === 1 ? 'книга' : 'книг'}:\n\n` +
+      'Оберіть книгу для перегляду:',
     { parse_mode: 'HTML' }
   );
-  
+
   // Створюємо кнопки для кожної книги (по 1 в рядок)
-  const keyboard = books.slice(0, 20).map((book, index) => [
-    Markup.button.callback(
-      `${index + 1}. ${book.title} - ${book.author}`,
-      `view_saved_book_${book.id}`
-    )
-  ]);
-  
+  const keyboard = books
+    .slice(0, 20)
+    .map((book, index) => [
+      Markup.button.callback(
+        `${index + 1}. ${book.title} - ${book.author}`,
+        `view_saved_book_${book.id}`
+      ),
+    ]);
+
   // Додаємо кнопку "Назад"
   keyboard.push([Markup.button.callback('🏠 На головну', 'home')]);
-  
-  await ctx.reply(
-     '📚 <b>Список книг:</b>',
-     {
-       parse_mode: 'HTML',
-       reply_markup: Markup.inlineKeyboard(keyboard).reply_markup
-     }
-   );
-  
+
+  await ctx.reply('📚 <b>Список книг:</b>', {
+    parse_mode: 'HTML',
+    reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+  });
+
   if (books.length > 20) {
     await ctx.reply(`ℹ️ Показано 20 з ${books.length} книг. Використовуйте пошук для інших книг.`);
   }
@@ -280,22 +264,23 @@ export async function displaySearchResults(
   searchTerm: string
 ): Promise<void> {
   if (books.length === 0) {
-     await ctx.reply(
-       '📭 <b>Нічого не знайдено</b>\n\n' +
-       `За запитом "${searchTerm}" книг не знайдено.\n\n` +
-       '💡 <b>Спробуйте:</b>\n' +
-       '• Використати інші ключові слова\n' +
-       '• Перевірити правильність назви\n' +
-       '• Шукати за автором або жанром\n' +
-       '• Скоротити запит (мінімум 2 символи)',
-       { parse_mode: 'HTML' }
-     );
-     return;
-   }
+    await ctx.reply(
+      '📭 <b>Нічого не знайдено</b>\n\n' +
+        `За запитом "${searchTerm}" книг не знайдено.\n\n` +
+        '💡 <b>Спробуйте:</b>\n' +
+        '• Використати інші ключові слова\n' +
+        '• Перевірити правильність назви\n' +
+        '• Шукати за автором або жанром\n' +
+        '• Скоротити запит (мінімум 2 символи)',
+      { parse_mode: 'HTML' }
+    );
+    return;
+  }
 
-  const resultsText = books.length === CONFIG.MAX_SEARCH_RESULTS
-    ? `Показано перші ${books.length} результатів`
-    : `Знайдено ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}`;
+  const resultsText =
+    books.length === CONFIG.MAX_SEARCH_RESULTS
+      ? `Показано перші ${books.length} результатів`
+      : `Знайдено ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}`;
 
   await displayBookList(ctx, books, {
     title: '🔍 РЕЗУЛЬТАТИ ПОШУКУ',

@@ -71,12 +71,15 @@ class Logger {
    * Помилки
    */
   error(message: string, error?: Error | unknown, meta?: LogMetadata): void {
-    const errorMeta = error instanceof Error ? {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-      ...meta,
-    } : { error, ...meta };
+    const errorMeta =
+      error instanceof Error
+        ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+            ...meta,
+          }
+        : { error, ...meta };
 
     this.log(LogLevel.ERROR, message, errorMeta);
   }

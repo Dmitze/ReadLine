@@ -29,16 +29,22 @@ export interface UsedPromoCode {
 export const addPromoCode = (code: string, adminId?: number): Promise<number> => {
   return new Promise((resolve, reject) => {
     const details = generatePromoCodeDetails(code);
-    
+
     const query = `
       INSERT INTO promo_codes (code, description, discount_type, discount_value, created_by)
       VALUES (?, ?, ?, ?, ?)
     `;
-    
+
     db.run(
       query,
-      [code.toUpperCase(), details.description, details.discount_type, details.discount_value, adminId || null],
-      function(err) {
+      [
+        code.toUpperCase(),
+        details.description,
+        details.discount_type,
+        details.discount_value,
+        adminId || null,
+      ],
+      function (err) {
         if (err) {
           logger.error('Error adding promo code', err, { code });
           reject(err);
@@ -60,67 +66,67 @@ function generatePromoCodeDetails(code: string): {
   discount_value: number;
 } {
   const codeUpper = code.toUpperCase();
-  
+
   // Вітальні промокоди
   if (codeUpper.includes('WELCOME') || codeUpper.includes('NEW') || codeUpper.includes('HELLO')) {
     return {
       description: '🎉 Вітальний промокод - знижка 15% на перше замовлення на Yakaboo.ua',
       discount_type: 'percentage',
-      discount_value: 15
+      discount_value: 15,
     };
   }
-  
+
   // Сезонні промокоди
   if (codeUpper.includes('SUMMER') || codeUpper.includes('ЛІТО')) {
     return {
       description: '☀️ Літня знижка - спеціальна пропозиція 20% на Yakaboo.ua',
       discount_type: 'percentage',
-      discount_value: 20
+      discount_value: 20,
     };
   }
-  
+
   if (codeUpper.includes('SPRING') || codeUpper.includes('ВЕСНА')) {
     return {
       description: '🌸 Весняна знижка - спеціальна пропозиція 20% на Yakaboo.ua',
       discount_type: 'percentage',
-      discount_value: 20
+      discount_value: 20,
     };
   }
-  
+
   if (codeUpper.includes('WINTER') || codeUpper.includes('ЗИМА')) {
     return {
       description: '❄️ Зимова знижка - спеціальна пропозиція 20% на Yakaboo.ua',
       discount_type: 'percentage',
-      discount_value: 20
+      discount_value: 20,
     };
   }
-  
+
   if (codeUpper.includes('AUTUMN') || codeUpper.includes('FALL') || codeUpper.includes('ОСІНЬ')) {
     return {
       description: '🍂 Осіння знижка - спеціальна пропозиція 20% на Yakaboo.ua',
       discount_type: 'percentage',
-      discount_value: 20
+      discount_value: 20,
     };
   }
-  
+
   // Безкоштовна доставка
   if (codeUpper.includes('SHIP') || codeUpper.includes('DELIVERY') || codeUpper.includes('FREE')) {
     return {
       description: '🚚 Безкоштовна доставка для вашого замовлення на Yakaboo.ua',
       discount_type: 'shipping',
-      discount_value: 0
+      discount_value: 0,
     };
   }
-  
+
   // Студентські промокоди
   if (codeUpper.includes('STUDENT') || codeUpper.includes('СТУДЕНТ')) {
     return {
       description: '🎓 Студентська знижка 15% на Yakaboo.ua',
       discount_type: 'percentage',
-      discount_value: 15
+      discount_value: 15,
     };
   }
-  
+
   // Промокоди з числами (витягуємо відсоток)
   const numberMatch = codeUpper.match(/(\d+)/);
   if (numberMatch) {
@@ -129,16 +135,16 @@ function generatePromoCodeDetails(code: string): {
       return {
         description: `💰 Спеціальна знижка ${value}% за промокодом на Yakaboo.ua`,
         discount_type: 'percentage',
-        discount_value: value
+        discount_value: value,
       };
     }
   }
-  
+
   // За замовчуванням
   return {
     description: '🎁 Спеціальна знижка 10% за промокодом на Yakaboo.ua',
     discount_type: 'percentage',
-    discount_value: 10
+    discount_value: 10,
   };
 }
 
@@ -172,7 +178,7 @@ export const getAvailablePromoCode = (userId: number): Promise<PromoCode | undef
       ORDER BY pc.created_at ASC
       LIMIT 1
     `;
-    
+
     db.get(query, [userId], (err, row: PromoCode) => {
       if (err) {
         logger.error('Error getting available promo code', err, { userId });
@@ -189,14 +195,10 @@ export const getAvailablePromoCode = (userId: number): Promise<PromoCode | undef
  */
 export const hasUserReceivedPromoCode = (userId: number): Promise<boolean> => {
   return new Promise((resolve, reject) => {
-    db.get(
-      'SELECT 1 FROM used_promo_codes WHERE user_id = ? LIMIT 1',
-      [userId],
-      (err, row) => {
-        if (err) reject(err);
-        else resolve(!!row);
-      }
-    );
+    db.get('SELECT 1 FROM used_promo_codes WHERE user_id = ? LIMIT 1', [userId], (err, row) => {
+      if (err) reject(err);
+      else resolve(!!row);
+    });
   });
 };
 
@@ -232,7 +234,7 @@ export const getAvailablePromoCodesCount = (): Promise<number> => {
       WHERE pc.is_active = 1
       AND pc.id NOT IN (SELECT promo_code_id FROM used_promo_codes)
     `;
-    
+
     db.get(query, [], (err, row: any) => {
       if (err) reject(err);
       else resolve(row?.count || 0);
@@ -245,14 +247,10 @@ export const getAvailablePromoCodesCount = (): Promise<number> => {
  */
 export const getAllPromoCodesCount = (): Promise<number> => {
   return new Promise((resolve, reject) => {
-    db.get(
-      'SELECT COUNT(*) as count FROM promo_codes WHERE is_active = 1',
-      [],
-      (err, row: any) => {
-        if (err) reject(err);
-        else resolve(row?.count || 0);
-      }
-    );
+    db.get('SELECT COUNT(*) as count FROM promo_codes WHERE is_active = 1', [], (err, row: any) => {
+      if (err) reject(err);
+      else resolve(row?.count || 0);
+    });
   });
 };
 
@@ -261,14 +259,10 @@ export const getAllPromoCodesCount = (): Promise<number> => {
  */
 export const getAllPromoCodes = (): Promise<PromoCode[]> => {
   return new Promise((resolve, reject) => {
-    db.all(
-      'SELECT * FROM promo_codes ORDER BY created_at DESC',
-      [],
-      (err, rows: PromoCode[]) => {
-        if (err) reject(err);
-        else resolve(rows);
-      }
-    );
+    db.all('SELECT * FROM promo_codes ORDER BY created_at DESC', [], (err, rows: PromoCode[]) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
   });
 };
 
@@ -285,34 +279,26 @@ export const getPromoCodeStats = (): Promise<{
     try {
       const total = await getAllPromoCodesCount();
       const available = await getAvailablePromoCodesCount();
-      
+
       const usedResult = await new Promise<any>((res, rej) => {
-        db.get(
-          'SELECT COUNT(*) as count FROM used_promo_codes',
-          [],
-          (err, row) => {
-            if (err) rej(err);
-            else res(row);
-          }
-        );
+        db.get('SELECT COUNT(*) as count FROM used_promo_codes', [], (err, row) => {
+          if (err) rej(err);
+          else res(row);
+        });
       });
-      
+
       const usedByUsersResult = await new Promise<any>((res, rej) => {
-        db.get(
-          'SELECT COUNT(DISTINCT user_id) as count FROM used_promo_codes',
-          [],
-          (err, row) => {
-            if (err) rej(err);
-            else res(row);
-          }
-        );
+        db.get('SELECT COUNT(DISTINCT user_id) as count FROM used_promo_codes', [], (err, row) => {
+          if (err) rej(err);
+          else res(row);
+        });
       });
-      
+
       resolve({
         total,
         available,
         used: usedResult?.count || 0,
-        usedByUsers: usedByUsersResult?.count || 0
+        usedByUsers: usedByUsersResult?.count || 0,
       });
     } catch (error) {
       reject(error);
@@ -339,8 +325,10 @@ export const getExtendedPromoStats = (): Promise<{
     try {
       // Базова статистика
       const basicStats = await getPromoCodeStats();
-      const usagePercent = basicStats.total > 0 ? Math.round((basicStats.used / basicStats.total) * 100) : 0;
-      const avgUsage = basicStats.used > 0 ? Math.round(basicStats.used / basicStats.usedByUsers) : 0;
+      const usagePercent =
+        basicStats.total > 0 ? Math.round((basicStats.used / basicStats.total) * 100) : 0;
+      const avgUsage =
+        basicStats.used > 0 ? Math.round(basicStats.used / basicStats.usedByUsers) : 0;
 
       // За типами знижок
       const byDiscountType = await new Promise<any[]>((res, rej) => {
@@ -404,22 +392,25 @@ export const getExtendedPromoStats = (): Promise<{
       resolve({
         ...basicStats,
         usagePercent,
-        byDiscountType: byDiscountType.map(d => ({
+        byDiscountType: byDiscountType.map((d) => ({
           type: getDiscountTypeText(d.type),
           count: d.count,
-          totalValue: d.totalValue || 0
+          totalValue: d.totalValue || 0,
         })),
-        topPromos: topPromos.map(p => ({
+        topPromos: topPromos.map((p) => ({
           code: p.code,
           used: p.used || 0,
-          description: p.description
+          description: p.description,
         })),
         avgUsage,
         createdToday,
-        createdThisWeek
+        createdThisWeek,
       });
     } catch (error) {
-      logger.error('Error getting extended promo stats', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting extended promo stats',
+        error instanceof Error ? error : new Error(String(error))
+      );
       reject(error);
     }
   });
@@ -430,14 +421,10 @@ export const getExtendedPromoStats = (): Promise<{
  */
 export const deactivatePromoCode = (promoCodeId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
-    db.run(
-      'UPDATE promo_codes SET is_active = 0 WHERE id = ?',
-      [promoCodeId],
-      (err) => {
-        if (err) reject(err);
-        else resolve();
-      }
-    );
+    db.run('UPDATE promo_codes SET is_active = 0 WHERE id = ?', [promoCodeId], (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
   });
 };
 
@@ -446,14 +433,10 @@ export const deactivatePromoCode = (promoCodeId: number): Promise<void> => {
  */
 export const deletePromoCode = (promoCodeId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
-    db.run(
-      'DELETE FROM promo_codes WHERE id = ?',
-      [promoCodeId],
-      (err) => {
-        if (err) reject(err);
-        else resolve();
-      }
-    );
+    db.run('DELETE FROM promo_codes WHERE id = ?', [promoCodeId], (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
   });
 };
 

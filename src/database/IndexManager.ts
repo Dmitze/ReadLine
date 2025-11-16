@@ -218,11 +218,16 @@ export class IndexManager {
         }
       } catch (error) {
         errors++;
-        logger.error(`Error creating index ${spec.indexName}`, error instanceof Error ? error : new Error(String(error)));
+        logger.error(
+          `Error creating index ${spec.indexName}`,
+          error instanceof Error ? error : new Error(String(error))
+        );
       }
     }
 
-    logger.info(`Index creation complete: ${created} created, ${skipped} skipped, ${errors} errors`);
+    logger.info(
+      `Index creation complete: ${created} created, ${skipped} skipped, ${errors} errors`
+    );
     return { created, skipped, errors };
   }
 
@@ -246,7 +251,10 @@ export class IndexManager {
         return false;
       }
 
-      logger.error(`Error creating index ${spec.indexName}`, error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        `Error creating index ${spec.indexName}`,
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -261,7 +269,10 @@ export class IndexManager {
 
       return indexes.map((idx) => idx.name);
     } catch (error) {
-      logger.error(`Error getting indexes for ${tableName}`, error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        `Error getting indexes for ${tableName}`,
+        error instanceof Error ? error : new Error(String(error))
+      );
       return [];
     }
   }
@@ -274,7 +285,10 @@ export class IndexManager {
       await this.db.run('VACUUM', []);
       logger.info('Database vacuumed successfully');
     } catch (error) {
-      logger.error('Error vacuuming database', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error vacuuming database',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -287,7 +301,10 @@ export class IndexManager {
       await this.db.run('ANALYZE', []);
       logger.info('Database analyzed successfully');
     } catch (error) {
-      logger.error('Error analyzing database', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error analyzing database',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -302,14 +319,8 @@ export class IndexManager {
     totalSize: number;
   }> {
     try {
-      const pageCount = await this.db.get<{ count: number }>(
-        'PRAGMA page_count',
-        []
-      );
-      const pageSize = await this.db.get<{ page_size: number }>(
-        'PRAGMA page_size',
-        []
-      );
+      const pageCount = await this.db.get<{ count: number }>('PRAGMA page_count', []);
+      const pageSize = await this.db.get<{ page_size: number }>('PRAGMA page_size', []);
       const freelistCount = await this.db.get<{ freelist_count: number }>(
         'PRAGMA freelist_count',
         []
@@ -324,7 +335,10 @@ export class IndexManager {
         totalSize: Math.round(totalSize * 100) / 100,
       };
     } catch (error) {
-      logger.error('Error getting database stats', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting database stats',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return {
         pageCount: 0,
         pageSize: 0,

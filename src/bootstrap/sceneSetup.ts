@@ -29,6 +29,6 @@ export function createStage() {
     settingsScene,
     aiAssistantScene,
     promoAdminScene,
-    editExtendedBookInfoScene
+    editExtendedBookInfoScene,
   ] as never[]);
 }

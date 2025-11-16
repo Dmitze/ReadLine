@@ -17,14 +17,12 @@ export interface ValidationResult {
  * Валідація даних книги
  * ✅ ВИПРАВЛЕНО: використовуємо константи
  */
-export function validateBookData(
-  data: Partial<Omit<Book, 'id' | 'created_at'>>
-): ValidationResult {
+export function validateBookData(data: Partial<Omit<Book, 'id' | 'created_at'>>): ValidationResult {
   const errors: string[] = [];
 
   // Обов'язкові поля
   if (!data.title || data.title.trim().length === 0) {
-    errors.push('Назва книги обов\'язкова');
+    errors.push("Назва книги обов'язкова");
   } else if (data.title.length < VALIDATION.TITLE_MIN) {
     errors.push(`Назва занадто коротка (мінімум ${VALIDATION.TITLE_MIN} символи)`);
   } else if (data.title.length > VALIDATION.TITLE_MAX) {
@@ -32,7 +30,7 @@ export function validateBookData(
   }
 
   if (!data.author || data.author.trim().length === 0) {
-    errors.push('Автор обов\'язковий');
+    errors.push("Автор обов'язковий");
   } else if (data.author.length < VALIDATION.AUTHOR_MIN) {
     errors.push(`Ім\'я автора занадто коротке (мінімум ${VALIDATION.AUTHOR_MIN} символи)`);
   } else if (data.author.length > VALIDATION.AUTHOR_MAX) {
@@ -40,11 +38,11 @@ export function validateBookData(
   }
 
   if (!data.genre || data.genre.trim().length === 0) {
-    errors.push('Жанр обов\'язковий');
+    errors.push("Жанр обов'язковий");
   }
 
   if (!data.description || data.description.trim().length === 0) {
-    errors.push('Опис обов\'язковий');
+    errors.push("Опис обов'язковий");
   } else if (data.description.length < VALIDATION.DESCRIPTION_MIN) {
     errors.push(`Опис занадто короткий (мінімум ${VALIDATION.DESCRIPTION_MIN} символів)`);
   } else if (data.description.length > VALIDATION.DESCRIPTION_MAX) {
@@ -52,7 +50,7 @@ export function validateBookData(
   }
 
   if (!data.photo_file_id || data.photo_file_id.trim().length === 0) {
-    errors.push('Фото обкладинки обов\'язкове');
+    errors.push("Фото обкладинки обов'язкове");
   }
 
   // Валідація file_type
@@ -83,11 +81,11 @@ export function validateReviewData(
   const errors: string[] = [];
 
   if (!data.book_id || data.book_id <= 0) {
-    errors.push('ID книги обов\'язковий');
+    errors.push("ID книги обов'язковий");
   }
 
   if (!data.user_id || data.user_id <= 0) {
-    errors.push('ID користувача обов\'язковий');
+    errors.push("ID користувача обов'язковий");
   }
 
   if (!data.rating || data.rating < VALIDATION.RATING_MIN || data.rating > VALIDATION.RATING_MAX) {

@@ -49,9 +49,7 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
     await ctx.reply(`${(0, utils_1.getProgress)(0)}\n📖 Введіть назву книги:\n\n` +
         `${utils_1.examples.title}\n\n` +
         '💡 Або натисніть /cancel для скасування', {
-        reply_markup: telegraf_1.Markup.keyboard([
-            ['❌ Скасувати']
-        ]).resize().reply_markup
+        reply_markup: telegraf_1.Markup.keyboard([['❌ Скасувати']]).resize().reply_markup,
     });
     return ctx.wizard.next();
 }, async (ctx) => {
@@ -80,9 +78,7 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
     await ctx.reply(`${(0, utils_1.getProgress)(1)}\n👤 Введіть автора книги:\n\n` +
         `${utils_1.examples.author}\n\n` +
         '💡 Або натисніть /cancel для скасування', {
-        reply_markup: telegraf_1.Markup.keyboard([
-            ['❌ Скасувати']
-        ]).resize().reply_markup
+        reply_markup: telegraf_1.Markup.keyboard([['❌ Скасувати']]).resize().reply_markup,
     });
     return ctx.wizard.next();
 }, async (ctx) => {
@@ -91,7 +87,7 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
         return ctx.scene?.leave();
     }
     if (!ctx.message || !('text' in ctx.message)) {
-        await ctx.reply('❌ Будь ласка, надішліть текст (ім\'я автора).');
+        await ctx.reply("❌ Будь ласка, надішліть текст (ім'я автора).");
         return;
     }
     const author = ctx.message.text.trim();
@@ -106,14 +102,21 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
     (0, utils_1.logUserAction)(ctx, 'entered_author', { author });
     const keyboard = [];
     for (let i = 0; i < utils_1.popularGenres.length; i += 4) {
-        const row = utils_1.popularGenres.slice(i, i + 4).map(genre => ({ text: genre, callback_data: `genre_popular_${utils_1.popularGenres.indexOf(genre)}` }));
+        const row = utils_1.popularGenres
+            .slice(i, i + 4)
+            .map((genre) => ({
+            text: genre,
+            callback_data: `genre_popular_${utils_1.popularGenres.indexOf(genre)}`,
+        }));
         keyboard.push(row);
     }
     keyboard.push([{ text: '📚 Всі жанри', callback_data: 'show_all_genres' }]);
     if (!state.selectedGenres) {
         state.selectedGenres = [];
     }
-    await ctx.reply(`${(0, utils_1.getProgress)(2)}\n📚 Оберіть жанри книги (1-5 жанрів):`, { reply_markup: { inline_keyboard: keyboard } });
+    await ctx.reply(`${(0, utils_1.getProgress)(2)}\n📚 Оберіть жанри книги (1-5 жанрів):`, {
+        reply_markup: { inline_keyboard: keyboard },
+    });
     return ctx.wizard.next();
 }, async (ctx) => {
     const state = ctx.wizard?.state;
@@ -123,7 +126,12 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
             const allGenres = [...utils_1.popularGenres, ...utils_1.otherGenres];
             const keyboard = [];
             for (let i = 0; i < allGenres.length; i += 3) {
-                const row = allGenres.slice(i, i + 3).map(genre => ({ text: genre, callback_data: `genre_all_${allGenres.indexOf(genre)}` }));
+                const row = allGenres
+                    .slice(i, i + 3)
+                    .map((genre) => ({
+                    text: genre,
+                    callback_data: `genre_all_${allGenres.indexOf(genre)}`,
+                }));
                 keyboard.push(row);
             }
             keyboard.push([{ text: '✅ Далі', callback_data: 'genres_done' }]);
@@ -146,7 +154,9 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
         }
         if (action.startsWith('genre_popular_') || action.startsWith('genre_all_')) {
             const genreIndex = parseInt(action.split('_')[2]);
-            const genres = action.startsWith('genre_popular_') ? utils_1.popularGenres : [...utils_1.popularGenres, ...utils_1.otherGenres];
+            const genres = action.startsWith('genre_popular_')
+                ? utils_1.popularGenres
+                : [...utils_1.popularGenres, ...utils_1.otherGenres];
             const selectedGenre = genres[genreIndex];
             if (!state.selectedGenres) {
                 state.selectedGenres = [];
@@ -197,19 +207,24 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
     (0, utils_1.logUserAction)(ctx, 'entered_description', { descriptionLength: description.length });
     await ctx.reply(`${(0, utils_1.getProgress)(4)}\n🖼️ Завантажте фото обкладинки книги (або натисніть "Пропустити"):`, {
         reply_markup: telegraf_1.Markup.inlineKeyboard([
-            [{ text: '⏭️ Пропустити', callback_data: 'skip_photo' }]
-        ]).reply_markup
+            [{ text: '⏭️ Пропустити', callback_data: 'skip_photo' }],
+        ]).reply_markup,
     });
     return ctx.wizard.next();
 }, async (ctx) => {
     const state = ctx.wizard?.state;
-    if (ctx.callbackQuery && 'data' in ctx.callbackQuery && ctx.callbackQuery.data === 'skip_photo') {
+    if (ctx.callbackQuery &&
+        'data' in ctx.callbackQuery &&
+        ctx.callbackQuery.data === 'skip_photo') {
         state.photoFileId = 'default_book_cover';
         await ctx.answerCbQuery('Пропущено');
         await ctx.editMessageText('🖼️ Фото пропущено, буде використана стандартна обкладинка');
         (0, utils_1.logUserAction)(ctx, 'skipped_photo');
     }
-    else if (ctx.message && 'photo' in ctx.message && ctx.message.photo && ctx.message.photo.length > 0) {
+    else if (ctx.message &&
+        'photo' in ctx.message &&
+        ctx.message.photo &&
+        ctx.message.photo.length > 0) {
         const photo = ctx.message.photo[ctx.message.photo.length - 1];
         state.photoFileId = photo.file_id;
         await ctx.reply('✅ Фото завантажено');
@@ -226,9 +241,9 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
                 [{ text: '📄 Файл', callback_data: 'type_file' }],
                 [{ text: '🎧 Аудіокнига', callback_data: 'type_audio' }],
                 [{ text: '🔗 Посилання', callback_data: 'type_link' }],
-                [{ text: '❌ Скасувати', callback_data: 'cancel_add' }]
-            ]
-        }
+                [{ text: '❌ Скасувати', callback_data: 'cancel_add' }],
+            ],
+        },
     });
     return ctx.wizard.next();
 }, async (ctx) => {
@@ -402,7 +417,7 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
                 fileId: state.bookFile?.substring(0, 30) + '...',
                 audioId: state.bookAudio?.substring(0, 30) + '...',
                 fileIdLength: state.bookFile?.length,
-                audioIdLength: state.bookAudio?.length
+                audioIdLength: state.bookAudio?.length,
             });
             state.addingAdditionalFormat = false;
             state.bookType = undefined;
@@ -433,7 +448,7 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
             }
             const allTags = await (0, utils_1.getCachedTags)();
             const selectedTagNames = state.selectedTags
-                .map(id => allTags.find(t => t.id === id)?.name)
+                .map((id) => allTags.find((t) => t.id === id)?.name)
                 .filter(Boolean);
             let selectedText = '';
             if (selectedTagNames.length > 0) {
@@ -443,7 +458,7 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
                 `Оберіть один або кілька тегів, які підходять до цієї книги.${selectedText}\n\n` +
                 'Натисніть "Далі" коли закінчите або щоб пропустити цей крок.', {
                 parse_mode: 'HTML',
-                reply_markup: ctx.update.callback_query?.message?.reply_markup
+                reply_markup: ctx.update.callback_query?.message?.reply_markup,
             });
             return;
         }
@@ -475,7 +490,7 @@ addBookScene.action('confirm_book', async (ctx) => {
         genre: state.genre,
         description: state.description,
         photo_file_id: state.photoFileId || 'default_book_cover',
-        file_type: file_type
+        file_type: file_type,
     };
     if (state.bookFile) {
         bookData.file_url = state.bookFile;
@@ -493,7 +508,7 @@ addBookScene.action('confirm_book', async (ctx) => {
         hasLink: !!state.bookLink,
         fileId: state.bookFile?.substring(0, 20),
         audioId: state.bookAudio?.substring(0, 20),
-        link: state.bookLink
+        link: state.bookLink,
     });
     const validation = (0, validation_1.validateBookData)(bookData);
     if (!validation.isValid) {
@@ -510,7 +525,7 @@ addBookScene.action('confirm_book', async (ctx) => {
     if (bookData.photo_file_id && bookData.photo_file_id !== 'default_book_cover') {
         await ctx.replyWithPhoto(bookData.photo_file_id, {
             caption: finalCaption,
-            parse_mode: 'HTML'
+            parse_mode: 'HTML',
         });
     }
     else {
@@ -521,24 +536,22 @@ addBookScene.action('confirm_book', async (ctx) => {
         formats: {
             hasFile: !!state.bookFile,
             hasAudio: !!state.bookAudio,
-            hasLink: !!state.bookLink
+            hasLink: !!state.bookLink,
         },
-        tagsCount: state.selectedTags?.length || 0
+        tagsCount: state.selectedTags?.length || 0,
     });
     await ctx.reply('✅ Книга успішно опублікована!', {
         reply_markup: {
             remove_keyboard: true,
-            inline_keyboard: [
-                [{ text: '🏠 Назад до адмін-панелі', callback_data: 'back_to_admin' }]
-            ]
-        }
+            inline_keyboard: [[{ text: '🏠 Назад до адмін-панелі', callback_data: 'back_to_admin' }]],
+        },
     });
     return ctx.scene.leave();
 });
 addBookScene.action('cancel_book', async (ctx) => {
     await ctx.answerCbQuery('❌ Скасовано');
     await ctx.reply('❌ Додавання книги скасовано', {
-        reply_markup: { remove_keyboard: true }
+        reply_markup: { remove_keyboard: true },
     });
     return ctx.scene.leave();
 });
@@ -585,9 +598,8 @@ addBookScene.action('edit_description', async (ctx) => {
 addBookScene.action('edit_photo', async (ctx) => {
     await ctx.answerCbQuery('✏️ Редагуємо фото');
     await ctx.reply(`${(0, utils_1.getProgress)(4)}\n🖼️ Завантажте нове фото обкладинки:`, {
-        reply_markup: telegraf_1.Markup.inlineKeyboard([
-            [{ text: '⏭️ Пропустити', callback_data: 'skip_photo' }]
-        ]).reply_markup
+        reply_markup: telegraf_1.Markup.inlineKeyboard([[{ text: '⏭️ Пропустити', callback_data: 'skip_photo' }]])
+            .reply_markup,
     });
     return ctx.wizard.selectStep(5);
 });
@@ -600,9 +612,9 @@ addBookScene.command('exit', async (ctx) => {
         reply_markup: telegraf_1.Markup.inlineKeyboard([
             [
                 { text: '✅ Так, скасувати', callback_data: 'confirm_cancel' },
-                { text: '❌ Ні, продовжити', callback_data: 'continue_adding' }
-            ]
-        ]).reply_markup
+                { text: '❌ Ні, продовжити', callback_data: 'continue_adding' },
+            ],
+        ]).reply_markup,
     });
 });
 addBookScene.action('confirm_cancel', async (ctx) => {
@@ -634,7 +646,7 @@ addBookScene.action('back_to_admin', async (ctx) => {
         : '✅ Всі повідомлення прочитані';
     await ctx.deleteMessage().catch((error) => {
         logger_1.logger.debug('Failed to delete message', {
-            error: error instanceof Error ? error.message : String(error)
+            error: error instanceof Error ? error.message : String(error),
         });
     });
     await ctx.reply('🛠️ <b>Панель адміністратора</b>\n\n' +
@@ -643,20 +655,20 @@ addBookScene.action('back_to_admin', async (ctx) => {
         `${reviewsAlert}\n` +
         `${feedbackAlert}`, {
         parse_mode: 'HTML',
-        reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
+        reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length),
     });
     await ctx.scene.leave();
 });
 addBookScene.command('cancel', async (ctx) => {
     await ctx.reply('❌ Додавання книги скасовано', {
-        reply_markup: { remove_keyboard: true }
+        reply_markup: { remove_keyboard: true },
     });
     return ctx.scene.leave();
 });
 addBookScene.leave((ctx) => {
     const state = ctx.wizard?.state;
     if (state) {
-        Object.keys(state).forEach(key => {
+        Object.keys(state).forEach((key) => {
             delete state[key];
         });
     }

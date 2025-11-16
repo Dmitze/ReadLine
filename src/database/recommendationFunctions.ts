@@ -10,16 +10,19 @@ export const getRandomBook = (): Promise<Book | null> => {
   return new Promise((resolve, reject) => {
     // ✅ ВИПРАВЛЕНО #37: один запит замість двох
     logger.debug('Getting random book');
-    
+
     db.get(
       'SELECT * FROM books WHERE (is_available = 1 OR is_available IS NULL) ORDER BY RANDOM() LIMIT 1',
       (err, row: Book) => {
         if (err) {
-          logger.error('Error getting random book', err instanceof Error ? err : new Error(String(err)));
+          logger.error(
+            'Error getting random book',
+            err instanceof Error ? err : new Error(String(err))
+          );
           reject(err);
           return;
         }
-        
+
         if (row) {
           logger.debug('Random book selected', { title: row.title, author: row.author });
           row.is_available = true;
@@ -65,7 +68,7 @@ export const getUserFavoriteGenres = (userId: number, limit: number = 3): Promis
       [userId, limit],
       (err, rows: any[]) => {
         if (err) reject(err);
-        else resolve(rows.map(r => r.genre));
+        else resolve(rows.map((r) => r.genre));
       }
     );
   });
@@ -76,15 +79,15 @@ export const getRecommendedBooks = (userId: number, limit: number = 5): Promise<
   return new Promise(async (resolve, reject) => {
     try {
       const favoriteGenres = await getUserFavoriteGenres(userId, 3);
-      
+
       if (favoriteGenres.length === 0) {
         const topBooks = await getTopBooks(limit);
         resolve(topBooks);
         return;
       }
-      
+
       const placeholders = favoriteGenres.map(() => '?').join(',');
-      
+
       db.all(
         `SELECT * FROM books 
          WHERE genre IN (${placeholders}) 
@@ -104,13 +107,14 @@ export const getRecommendedBooks = (userId: number, limit: number = 5): Promise<
   });
 };
 
-
 /**
  * Advanced recommendation functions based on user behavior
  */
 
 // Get user's reading statistics
-export const getUserReadingStats = (userId: number): Promise<{
+export const getUserReadingStats = (
+  userId: number
+): Promise<{
   savedCount: number;
   reviewsCount: number;
   favoriteGenres: string[];
@@ -177,7 +181,7 @@ export const getBooksBasedOnBehavior = (userId: number, limit: number = 10): Pro
           reject(err);
           return;
         }
-        
+
         // Якщо знайшли достатньо - повертаємо
         if (rows && rows.length > 0) {
           resolve(rows);
@@ -205,7 +209,10 @@ export const getBooksBasedOnBehavior = (userId: number, limit: number = 10): Pro
 };
 
 // Collaborative filtering - find similar users and their books
-export const getCollaborativeRecommendations = (userId: number, limit: number = 10): Promise<Book[]> => {
+export const getCollaborativeRecommendations = (
+  userId: number,
+  limit: number = 10
+): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     db.all(
       `SELECT b.*, COUNT(DISTINCT sb2.user_id) as similar_users
@@ -237,51 +244,57 @@ export const getCollaborativeRecommendations = (userId: number, limit: number = 
 };
 
 // Get contextual recommendations based on time of day
-export const getContextualRecommendations = (userId: number, limit: number = 5): Promise<Book[]> => {
+export const getContextualRecommendations = (
+  userId: number,
+  limit: number = 5
+): Promise<Book[]> => {
   return (async () => {
     const hour = new Date().getHours();
     const { TIME_OF_DAY } = await import('../constants');
     let genrePreference: string[] = [];
-  
-  // Morning (6-12): Motivational, Business, Self-help
-  if (hour >= TIME_OF_DAY.MORNING_START && hour < TIME_OF_DAY.AFTERNOON_START) {
-    genrePreference = ['Мотиваційна', 'Бізнес', 'Саморозвиток', 'Наукова'];
-  }
-  // Afternoon (12-18): Any genre
-  else if (hour >= TIME_OF_DAY.AFTERNOON_START && hour < TIME_OF_DAY.EVENING_START) {
-    genrePreference = ['Історична', 'Біографія', 'Пригоди', 'Детектив'];
-  }
-  // Evening (18-22): Light reading, Fiction
-  else if (hour >= TIME_OF_DAY.EVENING_START && hour < TIME_OF_DAY.NIGHT_START) {
-    genrePreference = ['Романтика', 'Комедія', 'Фентезі', 'Сучасна проза'];
-  }
-  // Night (22-6): Calm, relaxing books
-  else {
-    genrePreference = ['Поезія', 'Філософія', 'Класична література'];
-  }
 
-  return new Promise((resolve, reject) => {
-    const placeholders = genrePreference.map(() => '?').join(',');
-    
-    db.all(
-      `SELECT * FROM books 
+    // Morning (6-12): Motivational, Business, Self-help
+    if (hour >= TIME_OF_DAY.MORNING_START && hour < TIME_OF_DAY.AFTERNOON_START) {
+      genrePreference = ['Мотиваційна', 'Бізнес', 'Саморозвиток', 'Наукова'];
+    }
+    // Afternoon (12-18): Any genre
+    else if (hour >= TIME_OF_DAY.AFTERNOON_START && hour < TIME_OF_DAY.EVENING_START) {
+      genrePreference = ['Історична', 'Біографія', 'Пригоди', 'Детектив'];
+    }
+    // Evening (18-22): Light reading, Fiction
+    else if (hour >= TIME_OF_DAY.EVENING_START && hour < TIME_OF_DAY.NIGHT_START) {
+      genrePreference = ['Романтика', 'Комедія', 'Фентезі', 'Сучасна проза'];
+    }
+    // Night (22-6): Calm, relaxing books
+    else {
+      genrePreference = ['Поезія', 'Філософія', 'Класична література'];
+    }
+
+    return new Promise((resolve, reject) => {
+      const placeholders = genrePreference.map(() => '?').join(',');
+
+      db.all(
+        `SELECT * FROM books 
        WHERE genre IN (${placeholders})
        AND is_available = 1
        AND id NOT IN (SELECT book_id FROM saved_books WHERE user_id = ?)
        ORDER BY rating DESC, downloads_count DESC
        LIMIT ?`,
-      [...genrePreference, userId, limit],
-      (err, rows: Book[]) => {
-        if (err) reject(err);
-        else resolve(rows);
-      }
-    );
-  });
+        [...genrePreference, userId, limit],
+        (err, rows: Book[]) => {
+          if (err) reject(err);
+          else resolve(rows);
+        }
+      );
+    });
   })();
-  };
+};
 
 // Get smart recommendations combining all methods
-export const getSmartRecommendations = async (userId: number, limit: number = 10): Promise<Book[]> => {
+export const getSmartRecommendations = async (
+  userId: number,
+  limit: number = 10
+): Promise<Book[]> => {
   try {
     const allRecommendations: Book[] = [];
     const seenIds = new Set<number>();
@@ -346,7 +359,7 @@ export const getSmartRecommendations = async (userId: number, limit: number = 10
           }
         );
       });
-      
+
       for (const book of newestBooks) {
         if (!seenIds.has(book.id!)) {
           seenIds.add(book.id!);
@@ -357,7 +370,10 @@ export const getSmartRecommendations = async (userId: number, limit: number = 10
 
     return allRecommendations.slice(0, limit);
   } catch (error) {
-    logger.error('Error getting smart recommendations', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Error getting smart recommendations',
+      error instanceof Error ? error : new Error(String(error))
+    );
     // Fallback to simple recommendations
     return getRecommendedBooks(userId, limit);
   }

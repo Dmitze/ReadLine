@@ -11,9 +11,9 @@ import { logger } from './logger';
  * Circuit breaker states
  */
 export enum CircuitState {
-  CLOSED = 'CLOSED',      // Normal operation
-  OPEN = 'OPEN',          // Failing, reject all requests
-  HALF_OPEN = 'HALF_OPEN' // Testing if service recovered
+  CLOSED = 'CLOSED', // Normal operation
+  OPEN = 'OPEN', // Failing, reject all requests
+  HALF_OPEN = 'HALF_OPEN', // Testing if service recovered
 }
 
 /**
@@ -34,11 +34,11 @@ export interface CircuitMetrics {
  * Circuit breaker options
  */
 export interface CircuitBreakerOptions {
-  failureThreshold?: number;      // Number of failures to open circuit (default: 5)
-  successThreshold?: number;      // Number of successes in half-open to close (default: 2)
-  timeout?: number;               // Time in ms to wait before attempting recovery (default: 60000)
-  monitoringPeriod?: number;      // Period to reset metrics (default: 120000)
-  name?: string;                  // Circuit breaker name for logging
+  failureThreshold?: number; // Number of failures to open circuit (default: 5)
+  successThreshold?: number; // Number of successes in half-open to close (default: 2)
+  timeout?: number; // Time in ms to wait before attempting recovery (default: 60000)
+  monitoringPeriod?: number; // Period to reset metrics (default: 120000)
+  name?: string; // Circuit breaker name for logging
   onStateChange?: (state: CircuitState, metrics: CircuitMetrics) => void;
 }
 
@@ -164,9 +164,14 @@ export class CircuitBreaker<T = any> {
     if (this.state === CircuitState.HALF_OPEN) {
       this.transitionTo(CircuitState.OPEN);
       logger.warn(`${this.name}: Circuit breaker OPEN after failure in HALF_OPEN state`);
-    } else if (this.state === CircuitState.CLOSED && this.consecutiveFailures >= this.failureThreshold) {
+    } else if (
+      this.state === CircuitState.CLOSED &&
+      this.consecutiveFailures >= this.failureThreshold
+    ) {
       this.transitionTo(CircuitState.OPEN);
-      logger.warn(`${this.name}: Circuit breaker OPEN after ${this.consecutiveFailures} consecutive failures`);
+      logger.warn(
+        `${this.name}: Circuit breaker OPEN after ${this.consecutiveFailures} consecutive failures`
+      );
     }
   }
 
@@ -233,9 +238,10 @@ export class CircuitBreaker<T = any> {
   private startMonitoring(): void {
     this.monitoringTimer = setInterval(() => {
       // Log metrics
-      const successRate = this.metrics.totalRequests > 0
-        ? ((this.metrics.successfulRequests / this.metrics.totalRequests) * 100).toFixed(2)
-        : '0.00';
+      const successRate =
+        this.metrics.totalRequests > 0
+          ? ((this.metrics.successfulRequests / this.metrics.totalRequests) * 100).toFixed(2)
+          : '0.00';
 
       logger.debug(`${this.name} Metrics:`, {
         state: this.metrics.state,
@@ -260,9 +266,10 @@ export class CircuitBreaker<T = any> {
    * Get formatted status for logging
    */
   getStatus(): string {
-    const successRate = this.metrics.totalRequests > 0
-      ? ((this.metrics.successfulRequests / this.metrics.totalRequests) * 100).toFixed(1)
-      : '0.0';
+    const successRate =
+      this.metrics.totalRequests > 0
+        ? ((this.metrics.successfulRequests / this.metrics.totalRequests) * 100).toFixed(1)
+        : '0.0';
 
     return `[${this.name}] State: ${this.state} | Success: ${successRate}% | Total: ${this.metrics.totalRequests}`;
   }
@@ -283,10 +290,7 @@ export class HttpCircuitBreaker extends CircuitBreaker {
   /**
    * Execute HTTP request with circuit breaker protection
    */
-  async executeRequest<T>(
-    url: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  async executeRequest<T>(url: string, options: RequestInit = {}): Promise<T> {
     return this.execute(async () => {
       const response = await fetch(url, options);
 

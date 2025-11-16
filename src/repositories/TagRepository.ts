@@ -48,11 +48,13 @@ export class TagRepository extends BaseRepository<Tag> {
    */
   async createTag(name: string): Promise<number> {
     const { isValidTag, normalizeTag } = await import('../utils/tagValidator');
-    
+
     if (!isValidTag(name)) {
-      throw new Error(`Невалідна назва тегу: "${name}". Теги мають бути однослівними або двослівними без пробілів.`);
+      throw new Error(
+        `Невалідна назва тегу: "${name}". Теги мають бути однослівними або двослівними без пробілів.`
+      );
     }
-    
+
     const normalized = normalizeTag(name);
     return this.insert({ name: normalized });
   }
@@ -131,7 +133,7 @@ export class TagRepository extends BaseRepository<Tag> {
     `;
 
     const results = await this.db.all<Tag & { book_id: number }>(query, bookIds);
-    
+
     const tagMap = new Map<number, Tag[]>();
     results.forEach((row) => {
       const bookId = row.book_id;
@@ -152,10 +154,10 @@ export class TagRepository extends BaseRepository<Tag> {
    * @returns Promise<void>
    */
   async addBookTag(bookId: number, tagId: number): Promise<void> {
-    await this.db.run(
-      'INSERT OR IGNORE INTO book_tags (book_id, tag_id) VALUES (?, ?)',
-      [bookId, tagId]
-    );
+    await this.db.run('INSERT OR IGNORE INTO book_tags (book_id, tag_id) VALUES (?, ?)', [
+      bookId,
+      tagId,
+    ]);
   }
 
   /**
@@ -177,10 +179,7 @@ export class TagRepository extends BaseRepository<Tag> {
    * @returns Promise<void>
    */
   async removeBookTag(bookId: number, tagId: number): Promise<void> {
-    await this.db.run(
-      'DELETE FROM book_tags WHERE book_id = ? AND tag_id = ?',
-      [bookId, tagId]
-    );
+    await this.db.run('DELETE FROM book_tags WHERE book_id = ? AND tag_id = ?', [bookId, tagId]);
   }
 
   /**
@@ -189,10 +188,7 @@ export class TagRepository extends BaseRepository<Tag> {
    * @returns Promise<void>
    */
   async clearBookTags(bookId: number): Promise<void> {
-    await this.db.run(
-      'DELETE FROM book_tags WHERE book_id = ?',
-      [bookId]
-    );
+    await this.db.run('DELETE FROM book_tags WHERE book_id = ?', [bookId]);
   }
 
   /**
@@ -215,7 +211,7 @@ export class TagRepository extends BaseRepository<Tag> {
       ORDER BY b.rating DESC, b.downloads_count DESC
       LIMIT ?
     `;
-    
+
     return this.db.all(query, [`%${sanitizedTag}%`, limit]);
   }
 
@@ -253,7 +249,7 @@ export class TagRepository extends BaseRepository<Tag> {
     return {
       tagId,
       bookCount: results[0]?.count || 0,
-      lastUsed: new Date().toISOString()
+      lastUsed: new Date().toISOString(),
     };
   }
 
@@ -314,7 +310,7 @@ export class TagRepository extends BaseRepository<Tag> {
        SELECT book_id, ? FROM book_tags WHERE tag_id = ?`,
       [targetTagId, sourceTagId]
     );
-    
+
     // Delete the source tag
     await this.deleteTag(sourceTagId);
   }
@@ -336,7 +332,7 @@ export class TagRepository extends BaseRepository<Tag> {
   async getOrCreateTag(name: string): Promise<number> {
     const { normalizeTag } = await import('../utils/tagValidator');
     const normalized = normalizeTag(name);
-    
+
     const existing = await this.getTagByName(normalized);
     if (existing && existing.id) {
       return existing.id;

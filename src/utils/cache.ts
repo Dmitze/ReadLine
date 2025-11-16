@@ -94,11 +94,7 @@ class CacheService {
    * Отримати або встановити значення
    * ✅ ВИПРАВЛЕНО #10: race condition - два паралельні запити не виконають fetcher двічі
    */
-  async getOrSet<T>(
-    key: string,
-    fetcher: () => Promise<T>,
-    ttl?: number
-  ): Promise<T> {
+  async getOrSet<T>(key: string, fetcher: () => Promise<T>, ttl?: number): Promise<T> {
     const cached = this.get<T>(key);
 
     if (cached !== null) {
@@ -158,9 +154,12 @@ export const cache = new CacheService();
 
 // Періодична очистка expired записів (кожні 10 хвилин)
 // Зберігаємо reference для можливості очистки в тестах
-export const cleanupInterval = setInterval(() => {
-  cache.cleanup();
-}, 10 * 60 * 1000);
+export const cleanupInterval = setInterval(
+  () => {
+    cache.cleanup();
+  },
+  10 * 60 * 1000
+);
 
 // Дозволяємо unref в Node.js environment щоб не блокувати exit
 if (cleanupInterval.unref) {

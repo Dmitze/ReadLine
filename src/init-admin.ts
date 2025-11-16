@@ -8,29 +8,35 @@ dotenv.config();
 const initAdmin = async () => {
   try {
     if (!process.env.ADMIN_ID) {
-       logger.error('ADMIN_ID not found in .env file', new Error('ADMIN_ID environment variable is required'));
-       process.exit(1);
-     }
-    
+      logger.error(
+        'ADMIN_ID not found in .env file',
+        new Error('ADMIN_ID environment variable is required')
+      );
+      process.exit(1);
+    }
+
     // Validate admin ID
     const adminIdStr = process.env.ADMIN_ID;
     const adminId = parseInt(adminIdStr!);
-    
+
     if (isNaN(adminId) || adminId <= 0) {
-       logger.error('Invalid ADMIN_ID - must be a positive integer', new Error(`ADMIN_ID='${adminIdStr}' is not a valid positive integer`));
-       process.exit(1);
-     }
-    
+      logger.error(
+        'Invalid ADMIN_ID - must be a positive integer',
+        new Error(`ADMIN_ID='${adminIdStr}' is not a valid positive integer`)
+      );
+      process.exit(1);
+    }
+
     logger.info('Initializing admin user', { adminId });
-    
+
     const result = await addAdmin(adminId, 'admin');
-    
+
     if (result) {
       logger.info('Admin successfully added', { adminId });
     } else {
       logger.info('Admin already exists', { adminId });
     }
-    
+
     logger.info('Admin initialization completed');
   } catch (error) {
     logger.error('Error adding admin', error instanceof Error ? error : new Error(String(error)));

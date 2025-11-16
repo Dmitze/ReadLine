@@ -8,7 +8,7 @@ import feedbackHandlers from './feedback';
 
 export default (bot: Telegraf<BotContext>) => {
   logger.info('Admin handlers registered');
-  
+
   menuHandlers(bot);
   statsHandlers(bot);
   reviewsHandlers(bot);

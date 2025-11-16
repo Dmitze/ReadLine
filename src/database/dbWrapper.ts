@@ -45,9 +45,12 @@ export class DatabaseWrapper {
    * Виконати INSERT/UPDATE/DELETE запит
    * Повертає lastID для INSERT або changes для UPDATE/DELETE
    */
-  async run(query: string, params: SQLParameters = []): Promise<{ lastID: number; changes: number }> {
+  async run(
+    query: string,
+    params: SQLParameters = []
+  ): Promise<{ lastID: number; changes: number }> {
     return new Promise((resolve, reject) => {
-      this.db.run(query, params, function(err) {
+      this.db.run(query, params, function (err) {
         if (err) reject(err);
         else resolve({ lastID: this.lastID, changes: this.changes });
       });
@@ -86,20 +89,23 @@ export class DatabaseWrapper {
     try {
       // Begin transaction
       await this.run('BEGIN TRANSACTION');
-      
+
       // Execute callback
       const result = await callback();
-      
+
       // Commit on success
       await this.run('COMMIT');
-      
+
       return result;
     } catch (error) {
       // Rollback on error
       try {
         await this.run('ROLLBACK');
       } catch (rollbackError) {
-        logger.error('Failed to rollback transaction', rollbackError instanceof Error ? rollbackError : new Error(String(rollbackError)));
+        logger.error(
+          'Failed to rollback transaction',
+          rollbackError instanceof Error ? rollbackError : new Error(String(rollbackError))
+        );
       }
       throw error;
     }
@@ -123,14 +129,12 @@ export class DatabaseWrapper {
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(table)) {
       throw new Error(`Invalid table name: ${table}`);
     }
-    
-    const query = where 
+
+    const query = where
       ? `SELECT COUNT(*) as count FROM ${table} WHERE ${where}`
       : `SELECT COUNT(*) as count FROM ${table}`;
-    
+
     const result = await this.get<{ count: number }>(query, params);
     return result?.count || 0;
   }
 }
-
-

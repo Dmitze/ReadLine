@@ -1,7 +1,7 @@
 /**
  * Database Models
  * REFACTOR-009: This file now re-exports from modular tables structure
- * 
+ *
  * Legacy compatibility layer - imports from src/database/tables/
  */
 

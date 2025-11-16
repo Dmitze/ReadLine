@@ -72,10 +72,7 @@ export const getAllFeedbackMessages = (): Promise<FeedbackMessage[]> => {
 /**
  * Update feedback status
  */
-export const updateFeedbackStatus = (
-  feedbackId: number,
-  status: string
-): Promise<number> => {
+export const updateFeedbackStatus = (feedbackId: number, status: string): Promise<number> => {
   return new Promise((resolve, reject) => {
     const query = 'UPDATE feedback SET status = ? WHERE id = ?';
 

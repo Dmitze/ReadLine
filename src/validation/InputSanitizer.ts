@@ -74,7 +74,7 @@ export class InputSanitizer {
     return this.sanitizeString(value, {
       removeHtml: true,
       trim: true,
-      replaceSpaces: true
+      replaceSpaces: true,
     })
       .replace(/'/g, "''")
       .replace(/\\/g, '\\\\');
@@ -108,17 +108,14 @@ export class InputSanitizer {
    * Санітизувати для JSON
    */
   static sanitizeForJson(value: unknown): string {
-    return JSON.stringify(value)
-      .replace(/\\/g, '\\\\')
-      .replace(/"/g, '\\"')
-      .replace(/\//g, '\\/');
+    return JSON.stringify(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\//g, '\\/');
   }
 
   /**
    * Перевірити на SQL injection
    */
   static checkSqlInjection(value: string): boolean {
-    return this.sqlInjectionPatterns.some(pattern => pattern.test(value));
+    return this.sqlInjectionPatterns.some((pattern) => pattern.test(value));
   }
 
   /**
@@ -136,7 +133,7 @@ export class InputSanitizer {
       /data:text\/html/gi,
     ];
 
-    return xssPatterns.some(pattern => pattern.test(value));
+    return xssPatterns.some((pattern) => pattern.test(value));
   }
 
   /**
@@ -152,7 +149,7 @@ export class InputSanitizer {
     }
 
     if (Array.isArray(obj)) {
-      return obj.map(item => this.sanitizeObject(item, options));
+      return obj.map((item) => this.sanitizeObject(item, options));
     }
 
     if (typeof obj === 'object') {
@@ -214,7 +211,7 @@ export class InputSanitizer {
       removeHtml: true,
       trim: true,
       replaceSpaces: true,
-      maxLength: 4096
+      maxLength: 4096,
     });
   }
 
@@ -226,9 +223,8 @@ export class InputSanitizer {
       removeHtml: true,
       trim: true,
       replaceSpaces: true,
-      maxLength
-    })
-      .replace(/[^\w\s-а-яіїєґА-ЯІЇЄҐ]/g, '');
+      maxLength,
+    }).replace(/[^\w\s-а-яіїєґА-ЯІЇЄҐ]/g, '');
   }
 
   /**

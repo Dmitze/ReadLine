@@ -42,45 +42,36 @@ const SEARCH_LIMIT = 10;
 const searchScene = new telegraf_1.Scenes.BaseScene('SEARCH_SCENE');
 searchScene.enter(async (ctx) => {
     const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
-    await ctx.reply('🔍 <b>Розширений пошук книг</b>\n\n' +
-        'Оберіть тип пошуку або введіть запит:', {
+    await ctx.reply('🔍 <b>Розширений пошук книг</b>\n\n' + 'Оберіть тип пошуку або введіть запит:', {
         parse_mode: 'HTML',
         reply_markup: Markup.inlineKeyboard([
             [
                 { text: '📖 За назвою', callback_data: 'search_by_title' },
-                { text: '👤 За автором', callback_data: 'search_by_author' }
+                { text: '👤 За автором', callback_data: 'search_by_author' },
             ],
             [
                 { text: '📚 За жанром', callback_data: 'search_by_genre' },
-                { text: '🔍 Загальний пошук', callback_data: 'search_general' }
+                { text: '🔍 Загальний пошук', callback_data: 'search_general' },
             ],
-            [
-                { text: '🤖 Розумний пошук (AI)', callback_data: 'search_ai' }
-            ],
-            [{ text: '⬅️ Назад', callback_data: 'search_back' }]
-        ]).reply_markup
+            [{ text: '🤖 Розумний пошук (AI)', callback_data: 'search_ai' }],
+            [{ text: '⬅️ Назад', callback_data: 'search_back' }],
+        ]).reply_markup,
     });
 });
 searchScene.action('search_by_title', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'title';
-    await ctx.editMessageText('📖 <b>Пошук за назвою</b>\n\n' +
-        'Введіть назву книги:\n\n' +
-        '💡 <i>Приклад:</i> Кобзар', { parse_mode: 'HTML' });
+    await ctx.editMessageText('📖 <b>Пошук за назвою</b>\n\n' + 'Введіть назву книги:\n\n' + '💡 <i>Приклад:</i> Кобзар', { parse_mode: 'HTML' });
 });
 searchScene.action('search_by_author', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'author';
-    await ctx.editMessageText('👤 <b>Пошук за автором</b>\n\n' +
-        'Введіть ім\'я автора:\n\n' +
-        '💡 <i>Приклад:</i> Шевченко', { parse_mode: 'HTML' });
+    await ctx.editMessageText('👤 <b>Пошук за автором</b>\n\n' + "Введіть ім'я автора:\n\n" + '💡 <i>Приклад:</i> Шевченко', { parse_mode: 'HTML' });
 });
 searchScene.action('search_by_genre', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'genre';
-    await ctx.editMessageText('📚 <b>Пошук за жанром</b>\n\n' +
-        'Введіть жанр:\n\n' +
-        '💡 <i>Приклад:</i> Історична', { parse_mode: 'HTML' });
+    await ctx.editMessageText('📚 <b>Пошук за жанром</b>\n\n' + 'Введіть жанр:\n\n' + '💡 <i>Приклад:</i> Історична', { parse_mode: 'HTML' });
 });
 searchScene.action('search_general', async (ctx) => {
     await ctx.answerCbQuery();
@@ -99,7 +90,7 @@ searchScene.action('search_back', async (ctx) => {
     const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
     const { getMainMenuKeyboard } = await Promise.resolve().then(() => __importStar(require('../keyboards/mainKeyboards')));
     await ctx.reply('👋 Повертаємось до головного меню', {
-        reply_markup: getMainMenuKeyboard()
+        reply_markup: getMainMenuKeyboard(),
     });
 });
 searchScene.on('text', async (ctx) => {
@@ -112,7 +103,7 @@ searchScene.on('text', async (ctx) => {
     if (searchTerm === '⬅️ Назад до меню') {
         const { getMainMenuKeyboard } = await Promise.resolve().then(() => __importStar(require('../keyboards/mainKeyboards')));
         await ctx.reply('👋 Повертаємось до головного меню', {
-            reply_markup: getMainMenuKeyboard()
+            reply_markup: getMainMenuKeyboard(),
         });
         return ctx.scene?.leave();
     }
@@ -167,26 +158,31 @@ searchScene.on('text', async (ctx) => {
                 `📚 ${book.genre}\n\n` +
                 `${book.description?.substring(0, 150) || 'Немає опису'}...`;
             if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
-                await ctx.replyWithPhoto(book.photo_file_id, {
+                await ctx
+                    .replyWithPhoto(book.photo_file_id, {
                     caption,
                     parse_mode: 'Markdown',
-                    reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
-                }).catch(async () => {
+                    reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved),
+                })
+                    .catch(async () => {
                     await ctx.reply(caption, {
                         parse_mode: 'Markdown',
-                        reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
+                        reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved),
                     });
                 });
             }
             else {
                 await ctx.reply(caption, {
                     parse_mode: 'Markdown',
-                    reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
+                    reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved),
                 });
             }
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise((resolve) => setTimeout(resolve, 500));
         }
-        logger_1.logger.userAction(ctx.from?.id || 0, 'ai_search', { query: searchTerm, booksFound: books.length });
+        logger_1.logger.userAction(ctx.from?.id || 0, 'ai_search', {
+            query: searchTerm,
+            booksFound: books.length,
+        });
         return ctx.scene?.leave();
     }
     let books = [];
@@ -226,25 +222,29 @@ searchScene.on('text', async (ctx) => {
     for (const book of books) {
         const isSaved = userId ? await isBookSaved(userId, book.id) : false;
         const caption = `📖 <b>${book.title}</b>${(0, helpers_1.getBookIdText)(book.id)}\n👤 Автор: ${book.author}\n📚 Жанр: ${book.genre}\n📝 ${book.description?.substring(0, 100) || 'Немає опису'}...`;
-        if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
-            await ctx.replyWithPhoto(book.photo_file_id, {
+        if (book.photo_file_id &&
+            book.photo_file_id !== 'default_book_cover' &&
+            book.photo_file_id.length > 20) {
+            await ctx
+                .replyWithPhoto(book.photo_file_id, {
                 caption,
                 parse_mode: 'HTML',
-                reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
-            }).catch(async () => {
+                reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved),
+            })
+                .catch(async () => {
                 await ctx.reply(caption, {
                     parse_mode: 'HTML',
-                    reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
+                    reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved),
                 });
             });
         }
         else {
             await ctx.reply(caption, {
                 parse_mode: 'HTML',
-                reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved)
+                reply_markup: (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved),
             });
         }
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise((resolve) => setTimeout(resolve, 300));
     }
     if (books.length === SEARCH_LIMIT) {
         await ctx.reply(`ℹ️ Показано перші ${SEARCH_LIMIT} результатів.\n` +
@@ -253,11 +253,11 @@ searchScene.on('text', async (ctx) => {
     logger_1.logger.userAction(ctx.from?.id || 0, 'search_completed', {
         searchTerm,
         searchType,
-        resultsCount: books.length
+        resultsCount: books.length,
     });
     const { getMainMenuKeyboard } = await Promise.resolve().then(() => __importStar(require('../keyboards/mainKeyboards')));
     await ctx.reply('🔍 Пошук завершено', {
-        reply_markup: getMainMenuKeyboard()
+        reply_markup: getMainMenuKeyboard(),
     });
     return ctx.scene?.leave();
 });

@@ -48,7 +48,7 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
   async createChapter(chapter: AudioChapter): Promise<number> {
     return this.insert({
       ...chapter,
-      duration: chapter.duration || 0
+      duration: chapter.duration || 0,
     });
   }
 
@@ -68,10 +68,9 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
    * @returns Promise with AudioChapter or null
    */
   async getChapterById(chapterId: number): Promise<AudioChapter | null> {
-    const chapters = await this.query<AudioChapter>(
-      'SELECT * FROM audio_chapters WHERE id = ?',
-      [chapterId]
-    );
+    const chapters = await this.query<AudioChapter>('SELECT * FROM audio_chapters WHERE id = ?', [
+      chapterId,
+    ]);
     return chapters[0] || null;
   }
 
@@ -118,13 +117,13 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
         total_listened = total_listened + excluded.total_listened,
         last_listened_at = CURRENT_TIMESTAMP
     `;
-    
+
     await this.db.run(query, [
       progress.user_id,
       progress.book_id,
       progress.chapter_id || null,
       progress.position,
-      progress.total_listened || 0
+      progress.total_listened || 0,
     ]);
   }
 
@@ -198,17 +197,17 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
     averageTimePerBook: number;
   }> {
     const totalTime = await this.getUserTotalListeningTime(userId);
-    
+
     const results = await this.db.all<{ count: number }>(
       'SELECT COUNT(DISTINCT book_id) as count FROM listening_progress WHERE user_id = ?',
       [userId]
     );
     const booksListened = results[0]?.count || 0;
-    
+
     return {
       totalTime,
       booksListened,
-      averageTimePerBook: booksListened > 0 ? totalTime / booksListened : 0
+      averageTimePerBook: booksListened > 0 ? totalTime / booksListened : 0,
     };
   }
 
@@ -219,10 +218,10 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
    * @returns Promise<void>
    */
   async deleteListeningProgress(userId: number, bookId: number): Promise<void> {
-    await this.db.run(
-      'DELETE FROM listening_progress WHERE user_id = ? AND book_id = ?',
-      [userId, bookId]
-    );
+    await this.db.run('DELETE FROM listening_progress WHERE user_id = ? AND book_id = ?', [
+      userId,
+      bookId,
+    ]);
   }
 
   /**
@@ -259,7 +258,10 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
    * @param bookId Book ID
    * @returns Promise with current chapter and position
    */
-  async getUserBookPosition(userId: number, bookId: number): Promise<{
+  async getUserBookPosition(
+    userId: number,
+    bookId: number
+  ): Promise<{
     chapterId: number | null;
     position: number;
   } | null> {
@@ -267,12 +269,12 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
       'SELECT chapter_id, position FROM listening_progress WHERE user_id = ? AND book_id = ?',
       [userId, bookId]
     );
-    
+
     if (!results[0]) return null;
-    
+
     return {
       chapterId: results[0].chapter_id || null,
-      position: results[0].position
+      position: results[0].position,
     };
   }
 
@@ -282,10 +284,7 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
    * @returns Promise<void>
    */
   async clearUserListeningProgress(userId: number): Promise<void> {
-    await this.db.run(
-      'DELETE FROM listening_progress WHERE user_id = ?',
-      [userId]
-    );
+    await this.db.run('DELETE FROM listening_progress WHERE user_id = ?', [userId]);
   }
 
   /**

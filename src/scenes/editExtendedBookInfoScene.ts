@@ -24,10 +24,10 @@ editExtendedBookInfoScene.enter(async (ctx) => {
 
     await ctx.reply(
       '📖 <b>РЕДАГУВАННЯ РОЗШИРЕНОЇ ІНФОРМАЦІЇ ПРО КНИГИ</b>\n\n' +
-      'Введіть ID книги, для якої хочете встановити:\n' +
-      '• Вікове обмеження (6+, 12+, 16+, 18+)\n' +
-      '• Варнінги вмісту (насильство, експліцит, тощо)\n\n' +
-      '💡 <b>Приклад:</b> <code>42</code>',
+        'Введіть ID книги, для якої хочете встановити:\n' +
+        '• Вікове обмеження (6+, 12+, 16+, 18+)\n' +
+        '• Варнінги вмісту (насильство, експліцит, тощо)\n\n' +
+        '💡 <b>Приклад:</b> <code>42</code>',
       { parse_mode: 'HTML' }
     );
 
@@ -62,7 +62,7 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
 
       if (!book) {
         await ctx.reply(`❌ Книга з ID ${bookId} не знайдена. Спробуйте ще раз:`, {
-          parse_mode: 'HTML'
+          parse_mode: 'HTML',
         });
         return;
       }
@@ -73,16 +73,16 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
 
       await ctx.reply(
         `✅ Знайшли книгу: <b>${book.title}</b>${getBookIdText(book.id)}\n` +
-        `👤 Автор: ${book.author}\n\n` +
-        'Що хочете редагувати?',
+          `👤 Автор: ${book.author}\n\n` +
+          'Що хочете редагувати?',
         {
           parse_mode: 'HTML',
           reply_markup: Markup.inlineKeyboard([
             [Markup.button.callback('🔞 Вікове обмеження', 'edit_age')],
             [Markup.button.callback('⚠️ Варнінги вмісту', 'edit_warnings')],
             [Markup.button.callback('📊 Перегляд поточних', 'view_current')],
-            [Markup.button.callback('❌ Скасувати', 'cancel_edit')]
-          ]).reply_markup
+            [Markup.button.callback('❌ Скасувати', 'cancel_edit')],
+          ]).reply_markup,
         }
       );
       return;
@@ -96,12 +96,12 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
       if (!validAges.includes(age)) {
         await ctx.reply(
           '❌ Невірне значення. Виберіть один з варіантів:\n' +
-          '• 0 - Для всіх\n' +
-          '• 6 - 6+\n' +
-          '• 12 - 12+\n' +
-          '• 16 - 16+\n' +
-          '• 18 - 18+\n\n' +
-          'Спробуйте ще раз:'
+            '• 0 - Для всіх\n' +
+            '• 6 - 6+\n' +
+            '• 12 - 12+\n' +
+            '• 16 - 16+\n' +
+            '• 18 - 18+\n\n' +
+            'Спробуйте ще раз:'
         );
         return;
       }
@@ -111,23 +111,23 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
 
       await ctx.reply(
         '✅ Встановили вікове обмеження\n\n' +
-        '⚠️ <b>ВАРНІНГИ ВМІСТУ</b>\n\n' +
-        'Введіть варнінги (через кому, без пробілів):\n\n' +
-        '<b>Доступні варнінги:</b>\n' +
-        '• violence (насильство)\n' +
-        '• explicit_content (експліцит)\n' +
-        '• sexual_scenes (сексуальні сцени)\n' +
-        '• mature_themes (дорослі теми)\n' +
-        '• strong_language (грубе мовлення)\n' +
-        '• psychological_horror (психо жах)\n' +
-        '• substance_abuse (зловживання)\n' +
-        '• child_abuse (насильство над дітьми)\n' +
-        '• discrimination (дискримінація)\n' +
-        '• self_harm (самозалік)\n\n' +
-        '<b>Приклади:</b>\n' +
-        '• <code>violence,mature_themes</code>\n' +
-        '• <code>explicit_content,sexual_scenes</code>\n' +
-        '• <code>-</code> або <code>none</code> (без варнінгів)',
+          '⚠️ <b>ВАРНІНГИ ВМІСТУ</b>\n\n' +
+          'Введіть варнінги (через кому, без пробілів):\n\n' +
+          '<b>Доступні варнінги:</b>\n' +
+          '• violence (насильство)\n' +
+          '• explicit_content (експліцит)\n' +
+          '• sexual_scenes (сексуальні сцени)\n' +
+          '• mature_themes (дорослі теми)\n' +
+          '• strong_language (грубе мовлення)\n' +
+          '• psychological_horror (психо жах)\n' +
+          '• substance_abuse (зловживання)\n' +
+          '• child_abuse (насильство над дітьми)\n' +
+          '• discrimination (дискримінація)\n' +
+          '• self_harm (самозалік)\n\n' +
+          '<b>Приклади:</b>\n' +
+          '• <code>violence,mature_themes</code>\n' +
+          '• <code>explicit_content,sexual_scenes</code>\n' +
+          '• <code>-</code> або <code>none</code> (без варнінгів)',
         { parse_mode: 'HTML' }
       );
       return;
@@ -148,17 +148,17 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
           'substance_abuse',
           'child_abuse',
           'discrimination',
-          'self_harm'
+          'self_harm',
         ];
 
-        warnings = message.split(',').map(w => w.trim());
+        warnings = message.split(',').map((w) => w.trim());
 
         // Перевіряємо кожен варнінг
-        const invalidWarnings = warnings.filter(w => !validWarnings.includes(w));
+        const invalidWarnings = warnings.filter((w) => !validWarnings.includes(w));
         if (invalidWarnings.length > 0) {
           await ctx.reply(
             `❌ Невідомі варнінги: ${invalidWarnings.join(', ')}\n\n` +
-            'Спробуйте ще раз або напишіть "-" без варнінгів'
+              'Спробуйте ще раз або напишіть "-" без варнінгів'
           );
           return;
         }
@@ -167,27 +167,31 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
       state.contentWarnings = warnings;
 
       // Збереження
-      await updateBookInfo(state.bookId, state.recommendedAge, warnings.length > 0 ? warnings : undefined);
+      await updateBookInfo(
+        state.bookId,
+        state.recommendedAge,
+        warnings.length > 0 ? warnings : undefined
+      );
 
       const ageLabels: { [key: number]: string } = {
         0: '✅ Для всіх',
         6: '🟢 6+',
         12: '🟡 12+',
         16: '🟠 16+',
-        18: '🔴 18+'
+        18: '🔴 18+',
       };
 
       const warningLabels: { [key: string]: string } = {
-        'violence': 'Насильство',
-        'explicit_content': 'Експліцитний контент',
-        'sexual_scenes': 'Сексуальні сцени',
-        'mature_themes': 'Дорослі теми',
-        'strong_language': 'Грубе мовлення',
-        'psychological_horror': 'Психологічний жах',
-        'substance_abuse': 'Зловживання',
-        'child_abuse': 'Насильство над дітьми',
-        'discrimination': 'Дискримінація',
-        'self_harm': 'Самозалік'
+        violence: 'Насильство',
+        explicit_content: 'Експліцитний контент',
+        sexual_scenes: 'Сексуальні сцени',
+        mature_themes: 'Дорослі теми',
+        strong_language: 'Грубе мовлення',
+        psychological_horror: 'Психологічний жах',
+        substance_abuse: 'Зловживання',
+        child_abuse: 'Насильство над дітьми',
+        discrimination: 'Дискримінація',
+        self_harm: 'Самозалік',
       };
 
       let successMsg = '✅ <b>Успішно оновлено!</b>\n\n';
@@ -195,7 +199,7 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
       successMsg += `🔞 <b>Вік:</b> ${ageLabels[state.recommendedAge]}\n`;
 
       if (warnings.length > 0) {
-        successMsg += `⚠️ <b>Варнінги:</b> ${warnings.map(w => warningLabels[w]).join(', ')}\n`;
+        successMsg += `⚠️ <b>Варнінги:</b> ${warnings.map((w) => warningLabels[w]).join(', ')}\n`;
       } else {
         successMsg += '⚠️ <b>Варнінги:</b> Немає\n';
       }
@@ -204,8 +208,8 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
         parse_mode: 'HTML',
         reply_markup: Markup.inlineKeyboard([
           [Markup.button.callback('📖 Редагувати іншу книгу', 'edit_another')],
-          [Markup.button.callback('⬅️ Назад до меню', 'back_to_menu')]
-        ]).reply_markup
+          [Markup.button.callback('⬅️ Назад до меню', 'back_to_menu')],
+        ]).reply_markup,
       });
 
       state.step = 'done';
@@ -228,31 +232,31 @@ editExtendedBookInfoScene.action('edit_age', async (ctx) => {
       6: '6+',
       12: '12+',
       16: '16+',
-      18: '18+'
+      18: '18+',
     };
     await ctx.editMessageText(
       `📖 <b>${state.book.title}</b>${getBookIdText(state.book.id)}\n` +
-      `Поточний вік: <b>${ageLabels[state.book.recommended_age] || 'Не встановлено'}</b>\n\n` +
-      '🔞 <b>ВСТАНОВЛЕННЯ ВІКОВОГО ОБМЕЖЕННЯ</b>\n\n' +
-      'Введіть один з варіантів:\n' +
-      '• 0 - Для всіх\n' +
-      '• 6 - 6+\n' +
-      '• 12 - 12+\n' +
-      '• 16 - 16+\n' +
-      '• 18 - 18+',
+        `Поточний вік: <b>${ageLabels[state.book.recommended_age] || 'Не встановлено'}</b>\n\n` +
+        '🔞 <b>ВСТАНОВЛЕННЯ ВІКОВОГО ОБМЕЖЕННЯ</b>\n\n' +
+        'Введіть один з варіантів:\n' +
+        '• 0 - Для всіх\n' +
+        '• 6 - 6+\n' +
+        '• 12 - 12+\n' +
+        '• 16 - 16+\n' +
+        '• 18 - 18+',
       { parse_mode: 'HTML' }
     );
   } else {
     await ctx.editMessageText(
       `📖 <b>${state.book.title}</b>${getBookIdText(state.book.id)}\n` +
-      'Поточний вік: Не встановлено\n\n' +
-      '🔞 <b>ВСТАНОВЛЕННЯ ВІКОВОГО ОБМЕЖЕННЯ</b>\n\n' +
-      'Введіть один з варіантів:\n' +
-      '• 0 - Для всіх\n' +
-      '• 6 - 6+\n' +
-      '• 12 - 12+\n' +
-      '• 16 - 16+\n' +
-      '• 18 - 18+',
+        'Поточний вік: Не встановлено\n\n' +
+        '🔞 <b>ВСТАНОВЛЕННЯ ВІКОВОГО ОБМЕЖЕННЯ</b>\n\n' +
+        'Введіть один з варіантів:\n' +
+        '• 0 - Для всіх\n' +
+        '• 6 - 6+\n' +
+        '• 12 - 12+\n' +
+        '• 16 - 16+\n' +
+        '• 18 - 18+',
       { parse_mode: 'HTML' }
     );
   }
@@ -270,21 +274,22 @@ editExtendedBookInfoScene.action('edit_warnings', async (ctx) => {
   let currentWarnings = '';
 
   if (book?.content_warnings) {
-    const warnings = typeof book.content_warnings === 'string' 
-      ? JSON.parse(book.content_warnings) 
-      : book.content_warnings;
+    const warnings =
+      typeof book.content_warnings === 'string'
+        ? JSON.parse(book.content_warnings)
+        : book.content_warnings;
     currentWarnings = `\nПоточні варнінги: ${Array.isArray(warnings) ? warnings.join(', ') : 'Немає'}`;
   }
 
   await ctx.editMessageText(
     `📖 <b>${state.book.title}</b>${getBookIdText(state.book.id)}${currentWarnings}\n\n` +
-    '⚠️ <b>РЕДАГУВАННЯ ВАРНІНГІВ ВМІСТУ</b>\n\n' +
-    'Введіть варнінги (через кому):\n\n' +
-    'violence, explicit_content, sexual_scenes,\n' +
-    'mature_themes, strong_language,\n' +
-    'psychological_horror, substance_abuse,\n' +
-    'child_abuse, discrimination, self_harm\n\n' +
-    'Або напишіть "-" без варнінгів',
+      '⚠️ <b>РЕДАГУВАННЯ ВАРНІНГІВ ВМІСТУ</b>\n\n' +
+      'Введіть варнінги (через кому):\n\n' +
+      'violence, explicit_content, sexual_scenes,\n' +
+      'mature_themes, strong_language,\n' +
+      'psychological_horror, substance_abuse,\n' +
+      'child_abuse, discrimination, self_harm\n\n' +
+      'Або напишіть "-" без варнінгів',
     { parse_mode: 'HTML' }
   );
 
@@ -307,7 +312,7 @@ editExtendedBookInfoScene.action('view_current', async (ctx) => {
     6: '🟢 6+',
     12: '🟡 12+',
     16: '🟠 16+',
-    18: '🔴 18+'
+    18: '🔴 18+',
   };
 
   let msg = `📖 <b>${book.title}</b>${getBookIdText(book.id)}\n\n`;
@@ -315,21 +320,22 @@ editExtendedBookInfoScene.action('view_current', async (ctx) => {
 
   if (book.content_warnings) {
     try {
-      const warnings = typeof book.content_warnings === 'string' 
-        ? JSON.parse(book.content_warnings) 
-        : book.content_warnings;
-      
+      const warnings =
+        typeof book.content_warnings === 'string'
+          ? JSON.parse(book.content_warnings)
+          : book.content_warnings;
+
       const warningLabels: { [key: string]: string } = {
-        'violence': 'Насильство',
-        'explicit_content': 'Експліцитний контент',
-        'sexual_scenes': 'Сексуальні сцени',
-        'mature_themes': 'Дорослі теми',
-        'strong_language': 'Грубе мовлення',
-        'psychological_horror': 'Психологічний жах',
-        'substance_abuse': 'Зловживання',
-        'child_abuse': 'Насильство над дітьми',
-        'discrimination': 'Дискримінація',
-        'self_harm': 'Самозалік'
+        violence: 'Насильство',
+        explicit_content: 'Експліцитний контент',
+        sexual_scenes: 'Сексуальні сцени',
+        mature_themes: 'Дорослі теми',
+        strong_language: 'Грубе мовлення',
+        psychological_horror: 'Психологічний жах',
+        substance_abuse: 'Зловживання',
+        child_abuse: 'Насильство над дітьми',
+        discrimination: 'Дискримінація',
+        self_harm: 'Самозалік',
       };
 
       if (Array.isArray(warnings) && warnings.length > 0) {
@@ -349,8 +355,8 @@ editExtendedBookInfoScene.action('view_current', async (ctx) => {
     reply_markup: Markup.inlineKeyboard([
       [Markup.button.callback('🔞 Змінити вік', 'edit_age')],
       [Markup.button.callback('⚠️ Змінити варнінги', 'edit_warnings')],
-      [Markup.button.callback('⬅️ Назад', 'back_to_selection')]
-    ]).reply_markup
+      [Markup.button.callback('⬅️ Назад', 'back_to_selection')],
+    ]).reply_markup,
   });
 });
 
@@ -382,16 +388,16 @@ editExtendedBookInfoScene.action('back_to_selection', async (ctx) => {
 
   await ctx.editMessageText(
     `✅ Знайшли книгу: <b>${book.title}</b>${getBookIdText(book.id)}\n` +
-    `👤 Автор: ${book.author}\n\n` +
-    'Що хочете редагувати?',
+      `👤 Автор: ${book.author}\n\n` +
+      'Що хочете редагувати?',
     {
       parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard([
         [Markup.button.callback('🔞 Вікове обмеження', 'edit_age')],
         [Markup.button.callback('⚠️ Варнінги вмісту', 'edit_warnings')],
         [Markup.button.callback('📊 Перегляд поточних', 'view_current')],
-        [Markup.button.callback('❌ Скасувати', 'cancel_edit')]
-      ]).reply_markup
+        [Markup.button.callback('❌ Скасувати', 'cancel_edit')],
+      ]).reply_markup,
     }
   );
 });

@@ -19,7 +19,7 @@ export const BookCreateSchema = {
   file_type: ['required', 'in:physical:file:audio:link'],
   photo_file_id: ['string', 'max:255'],
   file_path: ['string', 'max:1000'],
-  file_size: ['number']
+  file_size: ['number'],
 };
 
 export const BookUpdateSchema = {
@@ -27,14 +27,14 @@ export const BookUpdateSchema = {
   author: ['string', 'min:1', 'max:255'],
   genre: ['string', 'min:1', 'max:100'],
   description: ['string', 'min:10', 'max:5000'],
-  photo_file_id: ['string', 'max:255']
+  photo_file_id: ['string', 'max:255'],
 };
 
 export const BookSearchSchema = {
   query: ['string', 'max:255'],
   genre: ['string', 'max:100'],
   limit: ['number', 'min:1', 'max:100'],
-  offset: ['number', 'min:0']
+  offset: ['number', 'min:0'],
 };
 
 // ==================== USER SCHEMAS ====================
@@ -44,7 +44,7 @@ export const UserCreateSchema = {
   username: ['string', 'username', 'min:3', 'max:32'],
   first_name: ['string', 'max:255'],
   last_name: ['string', 'max:255'],
-  language: ['in:uk:en:ru']
+  language: ['in:uk:en:ru'],
 };
 
 export const UserUpdateSchema = {
@@ -52,7 +52,7 @@ export const UserUpdateSchema = {
   first_name: ['string', 'max:255'],
   last_name: ['string', 'max:255'],
   language: ['in:uk:en:ru'],
-  is_admin: ['boolean']
+  is_admin: ['boolean'],
 };
 
 // ==================== REVIEW SCHEMAS ====================
@@ -61,12 +61,12 @@ export const ReviewCreateSchema = {
   book_id: ['required', 'number', 'min:1'],
   user_id: ['required', 'number', 'min:1'],
   rating: ['required', 'number', 'in:1:2:3:4:5'],
-  comment: ['string', 'max:2000']
+  comment: ['string', 'max:2000'],
 };
 
 export const ReviewUpdateSchema = {
   rating: ['number', 'in:1:2:3:4:5'],
-  comment: ['string', 'max:2000']
+  comment: ['string', 'max:2000'],
 };
 
 // ==================== AUDIO SCHEMAS ====================
@@ -76,13 +76,13 @@ export const AudioCreateSchema = {
   file_id: ['required', 'string', 'min:1', 'max:255'],
   duration: ['required', 'number', 'min:1'],
   narrator: ['string', 'max:255'],
-  quality: ['in:low:medium:high']
+  quality: ['in:low:medium:high'],
 };
 
 export const AudioUpdateSchema = {
   duration: ['number', 'min:1'],
   narrator: ['string', 'max:255'],
-  quality: ['in:low:medium:high']
+  quality: ['in:low:medium:high'],
 };
 
 // ==================== TAG SCHEMAS ====================
@@ -94,12 +94,12 @@ export const AudioUpdateSchema = {
  */
 export const TagCreateSchema = {
   name: ['required', 'string', 'min:1', 'max:50', 'tag'], // Спеціальна валідація для тегів
-  description: ['string', 'max:500']
+  description: ['string', 'max:500'],
 };
 
 export const TagUpdateSchema = {
   name: ['string', 'min:1', 'max:50', 'tag'], // Спеціальна валідація для тегів
-  description: ['string', 'max:500']
+  description: ['string', 'max:500'],
 };
 
 // ==================== PROMO CODE SCHEMAS ====================
@@ -108,7 +108,7 @@ export const PromoCodeCreateSchema = {
   code: ['required', 'string', 'pattern:[A-Z0-9]{4,12}', 'max:12'],
   discount_percent: ['required', 'number', 'between:1:100'],
   max_uses: ['number', 'min:1'],
-  expires_at: ['string']
+  expires_at: ['string'],
 };
 
 // ==================== SAVED BOOK SCHEMAS ====================
@@ -116,7 +116,7 @@ export const PromoCodeCreateSchema = {
 export const SavedBookSchema = {
   book_id: ['required', 'number', 'min:1'],
   user_id: ['required', 'number', 'min:1'],
-  collection: ['string', 'max:50']
+  collection: ['string', 'max:50'],
 };
 
 // ==================== FEEDBACK SCHEMAS ====================
@@ -124,18 +124,18 @@ export const SavedBookSchema = {
 export const FeedbackCreateSchema = {
   content: ['required', 'string', 'min:10', 'max:5000'],
   type: ['required', 'in:bug:feature:improvement:other'],
-  telegram_username: ['string', 'max:255']
+  telegram_username: ['string', 'max:255'],
 };
 
 export const FeedbackReplySchema = {
-  message: ['required', 'string', 'min:1', 'max:2000']
+  message: ['required', 'string', 'min:1', 'max:2000'],
 };
 
 // ==================== PAGINATION SCHEMAS ====================
 
 export const PaginationSchema = {
   page: ['number', 'min:1'],
-  limit: ['number', 'min:1', 'max:100']
+  limit: ['number', 'min:1', 'max:100'],
 };
 
 // ==================== FILTER SCHEMAS ====================
@@ -146,7 +146,7 @@ export const BookFilterSchema = {
   search: ['string', 'max:255'],
   sortBy: ['in:rating:date:title:popularity'],
   limit: ['number', 'min:1', 'max:100'],
-  offset: ['number', 'min:0']
+  offset: ['number', 'min:0'],
 };
 
 // ==================== Fluent Builder Examples ====================

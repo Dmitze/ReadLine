@@ -88,7 +88,10 @@ export class QueryOptimizer {
 
       return result;
     } catch (error) {
-      logger.error('Error executing optimized query', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error executing optimized query',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -132,7 +135,10 @@ export class QueryOptimizer {
 
       return result;
     } catch (error) {
-      logger.error('Error executing optimized get query', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error executing optimized get query',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -165,7 +171,10 @@ export class QueryOptimizer {
       logger.info(`Batch inserted ${results.length} rows into ${tableName}`);
       return results;
     } catch (error) {
-      logger.error('Error in batch insert', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error in batch insert',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -201,7 +210,10 @@ export class QueryOptimizer {
       logger.info(`Batch updated ${totalChanges} rows in ${tableName}`);
       return totalChanges;
     } catch (error) {
-      logger.error('Error in batch update', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error in batch update',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -211,7 +223,8 @@ export class QueryOptimizer {
    */
   async createIndex(definition: IndexDefinition): Promise<boolean> {
     try {
-      const indexName = definition.name || `idx_${definition.tableName}_${definition.columns.join('_')}`;
+      const indexName =
+        definition.name || `idx_${definition.tableName}_${definition.columns.join('_')}`;
       const columnList = definition.columns.join(', ');
       const uniqueKeyword = definition.unique ? 'UNIQUE' : '';
 
@@ -225,7 +238,10 @@ export class QueryOptimizer {
       logger.info(`Index created: ${indexName} on ${definition.tableName}`);
       return true;
     } catch (error) {
-      logger.error('Error creating index', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error creating index',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return false;
     }
   }
@@ -252,7 +268,10 @@ export class QueryOptimizer {
       this.indexCache.set(tableName, indexDefs);
       return indexDefs;
     } catch (error) {
-      logger.error('Error getting indexes', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting indexes',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return [];
     }
   }
@@ -295,7 +314,10 @@ export class QueryOptimizer {
         suggestions,
       };
     } catch (error) {
-      logger.error('Error analyzing table', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error analyzing table',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return {
         tableName,
         rowCount: 0,
@@ -318,7 +340,10 @@ export class QueryOptimizer {
         },
       };
     } catch (error) {
-      logger.error('Error getting query plan', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting query plan',
+        error instanceof Error ? error : new Error(String(error))
+      );
       return {
         query: this.sanitizeQuery(query),
         estimates: {},
@@ -360,7 +385,9 @@ export class QueryOptimizer {
   /**
    * Get most frequent queries
    */
-  getMostFrequentQueries(limit: number = 10): Array<{ query: string; count: number; avgTime: number }> {
+  getMostFrequentQueries(
+    limit: number = 10
+  ): Array<{ query: string; count: number; avgTime: number }> {
     const queryMap = new Map<string, { count: number; totalTime: number }>();
 
     for (const metric of this.metrics) {
@@ -404,8 +431,6 @@ export class QueryOptimizer {
    * Sanitize query for logging (remove sensitive data)
    */
   private sanitizeQuery(query: string): string {
-    return query
-      .replace(/[?]/g, '*')
-      .substring(0, 200); // Limit length
+    return query.replace(/[?]/g, '*').substring(0, 200); // Limit length
   }
 }

@@ -6,7 +6,7 @@ export const popularGenres = [
   'Пригоди',
   'Трилер',
   'Біографія',
-  'Поезія'
+  'Поезія',
 ];
 
 export const otherGenres = [
@@ -34,5 +34,5 @@ export const otherGenres = [
   'Психологія',
   'Художня',
   'Драма',
-  'Сатира'
+  'Сатира',
 ];

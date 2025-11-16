@@ -54,7 +54,7 @@ export class ReviewService {
         user_id: input.user_id,
         rating: input.rating,
         comment: input.comment || '',
-        is_published: false
+        is_published: false,
       });
 
       return new Ok(reviewId);
@@ -94,7 +94,7 @@ export class ReviewService {
 
       await this.reviewRepository.update(reviewId, {
         rating: input.rating || review.rating,
-        comment: input.comment || review.comment
+        comment: input.comment || review.comment,
       });
 
       return new Ok(undefined);
@@ -164,7 +164,7 @@ export class ReviewService {
   async getBookReviews(bookId: number, onlyPublished: boolean = true): Promise<Result<any[]>> {
     try {
       const reviews = await this.reviewRepository.findByBookId(bookId);
-      const filtered = onlyPublished ? reviews.filter(r => r.is_published) : reviews;
+      const filtered = onlyPublished ? reviews.filter((r) => r.is_published) : reviews;
       return new Ok(filtered);
     } catch (error) {
       return new Err(error instanceof Error ? error : new Error('Failed to fetch reviews'));
@@ -205,7 +205,7 @@ export class ReviewService {
 
       const sum = reviews.reduce((acc, r) => acc + (r.rating || 0), 0);
       const average = sum / reviews.length;
-      
+
       return new Ok(Math.round(average * 10) / 10);
     } catch (error) {
       return new Err(error instanceof Error ? error : new Error('Failed to calculate rating'));

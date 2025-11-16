@@ -43,7 +43,7 @@ export class QueueManager {
   constructor(config: QueueConfig) {
     const redisConfig = config.redis || {
       host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379')
+      port: parseInt(process.env.REDIS_PORT || '6379'),
     };
 
     this.redis = new Redis(redisConfig);
@@ -54,12 +54,12 @@ export class QueueManager {
         attempts: config.maxAttempts || 3,
         backoff: {
           type: 'exponential',
-          delay: 2000
+          delay: 2000,
         },
         removeOnComplete: true,
         removeOnFail: false,
-        ...config.defaultJobOptions
-      }
+        ...config.defaultJobOptions,
+      },
     });
 
     this.setupEventListeners();
@@ -70,7 +70,7 @@ export class QueueManager {
    */
   registerHandler(jobType: string, handler: (data: JobData) => Promise<any>): void {
     this.jobHandlers.set(jobType, handler);
-    
+
     this.queue.process(jobType, async (job: Job) => {
       try {
         return await handler(job.data);
@@ -83,21 +83,17 @@ export class QueueManager {
   /**
    * Add job to queue
    */
-  async addJob(
-    jobType: string,
-    data: JobData,
-    options?: JobOptions
-  ): Promise<Result<JobResult>> {
+  async addJob(jobType: string, data: JobData, options?: JobOptions): Promise<Result<JobResult>> {
     try {
       const job = await this.queue.add(jobType, data, {
         ...options,
-        jobId: `${jobType}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        jobId: `${jobType}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       });
 
       return new Ok({
         status: 'pending',
         jobId: job.id!.toString(),
-        data: job.data
+        data: job.data,
       });
     } catch (error) {
       return new Err(new Error(`Failed to add job: ${error}`));
@@ -110,7 +106,7 @@ export class QueueManager {
   async getJobStatus(jobId: string): Promise<Result<JobResult>> {
     try {
       const job = await this.queue.getJob(jobId);
-      
+
       if (!job) {
         return new Err(new Error(`Job not found: ${jobId}`));
       }
@@ -131,7 +127,7 @@ export class QueueManager {
         data: job.returnvalue,
         error: job.failedReason,
         progress: job.progress() as number,
-        attemptsMade: job.attemptsMade
+        attemptsMade: job.attemptsMade,
       });
     } catch (error) {
       return new Err(new Error(`Failed to get job status: ${error}`));
@@ -144,7 +140,7 @@ export class QueueManager {
   async waitForJob(jobId: string, timeout: number = 30000): Promise<Result<any>> {
     try {
       const job = await this.queue.getJob(jobId);
-      
+
       if (!job) {
         return new Err(new Error(`Job not found: ${jobId}`));
       }
@@ -162,7 +158,7 @@ export class QueueManager {
   async retryJob(jobId: string): Promise<Result<JobResult>> {
     try {
       const job = await this.queue.getJob(jobId);
-      
+
       if (!job) {
         return new Err(new Error(`Job not found: ${jobId}`));
       }
@@ -172,12 +168,12 @@ export class QueueManager {
       }
 
       await job.retry();
-      
+
       return new Ok({
         status: 'pending',
         jobId: job.id!.toString(),
         data: job.data,
-        attemptsMade: job.attemptsMade
+        attemptsMade: job.attemptsMade,
       });
     } catch (error) {
       return new Err(new Error(`Failed to retry job: ${error}`));
@@ -190,7 +186,7 @@ export class QueueManager {
   async removeJob(jobId: string): Promise<Result<void>> {
     try {
       const job = await this.queue.getJob(jobId);
-      
+
       if (job) {
         await job.remove();
       }
@@ -204,13 +200,15 @@ export class QueueManager {
   /**
    * Get queue statistics
    */
-  async getStats(): Promise<Result<{
-    waiting: number;
-    active: number;
-    completed: number;
-    failed: number;
-    delayed: number;
-  }>> {
+  async getStats(): Promise<
+    Result<{
+      waiting: number;
+      active: number;
+      completed: number;
+      failed: number;
+      delayed: number;
+    }>
+  > {
     try {
       const counts = await this.queue.getJobCounts();
       return new Ok(counts);

@@ -79,8 +79,8 @@ export class RestAPI {
       swaggerUi.serve,
       swaggerUi.setup(this.specs, {
         swaggerOptions: {
-          persistAuthorization: true
-        }
+          persistAuthorization: true,
+        },
       })
     );
 
@@ -98,7 +98,7 @@ export class RestAPI {
       res.json({
         status: 'ok',
         timestamp: new Date().toISOString(),
-        uptime: process.uptime()
+        uptime: process.uptime(),
       });
     });
 
@@ -115,12 +115,12 @@ export class RestAPI {
         res.json({
           success: true,
           data: [],
-          pagination: { page, limit, total: 0 }
+          pagination: { page, limit, total: 0 },
         });
       } catch (error) {
         res.status(500).json({
           success: false,
-          error: (error as Error).message
+          error: (error as Error).message,
         });
       }
     });
@@ -133,13 +133,13 @@ export class RestAPI {
           success: true,
           data: {
             id: bookId,
-            title: 'Example Book'
-          }
+            title: 'Example Book',
+          },
         });
       } catch (error) {
         res.status(500).json({
           success: false,
-          error: (error as Error).message
+          error: (error as Error).message,
         });
       }
     });
@@ -154,24 +154,24 @@ export class RestAPI {
       try {
         const bookId = parseInt(req.params.id);
         const bookService = await this.serviceContainer.getBookService();
-        
+
         const result = await bookService.getDetailedBookInfo(bookId);
-        
+
         if (result.isErr()) {
           return res.status(404).json({
             success: false,
-            error: result.error.message
+            error: result.error.message,
           });
         }
 
         res.json({
           success: true,
-          data: result.value
+          data: result.value,
         });
       } catch (error) {
         res.status(500).json({
           success: false,
-          error: (error as Error).message
+          error: (error as Error).message,
         });
       }
     });
@@ -190,24 +190,28 @@ export class RestAPI {
         const bookId = parseInt(req.params.id);
         const { recommended_age, content_warnings } = req.body;
         const bookService = await this.serviceContainer.getBookService();
-        
-        const result = await bookService.updateBookExtendedInfo(bookId, recommended_age, content_warnings);
-        
+
+        const result = await bookService.updateBookExtendedInfo(
+          bookId,
+          recommended_age,
+          content_warnings
+        );
+
         if (result.isErr()) {
           return res.status(400).json({
             success: false,
-            error: result.error.message
+            error: result.error.message,
           });
         }
 
         res.json({
           success: true,
-          message: 'Book extended information updated successfully'
+          message: 'Book extended information updated successfully',
         });
       } catch (error) {
         res.status(500).json({
           success: false,
-          error: (error as Error).message
+          error: (error as Error).message,
         });
       }
     });
@@ -221,12 +225,12 @@ export class RestAPI {
 
         res.json({
           success: true,
-          data: []
+          data: [],
         });
       } catch (error) {
         res.status(500).json({
           success: false,
-          error: (error as Error).message
+          error: (error as Error).message,
         });
       }
     });
@@ -243,13 +247,13 @@ export class RestAPI {
           data: {
             jobId,
             status: 'completed',
-            progress: 100
-          }
+            progress: 100,
+          },
         });
       } catch (error) {
         res.status(500).json({
           success: false,
-          error: (error as Error).message
+          error: (error as Error).message,
         });
       }
     });
@@ -262,13 +266,13 @@ export class RestAPI {
           success: true,
           data: {
             jobId,
-            status: 'pending'
-          }
+            status: 'pending',
+          },
         });
       } catch (error) {
         res.status(500).json({
           success: false,
-          error: (error as Error).message
+          error: (error as Error).message,
         });
       }
     });
@@ -284,13 +288,13 @@ export class RestAPI {
             totalBooks: 0,
             totalUsers: 0,
             totalReviews: 0,
-            averageRating: 0
-          }
+            averageRating: 0,
+          },
         });
       } catch (error) {
         res.status(500).json({
           success: false,
-          error: (error as Error).message
+          error: (error as Error).message,
         });
       }
     });
@@ -308,7 +312,7 @@ export class RestAPI {
         success: false,
         error: 'Endpoint not found',
         path: req.path,
-        method: req.method
+        method: req.method,
       });
     });
 
@@ -319,7 +323,7 @@ export class RestAPI {
       res.status(error.status || 500).json({
         success: false,
         error: error.message || 'Internal server error',
-        code: error.code || 'INTERNAL_ERROR'
+        code: error.code || 'INTERNAL_ERROR',
       });
     });
   }
@@ -330,9 +334,9 @@ export class RestAPI {
   async start(): Promise<void> {
     return new Promise((resolve) => {
       this.app.listen(this.port, this.host, () => {
-        logger.info('REST API Server started', { 
+        logger.info('REST API Server started', {
           url: `http://${this.host}:${this.port}`,
-          swagger: `http://${this.host}:${this.port}/api-docs`
+          swagger: `http://${this.host}:${this.port}/api-docs`,
         });
         resolve();
       });
@@ -350,9 +354,6 @@ export class RestAPI {
 /**
  * Create REST API server
  */
-export function createRestAPI(
-  serviceContainer: ServiceContainer,
-  config: RestAPIConfig
-): RestAPI {
+export function createRestAPI(serviceContainer: ServiceContainer, config: RestAPIConfig): RestAPI {
   return new RestAPI(serviceContainer, config);
 }

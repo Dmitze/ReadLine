@@ -9,16 +9,15 @@ describe('Result Pattern', () => {
 
   const Ok = <T, E = Error>(value: T): Result<T, E> => ({
     ok: true,
-    value
+    value,
   });
 
   const Err = <T, E = Error>(error: E): Result<T, E> => ({
     ok: false,
-    error
+    error,
   });
 
-  const isOk = <T, E>(result: Result<T, E>): result is { ok: true; value: T } =>
-    result.ok === true;
+  const isOk = <T, E>(result: Result<T, E>): result is { ok: true; value: T } => result.ok === true;
 
   const isErr = <T, E>(result: Result<T, E>): result is { ok: false; error: E } =>
     result.ok === false;
@@ -64,8 +63,7 @@ describe('Result Pattern', () => {
   });
 
   it('should short-circuit on first Err', () => {
-    const willFail = (): Result<number> =>
-      Err(new Error('Division by zero'));
+    const willFail = (): Result<number> => Err(new Error('Division by zero'));
 
     const double = (n: number): Result<number> => Ok(n * 2);
 
@@ -109,16 +107,15 @@ describe('Result with Async', () => {
 
   const Ok = <T, E = Error>(value: T): Result<T, E> => ({
     ok: true,
-    value
+    value,
   });
 
   const Err = <T, E = Error>(error: E): Result<T, E> => ({
     ok: false,
-    error
+    error,
   });
 
-  const isOk = <T, E>(result: Result<T, E>): result is { ok: true; value: T } =>
-    result.ok === true;
+  const isOk = <T, E>(result: Result<T, E>): result is { ok: true; value: T } => result.ok === true;
 
   const isErr = <T, E>(result: Result<T, E>): result is { ok: false; error: E } =>
     result.ok === false;
@@ -126,7 +123,7 @@ describe('Result with Async', () => {
   it('should handle successful async operation', async () => {
     const asyncOp = async (): Promise<Result<string>> => {
       try {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         return Ok('success');
       } catch (error) {
         return Err(error as Error);
@@ -161,12 +158,12 @@ describe('Result with Async', () => {
 
   it('should chain multiple async operations', async () => {
     const asyncOp1 = async (): Promise<Result<number>> => {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       return Ok(10);
     };
 
     const asyncOp2 = async (value: number): Promise<Result<number>> => {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
       return Ok(value * 2);
     };
 
@@ -188,12 +185,12 @@ describe('Result Helpers', () => {
 
   const Ok = <T, E = Error>(value: T): Result<T, E> => ({
     ok: true,
-    value
+    value,
   });
 
   const Err = <T, E = Error>(error: E): Result<T, E> => ({
     ok: false,
-    error
+    error,
   });
 
   const unwrap = <T>(result: Result<T>): T => {
@@ -229,7 +226,7 @@ describe('Result Helpers', () => {
 
   it('should map over Ok result', () => {
     const result = Ok(5);
-    const mapped = map(result, n => n * 2);
+    const mapped = map(result, (n) => n * 2);
 
     expect(mapped.ok).toBe(true);
     if (mapped.ok) {

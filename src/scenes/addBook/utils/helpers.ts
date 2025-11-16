@@ -8,7 +8,7 @@ export function logUserAction(ctx: BotContext, action: string, data?: any): void
     action,
     step: ctx.wizard?.cursor,
     data,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -38,7 +38,7 @@ export function autoSaveState(state: WizardState): void {
     photoFileId: state.photoFileId,
     bookFile: state.bookFile,
     bookAudio: state.bookAudio,
-    bookLink: state.bookLink
+    bookLink: state.bookLink,
   };
   logger.debug('State autosaved');
 }

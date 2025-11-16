@@ -8,7 +8,7 @@ describe('Circuit Breaker Pattern', () => {
   enum CircuitState {
     CLOSED = 'CLOSED',
     OPEN = 'OPEN',
-    HALF_OPEN = 'HALF_OPEN'
+    HALF_OPEN = 'HALF_OPEN',
   }
 
   class SimpleCircuitBreaker {
@@ -105,8 +105,9 @@ describe('Circuit Breaker Pattern', () => {
     }
 
     // Next call should be rejected immediately
-    await expect(breaker.execute(() => Promise.resolve('test')))
-      .rejects.toThrow('Circuit breaker is OPEN');
+    await expect(breaker.execute(() => Promise.resolve('test'))).rejects.toThrow(
+      'Circuit breaker is OPEN'
+    );
   });
 
   it('should reset failure count on success', async () => {
@@ -158,7 +159,7 @@ describe('Retry Strategy', () => {
 
           if (attempt < this.maxRetries + 1) {
             const delay = this.backoffMs * attempt;
-            await new Promise(resolve => setTimeout(resolve, delay));
+            await new Promise((resolve) => setTimeout(resolve, delay));
           }
         }
       }
@@ -199,8 +200,7 @@ describe('Retry Strategy', () => {
     const strategy = new RetryStrategy(2, 10);
     const fn = jest.fn().mockRejectedValue(new Error('always fails'));
 
-    await expect(strategy.execute(fn))
-      .rejects.toThrow('always fails');
+    await expect(strategy.execute(fn)).rejects.toThrow('always fails');
 
     expect(fn).toHaveBeenCalledTimes(3); // initial + 2 retries
   });
@@ -219,7 +219,7 @@ describe('Timeout Pattern', () => {
         fn(),
         new Promise<T>((_, reject) =>
           setTimeout(() => reject(new Error('Timeout')), this.timeoutMs)
-        )
+        ),
       ]);
     }
   }
@@ -227,7 +227,7 @@ describe('Timeout Pattern', () => {
   it('should return result if completed within timeout', async () => {
     const wrapper = new TimeoutWrapper(100);
     const fn = jest.fn(async () => {
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
       return 'success';
     });
 
@@ -239,11 +239,10 @@ describe('Timeout Pattern', () => {
   it('should timeout if operation takes too long', async () => {
     const wrapper = new TimeoutWrapper(50);
     const fn = jest.fn(async () => {
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise((resolve) => setTimeout(resolve, 200));
       return 'success';
     });
 
-    await expect(wrapper.execute(fn))
-      .rejects.toThrow('Timeout');
+    await expect(wrapper.execute(fn)).rejects.toThrow('Timeout');
   });
 });

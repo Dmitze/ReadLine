@@ -41,7 +41,7 @@ export class MigrationRunner {
    * Register multiple migrations at once
    */
   registerAll(...migrations: IMigration[]): void {
-    migrations.forEach(m => this.register(m));
+    migrations.forEach((m) => this.register(m));
   }
 
   /**
@@ -93,9 +93,9 @@ export class MigrationRunner {
   async runPending(): Promise<{ version: string; name: string; duration: number }[]> {
     await this.initialize();
 
-    const executed = new Set((await this.getExecuted()).map(r => r.version));
+    const executed = new Set((await this.getExecuted()).map((r) => r.version));
     const pending = Array.from(this.migrations.values())
-      .filter(m => !executed.has(m.version))
+      .filter((m) => !executed.has(m.version))
       .sort((a, b) => a.version.localeCompare(b.version));
 
     const results = [];
@@ -116,7 +116,7 @@ export class MigrationRunner {
         results.push({
           version: migration.version,
           name: migration.name,
-          duration
+          duration,
         });
 
         logger.info(`✅ Completed in ${duration}ms`);
@@ -137,7 +137,7 @@ export class MigrationRunner {
 
     const executed = await this.getExecuted();
     const toRollback = targetVersion
-      ? executed.filter(r => r.version > targetVersion)
+      ? executed.filter((r) => r.version > targetVersion)
       : executed.slice(-1);
 
     const rolledBack = [];
@@ -164,7 +164,7 @@ export class MigrationRunner {
 
         rolledBack.push({
           version: record.version,
-          name: record.name
+          name: record.name,
         });
 
         logger.info('✅ Rolled back');
@@ -185,15 +185,13 @@ export class MigrationRunner {
     pending: string[];
     total: number;
   }> {
-    const executed = (await this.getExecuted()).map(r => r.version);
-    const pending = Array.from(this.migrations.keys()).filter(
-      v => !executed.includes(v)
-    );
+    const executed = (await this.getExecuted()).map((r) => r.version);
+    const pending = Array.from(this.migrations.keys()).filter((v) => !executed.includes(v));
 
     return {
       executed,
       pending,
-      total: this.migrations.size
+      total: this.migrations.size,
     };
   }
 
@@ -215,10 +213,7 @@ export class MigrationRunner {
 
       try {
         await migration.down(this.db);
-        await this.db.run(
-          `DELETE FROM ${this.tableName} WHERE version = ?`,
-          [record.version]
-        );
+        await this.db.run(`DELETE FROM ${this.tableName} WHERE version = ?`, [record.version]);
         logger.info(`✅ Rolled back: ${record.version}`);
       } catch (error) {
         logger.error(`❌ Failed to rollback: ${record.version}`);

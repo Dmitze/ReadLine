@@ -1,7 +1,7 @@
 /**
  * Base Repository Class
  * REFACTOR-002: Repository Layer Separation
- * 
+ *
  * Provides common database operations for all repositories
  */
 
@@ -29,7 +29,10 @@ export abstract class BaseRepository<T extends { id?: number }> {
       const query = `SELECT * FROM ${this.tableName} WHERE id = ?`;
       return await this.db.get<T>(query, [id]);
     } catch (error) {
-      logger.error(`Error getting ${this.tableName} by id`, error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        `Error getting ${this.tableName} by id`,
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -49,7 +52,10 @@ export abstract class BaseRepository<T extends { id?: number }> {
 
       return await this.db.all<T>(query, params);
     } catch (error) {
-      logger.error(`Error getting all ${this.tableName}`, error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        `Error getting all ${this.tableName}`,
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -61,15 +67,24 @@ export abstract class BaseRepository<T extends { id?: number }> {
     try {
       if (typeof where === 'object' && where !== null) {
         // If where is an object, convert to WHERE clause
-        const whereClauses = Object.keys(where).map(key => `${key} = ?`).join(' AND ');
+        const whereClauses = Object.keys(where)
+          .map((key) => `${key} = ?`)
+          .join(' AND ');
         const values = Object.values(where);
         const whereString = whereClauses.length > 0 ? whereClauses : undefined;
-        return await this.db.count(this.tableName, whereString, values.length > 0 ? values : undefined);
+        return await this.db.count(
+          this.tableName,
+          whereString,
+          values.length > 0 ? values : undefined
+        );
       }
       const whereString = typeof where === 'string' ? where : undefined;
       return await this.db.count(this.tableName, whereString, params);
     } catch (error) {
-      logger.error(`Error counting ${this.tableName}`, error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        `Error counting ${this.tableName}`,
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -82,7 +97,10 @@ export abstract class BaseRepository<T extends { id?: number }> {
       const query = `SELECT COUNT(*) as count FROM ${this.tableName} WHERE id = ?`;
       return await this.db.exists(query, [id]);
     } catch (error) {
-      logger.error(`Error checking ${this.tableName} existence`, error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        `Error checking ${this.tableName} existence`,
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -95,7 +113,10 @@ export abstract class BaseRepository<T extends { id?: number }> {
       const query = `DELETE FROM ${this.tableName} WHERE id = ?`;
       return await this.db.delete(query, [id]);
     } catch (error) {
-      logger.error(`Error deleting from ${this.tableName}`, error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        `Error deleting from ${this.tableName}`,
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -107,7 +128,10 @@ export abstract class BaseRepository<T extends { id?: number }> {
     try {
       return await this.db.all<R>(query, params);
     } catch (error) {
-      logger.error(`Error executing query on ${this.tableName}`, error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        `Error executing query on ${this.tableName}`,
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -123,7 +147,10 @@ export abstract class BaseRepository<T extends { id?: number }> {
       const query = `INSERT INTO ${this.tableName} (${keys.join(', ')}) VALUES (${placeholders})`;
       return await this.db.insert(query, values);
     } catch (error) {
-      logger.error(`Error inserting into ${this.tableName}`, error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        `Error inserting into ${this.tableName}`,
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -136,11 +163,14 @@ export abstract class BaseRepository<T extends { id?: number }> {
       const keys = Object.keys(data);
       const values = Object.values(data) as SQLParameters;
       values.push(id);
-      const setClause = keys.map(key => `${key} = ?`).join(', ');
+      const setClause = keys.map((key) => `${key} = ?`).join(', ');
       const query = `UPDATE ${this.tableName} SET ${setClause} WHERE id = ?`;
       return await this.db.update(query, values);
     } catch (error) {
-      logger.error(`Error updating ${this.tableName}`, error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        `Error updating ${this.tableName}`,
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -152,7 +182,10 @@ export abstract class BaseRepository<T extends { id?: number }> {
     try {
       return await this.db.transaction(callback);
     } catch (error) {
-      logger.error(`Error in transaction on ${this.tableName}`, error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        `Error in transaction on ${this.tableName}`,
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }

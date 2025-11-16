@@ -20,11 +20,7 @@ const consoleFormat = printf(({ level, message, timestamp, ...metadata }) => {
 // Create logger instance
 export const enhancedLogger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
-  format: combine(
-    errors({ stack: true }),
-    timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    json()
-  ),
+  format: combine(errors({ stack: true }), timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), json()),
   defaultMeta: {
     service: 'readline-bot',
     version: process.env.npm_package_version || '1.0.0',
@@ -37,24 +33,21 @@ export const enhancedLogger = winston.createLogger({
       maxsize: 5242880, // 5MB
       maxFiles: 5,
     }),
-    
+
     // Combined log
     new winston.transports.File({
       filename: path.join('logs', 'combined.log'),
       maxsize: 5242880,
       maxFiles: 10,
     }),
-    
+
     // Console (development)
     new winston.transports.Console({
-      format: combine(
-        colorize(),
-        consoleFormat
-      ),
+      format: combine(colorize(), consoleFormat),
       level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
     }),
   ],
-  
+
   // Don't exit on handled exceptions
   exitOnError: false,
 });
@@ -127,7 +120,11 @@ export const loggers = {
   },
 
   // Security event logging
-  security: (event: string, severity: 'low' | 'medium' | 'high' | 'critical', metadata?: object) => {
+  security: (
+    event: string,
+    severity: 'low' | 'medium' | 'high' | 'critical',
+    metadata?: object
+  ) => {
     enhancedLogger.warn('Security event', {
       event,
       severity,

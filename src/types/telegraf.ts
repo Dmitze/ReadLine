@@ -34,51 +34,51 @@ export interface WizardState {
   bookType?: string;
   fileUrl?: string;
   fileName?: string;
-  selectedFormats?: string[];  // Multi-format support
+  selectedFormats?: string[]; // Multi-format support
   pdfFileId?: string;
   externalLink?: string;
   audioFileId?: string;
   audioDuration?: number;
   narrator?: string;
-  selectedTags?: number[];  // Вибрані теги при додаванні книги
-  savedBookId?: number;     // ID збереженої книги для додавання тегів
-  editingField?: 'title' | 'author' | 'description';  // ✅ ВИПРАВЛЕНО #15: Поле що редагується
-  
+  selectedTags?: number[]; // Вибрані теги при додаванні книги
+  savedBookId?: number; // ID збереженої книги для додавання тегів
+  editingField?: 'title' | 'author' | 'description'; // ✅ ВИПРАВЛЕНО #15: Поле що редагується
+
   // Multi-format fields (нові поля для мультиформатності)
-  bookFile?: string;        // File ID для файлу книги
-  bookFileName?: string;    // Назва файлу книги
-  bookAudio?: string;       // File ID для аудіо
-  bookAudioName?: string;   // Назва аудіофайлу
-  bookLink?: string;        // Посилання на книгу
-  
+  bookFile?: string; // File ID для файлу книги
+  bookFileName?: string; // Назва файлу книги
+  bookAudio?: string; // File ID для аудіо
+  bookAudioName?: string; // Назва аудіофайлу
+  bookLink?: string; // Посилання на книгу
+
   // Multi-genre support (підтримка кількох жанрів)
   selectedGenres?: string[]; // Вибрані жанри при додаванні книги
-  
+
   // Additional format flag
   addingAdditionalFormat?: boolean; // Чи додаємо додатковий формат
-  
+
   // AI Assistant (Завдання 29)
-  useAI?: boolean;          // Чи використовувати AI для розпізнавання
-  aiRecognized?: boolean;   // Чи була інформація розпізнана AI
-  awaitingDescriptionFix?: boolean;  // Чи очікуємо виправлення опису
-  aiSuggestedTags?: string[];  // Теги запропоновані AI
-  
+  useAI?: boolean; // Чи використовувати AI для розпізнавання
+  aiRecognized?: boolean; // Чи була інформація розпізнана AI
+  awaitingDescriptionFix?: boolean; // Чи очікуємо виправлення опису
+  aiSuggestedTags?: string[]; // Теги запропоновані AI
+
   // AI Filter & Assistant (Завдання 32, 35)
-  waitingForCustomMood?: boolean;  // Чи очікуємо кастомний настрій
-  aiInterest?: string;      // Інтерес користувача (fiction/nonfiction)
-  aiLength?: string;        // Бажана довжина книги
-  aiMood?: string;          // Настрій користувача
-  
+  waitingForCustomMood?: boolean; // Чи очікуємо кастомний настрій
+  aiInterest?: string; // Інтерес користувача (fiction/nonfiction)
+  aiLength?: string; // Бажана довжина книги
+  aiMood?: string; // Настрій користувача
+
   // RequestBookScene
   bookId?: number;
   fullName?: string;
   unit?: string;
   phone?: string;
-  
+
   // RateBookScene
   rating?: number;
   comment?: string;
-  
+
   // Index signature для динамічного доступу (REFACTOR-006)
   [key: string]: any;
 }
@@ -86,7 +86,7 @@ export interface WizardState {
 /**
  * Callback Query Data типи
  */
-export type CallbackAction = 
+export type CallbackAction =
   | `order_${number}`
   | `save_${number}`
   | `download_${number}`

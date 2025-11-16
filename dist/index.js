@@ -69,14 +69,16 @@ bot.catch(async (err, ctx) => {
             'Спробуйте:\n' +
             '• Надіслати /start для перезапуску\n' +
             '• Повторити дію пізніше\n' +
-            '• Зв\'язатися з адміністратором');
+            "• Зв'язатися з адміністратором");
     }
     catch (replyError) {
         logger_1.logger.error('Failed to send error message to user', replyError instanceof Error ? replyError : new Error(String(replyError)));
     }
 });
 process.on('unhandledRejection', (reason, promise) => {
-    logger_1.logger.error('Unhandled Promise Rejection', new Error(String(reason)), { promise: String(promise) });
+    logger_1.logger.error('Unhandled Promise Rejection', new Error(String(reason)), {
+        promise: String(promise),
+    });
 });
 process.on('uncaughtException', (error) => {
     logger_1.logger.error('Uncaught Exception', error instanceof Error ? error : new Error(String(error)));
@@ -88,10 +90,16 @@ bot.use(async (ctx, next) => {
     if (ctx.message && 'text' in ctx.message) {
         const text = ctx.message.text;
         const menuButtons = [
-            '📖 Каталог', '🏆 Топ книги', '🆕 Новинки',
-            '💾 Моя бібліотека', '👤 Профіль', '🤖 AI Помічник',
-            '🎁 Отримати промокод', 'ℹ️ Допомога', '📞 Зворотній зв\'язок',
-            '🏠 На головну'
+            '📖 Каталог',
+            '🏆 Топ книги',
+            '🆕 Новинки',
+            '💾 Моя бібліотека',
+            '👤 Профіль',
+            '🤖 AI Помічник',
+            '🎁 Отримати промокод',
+            'ℹ️ Допомога',
+            "📞 Зворотній зв'язок",
+            '🏠 На головну',
         ];
         if (menuButtons.includes(text) && ctx.scene) {
             logger_1.logger.info('User pressed menu button while in scene', { text, userId: ctx.from?.id });
@@ -157,7 +165,7 @@ bot.start(async (ctx) => {
             '👇 *Оберіть дію з меню нижче:*';
         return ctx.reply(welcomeMessage, {
             parse_mode: 'HTML',
-            reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)()
+            reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)(),
         });
     }
     catch (error) {
@@ -251,13 +259,13 @@ bot.action('random_book', async (ctx) => {
             await ctx.replyWithPhoto(book.photo_file_id, {
                 caption,
                 parse_mode: 'HTML',
-                reply_markup: getEnhancedBookKeyboard(book)
+                reply_markup: getEnhancedBookKeyboard(book),
             });
         }
         else {
             await ctx.reply(caption, {
                 parse_mode: 'HTML',
-                reply_markup: getEnhancedBookKeyboard(book)
+                reply_markup: getEnhancedBookKeyboard(book),
             });
         }
     }
@@ -290,7 +298,7 @@ bot.action('back_to_admin', async (ctx) => {
         catch (error) {
         }
         await ctx.reply('🔄 Повертаємось до адмін-панелі...', {
-            reply_markup: { remove_keyboard: true }
+            reply_markup: { remove_keyboard: true },
         });
         await ctx.reply('🛠️ <b>Панель адміністратора</b>\n\n' +
             '📊 <b>Статистика:</b>\n' +
@@ -298,7 +306,7 @@ bot.action('back_to_admin', async (ctx) => {
             `${reviewsAlert}\n` +
             `${feedbackAlert}`, {
             parse_mode: 'HTML',
-            reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length)
+            reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length),
         });
     }
     catch (error) {
@@ -344,7 +352,7 @@ logger_1.logger.info('Starting bot launch');
         logger_1.logger.info('Database initialized successfully');
         logger_1.logger.info('Launching bot...');
         await bot.launch({
-            dropPendingUpdates: true
+            dropPendingUpdates: true,
         });
         logger_1.logger.info('Bot launched successfully', { username: bot.botInfo?.username });
         const { startNotificationScheduler } = await Promise.resolve().then(() => __importStar(require('./utils/notifications')));

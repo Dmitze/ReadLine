@@ -11,8 +11,8 @@ import { TIMEOUTS } from '../../constants/timeouts';
 
 declare var process: {
   env: {
-    DB_PATH?: string
-  }
+    DB_PATH?: string;
+  };
 };
 
 // Initialize database
@@ -28,21 +28,24 @@ if (!fs.existsSync(dbDir)) {
 export const db = new sqlite3.Database(dbPath);
 
 // Configure SQLite PRAGMA
-db.exec(`
+db.exec(
+  `
   PRAGMA foreign_keys = ON;
   PRAGMA busy_timeout = ${TIMEOUTS.DATABASE_BUSY};
   PRAGMA journal_mode = WAL;
-`, (err) => {
-  if (err) {
-    logger.error('Error configuring SQLite PRAGMA', err);
-  } else {
-    logger.info('SQLite PRAGMA configured', {
-      foreign_keys: 'ON',
-      busy_timeout: TIMEOUTS.DATABASE_BUSY,
-      journal_mode: 'WAL'
-    });
+`,
+  (err) => {
+    if (err) {
+      logger.error('Error configuring SQLite PRAGMA', err);
+    } else {
+      logger.info('SQLite PRAGMA configured', {
+        foreign_keys: 'ON',
+        busy_timeout: TIMEOUTS.DATABASE_BUSY,
+        journal_mode: 'WAL',
+      });
+    }
   }
-});
+);
 
 /**
  * Initialize database tables
@@ -176,7 +179,7 @@ export const initDatabase = (): Promise<void> => {
       'ALTER TABLE books ADD COLUMN online_link TEXT;',
       'ALTER TABLE books ADD COLUMN external_link TEXT;',
       'ALTER TABLE books ADD COLUMN recommended_age INTEGER;',
-      'ALTER TABLE books ADD COLUMN content_warnings TEXT;'
+      'ALTER TABLE books ADD COLUMN content_warnings TEXT;',
     ];
 
     db.serialize(() => {
@@ -190,7 +193,7 @@ export const initDatabase = (): Promise<void> => {
       db.run(createBookRatingStatsTable);
       db.run(createAudioProgressTable);
 
-      alterBooksTableQueries.forEach(query => {
+      alterBooksTableQueries.forEach((query) => {
         db.run(query, (err) => {
           if (err && !err.message.includes('duplicate column name')) {
             logger.warn('ALTER TABLE warning', { error: err.message });

@@ -37,7 +37,7 @@ const DEFAULT_SECURITY_HEADERS: SecurityHeadersConfig = {
   strictTransportSecurity: 'max-age=31536000; includeSubDomains',
   xContentTypeOptions: 'nosniff',
   xFrameOptions: 'SAMEORIGIN',
-  xPoweredBy: false
+  xPoweredBy: false,
 };
 
 /**
@@ -58,7 +58,7 @@ export function securityHeadersMiddleware(config: SecurityHeadersConfig = {}) {
       referrerPolicy: mergedConfig.referrerPolicy,
       strictTransportSecurity: mergedConfig.strictTransportSecurity,
       xContentTypeOptions: mergedConfig.xContentTypeOptions,
-      xFrameOptions: mergedConfig.xFrameOptions
+      xFrameOptions: mergedConfig.xFrameOptions,
     };
 
     await next();
@@ -77,13 +77,10 @@ export function corsMiddleware(config: CORSConfig = {}) {
       'Content-Type',
       'Authorization',
       'X-Requested-With',
-      'Accept'
+      'Accept',
     ],
-    exposedHeaders: config.exposedHeaders || [
-      'Content-Length',
-      'X-JSON-Response'
-    ],
-    maxAge: config.maxAge || 86400
+    exposedHeaders: config.exposedHeaders || ['Content-Length', 'X-JSON-Response'],
+    maxAge: config.maxAge || 86400,
   };
 
   return async (ctx: BotContext, next: () => Promise<void>) => {
@@ -94,7 +91,7 @@ export function corsMiddleware(config: CORSConfig = {}) {
       allowedMethods: corsConfig.methods,
       allowedHeaders: corsConfig.allowedHeaders,
       exposedHeaders: corsConfig.exposedHeaders,
-      maxAge: corsConfig.maxAge
+      maxAge: corsConfig.maxAge,
     };
 
     await next();
@@ -129,32 +126,26 @@ function isOriginAllowed(
  */
 export function requestValidationMiddleware() {
   return async (ctx: BotContext, next: () => Promise<void>) => {
-     // Validate callback_query size
-     const callbackData = (ctx.callbackQuery as any)?.data;
-     if (callbackData && typeof callbackData === 'string') {
-       if (callbackData.length > 64) {
-         logger.warn('⚠️ Large callback_query data detected');
-       }
-     }
+    // Validate callback_query size
+    const callbackData = (ctx.callbackQuery as any)?.data;
+    if (callbackData && typeof callbackData === 'string') {
+      if (callbackData.length > 64) {
+        logger.warn('⚠️ Large callback_query data detected');
+      }
+    }
 
-     // Validate message text size
-     const messageText = (ctx.message as any)?.text;
-     if (messageText && typeof messageText === 'string') {
-       if (messageText.length > 4096) {
-         logger.warn('⚠️ Large message text detected');
-         await ctx.reply(
-           '⚠️ Повідомлення занадто велике. Максимум 4096 символів.'
-         );
-         return;
-       }
-     }
+    // Validate message text size
+    const messageText = (ctx.message as any)?.text;
+    if (messageText && typeof messageText === 'string') {
+      if (messageText.length > 4096) {
+        logger.warn('⚠️ Large message text detected');
+        await ctx.reply('⚠️ Повідомлення занадто велике. Максимум 4096 символів.');
+        return;
+      }
+    }
 
-     // Check for potential SQL injection patterns in user input
-     const userInput = [
-       messageText,
-       callbackData,
-       (ctx as any).session?.userInput
-     ].filter(Boolean);
+    // Check for potential SQL injection patterns in user input
+    const userInput = [messageText, callbackData, (ctx as any).session?.userInput].filter(Boolean);
 
     for (const input of userInput) {
       if (input && hasSQLInjectionPattern(input as string)) {
@@ -182,31 +173,31 @@ function hasSQLInjectionPattern(input: string): boolean {
     /(\bdelete\b.*\bfrom\b)/i,
     /(-{2}|\/\*|\*\/)/,
     /(\bexec\b|\bexecute\b)/i,
-    /(\bselect\b.*\bfrom\b)/i
+    /(\bselect\b.*\bfrom\b)/i,
   ];
 
-  return sqlPatterns.some(pattern => pattern.test(input));
+  return sqlPatterns.some((pattern) => pattern.test(input));
 }
 
 /**
  * XSS prevention middleware
  */
 export function xssPreventionMiddleware() {
-   return async (ctx: BotContext, next: () => Promise<void>) => {
-     const messageText = (ctx.message as any)?.text;
-     if (messageText && typeof messageText === 'string') {
-       const isXSSDetected = checkXSSPatterns(messageText);
-       if (isXSSDetected) {
-         logger.warn(`⚠️ Potential XSS detected: ${messageText}`);
-         (ctx as any).isBlocked = true;
-         await ctx.reply('❌ Некоректний формат повідомлення.');
-         return;
-       }
-     }
+  return async (ctx: BotContext, next: () => Promise<void>) => {
+    const messageText = (ctx.message as any)?.text;
+    if (messageText && typeof messageText === 'string') {
+      const isXSSDetected = checkXSSPatterns(messageText);
+      if (isXSSDetected) {
+        logger.warn(`⚠️ Potential XSS detected: ${messageText}`);
+        (ctx as any).isBlocked = true;
+        await ctx.reply('❌ Некоректний формат повідомлення.');
+        return;
+      }
+    }
 
-     await next();
-   };
- }
+    await next();
+  };
+}
 
 /**
  * Check for XSS patterns
@@ -220,10 +211,10 @@ function checkXSSPatterns(input: string): boolean {
     /<embed[^>]*>/gi,
     /<object[^>]*>/gi,
     /eval\(/gi,
-    /expression\(/gi
+    /expression\(/gi,
   ];
 
-  return xssPatterns.some(pattern => pattern.test(input));
+  return xssPatterns.some((pattern) => pattern.test(input));
 }
 
 /**
@@ -252,7 +243,7 @@ export class SecurityContext {
         lastActivity: new Date(),
         requestCount: 0,
         isBlocked: false,
-        suspiciousActivities: 0
+        suspiciousActivities: 0,
       };
       this.users.set(userId, context);
     }
@@ -312,9 +303,7 @@ export class SecurityContext {
 /**
  * Create security context middleware
  */
-export function createSecurityContextMiddleware(
-  securityContext: SecurityContext
-) {
+export function createSecurityContextMiddleware(securityContext: SecurityContext) {
   return async (ctx: BotContext, next: () => Promise<void>) => {
     const userId = ctx.from?.id;
 
@@ -366,6 +355,6 @@ export function createSecurityMiddlewareStack(config?: {
       bot.use(xssPreventionMiddleware());
     },
 
-    getSecurityContext: () => securityContext
+    getSecurityContext: () => securityContext,
   };
 }

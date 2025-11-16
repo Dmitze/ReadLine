@@ -45,7 +45,10 @@ export const ValidationRules = {
   /**
    * Validate number field
    */
-  number: (value: unknown, options?: { min?: number; max?: number; integer?: boolean }): boolean => {
+  number: (
+    value: unknown,
+    options?: { min?: number; max?: number; integer?: boolean }
+  ): boolean => {
     if (typeof value !== 'number') return false;
     if (options?.integer && !Number.isInteger(value)) return false;
     if (options?.min !== undefined && value < options.min) return false;
@@ -213,12 +216,17 @@ export const UserValidationSchema = {
   },
 
   favorite_genres: (value: unknown): boolean => {
-    return ValidationRules.optional() || (ValidationRules.array(value) && (value as unknown[]).every((g) => ValidationRules.genre(g)));
+    return (
+      ValidationRules.optional() ||
+      (ValidationRules.array(value) && (value as unknown[]).every((g) => ValidationRules.genre(g)))
+    );
   },
 
   language: (value: unknown): boolean => {
     const validLanguages = ['en', 'uk', 'ru'];
-    return ValidationRules.optional() || (typeof value === 'string' && validLanguages.includes(value));
+    return (
+      ValidationRules.optional() || (typeof value === 'string' && validLanguages.includes(value))
+    );
   },
 
   user_id: (value: unknown): boolean => {
@@ -289,7 +297,7 @@ export const AudioValidationSchema = {
  */
 export function validateAgainstSchema<T extends Record<string, unknown>>(
   data: unknown,
-  schema: Record<string, (value: unknown) => boolean>,
+  schema: Record<string, (value: unknown) => boolean>
 ): ValidationResult {
   if (typeof data !== 'object' || data === null) {
     return {
@@ -330,7 +338,10 @@ export function sanitizeString(input: string): string {
 /**
  * Utility function to validate pagination parameters
  */
-export function validatePaginationParams(limit?: number, offset?: number): { limit: number; offset: number } {
+export function validatePaginationParams(
+  limit?: number,
+  offset?: number
+): { limit: number; offset: number } {
   const validLimit = Math.min(Math.max(limit || 10, 1), 100);
   const validOffset = Math.max(offset || 0, 0);
   return { limit: validLimit, offset: validOffset };
@@ -342,7 +353,7 @@ export function validatePaginationParams(limit?: number, offset?: number): { lim
 export function validateSortParams(
   sortBy?: string,
   order?: string,
-  allowedFields?: string[],
+  allowedFields?: string[]
 ): { sortBy: string; order: 'asc' | 'desc' } {
   const defaultSort = allowedFields?.[0] || 'id';
   const validSort = allowedFields?.includes(sortBy || '') ? sortBy : defaultSort;

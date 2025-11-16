@@ -20,10 +20,10 @@ export class MockDatabase {
       'audio_books',
       'tags',
       'feedback',
-      'promo_codes'
+      'promo_codes',
     ];
 
-    tableNames.forEach(name => {
+    tableNames.forEach((name) => {
       this.tables.set(name, []);
     });
   }
@@ -47,7 +47,7 @@ export class MockDatabase {
    */
   async get(table: string, where: Record<string, any>): Promise<any | null> {
     const rows = this.tables.get(table) || [];
-    return rows.find(row => this.matchesWhere(row, where)) || null;
+    return rows.find((row) => this.matchesWhere(row, where)) || null;
   }
 
   /**
@@ -60,7 +60,7 @@ export class MockDatabase {
       return [...rows];
     }
 
-    return rows.filter(row => this.matchesWhere(row, where));
+    return rows.filter((row) => this.matchesWhere(row, where));
   }
 
   /**
@@ -91,7 +91,7 @@ export class MockDatabase {
     const rows = this.tables.get(table) || [];
     const beforeLength = rows.length;
 
-    const filtered = rows.filter(row => !this.matchesWhere(row, where));
+    const filtered = rows.filter((row) => !this.matchesWhere(row, where));
     this.tables.set(table, filtered);
 
     return beforeLength - filtered.length;

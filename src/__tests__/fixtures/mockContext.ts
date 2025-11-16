@@ -21,9 +21,9 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
       id: 999999,
       is_bot: true,
       first_name: 'TestBot',
-      username: 'test_bot'
+      username: 'test_bot',
     },
-    
+
     // User properties
     from: {
       id: 12345,
@@ -31,7 +31,7 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
       first_name: 'Test',
       last_name: 'User',
       username: 'testuser',
-      language_code: 'en'
+      language_code: 'en',
     },
 
     // Chat properties
@@ -40,7 +40,7 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
       type: 'private',
       first_name: 'Test',
       last_name: 'User',
-      username: 'testuser'
+      username: 'testuser',
     },
 
     // Message properties
@@ -49,14 +49,14 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
       date: Math.floor(Date.now() / 1000),
       chat: {
         id: 12345,
-        type: 'private'
+        type: 'private',
       },
       text: 'test message',
       from: {
         id: 12345,
         is_bot: false,
-        first_name: 'Test'
-      }
+        first_name: 'Test',
+      },
     },
 
     // Callback query
@@ -70,19 +70,19 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
         date: Math.floor(Date.now() / 1000),
         chat: { id: 12345, type: 'private' },
         from: { id: 12345, is_bot: false, first_name: 'Test' },
-        text: 'test message'
-      }
+        text: 'test message',
+      },
     },
 
     // State
     state: {
-      scene: {}
+      scene: {},
     },
 
     // Session
     session: {
       userId: 12345,
-      userData: {}
+      userData: {},
     },
 
     // Scene context (from telegraf-scenes)
@@ -90,7 +90,7 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
       enter: jest.fn(),
       exit: jest.fn(),
       reenter: jest.fn(),
-      current: 'testScene'
+      current: 'testScene',
     } as any,
 
     // Wizard context
@@ -99,7 +99,7 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
       cursor: 0,
       next: jest.fn(),
       selectStep: jest.fn(),
-      steps: []
+      steps: [],
     } as any,
 
     // Match (for regex routes)
@@ -128,7 +128,7 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
     action: jest.fn(),
     on: jest.fn(),
     hears: jest.fn(),
-    command: jest.fn()
+    command: jest.fn(),
   } as any as BotContext;
 
   return { ...baseContext, ...overrides };
@@ -142,8 +142,8 @@ export function createMockContextWithMessage(
   overrides?: Partial<BotContext>
 ): BotContext {
   return createMockContext({
-    message: { text, ...((overrides?.message) || {}) },
-    ...overrides
+    message: { text, ...(overrides?.message || {}) },
+    ...overrides,
   });
 }
 
@@ -164,10 +164,10 @@ export function createMockContextWithCallback(
         message_id: 1,
         date: Math.floor(Date.now() / 1000),
         chat: { id: 12345, type: 'private' },
-        from: { id: 12345, is_bot: false, first_name: 'Test' }
-      }
+        from: { id: 12345, is_bot: false, first_name: 'Test' },
+      },
     },
-    ...overrides
+    ...overrides,
   } as any);
 }
 
@@ -176,7 +176,7 @@ export function createMockContextWithCallback(
  */
 export function getContextReplies(context: BotContext): any[] {
   const reply = context.reply as jest.Mock;
-  return reply.mock.calls.map(call => call[0]);
+  return reply.mock.calls.map((call) => call[0]);
 }
 
 /**
@@ -188,7 +188,7 @@ export function contextHasReplied(context: BotContext, searchText?: string): boo
 
   if (!searchText) return true;
 
-  return reply.mock.calls.some(call => {
+  return reply.mock.calls.some((call) => {
     const text = call[0];
     return typeof text === 'string' && text.includes(searchText);
   });

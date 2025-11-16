@@ -12,10 +12,7 @@ import { Book } from '../database/models';
 import { logger } from '../utils/logger';
 
 export class OptimizedBookRepository extends OptimizedRepository<Book> {
-  constructor(
-    db: DatabaseWrapper,
-    optimizer?: QueryOptimizer
-  ) {
+  constructor(db: DatabaseWrapper, optimizer?: QueryOptimizer) {
     super(db, 'books', optimizer);
   }
 
@@ -62,7 +59,10 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
 
       logger.info('Book indexes initialized');
     } catch (error) {
-      logger.error('Error initializing indexes', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error initializing indexes',
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 
@@ -110,7 +110,10 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
       logger.info(`Book created: ${title}`, { bookId });
       return bookId;
     } catch (error) {
-      logger.error('Error creating book', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error creating book',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -155,7 +158,10 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
         totalPages,
       };
     } catch (error) {
-      logger.error('Error getting books by genre with pagination', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting books by genre with pagination',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -163,10 +169,7 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
   /**
    * Search books with optimization
    */
-  async searchOptimized(
-    searchTerm: string,
-    limit: number = 10
-  ): Promise<Book[]> {
+  async searchOptimized(searchTerm: string, limit: number = 10): Promise<Book[]> {
     try {
       const pattern = `%${searchTerm}%`;
       const cacheKey = `books:search:${searchTerm}:${limit}`;
@@ -188,7 +191,10 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
         300000
       );
     } catch (error) {
-      logger.error('Error searching books', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error searching books',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -214,7 +220,10 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
         600000 // 10 minutes
       );
     } catch (error) {
-      logger.error('Error getting top rated books', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting top rated books',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -233,14 +242,12 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
         LIMIT ?
       `;
 
-      return await this.queryOptimizer.executeOptimized<Book>(
-        query,
-        [limit],
-        cacheKey,
-        600000
-      );
+      return await this.queryOptimizer.executeOptimized<Book>(query, [limit], cacheKey, 600000);
     } catch (error) {
-      logger.error('Error getting newest books', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting newest books',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -259,14 +266,12 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
         LIMIT 1
       `;
 
-      return await this.queryOptimizer.getOptimized<Book>(
-        query,
-        [],
-        cacheKey,
-        300000
-      );
+      return await this.queryOptimizer.getOptimized<Book>(query, [], cacheKey, 300000);
     } catch (error) {
-      logger.error('Error getting random book', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting random book',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -293,7 +298,10 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
 
       return results.map((r) => r.genre);
     } catch (error) {
-      logger.error('Error getting all genres', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting all genres',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -310,7 +318,10 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
       this.queryOptimizer.invalidateTableCache(`books:id:${bookId}`);
       this.queryOptimizer.invalidateTableCache('books:top_rated');
     } catch (error) {
-      logger.error('Error incrementing downloads', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error incrementing downloads',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -334,7 +345,10 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
         300000
       );
     } catch (error) {
-      logger.error('Error getting low rated books', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting low rated books',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -378,7 +392,10 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
         totalPages,
       };
     } catch (error) {
-      logger.error('Error getting books by author', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting books by author',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -397,7 +414,10 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
 
       return changes;
     } catch (error) {
-      logger.error('Error updating rating', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error updating rating',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -444,7 +464,10 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
 
       return summary;
     } catch (error) {
-      logger.error('Error getting dashboard summary', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting dashboard summary',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -457,7 +480,10 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
       const analysis = await this.queryOptimizer.analyzeTable('books');
       logger.info('Books table analysis', analysis);
     } catch (error) {
-      logger.error('Error analyzing table', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error analyzing table',
+        error instanceof Error ? error : new Error(String(error))
+      );
     }
   }
 }

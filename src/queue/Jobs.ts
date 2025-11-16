@@ -72,7 +72,7 @@ export class JobQueueRegistry {
   constructor(redisConfig?: any) {
     this.redisConfig = redisConfig || {
       host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379')
+      port: parseInt(process.env.REDIS_PORT || '6379'),
     };
   }
 
@@ -84,7 +84,7 @@ export class JobQueueRegistry {
       const config: QueueConfig = {
         name: queueName,
         redis: this.redisConfig,
-        maxAttempts: 3
+        maxAttempts: 3,
       };
 
       const queue = new QueueManager(config);
@@ -140,15 +140,15 @@ export class JobQueueRegistry {
    * Close all queues
    */
   async closeAll(): Promise<Result<void>> {
-     try {
-       const promises = Array.from(this.queues.values()).map(q => q.close());
-       await Promise.all(promises);
-       this.queues.clear();
-       return new Ok(undefined);
-     } catch (error) {
-       return new Err(new Error(`Failed to close queues: ${error}`));
-     }
-   }
+    try {
+      const promises = Array.from(this.queues.values()).map((q) => q.close());
+      await Promise.all(promises);
+      this.queues.clear();
+      return new Ok(undefined);
+    } catch (error) {
+      return new Err(new Error(`Failed to close queues: ${error}`));
+    }
+  }
 }
 
 /**
@@ -169,13 +169,13 @@ export class JobHandlers {
     try {
       // Mock email sending
       logger.info('Sending email', { to: data.to, subject: data.subject });
-      
+
       // Simulate processing
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       return {
         success: true,
-        emailId: `email-${Date.now()}`
+        emailId: `email-${Date.now()}`,
       };
     } catch (error) {
       throw new Error(`Failed to send email: ${error}`);
@@ -188,15 +188,15 @@ export class JobHandlers {
   static async handleReport(data: ReportJobData): Promise<any> {
     try {
       logger.info('Generating report', { type: data.type, userId: data.userId });
-      
+
       // Simulate report generation
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       return {
         success: true,
         reportId: `report-${Date.now()}`,
         type: data.type,
-        records: Math.floor(Math.random() * 100)
+        records: Math.floor(Math.random() * 100),
       };
     } catch (error) {
       throw new Error(`Failed to generate report: ${error}`);
@@ -209,13 +209,13 @@ export class JobHandlers {
   static async handleNotification(data: NotificationJobData): Promise<any> {
     try {
       logger.info('Sending notification', { userId: data.userId, title: data.title });
-      
+
       // Simulate notification
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       return {
         success: true,
-        notificationId: `notif-${Date.now()}`
+        notificationId: `notif-${Date.now()}`,
       };
     } catch (error) {
       throw new Error(`Failed to send notification: ${error}`);
@@ -227,16 +227,20 @@ export class JobHandlers {
    */
   static async handleExport(data: ExportJobData): Promise<any> {
     try {
-      logger.info('Exporting data', { dataType: data.dataType, format: data.format, userId: data.userId });
-      
+      logger.info('Exporting data', {
+        dataType: data.dataType,
+        format: data.format,
+        userId: data.userId,
+      });
+
       // Simulate export
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       return {
         success: true,
         exportId: `export-${Date.now()}`,
         format: data.format,
-        fileSize: Math.floor(Math.random() * 10000)
+        fileSize: Math.floor(Math.random() * 10000),
       };
     } catch (error) {
       throw new Error(`Failed to export data: ${error}`);
@@ -249,15 +253,15 @@ export class JobHandlers {
   static async handleAIProcessing(data: AIJobData): Promise<any> {
     try {
       logger.info('Processing AI request', { bookId: data.bookId, type: data.type });
-      
+
       // Simulate AI processing
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+
       return {
         success: true,
         aiResultId: `ai-${Date.now()}`,
         type: data.type,
-        result: `AI processed: ${data.prompt.substring(0, 50)}...`
+        result: `AI processed: ${data.prompt.substring(0, 50)}...`,
       };
     } catch (error) {
       throw new Error(`Failed to process AI request: ${error}`);
@@ -270,15 +274,15 @@ export class JobHandlers {
   static async handleMaintenance(data: MaintenanceJobData): Promise<any> {
     try {
       logger.info('Running maintenance', { type: data.type });
-      
+
       // Simulate maintenance
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
       return {
         success: true,
         maintenanceId: `maint-${Date.now()}`,
         type: data.type,
-        tablesAffected: data.targetTables?.length || 0
+        tablesAffected: data.targetTables?.length || 0,
       };
     } catch (error) {
       throw new Error(`Failed to run maintenance: ${error}`);

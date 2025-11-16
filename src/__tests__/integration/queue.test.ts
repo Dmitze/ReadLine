@@ -11,7 +11,7 @@ describe('Queue System', () => {
     // Use in-memory Redis for testing
     queueRegistry = new JobQueueRegistry({
       host: 'localhost',
-      port: 6379
+      port: 6379,
     });
   });
 
@@ -28,7 +28,7 @@ describe('Queue System', () => {
     jest.clearAllTimers();
     jest.useRealTimers();
     // Give time for cleanup
-    await new Promise(resolve => {
+    await new Promise((resolve) => {
       const timer = setTimeout(resolve, 100);
       timer.unref(); // Prevent timer from keeping process alive
     });
@@ -40,7 +40,7 @@ describe('Queue System', () => {
       const result = await emailQueue.addJob('email', {
         to: 'test@example.com',
         subject: 'Test Email',
-        body: 'Test body'
+        body: 'Test body',
       });
 
       expect(result.isOk()).toBe(true);
@@ -60,7 +60,7 @@ describe('Queue System', () => {
         userId: 1,
         type: 'daily',
         startDate: '2025-01-01',
-        endDate: '2025-01-31'
+        endDate: '2025-01-31',
       });
 
       expect(result.isOk()).toBe(true);
@@ -72,7 +72,7 @@ describe('Queue System', () => {
       const addResult = await notificationQueue.addJob('notify', {
         userId: 1,
         title: 'Test Notification',
-        message: 'Test message'
+        message: 'Test message',
       });
 
       expect(addResult.isOk()).toBe(true);
@@ -84,9 +84,7 @@ describe('Queue System', () => {
         expect(statusResult.isOk()).toBe(true);
         if (statusResult.isOk()) {
           expect(statusResult.value.jobId).toBe(jobId);
-          expect(['pending', 'active', 'completed', 'failed']).toContain(
-            statusResult.value.status
-          );
+          expect(['pending', 'active', 'completed', 'failed']).toContain(statusResult.value.status);
         }
       }
     });
@@ -98,13 +96,13 @@ describe('Queue System', () => {
       await exportQueue.addJob('export', {
         userId: 1,
         format: 'csv',
-        dataType: 'books'
+        dataType: 'books',
       });
 
       await exportQueue.addJob('export', {
         userId: 2,
         format: 'json',
-        dataType: 'reviews'
+        dataType: 'reviews',
       });
 
       const statsResult = await exportQueue.getStats();
@@ -154,7 +152,7 @@ describe('Queue System', () => {
       await emailQueue.addJob('email', {
         to: 'test@example.com',
         subject: 'Test',
-        body: 'Test'
+        body: 'Test',
       });
 
       const closeResult = await queueRegistry.closeAll();
@@ -168,7 +166,7 @@ describe('Queue System', () => {
       const result = await JobHandlers.handleEmail({
         to: 'test@example.com',
         subject: 'Test Email',
-        body: 'Test body'
+        body: 'Test body',
       });
 
       expect(result.success).toBe(true);
@@ -180,7 +178,7 @@ describe('Queue System', () => {
         userId: 1,
         type: 'daily',
         startDate: '2025-01-01',
-        endDate: '2025-01-31'
+        endDate: '2025-01-31',
       });
 
       expect(result.success).toBe(true);
@@ -192,7 +190,7 @@ describe('Queue System', () => {
       const result = await JobHandlers.handleNotification({
         userId: 1,
         title: 'Test Notification',
-        message: 'Test message'
+        message: 'Test message',
       });
 
       expect(result.success).toBe(true);
@@ -203,7 +201,7 @@ describe('Queue System', () => {
       const result = await JobHandlers.handleExport({
         userId: 1,
         format: 'csv',
-        dataType: 'books'
+        dataType: 'books',
       });
 
       expect(result.success).toBe(true);
@@ -215,7 +213,7 @@ describe('Queue System', () => {
       const result = await JobHandlers.handleAIProcessing({
         bookId: 1,
         prompt: 'Analyze this book',
-        type: 'analysis'
+        type: 'analysis',
       });
 
       expect(result.success).toBe(true);
@@ -226,7 +224,7 @@ describe('Queue System', () => {
     it('should handle maintenance tasks', async () => {
       const result = await JobHandlers.handleMaintenance({
         type: 'cleanup',
-        targetTables: ['books', 'reviews']
+        targetTables: ['books', 'reviews'],
       });
 
       expect(result.success).toBe(true);
@@ -254,7 +252,7 @@ describe('Queue System', () => {
       const addResult = await exportQueue.addJob('export', {
         userId: 1,
         format: 'json',
-        dataType: 'books'
+        dataType: 'books',
       });
 
       expect(addResult.isOk()).toBe(true);
@@ -271,7 +269,7 @@ describe('Queue System', () => {
       await aiQueue.addJob('process', {
         bookId: 1,
         prompt: 'Test',
-        type: 'summary'
+        type: 'summary',
       });
 
       const clearResult = await aiQueue.clear();

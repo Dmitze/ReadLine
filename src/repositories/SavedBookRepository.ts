@@ -1,7 +1,7 @@
 /**
  * Saved Book Repository
  * REFACTOR-002: Repository Layer Separation
- * 
+ *
  * All database operations related to user's saved/favorite books
  */
 
@@ -52,7 +52,10 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
       `;
       return await this.db.all<SavedBook>(query, [userId]);
     } catch (error) {
-      logger.error('Error getting user saved books', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting user saved books',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -69,7 +72,10 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
       }
       return changes;
     } catch (error) {
-      logger.error('Error removing saved book', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error removing saved book',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -86,7 +92,10 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
       const result = await this.db.get<{ count: number }>(query, [userId, bookId]);
       return (result?.count || 0) > 0;
     } catch (error) {
-      logger.error('Error checking if book is saved', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error checking if book is saved',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -98,7 +107,10 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
     try {
       return await this.count('user_id = ?', [userId]);
     } catch (error) {
-      logger.error('Error getting saved books count', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting saved books count',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -111,7 +123,10 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
       const query = 'DELETE FROM saved_books WHERE user_id = ?';
       return await this.db.delete(query, [userId]);
     } catch (error) {
-      logger.error('Error clearing user saved books', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error clearing user saved books',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -124,7 +139,10 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
       const query = 'SELECT * FROM saved_books WHERE user_id = ? AND book_id = ?';
       return await this.db.get<SavedBook>(query, [userId, bookId]);
     } catch (error) {
-      logger.error('Error getting saved book', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting saved book',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -142,7 +160,10 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
       `;
       return await this.db.all<{ bookId: number; saveCount: number }>(query, [limit]);
     } catch (error) {
-      logger.error('Error getting most saved books', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting most saved books',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -159,7 +180,10 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
       const query = 'DELETE FROM saved_books WHERE book_id = ?';
       return await this.db.delete(query, [bookId]);
     } catch (error) {
-      logger.error('Error deleting saved books by book id', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error deleting saved books by book id',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }

@@ -10,7 +10,9 @@ import { logger } from '../../utils/logger';
 /**
  * Add a new book
  */
-export const addBook = (bookData: Omit<Book, 'id' | 'is_available' | 'created_at'>): Promise<number> => {
+export const addBook = (
+  bookData: Omit<Book, 'id' | 'is_available' | 'created_at'>
+): Promise<number> => {
   return new Promise((resolve, reject) => {
     const {
       title,
@@ -22,7 +24,7 @@ export const addBook = (bookData: Omit<Book, 'id' | 'is_available' | 'created_at
       audio_file_id,
       online_link,
       file_type = 'physical',
-      file_name
+      file_name,
     } = bookData;
 
     const query = `
@@ -37,9 +39,16 @@ export const addBook = (bookData: Omit<Book, 'id' | 'is_available' | 'created_at
     db.run(
       query,
       [
-        title, author, genre, description, photo_file_id,
-        file_url || null, audio_file_id || null, online_link || null,
-        file_type, file_name
+        title,
+        author,
+        genre,
+        description,
+        photo_file_id,
+        file_url || null,
+        audio_file_id || null,
+        online_link || null,
+        file_type,
+        file_name,
       ],
       function (err) {
         if (err) {
@@ -133,7 +142,7 @@ export const getGenres = (): Promise<string[]> => {
         logger.error('Error getting genres', err);
         reject(err);
       } else {
-        resolve(rows.map(row => row.genre));
+        resolve(rows.map((row) => row.genre));
       }
     });
   });
@@ -146,7 +155,7 @@ export const getBooksByGenreWithPagination = (
   genre: string,
   page: number = 1,
   limit: number = 10
-): Promise<{ books: Book[], total: number }> => {
+): Promise<{ books: Book[]; total: number }> => {
   return new Promise((resolve, reject) => {
     const offset = (page - 1) * limit;
     const booksQuery = `
@@ -171,7 +180,7 @@ export const getBooksByGenreWithPagination = (
         } else {
           resolve({
             books: rows,
-            total: countRow.total
+            total: countRow.total,
           });
         }
       });
@@ -186,7 +195,7 @@ export const getBooksWithPagination = (
   page: number = 1,
   limit: number = 10,
   search?: string
-): Promise<{ books: Book[], total: number, totalPages: number }> => {
+): Promise<{ books: Book[]; total: number; totalPages: number }> => {
   return new Promise((resolve, reject) => {
     const offset = (page - 1) * limit;
 
@@ -222,7 +231,7 @@ export const getBooksWithPagination = (
           resolve({
             books: rows,
             total: countRow.total,
-            totalPages
+            totalPages,
           });
         }
       });
@@ -233,14 +242,11 @@ export const getBooksWithPagination = (
 /**
  * Update book
  */
-export const updateBook = (
-  bookId: number,
-  updates: Partial<Book>
-): Promise<number> => {
+export const updateBook = (bookId: number, updates: Partial<Book>): Promise<number> => {
   return new Promise((resolve, reject) => {
-    const fields = Object.keys(updates).filter(key => key !== 'id');
-    const setClause = fields.map(field => `${field} = ?`).join(', ');
-    const values = fields.map(field => (updates as any)[field]);
+    const fields = Object.keys(updates).filter((key) => key !== 'id');
+    const setClause = fields.map((field) => `${field} = ?`).join(', ');
+    const values = fields.map((field) => (updates as any)[field]);
 
     const query = `UPDATE books SET ${setClause} WHERE id = ?`;
 
@@ -369,17 +375,26 @@ export const incrementDownloads = (bookId: number): Promise<void> => {
 /**
  * Update book info (complex updates)
  */
-export const updateBookInfo = (
-  bookId: number,
-  field: string,
-  value: any
-): Promise<number> => {
+export const updateBookInfo = (bookId: number, field: string, value: any): Promise<number> => {
   return new Promise((resolve, reject) => {
     const allowedFields = [
-      'title', 'author', 'genre', 'description', 'photo_file_id',
-      'file_url', 'pdf_file_id', 'audio_file_id', 'audio_duration',
-      'audio_external_link', 'narrator', 'online_link', 'external_link',
-      'file_type', 'file_name', 'recommended_age', 'content_warnings'
+      'title',
+      'author',
+      'genre',
+      'description',
+      'photo_file_id',
+      'file_url',
+      'pdf_file_id',
+      'audio_file_id',
+      'audio_duration',
+      'audio_external_link',
+      'narrator',
+      'online_link',
+      'external_link',
+      'file_type',
+      'file_name',
+      'recommended_age',
+      'content_warnings',
     ];
 
     if (!allowedFields.includes(field)) {
@@ -404,10 +419,7 @@ export const updateBookInfo = (
 /**
  * Search books
  */
-export const searchBooks = (
-  query: string,
-  limit: number = 20
-): Promise<Book[]> => {
+export const searchBooks = (query: string, limit: number = 20): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     const searchPattern = `%${query}%`;
     const sql = `
@@ -425,7 +437,15 @@ export const searchBooks = (
 
     db.all(
       sql,
-      [searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, searchPattern, limit],
+      [
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        limit,
+      ],
       (err, rows: Book[]) => {
         if (err) {
           logger.error('Error searching books', err, { query, limit });

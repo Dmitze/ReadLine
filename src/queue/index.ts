@@ -4,10 +4,7 @@
 
 export { QueueManager, createQueueManager } from './Queue';
 export type { QueueConfig, JobData, JobResult } from './Queue';
-export {
-  JobQueueRegistry,
-  createJobQueueRegistry
-} from './Jobs';
+export { JobQueueRegistry, createJobQueueRegistry } from './Jobs';
 export type {
   JobHandlers,
   EmailJobData,
@@ -15,5 +12,5 @@ export type {
   NotificationJobData,
   ExportJobData,
   AIJobData,
-  MaintenanceJobData
+  MaintenanceJobData,
 } from './Jobs';

@@ -20,9 +20,12 @@ class RateLimiter {
     this.windowMs = windowMs;
 
     // Очищення старих записів кожні 5 хвилин
-    setInterval(() => {
-      this.cleanup();
-    }, 5 * 60 * 1000);
+    setInterval(
+      () => {
+        this.cleanup();
+      },
+      5 * 60 * 1000
+    );
   }
 
   /**
@@ -57,7 +60,7 @@ class RateLimiter {
       count: record.count + 1,
       resetAt: record.resetAt,
     });
-    
+
     return true;
   }
 
@@ -74,7 +77,7 @@ class RateLimiter {
       }
     });
 
-    toDelete.forEach(userId => this.records.delete(userId));
+    toDelete.forEach((userId) => this.records.delete(userId));
 
     if (toDelete.length > 0) {
       logger.debug('Rate limit cleanup', { removed: toDelete.length });
@@ -114,7 +117,10 @@ const RATE_LIMITS = {
 // Створюємо різні rate limiters для різних типів запитів
 export const messageLimiter = new RateLimiter(RATE_LIMITS.MESSAGE_MAX, RATE_LIMITS.MESSAGE_WINDOW);
 export const commandLimiter = new RateLimiter(RATE_LIMITS.COMMAND_MAX, RATE_LIMITS.COMMAND_WINDOW);
-export const callbackLimiter = new RateLimiter(RATE_LIMITS.CALLBACK_MAX, RATE_LIMITS.CALLBACK_WINDOW);
+export const callbackLimiter = new RateLimiter(
+  RATE_LIMITS.CALLBACK_MAX,
+  RATE_LIMITS.CALLBACK_WINDOW
+);
 
 /**
  * Middleware для rate limiting повідомлень
@@ -130,8 +136,8 @@ export const rateLimitMessage: Middleware<Context> = async (ctx, next) => {
     const { ERRORS } = await import('../constants');
     await ctx.reply(
       `${ERRORS.RATE_LIMIT}\n\n` +
-      'Будь ласка, зачекайте хвилину перед наступним повідомленням.\n\n' +
-      '💡 Це захист від спаму.',
+        'Будь ласка, зачекайте хвилину перед наступним повідомленням.\n\n' +
+        '💡 Це захист від спаму.',
       { parse_mode: 'Markdown' }
     );
     return;
@@ -154,8 +160,8 @@ export const rateLimitCommand: Middleware<Context> = async (ctx, next) => {
     const { ERRORS } = await import('../constants');
     await ctx.reply(
       `${ERRORS.RATE_LIMIT}\n\n` +
-      'Будь ласка, зачекайте хвилину.\n\n' +
-      `💡 Ліміт: ${RATE_LIMITS.COMMAND_MAX} команд на хвилину.`,
+        'Будь ласка, зачекайте хвилину.\n\n' +
+        `💡 Ліміт: ${RATE_LIMITS.COMMAND_MAX} команд на хвилину.`,
       { parse_mode: 'Markdown' }
     );
     return;
@@ -176,10 +182,7 @@ export const rateLimitCallback: Middleware<Context> = async (ctx, next) => {
 
   if (!callbackLimiter.check(userId)) {
     const { ERRORS } = await import('../constants');
-    await ctx.answerCbQuery(
-      `${ERRORS.RATE_LIMIT} Зачекайте хвилину.`,
-      { show_alert: true }
-    );
+    await ctx.answerCbQuery(`${ERRORS.RATE_LIMIT} Зачекайте хвилину.`, { show_alert: true });
     return;
   }
 

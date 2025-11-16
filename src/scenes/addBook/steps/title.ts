@@ -9,7 +9,7 @@ export async function enterTitleStep(ctx: BotContext) {
       `${examples.title}\n\n` +
       '💡 Або натисніть /cancel для скасування',
     {
-      reply_markup: Markup.keyboard([['❌ Скасувати']]).resize().reply_markup
+      reply_markup: Markup.keyboard([['❌ Скасувати']]).resize().reply_markup,
     }
   );
   return ctx.wizard.next();

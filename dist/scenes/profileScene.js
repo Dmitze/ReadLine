@@ -64,7 +64,7 @@ profileScene.enter(async (ctx) => {
     const { getBookTags } = await Promise.resolve().then(() => __importStar(require('../database/tagFunctions')));
     const savedBooks = await getSavedBooks(userId);
     const genresFromBooks = new Set();
-    savedBooks.forEach(book => {
+    savedBooks.forEach((book) => {
         if (book.genre) {
             genresFromBooks.add(book.genre);
         }
@@ -83,12 +83,12 @@ profileScene.enter(async (ctx) => {
         const allUserTags = new Set();
         for (const book of savedBooks) {
             const bookTags = await getBookTags(book.id);
-            bookTags.forEach(tag => allUserTags.add(tag.name));
+            bookTags.forEach((tag) => allUserTags.add(tag.name));
         }
         if (allUserTags.size > 0) {
             profileText += '\n<b>🏷️ Ваші інтереси (теги):</b>\n';
             const tagsArray = Array.from(allUserTags).slice(0, 10);
-            profileText += tagsArray.map(tag => `#${tag}`).join(' ') + '\n';
+            profileText += tagsArray.map((tag) => `#${tag}`).join(' ') + '\n';
         }
     }
     profileText += '\n<i>💡 Продовжуйте читати та залишати відгуки!</i>';
@@ -99,8 +99,8 @@ profileScene.enter(async (ctx) => {
             [{ text: '🤖 Персональні рекомендації', callback_data: 'show_personal_collection' }],
             [{ text: '🎯 AI Підбір книги', callback_data: 'start_ai_assistant' }],
             [{ text: '📊 Моя статистика', callback_data: 'show_stats' }],
-            [{ text: '⬅️ Назад', callback_data: 'profile_back' }]
-        ]).reply_markup
+            [{ text: '⬅️ Назад', callback_data: 'profile_back' }],
+        ]).reply_markup,
     });
     logger_1.logger.userAction(userId, 'view_profile');
 });
@@ -144,7 +144,7 @@ profileScene.action('profile_back', async (ctx) => {
     await ctx.scene?.leave();
     const { getMainMenuKeyboard } = await Promise.resolve().then(() => __importStar(require('../keyboards/mainKeyboards')));
     await ctx.reply('👋 Повертаємось до головного меню', {
-        reply_markup: getMainMenuKeyboard()
+        reply_markup: getMainMenuKeyboard(),
     });
 });
 profileScene.action('show_personal_collection', async (ctx) => {
@@ -189,26 +189,30 @@ profileScene.action('show_personal_collection', async (ctx) => {
         const caption = await formatBookCaption(book);
         const isSaved = await isBookSaved(userId, book.id);
         const keyboard = (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved);
-        if (book.photo_file_id && book.photo_file_id !== 'default_book_cover' && book.photo_file_id.length > 20) {
-            await ctx.replyWithPhoto(book.photo_file_id, {
+        if (book.photo_file_id &&
+            book.photo_file_id !== 'default_book_cover' &&
+            book.photo_file_id.length > 20) {
+            await ctx
+                .replyWithPhoto(book.photo_file_id, {
                 caption,
                 parse_mode: 'HTML',
-                reply_markup: keyboard
-            }).catch((photoError) => {
+                reply_markup: keyboard,
+            })
+                .catch((photoError) => {
                 logger_1.logger.debug('Photo error, sending as text');
                 ctx.reply(caption, {
                     parse_mode: 'HTML',
-                    reply_markup: keyboard
+                    reply_markup: keyboard,
                 });
             });
         }
         else {
             await ctx.reply(caption, {
                 parse_mode: 'HTML',
-                reply_markup: keyboard
+                reply_markup: keyboard,
             });
         }
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise((resolve) => setTimeout(resolve, 500));
     }
     logger_1.logger.userAction(userId, 'ai_personal_collection', { booksFound: collection.length });
 });

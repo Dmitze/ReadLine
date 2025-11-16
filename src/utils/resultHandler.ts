@@ -45,7 +45,7 @@ export async function withResultHandler<T>(
 ): Promise<void> {
   const result = await operation();
 
-  if (!await handleResult(ctx, result, errorMessage)) {
+  if (!(await handleResult(ctx, result, errorMessage))) {
     return;
   }
 

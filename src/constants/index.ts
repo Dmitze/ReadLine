@@ -13,7 +13,7 @@ export const BUTTONS = {
   PROFILE_OLD: '👤 Мій профіль',
   HELP: 'ℹ️ Допомога',
   AI_ASSISTANT: '🤖 AI Помічник',
-  FEEDBACK: '📞 Зворотній зв\'язок',
+  FEEDBACK: "📞 Зворотній зв'язок",
   BACK: '⬅️ Назад',
   HOME: '🏠 На головну',
   // Швидкі дії

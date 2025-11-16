@@ -1,7 +1,7 @@
 /**
  * Service Container Implementation
  * REFACTOR-001: Dependency Injection System
- * 
+ *
  * This is the core dependency injection container that manages all services
  * in the application. It supports both singleton and transient lifetimes.
  */
@@ -18,7 +18,7 @@ interface ServiceDefinition {
 
 /**
  * Service Container Implementation
- * 
+ *
  * Features:
  * - Singleton and transient service registration
  * - Lazy initialization (services created on first use)
@@ -122,9 +122,7 @@ export class ServiceContainer implements IServiceContainer {
     }
 
     if (!definition.isInitialized || definition.instance === undefined) {
-      throw new Error(
-        `Service ${key} is not initialized. Use resolve() first.`
-      );
+      throw new Error(`Service ${key} is not initialized. Use resolve() first.`);
     }
 
     return definition.instance as T;
@@ -145,7 +143,10 @@ export class ServiceContainer implements IServiceContainer {
     for (const definition of this.services.values()) {
       if (definition.instance && typeof definition.instance.dispose === 'function') {
         definition.instance.dispose().catch((err: unknown) => {
-          logger.error('Error disposing service', err instanceof Error ? err : new Error(String(err)));
+          logger.error(
+            'Error disposing service',
+            err instanceof Error ? err : new Error(String(err))
+          );
         });
       }
     }
@@ -188,10 +189,7 @@ export class ServiceContainer implements IServiceContainer {
   /**
    * Create a service instance
    */
-  private async createInstance<T>(
-    key: string,
-    definition: ServiceDefinition
-  ): Promise<T> {
+  private async createInstance<T>(key: string, definition: ServiceDefinition): Promise<T> {
     try {
       const result = definition.factory();
 

@@ -50,7 +50,7 @@ export class RecommendationService {
         // Pagination is applied manually
         for (const book of books.slice(0, limit * 2)) {
           const bookId = book.id ?? 0;
-          if (bookId && !savedBooks.find(s => s.book_id === bookId)) {
+          if (bookId && !savedBooks.find((s) => s.book_id === bookId)) {
             recommendations.set(bookId, book);
           }
         }
@@ -70,7 +70,9 @@ export class RecommendationService {
       const books = await this.bookRepository.findMostRated(limit);
       return new Ok(books);
     } catch (error) {
-      return new Err(error instanceof Error ? error : new Error('Failed to get popular recommendations'));
+      return new Err(
+        error instanceof Error ? error : new Error('Failed to get popular recommendations')
+      );
     }
   }
 
@@ -82,14 +84,19 @@ export class RecommendationService {
       const books = await this.bookRepository.findByGenre(genre);
       return new Ok(books.slice(0, limit));
     } catch (error) {
-      return new Err(error instanceof Error ? error : new Error('Failed to get genre recommendations'));
+      return new Err(
+        error instanceof Error ? error : new Error('Failed to get genre recommendations')
+      );
     }
   }
 
   /**
    * Отримати рекомендації на основі рейтингу
    */
-  async getRecommendationsByRating(minRating: number = 4, limit: number = 10): Promise<Result<any[]>> {
+  async getRecommendationsByRating(
+    minRating: number = 4,
+    limit: number = 10
+  ): Promise<Result<any[]>> {
     try {
       if (minRating < 1 || minRating > 5) {
         return new Err(new Error('Rating must be between 1 and 5'));
@@ -111,17 +118,22 @@ export class RecommendationService {
 
       return new Ok(filtered.sort((a, b) => b.rating - a.rating).slice(0, limit));
     } catch (error) {
-      return new Err(error instanceof Error ? error : new Error('Failed to get rating recommendations'));
+      return new Err(
+        error instanceof Error ? error : new Error('Failed to get rating recommendations')
+      );
     }
   }
 
   /**
    * Отримати "Читай далі" рекомендації
    */
-  async getContinueReadingRecommendations(userId: number, limit: number = 5): Promise<Result<any[]>> {
+  async getContinueReadingRecommendations(
+    userId: number,
+    limit: number = 5
+  ): Promise<Result<any[]>> {
     try {
       const savedBooks = await this.savedBookRepository.findByUserId(userId);
-      
+
       if (savedBooks.length === 0) {
         return new Ok([]);
       }
@@ -138,7 +150,7 @@ export class RecommendationService {
           const byGenre = await this.bookRepository.findByGenre(book.genre);
           for (const recommended of byGenre.slice(0, limit * 2)) {
             const recId = recommended.id ?? 0;
-            if (recId && recId !== book.id && !savedBooks.find(s => s.book_id === recId)) {
+            if (recId && recId !== book.id && !savedBooks.find((s) => s.book_id === recId)) {
               recommendations.set(recId, recommended);
             }
           }
@@ -147,7 +159,9 @@ export class RecommendationService {
 
       return new Ok(Array.from(recommendations.values()).slice(0, limit));
     } catch (error) {
-      return new Err(error instanceof Error ? error : new Error('Failed to get continue reading recommendations'));
+      return new Err(
+        error instanceof Error ? error : new Error('Failed to get continue reading recommendations')
+      );
     }
   }
 
@@ -162,11 +176,13 @@ export class RecommendationService {
       }
 
       const similarBooks = await this.bookRepository.findByGenre(book.genre);
-      const filtered = similarBooks.filter(b => b.id !== bookId).slice(0, limit);
+      const filtered = similarBooks.filter((b) => b.id !== bookId).slice(0, limit);
 
       return new Ok(filtered);
     } catch (error) {
-      return new Err(error instanceof Error ? error : new Error('Failed to get similar recommendations'));
+      return new Err(
+        error instanceof Error ? error : new Error('Failed to get similar recommendations')
+      );
     }
   }
 
@@ -178,7 +194,9 @@ export class RecommendationService {
       const books = await this.bookRepository.findNewest(limit);
       return new Ok(books);
     } catch (error) {
-      return new Err(error instanceof Error ? error : new Error('Failed to get trending recommendations'));
+      return new Err(
+        error instanceof Error ? error : new Error('Failed to get trending recommendations')
+      );
     }
   }
 
@@ -192,7 +210,9 @@ export class RecommendationService {
       const allBooks = await this.bookRepository.findAll();
       return new Ok(allBooks.slice(0, limit));
     } catch (error) {
-      return new Err(error instanceof Error ? error : new Error('Failed to get tag recommendations'));
+      return new Err(
+        error instanceof Error ? error : new Error('Failed to get tag recommendations')
+      );
     }
   }
 
@@ -220,7 +240,9 @@ export class RecommendationService {
 
       return new Ok(Math.min(score, 100));
     } catch (error) {
-      return new Err(error instanceof Error ? error : new Error('Failed to calculate ranking score'));
+      return new Err(
+        error instanceof Error ? error : new Error('Failed to calculate ranking score')
+      );
     }
   }
 }

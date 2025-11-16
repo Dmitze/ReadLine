@@ -21,7 +21,7 @@ describe('Input Validation', () => {
   // Test string trimming
   it('should trim whitespace', () => {
     const trim = (str: string) => str.trim();
-    
+
     expect(trim('  hello  ')).toBe('hello');
     expect(trim('\nhello\n')).toBe('hello');
     expect(trim('\thello\t')).toBe('hello');
@@ -29,7 +29,7 @@ describe('Input Validation', () => {
 
   // Test string length validation
   it('should validate string length', () => {
-    const isValidLength = (str: string, min: number, max: number) => 
+    const isValidLength = (str: string, min: number, max: number) =>
       str.length >= min && str.length <= max;
 
     expect(isValidLength('test', 2, 10)).toBe(true);
@@ -50,8 +50,7 @@ describe('Input Validation', () => {
 
   // Test number range validation
   it('should validate number ranges', () => {
-    const isInRange = (num: number, min: number, max: number) =>
-      num >= min && num <= max;
+    const isInRange = (num: number, min: number, max: number) => num >= min && num <= max;
 
     expect(isInRange(5, 0, 10)).toBe(true);
     expect(isInRange(0, 0, 10)).toBe(true);
@@ -64,8 +63,7 @@ describe('Input Validation', () => {
 describe('Input Sanitization', () => {
   // HTML sanitization
   it('should remove HTML tags', () => {
-    const sanitizeHTML = (str: string) => 
-      str.replace(/<[^>]*>/g, '');
+    const sanitizeHTML = (str: string) => str.replace(/<[^>]*>/g, '');
 
     expect(sanitizeHTML('<script>alert("xss")</script>')).toBe('alert("xss")');
     expect(sanitizeHTML('<div>Hello</div>')).toBe('Hello');
@@ -74,11 +72,9 @@ describe('Input Sanitization', () => {
 
   // SQL injection prevention
   it('should escape SQL special characters', () => {
-    const escapeSQL = (str: string) =>
-      str.replace(/'/g, "''").replace(/"/g, '""');
+    const escapeSQL = (str: string) => str.replace(/'/g, "''").replace(/"/g, '""');
 
-    expect(escapeSQL("'; DROP TABLE users; --"))
-      .toBe("''; DROP TABLE users; --");
+    expect(escapeSQL("'; DROP TABLE users; --")).toBe("''; DROP TABLE users; --");
     expect(escapeSQL('Normal text')).toBe('Normal text');
   });
 
@@ -93,8 +89,7 @@ describe('Input Sanitization', () => {
 
   // Whitespace normalization
   it('should normalize whitespace', () => {
-    const normalizeSpace = (str: string) =>
-      str.replace(/\s+/g, ' ').trim();
+    const normalizeSpace = (str: string) => str.replace(/\s+/g, ' ').trim();
 
     expect(normalizeSpace('hello    world')).toBe('hello world');
     expect(normalizeSpace('\n\nhello\n\nworld\n\n')).toBe('hello world');
@@ -112,8 +107,7 @@ describe('Type Validation', () => {
   });
 
   it('should validate number type', () => {
-    const isNumber = (value: any): value is number => 
-      typeof value === 'number' && !isNaN(value);
+    const isNumber = (value: any): value is number => typeof value === 'number' && !isNaN(value);
 
     expect(isNumber(42)).toBe(true);
     expect(isNumber(3.14)).toBe(true);

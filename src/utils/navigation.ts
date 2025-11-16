@@ -13,7 +13,7 @@ export interface BreadcrumbItem {
  * Форматувати breadcrumbs для відображення
  */
 export function formatBreadcrumbs(items: BreadcrumbItem[]): string {
-  return items.map(item => item.label).join(' > ');
+  return items.map((item) => item.label).join(' > ');
 }
 
 /**
@@ -26,24 +26,24 @@ export function createNavigationKeyboard(options: {
   additionalButtons?: any[][];
 }) {
   const { showHome = true, showBack = true, backAction = 'back', additionalButtons = [] } = options;
-  
+
   const keyboard: any[][] = [...additionalButtons];
-  
+
   // Додаємо кнопки навігації в останній рядок
   const navRow: any[] = [];
-  
+
   if (showBack) {
     navRow.push(Markup.button.callback('⬅️ Назад', backAction));
   }
-  
+
   if (showHome) {
     navRow.push(Markup.button.callback('🏠 На головну', 'home'));
   }
-  
+
   if (navRow.length > 0) {
     keyboard.push(navRow);
   }
-  
+
   return Markup.inlineKeyboard(keyboard);
 }
 
@@ -66,10 +66,8 @@ export function getQuickActionsKeyboard() {
     ['⭐ Топ книги', '🆕 Новинки'],
     ['💾 Моя бібліотека', '👤 Профіль'],
     ['🤖 AI Помічник', 'ℹ️ Допомога'],
-    ['📞 Зворотній зв\'язок']
-  ])
-  .resize()
-  .reply_markup;
+    ["📞 Зворотній зв'язок"],
+  ]).resize().reply_markup;
 }
 
 /**
@@ -81,8 +79,6 @@ export function getStandardMainMenu() {
     ['⭐ Топ книги', '🆕 Новинки'],
     ['💾 Моя бібліотека', '👤 Профіль'],
     ['🤖 AI Помічник', 'ℹ️ Допомога'],
-    ['📞 Зворотній зв\'язок']
-  ])
-  .resize()
-  .reply_markup;
+    ["📞 Зворотній зв'язок"],
+  ]).resize().reply_markup;
 }

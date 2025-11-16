@@ -11,13 +11,13 @@ import { logger } from './logger';
  * Retry policy configuration
  */
 export interface RetryPolicy {
-  maxAttempts?: number;                    // Maximum retry attempts (default: 3)
-  initialDelay?: number;                   // Initial delay in ms (default: 100)
-  maxDelay?: number;                       // Maximum delay in ms (default: 10000)
-  backoffMultiplier?: number;             // Exponential backoff multiplier (default: 2)
-  jitter?: boolean;                        // Add random jitter to delays (default: true)
+  maxAttempts?: number; // Maximum retry attempts (default: 3)
+  initialDelay?: number; // Initial delay in ms (default: 100)
+  maxDelay?: number; // Maximum delay in ms (default: 10000)
+  backoffMultiplier?: number; // Exponential backoff multiplier (default: 2)
+  jitter?: boolean; // Add random jitter to delays (default: true)
   retryableErrors?: (error: Error) => boolean; // Custom error check
-  name?: string;                           // Name for logging
+  name?: string; // Name for logging
 }
 
 /**
@@ -58,17 +58,19 @@ export class RetryStrategy {
     this.name = policy.name || 'RetryStrategy';
 
     // Default: retry on network errors and 5xx
-    this.retryableErrors = policy.retryableErrors || ((error) => {
-      const message = error.message.toLowerCase();
-      return (
-        message.includes('network') ||
-        message.includes('timeout') ||
-        message.includes('econnrefused') ||
-        message.includes('econnreset') ||
-        message.includes('http 5') ||
-        message.includes('http 429')
-      );
-    });
+    this.retryableErrors =
+      policy.retryableErrors ||
+      ((error) => {
+        const message = error.message.toLowerCase();
+        return (
+          message.includes('network') ||
+          message.includes('timeout') ||
+          message.includes('econnrefused') ||
+          message.includes('econnreset') ||
+          message.includes('http 5') ||
+          message.includes('http 429')
+        );
+      });
   }
 
   /**
@@ -86,7 +88,10 @@ export class RetryStrategy {
         this.stats.successfulRetries++;
 
         if (attempt > 1) {
-          logger.info(`${this.name}: Operation succeeded on attempt ${attempt}/${this.maxAttempts}` + (context ? ` (${context})` : ''));
+          logger.info(
+            `${this.name}: Operation succeeded on attempt ${attempt}/${this.maxAttempts}` +
+              (context ? ` (${context})` : '')
+          );
         }
 
         return result;
@@ -97,7 +102,8 @@ export class RetryStrategy {
         if (!isRetryable || attempt === this.maxAttempts) {
           this.stats.failedRetries++;
           logger.error(
-            `${this.name}: Operation failed after ${attempt} attempts` + (context ? ` (${context})` : ''),
+            `${this.name}: Operation failed after ${attempt} attempts` +
+              (context ? ` (${context})` : ''),
             lastError
           );
           throw lastError;
@@ -108,7 +114,8 @@ export class RetryStrategy {
         totalDelay += delay;
 
         logger.warn(
-          `${this.name}: Attempt ${attempt} failed, retrying in ${delay}ms` + (context ? ` (${context})` : ''),
+          `${this.name}: Attempt ${attempt} failed, retrying in ${delay}ms` +
+            (context ? ` (${context})` : ''),
           { error: lastError.message }
         );
 
@@ -141,7 +148,10 @@ export class RetryStrategy {
         this.stats.successfulRetries++;
 
         if (attempt > 1) {
-          logger.info(`${this.name}: Operation succeeded on attempt ${attempt}/${this.maxAttempts}` + (context ? ` (${context})` : ''));
+          logger.info(
+            `${this.name}: Operation succeeded on attempt ${attempt}/${this.maxAttempts}` +
+              (context ? ` (${context})` : '')
+          );
         }
 
         return result;
@@ -152,7 +162,8 @@ export class RetryStrategy {
         if (!isRetryable || attempt === this.maxAttempts) {
           this.stats.failedRetries++;
           logger.error(
-            `${this.name}: Operation failed after ${attempt} attempts` + (context ? ` (${context})` : ''),
+            `${this.name}: Operation failed after ${attempt} attempts` +
+              (context ? ` (${context})` : ''),
             lastError
           );
           throw lastError;
@@ -221,13 +232,15 @@ export class RetryStrategy {
    * Get formatted statistics
    */
   getFormattedStats(): string {
-    const successRate = this.stats.totalAttempts > 0
-      ? ((this.stats.successfulRetries / this.stats.totalAttempts) * 100).toFixed(1)
-      : '0.0';
+    const successRate =
+      this.stats.totalAttempts > 0
+        ? ((this.stats.successfulRetries / this.stats.totalAttempts) * 100).toFixed(1)
+        : '0.0';
 
-    const avgDelay = this.stats.totalAttempts > 0
-      ? (this.stats.totalDelayMs / this.stats.totalAttempts).toFixed(0)
-      : '0';
+    const avgDelay =
+      this.stats.totalAttempts > 0
+        ? (this.stats.totalDelayMs / this.stats.totalAttempts).toFixed(0)
+        : '0';
 
     return (
       `${this.name}: ` +
@@ -242,10 +255,7 @@ export class RetryStrategy {
 /**
  * Retry helper for one-off usage
  */
-export async function retryAsync<T>(
-  fn: () => Promise<T>,
-  options: RetryPolicy = {}
-): Promise<T> {
+export async function retryAsync<T>(fn: () => Promise<T>, options: RetryPolicy = {}): Promise<T> {
   const strategy = new RetryStrategy(options);
   return strategy.execute(fn);
 }
@@ -253,10 +263,7 @@ export async function retryAsync<T>(
 /**
  * Retry helper for sync functions
  */
-export function retrySync<T>(
-  fn: () => T,
-  options: RetryPolicy = {}
-): T {
+export function retrySync<T>(fn: () => T, options: RetryPolicy = {}): T {
   const strategy = new RetryStrategy(options);
   return strategy.executeSync(fn);
 }

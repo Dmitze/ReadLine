@@ -174,7 +174,7 @@ const migration001_CreateCoreTables: IMigration = {
     `;
 
     await db.run(sql);
-  }
+  },
 };
 
 /**
@@ -207,7 +207,7 @@ const migration002_AddActivityTracking: IMigration = {
 
   down: async (db: Database) => {
     await db.run('DROP TABLE IF EXISTS user_activity');
-  }
+  },
 };
 
 /**
@@ -238,7 +238,7 @@ const migration003_AddSearchHistory: IMigration = {
 
   down: async (db: Database) => {
     await db.run('DROP TABLE IF EXISTS search_history');
-  }
+  },
 };
 
 /**
@@ -273,7 +273,7 @@ const migration004_AddNotifications: IMigration = {
 
   down: async (db: Database) => {
     await db.run('DROP TABLE IF EXISTS notifications');
-  }
+  },
 };
 
 /**
@@ -304,7 +304,7 @@ const migration005_AddStatistics: IMigration = {
 
   down: async (db: Database) => {
     await db.run('DROP TABLE IF EXISTS statistics');
-  }
+  },
 };
 
 /**
@@ -336,7 +336,7 @@ const migration006_AddSoftDeleteSupport: IMigration = {
   down: async (db: Database) => {
     // SQLite doesn't support DROP COLUMN easily, so we skip rollback
     console.warn('Rollback not supported for soft delete migration');
-  }
+  },
 };
 
 /**
@@ -385,7 +385,7 @@ const migration007_AddExtendedBookInfo: IMigration = {
   down: async (db: Database) => {
     // SQLite doesn't support DROP COLUMN easily, so we skip rollback
     console.warn('Rollback not supported for extended book info migration');
-  }
+  },
 };
 
 // Export all migrations
@@ -396,5 +396,5 @@ export const allMigrations: IMigration[] = [
   migration004_AddNotifications,
   migration005_AddStatistics,
   migration006_AddSoftDeleteSupport,
-  migration007_AddExtendedBookInfo
+  migration007_AddExtendedBookInfo,
 ];

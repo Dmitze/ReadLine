@@ -26,7 +26,7 @@ export {
   getNewestBooks,
   incrementDownloads,
   updateBookInfo,
-  searchBooks
+  searchBooks,
 } from './books';
 
 // Export reviews functions
@@ -37,17 +37,11 @@ export {
   approveReview,
   publishReview,
   deleteReview,
-  updateBookRating
+  updateBookRating,
 } from './reviews';
 
 // Export saved books functions
-export {
-  saveBook,
-  unsaveBook,
-  isBookSaved,
-  getSavedBooks,
-  getSavedBooksCount
-} from './savedBooks';
+export { saveBook, unsaveBook, isBookSaved, getSavedBooks, getSavedBooksCount } from './savedBooks';
 
 // Export admins functions
 export {
@@ -56,7 +50,7 @@ export {
   getAllAdmins,
   getAdminStats,
   getExtendedAdminStats,
-  removeAdmin
+  removeAdmin,
 } from './admins';
 
 // Export feedback functions
@@ -66,10 +60,8 @@ export {
   getAllFeedbackMessages,
   updateFeedbackStatus,
   addAdminReply,
-  deleteFeedback
+  deleteFeedback,
 } from './feedback';
 
 // Export stats functions
-export {
-  getBookDetailedStats
-} from './stats';
+export { getBookDetailedStats } from './stats';

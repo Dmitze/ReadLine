@@ -17,7 +17,7 @@ export enum ErrorType {
   PERMISSION = 'PERMISSION_ERROR',
   NOT_FOUND = 'NOT_FOUND',
   RATE_LIMIT = 'RATE_LIMIT',
-  UNKNOWN = 'UNKNOWN_ERROR'
+  UNKNOWN = 'UNKNOWN_ERROR',
 }
 
 /**
@@ -61,9 +61,9 @@ export function handleError(
   context?: Record<string, unknown>
 ): void {
   const err = error instanceof Error ? error : new Error(String(error));
-  
+
   logger.error(`[${type}] ${err.message}`, err, context);
-  
+
   // Додаткова обробка залежно від типу
   switch (type) {
     case ErrorType.DATABASE:
@@ -86,15 +86,18 @@ export async function sendErrorToUser(
 ): Promise<void> {
   try {
     let message = fallbackMessage;
-    
+
     if (error instanceof AppError && error.userMessage) {
       message = error.userMessage;
     }
-    
+
     await ctx.reply(message);
   } catch (replyError) {
     // Якщо не вдалося відправити повідомлення - логуємо
-    logger.error('Failed to send error message to user', replyError instanceof Error ? replyError : new Error(String(replyError)));
+    logger.error(
+      'Failed to send error message to user',
+      replyError instanceof Error ? replyError : new Error(String(replyError))
+    );
   }
 }
 
@@ -124,20 +127,22 @@ export async function retryOperation<T>(
   delay: number = 1000
 ): Promise<T> {
   let lastError: Error | undefined;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      
+
       if (attempt < maxRetries) {
-        logger.warn(`Operation failed, retrying (${attempt}/${maxRetries})`, { error: lastError.message });
-        await new Promise(resolve => setTimeout(resolve, delay * attempt));
+        logger.warn(`Operation failed, retrying (${attempt}/${maxRetries})`, {
+          error: lastError.message,
+        });
+        await new Promise((resolve) => setTimeout(resolve, delay * attempt));
       }
     }
   }
-  
+
   throw lastError || new Error('Operation failed after retries');
 }
 
@@ -168,8 +173,6 @@ export async function withTimeout<T>(
 ): Promise<T> {
   return Promise.race([
     operation(),
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs)
-    )
+    new Promise<T>((_, reject) => setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs)),
   ]);
 }

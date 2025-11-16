@@ -46,14 +46,14 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
    */
   async createPromoCode(code: string, adminId?: number): Promise<number> {
     const details = this.generatePromoCodeDetails(code);
-    
+
     return this.insert({
       code: code.toUpperCase(),
       description: details.description,
       discount_type: details.discount_type,
       discount_value: details.discount_value,
       is_active: true,
-      created_by: adminId
+      created_by: adminId,
     });
   }
 
@@ -63,10 +63,9 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
    * @returns Promise with PromoCode or null
    */
   async getPromoCodeByCode(code: string): Promise<PromoCode | null> {
-    const codes = await this.query<PromoCode>(
-      'SELECT * FROM promo_codes WHERE code = ?',
-      [code.toUpperCase()]
-    );
+    const codes = await this.query<PromoCode>('SELECT * FROM promo_codes WHERE code = ?', [
+      code.toUpperCase(),
+    ]);
     return codes[0] || null;
   }
 
@@ -76,10 +75,9 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
    * @returns Promise with PromoCode or null
    */
   async getPromoCodeById(promoCodeId: number): Promise<PromoCode | null> {
-    const codes = await this.query<PromoCode>(
-      'SELECT * FROM promo_codes WHERE id = ?',
-      [promoCodeId]
-    );
+    const codes = await this.query<PromoCode>('SELECT * FROM promo_codes WHERE id = ?', [
+      promoCodeId,
+    ]);
     return codes[0] || null;
   }
 
@@ -98,7 +96,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
       ORDER BY pc.created_at ASC
       LIMIT 1
     `;
-    
+
     const codes = await this.query<PromoCode>(query, [userId]);
     return codes[0] || null;
   }
@@ -109,10 +107,9 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
    * @returns Promise with boolean
    */
   async hasUserReceivedPromoCode(userId: number): Promise<boolean> {
-    const results = await this.query(
-      'SELECT 1 FROM used_promo_codes WHERE user_id = ? LIMIT 1',
-      [userId]
-    );
+    const results = await this.query('SELECT 1 FROM used_promo_codes WHERE user_id = ? LIMIT 1', [
+      userId,
+    ]);
     return results.length > 0;
   }
 
@@ -123,10 +120,10 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
    * @returns Promise<void>
    */
   async markPromoCodeAsUsed(userId: number, promoCodeId: number): Promise<void> {
-    await this.db.run(
-      'INSERT INTO used_promo_codes (user_id, promo_code_id) VALUES (?, ?)',
-      [userId, promoCodeId]
-    );
+    await this.db.run('INSERT INTO used_promo_codes (user_id, promo_code_id) VALUES (?, ?)', [
+      userId,
+      promoCodeId,
+    ]);
   }
 
   /**
@@ -134,9 +131,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
    * @returns Promise with PromoCode array
    */
   async getActivePromoCodes(): Promise<PromoCode[]> {
-    return this.query(
-      'SELECT * FROM promo_codes WHERE is_active = 1 ORDER BY created_at DESC'
-    );
+    return this.query('SELECT * FROM promo_codes WHERE is_active = 1 ORDER BY created_at DESC');
   }
 
   /**
@@ -144,9 +139,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
    * @returns Promise with PromoCode array
    */
   async getAllPromoCodes(): Promise<PromoCode[]> {
-    return this.query(
-      'SELECT * FROM promo_codes ORDER BY created_at DESC'
-    );
+    return this.query('SELECT * FROM promo_codes ORDER BY created_at DESC');
   }
 
   /**
@@ -160,7 +153,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
       WHERE pc.is_active = 1
       AND pc.id NOT IN (SELECT promo_code_id FROM used_promo_codes)
     `;
-    
+
     const results = await this.query<{ count: number }>(query);
     return results[0]?.count || 0;
   }
@@ -200,7 +193,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
       total,
       available,
       used,
-      usedByUsers
+      usedByUsers,
     };
   }
 
@@ -223,10 +216,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
    * @returns Promise<void>
    */
   async deactivatePromoCode(promoCodeId: number): Promise<void> {
-    await this.db.run(
-      'UPDATE promo_codes SET is_active = 0 WHERE id = ?',
-      [promoCodeId]
-    );
+    await this.db.run('UPDATE promo_codes SET is_active = 0 WHERE id = ?', [promoCodeId]);
   }
 
   /**
@@ -235,10 +225,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
    * @returns Promise<void>
    */
   async activatePromoCode(promoCodeId: number): Promise<void> {
-    await this.db.run(
-      'UPDATE promo_codes SET is_active = 1 WHERE id = ?',
-      [promoCodeId]
-    );
+    await this.db.run('UPDATE promo_codes SET is_active = 1 WHERE id = ?', [promoCodeId]);
   }
 
   /**
@@ -268,7 +255,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
    */
   async canUserUsePromoCode(userId: number, code: string): Promise<boolean> {
     const promoCode = await this.getPromoCodeByCode(code);
-    
+
     if (!promoCode || !promoCode.is_active) {
       return false;
     }
@@ -293,7 +280,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
       WHERE upc.user_id = ?
       ORDER BY upc.used_at DESC
     `;
-    
+
     return this.query(query, [userId]);
   }
 
@@ -333,7 +320,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
       return {
         description: '🎉 Вітальний промокод - знижка 15% на перше замовлення на Yakaboo.ua',
         discount_type: 'percentage',
-        discount_value: 15
+        discount_value: 15,
       };
     }
 
@@ -342,7 +329,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
       return {
         description: '☀️ Літня знижка - спеціальна пропозиція 20% на Yakaboo.ua',
         discount_type: 'percentage',
-        discount_value: 20
+        discount_value: 20,
       };
     }
 
@@ -351,7 +338,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
       return {
         description: '🌸 Весняна знижка - спеціальна пропозиція 20% на Yakaboo.ua',
         discount_type: 'percentage',
-        discount_value: 20
+        discount_value: 20,
       };
     }
 
@@ -360,7 +347,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
       return {
         description: '❄️ Зимова знижка - спеціальна пропозиція 20% на Yakaboo.ua',
         discount_type: 'percentage',
-        discount_value: 20
+        discount_value: 20,
       };
     }
 
@@ -369,16 +356,20 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
       return {
         description: '🍂 Осіння знижка - спеціальна пропозиція 20% на Yakaboo.ua',
         discount_type: 'percentage',
-        discount_value: 20
+        discount_value: 20,
       };
     }
 
     // Free shipping
-    if (codeUpper.includes('SHIP') || codeUpper.includes('DELIVERY') || codeUpper.includes('FREE')) {
+    if (
+      codeUpper.includes('SHIP') ||
+      codeUpper.includes('DELIVERY') ||
+      codeUpper.includes('FREE')
+    ) {
       return {
         description: '🚚 Безкоштовна доставка для вашого замовлення на Yakaboo.ua',
         discount_type: 'shipping',
-        discount_value: 0
+        discount_value: 0,
       };
     }
 
@@ -387,7 +378,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
       return {
         description: '🎓 Студентська знижка 15% на Yakaboo.ua',
         discount_type: 'percentage',
-        discount_value: 15
+        discount_value: 15,
       };
     }
 
@@ -399,7 +390,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
         return {
           description: `💰 Спеціальна знижка ${value}% за промокодом на Yakaboo.ua`,
           discount_type: 'percentage',
-          discount_value: value
+          discount_value: value,
         };
       }
     }
@@ -408,7 +399,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
     return {
       description: '🎁 Спеціальна знижка 10% за промокодом на Yakaboo.ua',
       discount_type: 'percentage',
-      discount_value: 10
+      discount_value: 10,
     };
   }
 
@@ -417,7 +408,9 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
    * @param limit Maximum number of results
    * @returns Promise with promo codes and usage count
    */
-  async getMostUsedPromoCodes(limit: number = 10): Promise<Array<PromoCode & { usage_count: number }>> {
+  async getMostUsedPromoCodes(
+    limit: number = 10
+  ): Promise<Array<PromoCode & { usage_count: number }>> {
     const query = `
       SELECT pc.*, COUNT(upc.id) as usage_count
       FROM promo_codes pc
@@ -426,7 +419,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
       ORDER BY usage_count DESC
       LIMIT ?
     `;
-    
+
     return this.db.all(query, [limit]);
   }
 
@@ -440,7 +433,7 @@ export class PromoCodeRepository extends BaseRepository<PromoCode> {
       'SELECT DISTINCT user_id FROM used_promo_codes WHERE promo_code_id = ? ORDER BY user_id',
       [promoCodeId]
     );
-    
-    return results.map(r => r.user_id);
+
+    return results.map((r) => r.user_id);
   }
 }

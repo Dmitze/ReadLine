@@ -24,10 +24,7 @@ export interface User {
  * Отримати користувача за Telegram user_id
  */
 export async function getUserByTelegramId(userId: number): Promise<User | undefined> {
-  return dbWrapper.get<User>(
-    'SELECT * FROM users WHERE user_id = ?',
-    [userId]
-  );
+  return dbWrapper.get<User>('SELECT * FROM users WHERE user_id = ?', [userId]);
 }
 
 /**
@@ -54,7 +51,7 @@ export async function markOnboardingComplete(
   favoriteGenres?: string[]
 ): Promise<void> {
   const genresJson = favoriteGenres ? JSON.stringify(favoriteGenres) : null;
-  
+
   await dbWrapper.update(
     `UPDATE users 
      SET has_completed_onboarding = 1, 
@@ -70,12 +67,12 @@ export async function markOnboardingComplete(
  */
 export async function isNewUser(userId: number): Promise<boolean> {
   const user = await getUserByTelegramId(userId);
-  
+
   if (!user) {
     // Користувача немає в БД - це новий користувач
     return true;
   }
-  
+
   // Перевіряємо чи завершив онбординг
   return !user.has_completed_onboarding;
 }
@@ -84,10 +81,9 @@ export async function isNewUser(userId: number): Promise<boolean> {
  * Оновити час останньої активності
  */
 export async function updateLastActive(userId: number): Promise<void> {
-  await dbWrapper.update(
-    'UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE user_id = ?',
-    [userId]
-  );
+  await dbWrapper.update('UPDATE users SET last_active_at = CURRENT_TIMESTAMP WHERE user_id = ?', [
+    userId,
+  ]);
 }
 
 /**
@@ -110,10 +106,10 @@ export async function getOrCreateUser(
   } catch (error) {
     // Ігноруємо помилку якщо користувач вже існує
   }
-  
+
   // Оновлюємо час останньої активності
   await updateLastActive(userId);
-  
+
   // Отримуємо користувача
   const user = await getUserByTelegramId(userId);
   return user!;
@@ -125,11 +121,11 @@ export async function getOrCreateUser(
  */
 export async function getUserFavoriteGenres(userId: number): Promise<string[]> {
   const user = await getUserByTelegramId(userId);
-  
+
   if (!user || !user.favorite_genres) {
     return [];
   }
-  
+
   try {
     const parsed = JSON.parse(user.favorite_genres);
     // Перевіряємо що це масив
@@ -145,12 +141,9 @@ export async function getUserFavoriteGenres(userId: number): Promise<string[]> {
 /**
  * Оновити улюблені жанри користувача
  */
-export async function updateUserFavoriteGenres(
-  userId: number,
-  genres: string[]
-): Promise<void> {
+export async function updateUserFavoriteGenres(userId: number, genres: string[]): Promise<void> {
   const genresJson = JSON.stringify(genres);
-  
+
   await dbWrapper.update(
     'UPDATE users SET favorite_genres = ?, last_active_at = CURRENT_TIMESTAMP WHERE user_id = ?',
     [genresJson, userId]
@@ -191,7 +184,7 @@ export async function getUserDetailedStats(userId: number): Promise<{
   const [savedBooksCount, reviewsCount, favoriteGenres] = await Promise.all([
     getUserSavedBooksCount(userId),
     getUserReviewsCount(userId),
-    getUserFavoriteGenres(userId)
+    getUserFavoriteGenres(userId),
   ]);
 
   // Отримуємо час прослуховування
@@ -199,13 +192,13 @@ export async function getUserDetailedStats(userId: number): Promise<{
     'SELECT COALESCE(SUM(total_listened), 0) as total FROM listening_progress WHERE user_id = ?',
     [userId]
   );
-  
+
   const totalListeningTime = listeningResult?.total || 0;
 
   return {
     savedBooksCount,
     reviewsCount,
     favoriteGenres,
-    totalListeningTime
+    totalListeningTime,
   };
 }

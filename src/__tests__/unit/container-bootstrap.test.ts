@@ -3,7 +3,11 @@
  */
 
 import { ServiceContainer } from '../../core/ServiceContainer';
-import { bootstrapContainer, registerRepository, registerService } from '../../core/ContainerBootstrap';
+import {
+  bootstrapContainer,
+  registerRepository,
+  registerService,
+} from '../../core/ContainerBootstrap';
 
 describe('Container Bootstrap', () => {
   let container: ServiceContainer;
@@ -33,7 +37,7 @@ describe('Container Bootstrap', () => {
   describe('registerRepository', () => {
     it('should register repository', () => {
       const mockRepo = { findAll: jest.fn() };
-      
+
       registerRepository(container, 'TestRepository', () => mockRepo);
 
       expect(container.has('TestRepository')).toBe(true);
@@ -43,7 +47,7 @@ describe('Container Bootstrap', () => {
   describe('registerService', () => {
     it('should register singleton service by default', () => {
       const mockService = { doSomething: jest.fn() };
-      
+
       registerService(container, 'TestService', () => mockService);
 
       expect(container.has('TestService')).toBe(true);
@@ -51,7 +55,7 @@ describe('Container Bootstrap', () => {
 
     it('should register transient service', () => {
       const mockService = { doSomething: jest.fn() };
-      
+
       registerService(container, 'TestService', () => mockService, 'transient');
 
       expect(container.has('TestService')).toBe(true);

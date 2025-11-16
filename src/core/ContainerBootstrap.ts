@@ -1,7 +1,7 @@
 /**
  * Container Bootstrap
  * REFACTOR-008: ServiceContainer Everywhere
- * 
+ *
  * Централізована реєстрація всіх сервісів, репозиторіїв та утиліт
  */
 
@@ -19,34 +19,34 @@ export async function bootstrapContainer(container: ServiceContainer): Promise<v
 
   try {
     // ======= Core Services =======
-    
+
     container.registerSingleton('logger', () => logger);
-    
+
     container.registerSingleton('config', () => ({
       get: (key: string) => process.env[key],
-      getAll: () => process.env
+      getAll: () => process.env,
     }));
 
     // ======= Database Services =======
-    
+
     container.registerSingleton('database', () => db);
-    
+
     container.registerSingleton('DatabaseWrapper', () => new DatabaseWrapper(db));
-    
+
     container.registerSingleton('TransactionManager', () => {
       const wrapper = container.resolveSync<DatabaseWrapper>('DatabaseWrapper');
       return new TransactionManager(wrapper);
     });
 
     // ======= Utilities =======
-    
+
     container.registerSingleton('cache', () => {
       const { cache } = require('../utils/cache');
       return cache;
     });
 
     // ======= Repositories =======
-    
+
     container.registerSingleton('BookRepository', () => {
       const { BookRepository } = require('../repositories/BookRepository');
       return new BookRepository();
@@ -83,7 +83,7 @@ export async function bootstrapContainer(container: ServiceContainer): Promise<v
     });
 
     // ======= Services =======
-    
+
     container.registerSingleton('BookService', () => {
       const { BookService } = require('../services/BookService');
       return new BookService(
@@ -93,17 +93,19 @@ export async function bootstrapContainer(container: ServiceContainer): Promise<v
         container.resolveSync('TagRepository')
       );
     });
-    
-    logger.info('Service container bootstrapped successfully');
-    
-    const stats = container.getStats();
-    logger.debug('Container stats', { 
-      totalServices: stats.totalServices,
-      services: stats.services.map(s => s.key)
-    });
 
+    logger.info('Service container bootstrapped successfully');
+
+    const stats = container.getStats();
+    logger.debug('Container stats', {
+      totalServices: stats.totalServices,
+      services: stats.services.map((s) => s.key),
+    });
   } catch (error) {
-    logger.error('Failed to bootstrap container', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Failed to bootstrap container',
+      error instanceof Error ? error : new Error(String(error))
+    );
     throw error;
   }
 }

@@ -1,7 +1,7 @@
 /**
  * Transaction Manager
  * REFACTOR-006: Transaction Handling
- * 
+ *
  * Provides transaction utilities and patterns
  */
 
@@ -16,7 +16,7 @@ export enum IsolationLevel {
   READ_UNCOMMITTED = 'READ UNCOMMITTED',
   READ_COMMITTED = 'READ COMMITTED',
   REPEATABLE_READ = 'REPEATABLE READ',
-  SERIALIZABLE = 'SERIALIZABLE'
+  SERIALIZABLE = 'SERIALIZABLE',
 }
 
 /**
@@ -60,7 +60,7 @@ export class TransactionManager {
     const stats: TransactionStats = {
       startTime: new Date(),
       operations: 0,
-      committed: false
+      committed: false,
     };
 
     this.stats.set(transactionId, stats);
@@ -70,7 +70,9 @@ export class TransactionManager {
         // Set isolation level if specified
         if (options.isolationLevel) {
           // SQLite doesn't support SET TRANSACTION, using PRAGMA instead
-          await this.db.run(`PRAGMA read_uncommitted = ${options.isolationLevel === IsolationLevel.READ_UNCOMMITTED ? 1 : 0}`);
+          await this.db.run(
+            `PRAGMA read_uncommitted = ${options.isolationLevel === IsolationLevel.READ_UNCOMMITTED ? 1 : 0}`
+          );
         }
 
         // Execute operation with timeout if specified
@@ -88,7 +90,7 @@ export class TransactionManager {
       logger.info('Transaction committed', {
         transactionId,
         duration: stats.duration,
-        operations: stats.operations
+        operations: stats.operations,
       });
 
       return new Ok(result);
@@ -100,7 +102,7 @@ export class TransactionManager {
 
       logger.error('Transaction failed', err, {
         transactionId,
-        duration: stats.duration
+        duration: stats.duration,
       });
 
       // Retry on deadlock if enabled
@@ -108,7 +110,7 @@ export class TransactionManager {
         logger.warn('Retrying transaction after deadlock', { transactionId });
         return this.executeTransaction(operation, {
           ...options,
-          maxRetries: (options.maxRetries ?? 3) - 1
+          maxRetries: (options.maxRetries ?? 3) - 1,
         });
       }
 
@@ -119,17 +121,15 @@ export class TransactionManager {
   /**
    * Batch operations in a single transaction
    */
-  async batch<T>(
-    operations: Array<() => Promise<T>>
-  ): Promise<Result<T[]>> {
+  async batch<T>(operations: Array<() => Promise<T>>): Promise<Result<T[]>> {
     return this.executeTransaction(async () => {
       const results: T[] = [];
-      
+
       for (const operation of operations) {
         const result = await operation();
         results.push(result);
       }
-      
+
       return results;
     });
   }
@@ -138,38 +138,36 @@ export class TransactionManager {
    * Execute multiple operations in parallel within transaction
    * Note: SQLite doesn't support true parallel operations in same connection
    */
-  async parallel<T>(
-    operations: Array<() => Promise<T>>
-  ): Promise<Result<T[]>> {
+  async parallel<T>(operations: Array<() => Promise<T>>): Promise<Result<T[]>> {
     return this.executeTransaction(async () => {
-      return await Promise.all(operations.map(op => op()));
+      return await Promise.all(operations.map((op) => op()));
     });
   }
 
   /**
    * Savepoint support for nested transactions
    */
-  async savepoint<T>(
-    name: string,
-    operation: () => Promise<T>
-  ): Promise<Result<T>> {
+  async savepoint<T>(name: string, operation: () => Promise<T>): Promise<Result<T>> {
     try {
       await this.db.run(`SAVEPOINT ${name}`);
-      
+
       const result = await operation();
-      
+
       await this.db.run(`RELEASE SAVEPOINT ${name}`);
-      
+
       return new Ok(result);
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      
+
       try {
         await this.db.run(`ROLLBACK TO SAVEPOINT ${name}`);
       } catch (rollbackError) {
-        logger.error('Failed to rollback savepoint', rollbackError instanceof Error ? rollbackError : new Error(String(rollbackError)));
+        logger.error(
+          'Failed to rollback savepoint',
+          rollbackError instanceof Error ? rollbackError : new Error(String(rollbackError))
+        );
       }
-      
+
       return new Err(err);
     }
   }
@@ -195,21 +193,17 @@ export class TransactionManager {
     return `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private async withTimeout<T>(
-    operation: () => Promise<T>,
-    timeout: number
-  ): Promise<T> {
+  private async withTimeout<T>(operation: () => Promise<T>, timeout: number): Promise<T> {
     return Promise.race([
       operation(),
       new Promise<T>((_, reject) =>
         setTimeout(() => reject(new Error(`Transaction timeout after ${timeout}ms`)), timeout)
-      )
+      ),
     ]);
   }
 
   private isDeadlock(error: Error): boolean {
-    return error.message.includes('deadlock') || 
-           error.message.includes('database is locked');
+    return error.message.includes('deadlock') || error.message.includes('database is locked');
   }
 }
 
@@ -229,12 +223,12 @@ export class TransactionPatterns {
     return this.manager.executeTransaction(async () => {
       const main = await mainCreate();
       const related: R[] = [];
-      
+
       for (const createRelated of relatedCreates) {
         const rel = await createRelated(main);
         related.push(rel);
       }
-      
+
       return { main, related };
     });
   }
@@ -242,9 +236,7 @@ export class TransactionPatterns {
   /**
    * Update with cascade
    */
-  async updateWithCascade<T>(
-    updates: Array<() => Promise<T>>
-  ): Promise<Result<T[]>> {
+  async updateWithCascade<T>(updates: Array<() => Promise<T>>): Promise<Result<T[]>> {
     return this.manager.batch(updates);
   }
 
@@ -260,7 +252,7 @@ export class TransactionPatterns {
       for (const deleteRelated of cascadeDeletes) {
         await deleteRelated();
       }
-      
+
       // Then delete main
       await mainDelete();
     });

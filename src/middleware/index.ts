@@ -16,7 +16,7 @@ export {
   createRateLimiters,
   type RateLimitConfig,
   type RateLimitStore,
-  type RateLimitStats
+  type RateLimitStats,
 } from './RateLimiter';
 
 // REFACTOR-015: CORS + Security Headers
@@ -30,5 +30,5 @@ export {
   SecurityContext,
   type CORSConfig,
   type SecurityHeadersConfig,
-  type UserSecurityContext
+  type UserSecurityContext,
 } from './SecurityHeaders';

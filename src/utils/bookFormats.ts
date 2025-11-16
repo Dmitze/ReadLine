@@ -16,20 +16,20 @@ export interface BookFormats {
  */
 export function getBookFormats(book: Book): BookFormats {
   const formats: string[] = [];
-  
+
   const hasPDF = !!((book as any).pdf_file_id || (book.file_type === 'file' && book.file_url));
   const hasLink = !!((book as any).external_link || (book.file_type === 'link' && book.file_url));
   const hasAudio = !!(book as any).audio_file_id;
-  
+
   if (hasPDF) formats.push('pdf');
   if (hasLink) formats.push('link');
   if (hasAudio) formats.push('audio');
-  
+
   return {
     hasPDF,
     hasLink,
     hasAudio,
-    formats
+    formats,
   };
 }
 
@@ -39,16 +39,16 @@ export function getBookFormats(book: Book): BookFormats {
 export function getFormatsDescription(book: Book): string {
   const { hasPDF, hasLink, hasAudio } = getBookFormats(book);
   const parts: string[] = [];
-  
+
   if (hasPDF) parts.push('📥 PDF');
   if (hasLink) parts.push('🔗 Онлайн');
   if (hasAudio) {
-    const duration = (book as any).audio_duration 
-      ? ` (${formatDuration((book as any).audio_duration)})` 
+    const duration = (book as any).audio_duration
+      ? ` (${formatDuration((book as any).audio_duration)})`
       : '';
     parts.push(`🎧 Аудіо${duration}`);
   }
-  
+
   return parts.length > 0 ? parts.join(' • ') : '📖 Тільки фізична копія';
 }
 
@@ -58,7 +58,7 @@ export function getFormatsDescription(book: Book): string {
 export function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  
+
   if (hours > 0) {
     return `${hours} год ${minutes} хв`;
   }

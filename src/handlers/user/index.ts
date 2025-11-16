@@ -1,7 +1,7 @@
 /**
  * User Handlers Index
  * REFACTOR-009: Split userHandlers.ts
- * 
+ *
  * Централізований експорт усіх user handlers
  */
 
@@ -27,9 +27,9 @@ export function registerUserHandlers(bot: Telegraf<BotContext>): void {
     logger.warn('User handlers already registered, skipping...');
     return;
   }
-  
+
   logger.info('Registering user handlers...');
-  
+
   try {
     // Регистрируем модули
     registerNavigationHandlers(bot);
@@ -38,11 +38,14 @@ export function registerUserHandlers(bot: Telegraf<BotContext>): void {
     registerMiscHandlers(bot);
     registerCatalogHandlers(bot);
     registerBookActionHandlers(bot);
-    
+
     handlersRegistered = true;
     logger.info('✅ All user handlers registered successfully');
   } catch (error) {
-    logger.error('Failed to register user handlers', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Failed to register user handlers',
+      error instanceof Error ? error : new Error(String(error))
+    );
     throw error;
   }
 }

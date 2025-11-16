@@ -8,20 +8,16 @@ const settingsScene = new Scenes.BaseScene<BotContext>('SETTINGS_SCENE');
 
 // Вхід в scene
 settingsScene.enter(async (ctx) => {
-  await ctx.reply(
-    '⚙️ <b>Налаштування</b>\n\n' +
-    'Оберіть що хочете налаштувати:',
-    {
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '📱 Тип клавіатури', callback_data: 'settings_keyboard' }],
-          [{ text: '🔔 Сповіщення', callback_data: 'settings_notifications' }],
-          [{ text: '🏠 На головну', callback_data: 'settings_exit' }]
-        ]
-      }
-    }
-  );
+  await ctx.reply('⚙️ <b>Налаштування</b>\n\n' + 'Оберіть що хочете налаштувати:', {
+    parse_mode: 'HTML',
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '📱 Тип клавіатури', callback_data: 'settings_keyboard' }],
+        [{ text: '🔔 Сповіщення', callback_data: 'settings_notifications' }],
+        [{ text: '🏠 На головну', callback_data: 'settings_exit' }],
+      ],
+    },
+  });
 });
 
 // Налаштування клавіатури
@@ -29,10 +25,10 @@ settingsScene.action('settings_keyboard', async (ctx) => {
   await ctx.answerCbQuery();
   await ctx.editMessageText(
     '📱 <b>Тип клавіатури</b>\n\n' +
-    'Оберіть тип клавіатури який найкраще підходить для вашого пристрою:\n\n' +
-    '📱 <b>Мобільний</b> - великі кнопки, 2 в ряд\n' +
-    '📲 <b>Планшет</b> - компактніші кнопки, 3 в ряд\n' +
-    '💻 <b>Десктоп</b> - inline клавіатури, 4 в ряд',
+      'Оберіть тип клавіатури який найкраще підходить для вашого пристрою:\n\n' +
+      '📱 <b>Мобільний</b> - великі кнопки, 2 в ряд\n' +
+      '📲 <b>Планшет</b> - компактніші кнопки, 3 в ряд\n' +
+      '💻 <b>Десктоп</b> - inline клавіатури, 4 в ряд',
     {
       parse_mode: 'HTML',
       reply_markup: {
@@ -40,9 +36,9 @@ settingsScene.action('settings_keyboard', async (ctx) => {
           [{ text: '📱 Мобільний', callback_data: 'keyboard_mobile' }],
           [{ text: '📲 Планшет', callback_data: 'keyboard_tablet' }],
           [{ text: '💻 Десктоп', callback_data: 'keyboard_desktop' }],
-          [{ text: '⬅️ Назад', callback_data: 'settings_back' }]
-        ]
-      }
+          [{ text: '⬅️ Назад', callback_data: 'settings_back' }],
+        ],
+      },
     }
   );
 });
@@ -51,34 +47,34 @@ settingsScene.action('settings_keyboard', async (ctx) => {
 settingsScene.action(/^keyboard_(mobile|tablet|desktop)$/, async (ctx) => {
   const deviceType = ctx.match[1] as 'mobile' | 'tablet' | 'desktop';
   const userId = ctx.from?.id;
-  
+
   if (!userId) {
     await ctx.answerCbQuery('❌ Помилка');
     return;
   }
-  
+
   const success = setUserKeyboardPreference(userId, deviceType);
-  
+
   if (success) {
     const deviceNames = {
       mobile: '📱 Мобільний',
       tablet: '📲 Планшет',
-      desktop: '💻 Десктоп'
+      desktop: '💻 Десктоп',
     };
-    
+
     await ctx.answerCbQuery('✅ Збережено');
     await ctx.editMessageText(
       '✅ <b>Тип клавіатури змінено</b>\n\n' +
-      `Обрано: ${deviceNames[deviceType]}\n\n` +
-      'Зміни застосуються при наступному відкритті меню.',
+        `Обрано: ${deviceNames[deviceType]}\n\n` +
+        'Зміни застосуються при наступному відкритті меню.',
       {
         parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
             [{ text: '⬅️ Назад до налаштувань', callback_data: 'settings_back' }],
-            [{ text: '🏠 На головну', callback_data: 'settings_exit' }]
-          ]
-        }
+            [{ text: '🏠 На головну', callback_data: 'settings_exit' }],
+          ],
+        },
       }
     );
   } else {
@@ -93,34 +89,39 @@ settingsScene.action('settings_notifications', async (ctx) => {
     await ctx.answerCbQuery('❌ Помилка');
     return;
   }
-  
+
   const { getUserNotificationSettings } = await import('../utils/notifications');
   const settings = await getUserNotificationSettings(userId);
-  
+
   const frequencyNames = {
     daily: 'Щодня',
     every_4_days: 'Раз на 4 дні',
     weekly: 'Раз на тиждень',
-    disabled: 'Вимкнено'
+    disabled: 'Вимкнено',
   };
-  
+
   await ctx.answerCbQuery();
   await ctx.editMessageText(
     '🔔 <b>Налаштування сповіщень</b>\n\n' +
-    `Статус: ${settings.enabled ? '✅ Увімкнено' : '❌ Вимкнено'}\n` +
-    `Частота: ${frequencyNames[settings.frequency]}\n` +
-    `Час: ${settings.preferredTime || '10:00'}\n\n` +
-    'Оберіть що хочете змінити:',
+      `Статус: ${settings.enabled ? '✅ Увімкнено' : '❌ Вимкнено'}\n` +
+      `Частота: ${frequencyNames[settings.frequency]}\n` +
+      `Час: ${settings.preferredTime || '10:00'}\n\n` +
+      'Оберіть що хочете змінити:',
     {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
-          [{ text: settings.enabled ? '🔕 Вимкнути сповіщення' : '🔔 Увімкнути сповіщення', callback_data: 'notif_toggle' }],
+          [
+            {
+              text: settings.enabled ? '🔕 Вимкнути сповіщення' : '🔔 Увімкнути сповіщення',
+              callback_data: 'notif_toggle',
+            },
+          ],
           [{ text: '⏰ Змінити частоту', callback_data: 'notif_frequency' }],
           [{ text: '🕐 Змінити час', callback_data: 'notif_time' }],
-          [{ text: '⬅️ Назад', callback_data: 'settings_back' }]
-        ]
-      }
+          [{ text: '⬅️ Назад', callback_data: 'settings_back' }],
+        ],
+      },
     }
   );
 });
@@ -132,39 +133,46 @@ settingsScene.action('notif_toggle', async (ctx) => {
     await ctx.answerCbQuery('❌ Помилка');
     return;
   }
-  
-  const { getUserNotificationSettings, setUserNotificationSettings } = await import('../utils/notifications');
+
+  const { getUserNotificationSettings, setUserNotificationSettings } = await import(
+    '../utils/notifications'
+  );
   const settings = await getUserNotificationSettings(userId);
   settings.enabled = !settings.enabled;
-  
+
   await setUserNotificationSettings(settings);
-  
+
   await ctx.answerCbQuery(settings.enabled ? '✅ Сповіщення увімкнено' : '🔕 Сповіщення вимкнено');
-  
+
   // Показуємо оновлене меню сповіщень
   const frequencyNames = {
     daily: 'Щодня',
     every_4_days: 'Раз на 4 дні',
     weekly: 'Раз на тиждень',
-    disabled: 'Вимкнено'
+    disabled: 'Вимкнено',
   };
-  
+
   await ctx.editMessageText(
     '🔔 <b>Налаштування сповіщень</b>\n\n' +
-    `Статус: ${settings.enabled ? '✅ Увімкнено' : '❌ Вимкнено'}\n` +
-    `Частота: ${frequencyNames[settings.frequency]}\n` +
-    `Час: ${settings.preferredTime || '10:00'}\n\n` +
-    'Оберіть що хочете змінити:',
+      `Статус: ${settings.enabled ? '✅ Увімкнено' : '❌ Вимкнено'}\n` +
+      `Частота: ${frequencyNames[settings.frequency]}\n` +
+      `Час: ${settings.preferredTime || '10:00'}\n\n` +
+      'Оберіть що хочете змінити:',
     {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
-          [{ text: settings.enabled ? '🔕 Вимкнути сповіщення' : '🔔 Увімкнути сповіщення', callback_data: 'notif_toggle' }],
+          [
+            {
+              text: settings.enabled ? '🔕 Вимкнути сповіщення' : '🔔 Увімкнути сповіщення',
+              callback_data: 'notif_toggle',
+            },
+          ],
           [{ text: '⏰ Змінити частоту', callback_data: 'notif_frequency' }],
           [{ text: '🕐 Змінити час', callback_data: 'notif_time' }],
-          [{ text: '⬅️ Назад', callback_data: 'settings_back' }]
-        ]
-      }
+          [{ text: '⬅️ Назад', callback_data: 'settings_back' }],
+        ],
+      },
     }
   );
 });
@@ -173,8 +181,7 @@ settingsScene.action('notif_toggle', async (ctx) => {
 settingsScene.action('notif_frequency', async (ctx) => {
   await ctx.answerCbQuery();
   await ctx.editMessageText(
-    '⏰ <b>Частота сповіщень</b>\n\n' +
-    'Як часто ви хочете отримувати нагадування?',
+    '⏰ <b>Частота сповіщень</b>\n\n' + 'Як часто ви хочете отримувати нагадування?',
     {
       parse_mode: 'HTML',
       reply_markup: {
@@ -183,9 +190,9 @@ settingsScene.action('notif_frequency', async (ctx) => {
           [{ text: '📆 Раз на 4 дні', callback_data: 'freq_every_4_days' }],
           [{ text: '📅 Раз на тиждень', callback_data: 'freq_weekly' }],
           [{ text: '🔕 Вимкнути', callback_data: 'freq_disabled' }],
-          [{ text: '⬅️ Назад', callback_data: 'settings_notifications' }]
-        ]
-      }
+          [{ text: '⬅️ Назад', callback_data: 'settings_notifications' }],
+        ],
+      },
     }
   );
 });
@@ -197,37 +204,38 @@ settingsScene.action(/^freq_(daily|every_4_days|weekly|disabled)$/, async (ctx) 
     await ctx.answerCbQuery('❌ Помилка');
     return;
   }
-  
+
   const frequency = ctx.match[1] as 'daily' | 'every_4_days' | 'weekly' | 'disabled';
-  const { getUserNotificationSettings, setUserNotificationSettings } = await import('../utils/notifications');
+  const { getUserNotificationSettings, setUserNotificationSettings } = await import(
+    '../utils/notifications'
+  );
   const settings = await getUserNotificationSettings(userId);
   settings.frequency = frequency;
-  
+
   if (frequency === 'disabled') {
     settings.enabled = false;
   }
-  
+
   await setUserNotificationSettings(settings);
-  
+
   const frequencyNames = {
     daily: 'Щодня',
     every_4_days: 'Раз на 4 дні',
     weekly: 'Раз на тиждень',
-    disabled: 'Вимкнено'
+    disabled: 'Вимкнено',
   };
-  
+
   await ctx.answerCbQuery('✅ Збережено');
   await ctx.editMessageText(
-    '✅ <b>Частота змінена</b>\n\n' +
-    `Нова частота: ${frequencyNames[frequency]}`,
+    '✅ <b>Частота змінена</b>\n\n' + `Нова частота: ${frequencyNames[frequency]}`,
     {
       parse_mode: 'HTML',
       reply_markup: {
         inline_keyboard: [
           [{ text: '⬅️ Назад до сповіщень', callback_data: 'settings_notifications' }],
-          [{ text: '🏠 На головну', callback_data: 'settings_exit' }]
-        ]
-      }
+          [{ text: '🏠 На головну', callback_data: 'settings_exit' }],
+        ],
+      },
     }
   );
 });
@@ -237,15 +245,13 @@ settingsScene.action('notif_time', async (ctx) => {
   await ctx.answerCbQuery();
   await ctx.editMessageText(
     '🕐 <b>Час сповіщень</b>\n\n' +
-    'Налаштування часу буде доступне незабаром!\n\n' +
-    'За замовчуванням сповіщення надсилаються о 10:00.',
+      'Налаштування часу буде доступне незабаром!\n\n' +
+      'За замовчуванням сповіщення надсилаються о 10:00.',
     {
       parse_mode: 'HTML',
       reply_markup: {
-        inline_keyboard: [
-          [{ text: '⬅️ Назад', callback_data: 'settings_notifications' }]
-        ]
-      }
+        inline_keyboard: [[{ text: '⬅️ Назад', callback_data: 'settings_notifications' }]],
+      },
     }
   );
 });
@@ -253,20 +259,16 @@ settingsScene.action('notif_time', async (ctx) => {
 // Повернення до меню налаштувань
 settingsScene.action('settings_back', async (ctx) => {
   await ctx.answerCbQuery();
-  await ctx.editMessageText(
-    '⚙️ <b>Налаштування</b>\n\n' +
-    'Оберіть що хочете налаштувати:',
-    {
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '📱 Тип клавіатури', callback_data: 'settings_keyboard' }],
-          [{ text: '🔔 Сповіщення', callback_data: 'settings_notifications' }],
-          [{ text: '🏠 На головну', callback_data: 'settings_exit' }]
-        ]
-      }
-    }
-  );
+  await ctx.editMessageText('⚙️ <b>Налаштування</b>\n\n' + 'Оберіть що хочете налаштувати:', {
+    parse_mode: 'HTML',
+    reply_markup: {
+      inline_keyboard: [
+        [{ text: '📱 Тип клавіатури', callback_data: 'settings_keyboard' }],
+        [{ text: '🔔 Сповіщення', callback_data: 'settings_notifications' }],
+        [{ text: '🏠 На головну', callback_data: 'settings_exit' }],
+      ],
+    },
+  });
 });
 
 // Вихід з налаштувань
@@ -275,7 +277,7 @@ settingsScene.action('settings_exit', async (ctx) => {
   await ctx.scene.leave();
   const { getMainMenuKeyboard } = await import('../keyboards/mainKeyboards');
   await ctx.reply('🏠 Ви повернулись на головну', {
-    reply_markup: getMainMenuKeyboard()
+    reply_markup: getMainMenuKeyboard(),
   });
 });
 

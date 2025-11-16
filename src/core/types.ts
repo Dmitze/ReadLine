@@ -7,9 +7,7 @@
  * Generic result type for error handling
  * Replaces try-catch blocks with type-safe Result pattern
  */
-export type Result<T, E = Error> = 
-  | { success: true; value: T }
-  | { success: false; error: E };
+export type Result<T, E = Error> = { success: true; value: T } | { success: false; error: E };
 
 /**
  * Service container interface

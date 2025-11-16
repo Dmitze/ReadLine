@@ -1,7 +1,7 @@
 /**
  * User Handlers
  * REFACTOR-009: Main entry point for user handlers
- * 
+ *
  * Этот файл теперь использует модульную структуру из src/handlers/user/
  */
 

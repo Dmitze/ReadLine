@@ -16,14 +16,14 @@ export function setupMiddleware(bot: Telegraf<BotContext>) {
   bot.use(async (ctx, next) => {
     if (ctx.message && 'text' in ctx.message) {
       const text = ctx.message.text;
-      
+
       if (text === '/start') {
         if (ctx.scene) {
           await ctx.scene.leave();
         }
         return next();
       }
-      
+
       if (text === '/cancel') {
         if (ctx.scene) {
           await ctx.scene.leave();
@@ -32,7 +32,7 @@ export function setupMiddleware(bot: Telegraf<BotContext>) {
         }
       }
     }
-    
+
     return next();
   });
 }

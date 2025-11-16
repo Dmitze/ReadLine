@@ -40,12 +40,12 @@ export const getBookDetailedStats = (bookId: number): Promise<any> => {
                 rating_2_count: 0,
                 rating_3_count: 0,
                 rating_4_count: 0,
-                rating_5_count: 0
+                rating_5_count: 0,
               };
 
               if (rows && rows.length > 0) {
                 const totalReviews = rows.reduce((sum, r) => sum + r.count, 0);
-                rows.forEach(row => {
+                rows.forEach((row) => {
                   const key = `rating_${row.rating}_count` as keyof typeof distribution;
                   distribution[key] = row.count;
                 });
@@ -80,7 +80,7 @@ export const getBookDetailedStats = (bookId: number): Promise<any> => {
           [bookId],
           (err, rows: Array<{ comment: string }>) => {
             if (err) rej(err);
-            else res((rows || []).map(r => r.comment).filter(c => c && c.length > 0));
+            else res((rows || []).map((r) => r.comment).filter((c) => c && c.length > 0));
           }
         );
       });
@@ -89,7 +89,7 @@ export const getBookDetailedStats = (bookId: number): Promise<any> => {
         book,
         rating_stats: ratingDistribution,
         readers_count: readersCount,
-        popular_quotes: popularQuotes
+        popular_quotes: popularQuotes,
       };
 
       logger.info('Book detailed stats retrieved', { bookId });

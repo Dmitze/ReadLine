@@ -67,7 +67,7 @@ export class BookService {
         file_url: input.file_path,
         online_link: undefined,
         audio_file_id: undefined,
-        file_name: undefined
+        file_name: undefined,
       });
 
       return new Ok(bookId);
@@ -84,20 +84,21 @@ export class BookService {
   async getBookById(bookId: number): Promise<Result<any>> {
     try {
       const book = await this.bookRepository.findById(bookId);
-      
+
       if (!book) {
         return new Err(new Error(`Book with id ${bookId} not found`));
       }
 
       const reviews = await this.reviewRepository.findByBookId(bookId);
-      const rating = reviews.length > 0
-        ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length).toFixed(1)
-        : '0';
+      const rating =
+        reviews.length > 0
+          ? (reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length).toFixed(1)
+          : '0';
 
       return new Ok({
         ...book,
         reviews_count: reviews.length,
-        rating
+        rating,
       });
     } catch (error) {
       return new Err(error instanceof Error ? error : new Error('Failed to fetch book'));
@@ -119,7 +120,7 @@ export class BookService {
         author: input.author || book.author,
         genre: input.genre || book.genre,
         description: input.description || book.description,
-        photo_file_id: input.photo_file_id || book.photo_file_id
+        photo_file_id: input.photo_file_id || book.photo_file_id,
       });
 
       return new Ok(undefined);
@@ -217,7 +218,11 @@ export class BookService {
   /**
    * Отримати книги за жанром
    */
-  async getBooksByGenre(genre: string, limit: number = 20, offset: number = 0): Promise<Result<any[]>> {
+  async getBooksByGenre(
+    genre: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<Result<any[]>> {
     try {
       const books = await this.bookRepository.findByGenre(genre);
       // Apply pagination manually
@@ -239,7 +244,7 @@ export class BookService {
       }
 
       const similarBooks = await this.bookRepository.findByGenre(book.genre);
-      const filtered = similarBooks.filter(b => b.id !== bookId).slice(0, limit);
+      const filtered = similarBooks.filter((b) => b.id !== bookId).slice(0, limit);
 
       return new Ok(filtered);
     } catch (error) {
@@ -290,7 +295,9 @@ export class BookService {
       const stats = await getBookDetailedStats(bookId);
       return new Ok(stats);
     } catch (error) {
-      return new Err(error instanceof Error ? error : new Error('Failed to fetch detailed book info'));
+      return new Err(
+        error instanceof Error ? error : new Error('Failed to fetch detailed book info')
+      );
     }
   }
 
@@ -324,7 +331,9 @@ export class BookService {
 
       return new Ok(undefined);
     } catch (error) {
-      return new Err(error instanceof Error ? error : new Error('Failed to update book extended info'));
+      return new Err(
+        error instanceof Error ? error : new Error('Failed to update book extended info')
+      );
     }
   }
 }

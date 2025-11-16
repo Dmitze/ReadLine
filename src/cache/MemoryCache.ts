@@ -23,7 +23,7 @@ export class MemoryCache {
    */
   get<T>(key: string): T | null {
     const entry = this.cache.get(key);
-    
+
     if (!entry) return null;
 
     // Перевірити TTL
@@ -52,7 +52,7 @@ export class MemoryCache {
     this.cache.set(key, {
       value,
       timestamp: Date.now(),
-      ttl: actualTTL
+      ttl: actualTTL,
     });
 
     // Встановити новий таймер для автоматичного видалення
@@ -133,18 +133,14 @@ export class MemoryCache {
     return {
       size: this.cache.size,
       entries: this.cache.size,
-      memory: `${(memory / 1024).toFixed(2)} KB`
+      memory: `${(memory / 1024).toFixed(2)} KB`,
     };
   }
 
   /**
    * Отримати або встановити значення (lazy loading)
    */
-  async getOrSet<T>(
-    key: string,
-    factory: () => Promise<T>,
-    ttl?: number
-  ): Promise<T> {
+  async getOrSet<T>(key: string, factory: () => Promise<T>, ttl?: number): Promise<T> {
     const cached = this.get<T>(key);
     if (cached !== null) {
       return cached;

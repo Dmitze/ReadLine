@@ -3,7 +3,13 @@
  * REFACTOR-014: Comprehensive Input Validation
  */
 
-export { Validator, ValidationBuilder, type ValidationRule, type ValidationError, type ValidationResult } from './Validator';
+export {
+  Validator,
+  ValidationBuilder,
+  type ValidationRule,
+  type ValidationError,
+  type ValidationResult,
+} from './Validator';
 export { InputSanitizer, type SanitizeOptions } from './InputSanitizer';
 export {
   BookCreateSchema,

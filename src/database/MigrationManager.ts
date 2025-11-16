@@ -64,7 +64,7 @@ export class MigrationManager {
 
     return {
       count: results.length,
-      migrations: results.map(r => `${r.version} - ${r.name}`)
+      migrations: results.map((r) => `${r.version} - ${r.name}`),
     };
   }
 
@@ -81,7 +81,7 @@ export class MigrationManager {
 
     return {
       count: results.length,
-      migrations: results.map(r => `${r.version} - ${r.name}`)
+      migrations: results.map((r) => `${r.version} - ${r.name}`),
     };
   }
 
@@ -92,15 +92,15 @@ export class MigrationManager {
     const executed = await this.runner.getExecuted();
     const status = await this.runner.getStatus();
 
-    const migrations = allMigrations.map(m => {
-      const executedRecord = executed.find(r => r.version === m.version);
+    const migrations = allMigrations.map((m) => {
+      const executedRecord = executed.find((r) => r.version === m.version);
       const status: 'executed' | 'pending' = executedRecord ? 'executed' : 'pending';
       return {
         version: m.version,
         name: m.name,
         status,
         executedAt: executedRecord?.executed_at,
-        duration: executedRecord?.duration_ms
+        duration: executedRecord?.duration_ms,
       };
     });
 
@@ -108,7 +108,7 @@ export class MigrationManager {
       total: status.total,
       executed: status.executed.length,
       pending: status.pending.length,
-      migrations
+      migrations,
     };
   }
 
@@ -160,9 +160,7 @@ export class MigrationManager {
           ? ` (${migration.duration}ms, ${migration.executedAt})`
           : '';
 
-      logger.info(
-        `${icon} ${migration.version.padEnd(35)} ${migration.name}${executedInfo}`
-      );
+      logger.info(`${icon} ${migration.version.padEnd(35)} ${migration.name}${executedInfo}`);
     }
 
     logger.info('\n' + '─'.repeat(60) + '\n');
@@ -172,7 +170,7 @@ export class MigrationManager {
    * Run a specific migration by version (for development/testing)
    */
   async runSpecific(version: string): Promise<void> {
-    const migration = allMigrations.find(m => m.version === version);
+    const migration = allMigrations.find((m) => m.version === version);
 
     if (!migration) {
       throw new Error(`Migration not found: ${version}`);
@@ -212,13 +210,13 @@ export class MigrationManager {
 
     // Check that all executed migrations exist
     for (const record of executed) {
-      if (!allMigrations.some(m => m.version === record.version)) {
+      if (!allMigrations.some((m) => m.version === record.version)) {
         errors.push(`Orphan migration found: ${record.version} (no definition found)`);
       }
     }
 
     // Check migrations are in order
-    const executedVersions = executed.map(r => r.version);
+    const executedVersions = executed.map((r) => r.version);
     const sortedVersions = [...executedVersions].sort();
 
     if (executedVersions.join(',') !== sortedVersions.join(',')) {
@@ -227,7 +225,7 @@ export class MigrationManager {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 }
@@ -235,9 +233,7 @@ export class MigrationManager {
 /**
  * Create and initialize migration manager
  */
-export async function createMigrationManager(
-  db: Database
-): Promise<MigrationManager> {
+export async function createMigrationManager(db: Database): Promise<MigrationManager> {
   const manager = new MigrationManager(db);
   await manager.init();
   return manager;

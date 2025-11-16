@@ -1,7 +1,7 @@
 /**
  * Review Repository
  * REFACTOR-002: Repository Layer Separation
- * 
+ *
  * All database operations related to book reviews
  */
 
@@ -39,7 +39,10 @@ export class ReviewRepository extends BaseRepository<Review> {
       logger.info(`Review created for book ${book_id}`, { reviewId, rating });
       return reviewId;
     } catch (error) {
-      logger.error('Error creating review', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error creating review',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -56,7 +59,10 @@ export class ReviewRepository extends BaseRepository<Review> {
       `;
       return await this.db.all<Review>(query, [bookId]);
     } catch (error) {
-      logger.error('Error getting book reviews', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting book reviews',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -73,7 +79,10 @@ export class ReviewRepository extends BaseRepository<Review> {
       `;
       return await this.db.all<Review>(query, []);
     } catch (error) {
-      logger.error('Error getting pending reviews', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting pending reviews',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -86,7 +95,10 @@ export class ReviewRepository extends BaseRepository<Review> {
       const query = 'UPDATE reviews SET is_published = 1 WHERE id = ?';
       return await this.db.update(query, [reviewId]);
     } catch (error) {
-      logger.error('Error publishing review', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error publishing review',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -98,7 +110,10 @@ export class ReviewRepository extends BaseRepository<Review> {
     try {
       return await this.delete(reviewId);
     } catch (error) {
-      logger.error('Error rejecting review', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error rejecting review',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -115,7 +130,10 @@ export class ReviewRepository extends BaseRepository<Review> {
       `;
       return await this.db.all<Review>(query, [userId]);
     } catch (error) {
-      logger.error('Error getting user reviews', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting user reviews',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -132,7 +150,10 @@ export class ReviewRepository extends BaseRepository<Review> {
       const result = await this.db.get<{ avg_rating: number }>(query, [bookId]);
       return Math.round((result?.avg_rating || 0) * 10) / 10;
     } catch (error) {
-      logger.error('Error getting average rating', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting average rating',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -149,7 +170,10 @@ export class ReviewRepository extends BaseRepository<Review> {
       const result = await this.db.get<{ count: number }>(query, [bookId]);
       return result?.count || 0;
     } catch (error) {
-      logger.error('Error getting review count', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting review count',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -166,7 +190,10 @@ export class ReviewRepository extends BaseRepository<Review> {
       const result = await this.db.get<{ count: number }>(query, [userId, bookId]);
       return (result?.count || 0) > 0;
     } catch (error) {
-      logger.error('Error checking user review', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error checking user review',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -178,7 +205,10 @@ export class ReviewRepository extends BaseRepository<Review> {
     try {
       return await this.count('is_published = 0');
     } catch (error) {
-      logger.error('Error getting pending review count', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting pending review count',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -196,7 +226,10 @@ export class ReviewRepository extends BaseRepository<Review> {
       `;
       return await this.db.all<Review>(query, [limit]);
     } catch (error) {
-      logger.error('Error getting recent reviews', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting recent reviews',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -214,7 +247,10 @@ export class ReviewRepository extends BaseRepository<Review> {
       `;
       return await this.db.all<Review>(query, [limit]);
     } catch (error) {
-      logger.error('Error getting highly rated reviews', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting highly rated reviews',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -239,7 +275,10 @@ export class ReviewRepository extends BaseRepository<Review> {
       const query = `UPDATE reviews SET ${fields} WHERE id = ?`;
       return await this.db.update(query, [...values, reviewId]);
     } catch (error) {
-      logger.error('Error updating review', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error updating review',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -269,7 +308,10 @@ export class ReviewRepository extends BaseRepository<Review> {
       `;
       return await this.db.get<Review>(query, [userId, bookId]);
     } catch (error) {
-      logger.error('Error getting user book review', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error getting user book review',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }
@@ -279,7 +321,10 @@ export class ReviewRepository extends BaseRepository<Review> {
       const query = 'DELETE FROM reviews WHERE book_id = ?';
       return await this.db.delete(query, [bookId]);
     } catch (error) {
-      logger.error('Error deleting book reviews', error instanceof Error ? error : new Error(String(error)));
+      logger.error(
+        'Error deleting book reviews',
+        error instanceof Error ? error : new Error(String(error))
+      );
       throw error;
     }
   }

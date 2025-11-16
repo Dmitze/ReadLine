@@ -23,7 +23,7 @@ describe('User Dialog Flows', () => {
         userId,
         message: '',
         reply: jest.fn().mockResolvedValue(undefined),
-        state: {}
+        state: {},
       };
       this.contexts.set(userId, ctx);
       return ctx;
@@ -67,7 +67,10 @@ describe('User Dialog Flows', () => {
     // User provides search query
     ctx.message = 'Harry Potter';
     if (ctx.state.searchMode) {
-      const results = ['Harry Potter and the Philosopher\'s Stone', 'Harry Potter and the Chamber of Secrets'];
+      const results = [
+        "Harry Potter and the Philosopher's Stone",
+        'Harry Potter and the Chamber of Secrets',
+      ];
       ctx.state.searchResults = results;
       await ctx.reply(`Found ${results.length} books`);
     }
@@ -127,7 +130,7 @@ describe('User Dialog Flows', () => {
     expect(ctx.state.book).toEqual({
       title: 'The Great Gatsby',
       author: 'F. Scott Fitzgerald',
-      genre: 'Fiction'
+      genre: 'Fiction',
     });
   });
 
@@ -154,7 +157,7 @@ describe('User Dialog Flows', () => {
     // Set user preferences
     ctx.state.preferences = {
       genre: 'Fiction',
-      language: 'English'
+      language: 'English',
     };
 
     // Simulate context preservation
@@ -163,7 +166,7 @@ describe('User Dialog Flows', () => {
 
     expect(savedContext.state.preferences).toEqual({
       genre: 'Fiction',
-      language: 'English'
+      language: 'English',
     });
   });
 });
@@ -191,7 +194,7 @@ describe('Concurrent Dialog Flows', () => {
 
     const handleMessage = async (msg: string) => {
       interactions.push(msg);
-      await new Promise(resolve => setTimeout(resolve, 1));
+      await new Promise((resolve) => setTimeout(resolve, 1));
     };
 
     await Promise.all([
@@ -199,7 +202,7 @@ describe('Concurrent Dialog Flows', () => {
       handleMessage('msg2'),
       handleMessage('msg3'),
       handleMessage('msg4'),
-      handleMessage('msg5')
+      handleMessage('msg5'),
     ]);
 
     expect(interactions).toHaveLength(5);
@@ -226,10 +229,8 @@ describe('Error Handling in Flows', () => {
 
     try {
       await Promise.race([
-        new Promise(resolve => setTimeout(() => resolve('result'), timeout + 50)),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout')), timeout)
-        )
+        new Promise((resolve) => setTimeout(() => resolve('result'), timeout + 50)),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), timeout)),
       ]);
     } catch (error) {
       timedOut = true;
@@ -242,7 +243,7 @@ describe('Error Handling in Flows', () => {
     const operations = [
       () => Promise.resolve('success'),
       () => Promise.reject(new Error('failed')),
-      () => Promise.resolve('success')
+      () => Promise.resolve('success'),
     ];
 
     const results = [];

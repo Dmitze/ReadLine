@@ -15,22 +15,22 @@ import { logger } from './logger';
  */
 export interface AICircuitBreakerConfig {
   name?: string;
-  failureThreshold?: number;     // Number of failures to open circuit (default: 5)
-  successThreshold?: number;     // Successes in half-open to close (default: 2)
-  timeout?: number;              // Time to wait before half-open attempt (default: 60000)
-  
+  failureThreshold?: number; // Number of failures to open circuit (default: 5)
+  successThreshold?: number; // Successes in half-open to close (default: 2)
+  timeout?: number; // Time to wait before half-open attempt (default: 60000)
+
   // Rate limiting
-  maxRequestsPerMinute?: number;  // Rate limit per minute (default: 60)
+  maxRequestsPerMinute?: number; // Rate limit per minute (default: 60)
   maxConcurrentRequests?: number; // Max concurrent requests (default: 5)
-  
+
   // Retry strategy
-  enableRetry?: boolean;          // Enable automatic retry (default: true)
-  maxRetryAttempts?: number;      // Retry attempts (default: 2)
-  retryInitialDelay?: number;     // Initial retry delay in ms (default: 500)
-  
+  enableRetry?: boolean; // Enable automatic retry (default: true)
+  maxRetryAttempts?: number; // Retry attempts (default: 2)
+  retryInitialDelay?: number; // Initial retry delay in ms (default: 500)
+
   // Timeouts
-  requestTimeout?: number;        // Request timeout in ms (default: 25000)
-  
+  requestTimeout?: number; // Request timeout in ms (default: 25000)
+
   // Callbacks
   onFallback?: (reason: string) => Promise<string>; // Fallback handler
 }
@@ -82,7 +82,10 @@ export class AICircuitBreaker {
       successThreshold: config.successThreshold || 2,
       timeout: config.timeout || 60000,
       onStateChange: (state, metrics) => {
-        logger.warn(`${name}: Circuit breaker state changed to ${state}`, metrics as unknown as Record<string, unknown>);
+        logger.warn(
+          `${name}: Circuit breaker state changed to ${state}`,
+          metrics as unknown as Record<string, unknown>
+        );
       },
     });
 
@@ -100,7 +103,7 @@ export class AICircuitBreaker {
           message.includes('econnreset') ||
           message.includes('429') || // Too many requests
           message.includes('503') || // Service unavailable
-          message.includes('502')    // Bad gateway
+          message.includes('502') // Bad gateway
         );
       },
     });
@@ -118,10 +121,7 @@ export class AICircuitBreaker {
   /**
    * Execute AI API request with protection
    */
-  async request<T>(
-    fn: () => Promise<T>,
-    context?: string
-  ): Promise<T> {
+  async request<T>(fn: () => Promise<T>, context?: string): Promise<T> {
     const requestId = `${Date.now()}-${Math.random()}`;
     const startTime = Date.now();
 
@@ -158,14 +158,11 @@ export class AICircuitBreaker {
       let result: T;
 
       if (this.enableRetry) {
-        result = await this.retryStrategy.execute(
-          async () => {
-            return this.circuitBreaker.execute(async () => {
-              return await this.executeWithTimeout(fn);
-            });
-          },
-          context
-        );
+        result = await this.retryStrategy.execute(async () => {
+          return this.circuitBreaker.execute(async () => {
+            return await this.executeWithTimeout(fn);
+          });
+        }, context);
       } else {
         result = await this.circuitBreaker.execute(async () => {
           return await this.executeWithTimeout(fn);
@@ -176,7 +173,9 @@ export class AICircuitBreaker {
       this.totalResponseTime += responseTime;
       this.responseCount++;
 
-      logger.debug('AI-API request completed' + (context ? ` (${context})` : '') + ` in ${responseTime}ms`);
+      logger.debug(
+        'AI-API request completed' + (context ? ` (${context})` : '') + ` in ${responseTime}ms`
+      );
 
       return result;
     } catch (error) {
@@ -252,9 +251,8 @@ export class AICircuitBreaker {
       ...metrics,
       rateLimitHits: this.rateLimitHits,
       concurrentRequests: this.concurrentRequests,
-      averageResponseTime: this.responseCount > 0
-        ? Math.round(this.totalResponseTime / this.responseCount)
-        : 0,
+      averageResponseTime:
+        this.responseCount > 0 ? Math.round(this.totalResponseTime / this.responseCount) : 0,
       totalResponseTime: this.totalResponseTime,
     };
   }
@@ -300,9 +298,10 @@ export class AICircuitBreaker {
   getStatus(): string {
     const stats = this.getStats();
     const health = this.getHealth();
-    const successRate = stats.totalRequests > 0
-      ? ((stats.successfulRequests / stats.totalRequests) * 100).toFixed(1)
-      : '0.0';
+    const successRate =
+      stats.totalRequests > 0
+        ? ((stats.successfulRequests / stats.totalRequests) * 100).toFixed(1)
+        : '0.0';
 
     return (
       `AI-API [${health.status.toUpperCase()}] ` +

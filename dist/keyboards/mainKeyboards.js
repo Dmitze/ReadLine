@@ -13,28 +13,28 @@ const getKeyboardConfig = (deviceType) => {
                 buttonsPerRow: 2,
                 useInline: false,
                 showQuickActions: true,
-                buttonSize: 'large'
+                buttonSize: 'large',
             };
         case 'tablet':
             return {
                 buttonsPerRow: 3,
                 useInline: false,
                 showQuickActions: true,
-                buttonSize: 'medium'
+                buttonSize: 'medium',
             };
         case 'desktop':
             return {
                 buttonsPerRow: 4,
                 useInline: true,
                 showQuickActions: true,
-                buttonSize: 'small'
+                buttonSize: 'small',
             };
         default:
             return {
                 buttonsPerRow: 2,
                 useInline: false,
                 showQuickActions: true,
-                buttonSize: 'large'
+                buttonSize: 'large',
             };
     }
 };
@@ -51,21 +51,17 @@ const getAdaptiveMainMenuKeyboard = (ctx, withQuickActions = true) => {
         '🤖 AI Помічник',
         '🎁 Отримати промокод',
         'ℹ️ Допомога',
-        '📞 Зворотній зв\'язок'
+        "📞 Зворотній зв'язок",
     ];
     const buttons = [];
     for (let i = 0; i < allButtons.length; i += config.buttonsPerRow) {
         buttons.push(allButtons.slice(i, i + config.buttonsPerRow));
     }
     if (config.useInline) {
-        const inlineButtons = buttons.map(row => row.map(text => telegraf_1.Markup.button.callback(text, `menu_${text.replace(/[^\w]/g, '_')}`)));
+        const inlineButtons = buttons.map((row) => row.map((text) => telegraf_1.Markup.button.callback(text, `menu_${text.replace(/[^\w]/g, '_')}`)));
         return telegraf_1.Markup.inlineKeyboard(inlineButtons).reply_markup;
     }
-    return telegraf_1.Markup
-        .keyboard(buttons)
-        .resize()
-        .oneTime()
-        .reply_markup;
+    return telegraf_1.Markup.keyboard(buttons).resize().oneTime().reply_markup;
 };
 exports.getAdaptiveMainMenuKeyboard = getAdaptiveMainMenuKeyboard;
 const getMainMenuKeyboard = () => {
@@ -74,13 +70,9 @@ const getMainMenuKeyboard = () => {
         ['🆕 Новинки', '💾 Моя бібліотека'],
         ['👤 Профіль', '🤖 AI Помічник'],
         ['🎁 Отримати промокод'],
-        ['ℹ️ Допомога', '📞 Зворотній зв\'язок']
+        ['ℹ️ Допомога', "📞 Зворотній зв'язок"],
     ];
-    return telegraf_1.Markup
-        .keyboard(buttons)
-        .resize()
-        .oneTime()
-        .reply_markup;
+    return telegraf_1.Markup.keyboard(buttons).resize().oneTime().reply_markup;
 };
 exports.getMainMenuKeyboard = getMainMenuKeyboard;
 const getAdaptiveGenreKeyboard = (ctx, genres) => {
@@ -92,22 +84,16 @@ const getAdaptiveGenreKeyboard = (ctx, genres) => {
     }
     buttons.push(['⬅️ Назад', '🏠 На головну']);
     if (config.useInline) {
-        const inlineButtons = buttons.map(row => row.map(text => telegraf_1.Markup.button.callback(text, `genre_${text.replace(/[^\w]/g, '_')}`)));
+        const inlineButtons = buttons.map((row) => row.map((text) => telegraf_1.Markup.button.callback(text, `genre_${text.replace(/[^\w]/g, '_')}`)));
         return telegraf_1.Markup.inlineKeyboard(inlineButtons).reply_markup;
     }
-    return telegraf_1.Markup
-        .keyboard(buttons)
-        .resize()
-        .reply_markup;
+    return telegraf_1.Markup.keyboard(buttons).resize().reply_markup;
 };
 exports.getAdaptiveGenreKeyboard = getAdaptiveGenreKeyboard;
 const getGenreKeyboard = (genres) => {
-    const keyboard = genres.map(genre => [genre]);
+    const keyboard = genres.map((genre) => [genre]);
     keyboard.push(['⬅️ Назад', '🏠 На головну']);
-    return telegraf_1.Markup
-        .keyboard(keyboard)
-        .resize()
-        .reply_markup;
+    return telegraf_1.Markup.keyboard(keyboard).resize().reply_markup;
 };
 exports.getGenreKeyboard = getGenreKeyboard;
 const getAdaptiveBookKeyboard = (ctx, book, isSaved = false) => {
@@ -152,7 +138,9 @@ const getAdaptiveBookKeyboard = (ctx, book, isSaved = false) => {
         actionButtons.push(telegraf_1.Markup.button.callback(buttonText, `save_${book.id}`));
     }
     if (book.rating && book.rating > 0) {
-        const buttonText = deviceType === 'mobile' ? `⭐ ${book.rating.toFixed(1)}` : `⭐ ${book.rating.toFixed(1)} Оцінити`;
+        const buttonText = deviceType === 'mobile'
+            ? `⭐ ${book.rating.toFixed(1)}`
+            : `⭐ ${book.rating.toFixed(1)} Оцінити`;
         actionButtons.push(telegraf_1.Markup.button.callback(buttonText, `rate_${book.id}`));
     }
     else {
@@ -215,16 +203,13 @@ const getEnhancedBookKeyboard = (book, isSaved = false) => {
     keyboard.push(actionRow);
     keyboard.push([
         telegraf_1.Markup.button.callback('📊 Відгуки', `reviews_${book.id}`),
-        telegraf_1.Markup.button.callback('🔍 Схожі книги', `similar_${book.id}`)
+        telegraf_1.Markup.button.callback('🔍 Схожі книги', `similar_${book.id}`),
     ]);
     return telegraf_1.Markup.inlineKeyboard(keyboard).reply_markup;
 };
 exports.getEnhancedBookKeyboard = getEnhancedBookKeyboard;
 const getBackKeyboard = () => {
-    return telegraf_1.Markup
-        .keyboard([['⬅️ Назад']])
-        .resize()
-        .reply_markup;
+    return telegraf_1.Markup.keyboard([['⬅️ Назад']]).resize().reply_markup;
 };
 exports.getBackKeyboard = getBackKeyboard;
 //# sourceMappingURL=mainKeyboards.js.map

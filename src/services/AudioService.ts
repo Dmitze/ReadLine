@@ -50,7 +50,7 @@ export class AudioService {
         chapter_number: 1,
         title: `Audio ${input.file_id}`,
         file_id: input.file_id,
-        duration: input.duration
+        duration: input.duration,
       });
 
       return new Ok(audioId);
@@ -106,7 +106,7 @@ export class AudioService {
       }
 
       await this.audioRepository.update(audioId, {
-        duration: input.duration || audio.duration
+        duration: input.duration || audio.duration,
       });
 
       return new Ok(undefined);
@@ -140,7 +140,9 @@ export class AudioService {
       const audioVersions = await this.audioRepository.findByNarrator(narrator);
       return new Ok(audioVersions);
     } catch (error) {
-      return new Err(error instanceof Error ? error : new Error('Failed to fetch audio by narrator'));
+      return new Err(
+        error instanceof Error ? error : new Error('Failed to fetch audio by narrator')
+      );
     }
   }
 
@@ -152,7 +154,9 @@ export class AudioService {
       const audioVersions = await this.audioRepository.findByQuality(quality);
       return new Ok(audioVersions);
     } catch (error) {
-      return new Err(error instanceof Error ? error : new Error('Failed to fetch audio by quality'));
+      return new Err(
+        error instanceof Error ? error : new Error('Failed to fetch audio by quality')
+      );
     }
   }
 
@@ -165,7 +169,9 @@ export class AudioService {
       const totalDuration = allAudio.reduce((sum, a) => sum + (a.duration || 0), 0);
       return new Ok(totalDuration);
     } catch (error) {
-      return new Err(error instanceof Error ? error : new Error('Failed to calculate total duration'));
+      return new Err(
+        error instanceof Error ? error : new Error('Failed to calculate total duration')
+      );
     }
   }
 
@@ -180,10 +186,12 @@ export class AudioService {
       return new Ok({
         total_count: allAudio.length,
         total_duration: totalDuration,
-        average_duration: allAudio.length > 0 ? totalDuration / allAudio.length : 0
+        average_duration: allAudio.length > 0 ? totalDuration / allAudio.length : 0,
       });
     } catch (error) {
-      return new Err(error instanceof Error ? error : new Error('Failed to fetch audio statistics'));
+      return new Err(
+        error instanceof Error ? error : new Error('Failed to fetch audio statistics')
+      );
     }
   }
 }

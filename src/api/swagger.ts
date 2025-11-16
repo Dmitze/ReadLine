@@ -11,18 +11,18 @@ const swaggerOptions = {
       version: '1.0.0',
       contact: {
         name: 'ReadLine Support',
-        email: 'support@readline.local'
-      }
+        email: 'support@readline.local',
+      },
     },
     servers: [
       {
         url: 'http://localhost:3000',
-        description: 'Development Server'
+        description: 'Development Server',
       },
       {
         url: 'http://api.readline.local',
-        description: 'Production Server'
-      }
+        description: 'Production Server',
+      },
     ],
     components: {
       schemas: {
@@ -35,51 +35,51 @@ const swaggerOptions = {
           properties: {
             id: {
               type: 'integer',
-              description: 'User ID'
+              description: 'User ID',
             },
             telegram_id: {
               type: 'integer',
-              description: 'Telegram user ID'
+              description: 'Telegram user ID',
             },
             username: {
               type: 'string',
-              description: 'Telegram username'
+              description: 'Telegram username',
             },
             first_name: {
               type: 'string',
-              description: 'User first name'
+              description: 'User first name',
             },
             last_name: {
               type: 'string',
-              description: 'User last name'
+              description: 'User last name',
             },
             email: {
               type: 'string',
               format: 'email',
-              description: 'Email address'
+              description: 'Email address',
             },
             language_code: {
               type: 'string',
               default: 'uk',
-              description: 'Language code'
+              description: 'Language code',
             },
             is_admin: {
               type: 'boolean',
-              description: 'Admin status'
+              description: 'Admin status',
             },
             is_blocked: {
               type: 'boolean',
-              description: 'Block status'
+              description: 'Block status',
             },
             created_at: {
               type: 'string',
-              format: 'date-time'
+              format: 'date-time',
             },
             updated_at: {
               type: 'string',
-              format: 'date-time'
-            }
-          }
+              format: 'date-time',
+            },
+          },
         },
 
         /**
@@ -91,68 +91,68 @@ const swaggerOptions = {
           properties: {
             id: {
               type: 'integer',
-              description: 'Book ID'
+              description: 'Book ID',
             },
             title: {
               type: 'string',
-              description: 'Book title'
+              description: 'Book title',
             },
             author: {
               type: 'string',
-              description: 'Book author'
+              description: 'Book author',
             },
             description: {
               type: 'string',
-              description: 'Book description'
+              description: 'Book description',
             },
             genre: {
               type: 'string',
-              description: 'Genre'
+              description: 'Genre',
             },
             year: {
               type: 'integer',
-              description: 'Publication year'
+              description: 'Publication year',
             },
             isbn: {
               type: 'string',
-              description: 'ISBN'
+              description: 'ISBN',
             },
             pages: {
               type: 'integer',
-              description: 'Number of pages'
+              description: 'Number of pages',
             },
             rating: {
               type: 'number',
               format: 'float',
-              description: 'Average rating'
+              description: 'Average rating',
             },
             cover_url: {
               type: 'string',
               format: 'uri',
-              description: 'Cover image URL'
+              description: 'Cover image URL',
             },
             file_url: {
               type: 'string',
               format: 'uri',
-              description: 'Book file URL'
+              description: 'Book file URL',
             },
             is_published: {
               type: 'boolean',
-              description: 'Publication status'
+              description: 'Publication status',
             },
             views_count: {
               type: 'integer',
-              description: 'View count'
+              description: 'View count',
             },
             created_at: {
               type: 'string',
-              format: 'date-time'
+              format: 'date-time',
             },
             updated_at: {
               type: 'string',
-              format: 'date-time'
-            }
-          }
+              format: 'date-time',
+            },
+          },
         },
 
         /**
@@ -163,34 +163,34 @@ const swaggerOptions = {
           required: ['book_id', 'user_id', 'rating'],
           properties: {
             id: {
-              type: 'integer'
+              type: 'integer',
             },
             book_id: {
-              type: 'integer'
+              type: 'integer',
             },
             user_id: {
-              type: 'integer'
+              type: 'integer',
             },
             rating: {
               type: 'integer',
               minimum: 1,
-              maximum: 5
+              maximum: 5,
             },
             comment: {
-              type: 'string'
+              type: 'string',
             },
             is_published: {
-              type: 'boolean'
+              type: 'boolean',
             },
             created_at: {
               type: 'string',
-              format: 'date-time'
+              format: 'date-time',
             },
             updated_at: {
               type: 'string',
-              format: 'date-time'
-            }
-          }
+              format: 'date-time',
+            },
+          },
         },
 
         /**
@@ -202,17 +202,17 @@ const swaggerOptions = {
           properties: {
             code: {
               type: 'string',
-              description: 'Error code'
+              description: 'Error code',
             },
             message: {
               type: 'string',
-              description: 'Error message'
+              description: 'Error message',
             },
             details: {
               type: 'object',
-              description: 'Additional error details'
-            }
-          }
+              description: 'Additional error details',
+            },
+          },
         },
 
         /**
@@ -223,27 +223,27 @@ const swaggerOptions = {
           properties: {
             jobId: {
               type: 'string',
-              description: 'Job ID'
+              description: 'Job ID',
             },
             status: {
               type: 'string',
               enum: ['pending', 'active', 'completed', 'failed'],
-              description: 'Job status'
+              description: 'Job status',
             },
             progress: {
               type: 'number',
-              description: 'Job progress (0-100)'
+              description: 'Job progress (0-100)',
             },
             data: {
               type: 'object',
-              description: 'Job result data'
+              description: 'Job result data',
             },
             error: {
               type: 'string',
-              description: 'Error message if failed'
-            }
-          }
-        }
+              description: 'Error message if failed',
+            },
+          },
+        },
       },
 
       securitySchemes: {
@@ -251,15 +251,15 @@ const swaggerOptions = {
           type: 'apiKey',
           in: 'header',
           name: 'X-Bot-Token',
-          description: 'Bot authentication token'
+          description: 'Bot authentication token',
         },
         AdminAuth: {
           type: 'http',
           scheme: 'bearer',
           bearerFormat: 'JWT',
-          description: 'Admin JWT token'
-        }
-      }
+          description: 'Admin JWT token',
+        },
+      },
     },
 
     paths: {
@@ -274,18 +274,18 @@ const swaggerOptions = {
             {
               name: 'genre',
               in: 'query',
-              schema: { type: 'string' }
+              schema: { type: 'string' },
             },
             {
               name: 'page',
               in: 'query',
-              schema: { type: 'integer', default: 1 }
+              schema: { type: 'integer', default: 1 },
             },
             {
               name: 'limit',
               in: 'query',
-              schema: { type: 'integer', default: 20 }
-            }
+              schema: { type: 'integer', default: 20 },
+            },
           ],
           responses: {
             '200': {
@@ -294,12 +294,12 @@ const swaggerOptions = {
                 'application/json': {
                   schema: {
                     type: 'array',
-                    items: { $ref: '#/components/schemas/Book' }
-                  }
-                }
-              }
-            }
-          }
+                    items: { $ref: '#/components/schemas/Book' },
+                  },
+                },
+              },
+            },
+          },
         },
 
         post: {
@@ -310,24 +310,24 @@ const swaggerOptions = {
             required: true,
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/Book' }
-              }
-            }
+                schema: { $ref: '#/components/schemas/Book' },
+              },
+            },
           },
           responses: {
             '201': {
               description: 'Book created',
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/Book' }
-                }
-              }
+                  schema: { $ref: '#/components/schemas/Book' },
+                },
+              },
             },
             '400': {
-              description: 'Invalid input'
-            }
-          }
-        }
+              description: 'Invalid input',
+            },
+          },
+        },
       },
 
       '/api/books/{id}': {
@@ -339,22 +339,22 @@ const swaggerOptions = {
               name: 'id',
               in: 'path',
               required: true,
-              schema: { type: 'integer' }
-            }
+              schema: { type: 'integer' },
+            },
           ],
           responses: {
             '200': {
               description: 'Book details',
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/Book' }
-                }
-              }
+                  schema: { $ref: '#/components/schemas/Book' },
+                },
+              },
             },
             '404': {
-              description: 'Book not found'
-            }
-          }
+              description: 'Book not found',
+            },
+          },
         },
 
         put: {
@@ -366,27 +366,27 @@ const swaggerOptions = {
               name: 'id',
               in: 'path',
               required: true,
-              schema: { type: 'integer' }
-            }
+              schema: { type: 'integer' },
+            },
           ],
           requestBody: {
             required: true,
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/Book' }
-              }
-            }
+                schema: { $ref: '#/components/schemas/Book' },
+              },
+            },
           },
           responses: {
             '200': {
               description: 'Book updated',
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/Book' }
-                }
-              }
-            }
-          }
+                  schema: { $ref: '#/components/schemas/Book' },
+                },
+              },
+            },
+          },
         },
 
         delete: {
@@ -398,15 +398,15 @@ const swaggerOptions = {
               name: 'id',
               in: 'path',
               required: true,
-              schema: { type: 'integer' }
-            }
+              schema: { type: 'integer' },
+            },
           ],
           responses: {
             '204': {
-              description: 'Book deleted'
-            }
-          }
-        }
+              description: 'Book deleted',
+            },
+          },
+        },
       },
 
       /**
@@ -421,8 +421,8 @@ const swaggerOptions = {
               name: 'id',
               in: 'path',
               required: true,
-              schema: { type: 'integer' }
-            }
+              schema: { type: 'integer' },
+            },
           ],
           responses: {
             '200': {
@@ -431,12 +431,12 @@ const swaggerOptions = {
                 'application/json': {
                   schema: {
                     type: 'array',
-                    items: { $ref: '#/components/schemas/Review' }
-                  }
-                }
-              }
-            }
-          }
+                    items: { $ref: '#/components/schemas/Review' },
+                  },
+                },
+              },
+            },
+          },
         },
 
         post: {
@@ -448,28 +448,28 @@ const swaggerOptions = {
               name: 'id',
               in: 'path',
               required: true,
-              schema: { type: 'integer' }
-            }
+              schema: { type: 'integer' },
+            },
           ],
           requestBody: {
             required: true,
             content: {
               'application/json': {
-                schema: { $ref: '#/components/schemas/Review' }
-              }
-            }
+                schema: { $ref: '#/components/schemas/Review' },
+              },
+            },
           },
           responses: {
             '201': {
               description: 'Review created',
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/Review' }
-                }
-              }
-            }
-          }
-        }
+                  schema: { $ref: '#/components/schemas/Review' },
+                },
+              },
+            },
+          },
+        },
       },
 
       /**
@@ -484,23 +484,23 @@ const swaggerOptions = {
               name: 'jobId',
               in: 'path',
               required: true,
-              schema: { type: 'string' }
-            }
+              schema: { type: 'string' },
+            },
           ],
           responses: {
             '200': {
               description: 'Job status',
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/JobStatus' }
-                }
-              }
+                  schema: { $ref: '#/components/schemas/JobStatus' },
+                },
+              },
             },
             '404': {
-              description: 'Job not found'
-            }
-          }
-        }
+              description: 'Job not found',
+            },
+          },
+        },
       },
 
       '/api/jobs/{jobId}/retry': {
@@ -513,24 +513,24 @@ const swaggerOptions = {
               name: 'jobId',
               in: 'path',
               required: true,
-              schema: { type: 'string' }
-            }
+              schema: { type: 'string' },
+            },
           ],
           responses: {
             '200': {
               description: 'Job retried',
               content: {
                 'application/json': {
-                  schema: { $ref: '#/components/schemas/JobStatus' }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
+                  schema: { $ref: '#/components/schemas/JobStatus' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   },
-  apis: ['./src/routes/**/*.ts']
+  apis: ['./src/routes/**/*.ts'],
 };
 
 export default swaggerOptions;

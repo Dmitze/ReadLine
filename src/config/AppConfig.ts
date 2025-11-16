@@ -13,7 +13,7 @@ export interface AppConfig {
     webhook?: string;
     polling: boolean;
   };
-  
+
   // Database
   database: {
     path: string;
@@ -21,7 +21,7 @@ export interface AppConfig {
       memory?: boolean;
     };
   };
-  
+
   // AI/API
   ai: {
     enabled: boolean;
@@ -29,27 +29,27 @@ export interface AppConfig {
     apiKey?: string;
     timeout?: number;
   };
-  
+
   // File Storage
   storage: {
     uploadsDir: string;
     maxFileSize: number; // bytes
     allowedMimeTypes: string[];
   };
-  
+
   // Server
   server: {
     port: number;
     host: string;
   };
-  
+
   // Logging
   logging: {
     level: 'debug' | 'info' | 'warn' | 'error';
     format: 'json' | 'text';
     file?: string;
   };
-  
+
   // Feature Flags
   features: {
     audioBooks: boolean;
@@ -58,7 +58,7 @@ export interface AppConfig {
     reviews: boolean;
     promoCode: boolean;
   };
-  
+
   // Limits
   limits: {
     booksPerPage: number;
@@ -86,48 +86,48 @@ export class ConfigManager {
       bot: {
         token: env.BOT_TOKEN,
         webhook: undefined,
-        polling: true
+        polling: true,
       },
       database: {
         path: env.DB_PATH,
         sqlite: {
-          memory: false
-        }
+          memory: false,
+        },
       },
       ai: {
         enabled: !!env.GEMINI_API_KEY,
         provider: env.AI_PROVIDER as 'openai' | 'anthropic',
         apiKey: env.GEMINI_API_KEY,
-        timeout: 30000
+        timeout: 30000,
       },
       storage: {
         uploadsDir: './uploads',
         maxFileSize: 52428800, // 50MB
-        allowedMimeTypes: ['application/pdf', 'audio/mpeg', 'audio/wav']
+        allowedMimeTypes: ['application/pdf', 'audio/mpeg', 'audio/wav'],
       },
       server: {
         port: env.PORT,
-        host: '0.0.0.0'
+        host: '0.0.0.0',
       },
       logging: {
         level: env.LOG_LEVEL,
         format: 'text',
-        file: undefined
+        file: undefined,
       },
       features: {
         audioBooks: true,
         aiAssistant: true,
         recommendations: true,
         reviews: true,
-        promoCode: true
+        promoCode: true,
       },
       limits: {
         booksPerPage: 20,
         maxTags: 10,
         maxGenres: 5,
         sessionTimeout: 3600000,
-        rateLimitPerMinute: 30
-      }
+        rateLimitPerMinute: 30,
+      },
     };
   }
 

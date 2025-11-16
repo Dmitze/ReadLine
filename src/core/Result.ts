@@ -1,7 +1,7 @@
 /**
  * Result Pattern Implementation
  * REFACTOR-008: Replaces try-catch with type-safe error handling
- * 
+ *
  * Instead of throwing exceptions, functions return Result<T, E>
  * which is either Success with a value or Failure with an error
  */
@@ -148,9 +148,7 @@ export function err<T, E = Error>(error: E): Result<T, E> {
 /**
  * Execute an async operation and wrap result
  */
-export async function asyncResult<T>(
-  fn: () => Promise<T>
-): Promise<Result<T>> {
+export async function asyncResult<T>(fn: () => Promise<T>): Promise<Result<T>> {
   try {
     const value = await fn();
     return ok(value);
@@ -162,9 +160,7 @@ export async function asyncResult<T>(
 /**
  * Execute a sync operation and wrap result
  */
-export function syncResult<T>(
-  fn: () => T
-): Result<T> {
+export function syncResult<T>(fn: () => T): Result<T> {
   try {
     const value = fn();
     return ok(value);
@@ -177,9 +173,7 @@ export function syncResult<T>(
  * Combine multiple results
  * Returns Ok if all are Ok, otherwise Err of the first failure
  */
-export function combine<T, E = Error>(
-  ...results: Result<T, E>[]
-): Result<T[], E> {
+export function combine<T, E = Error>(...results: Result<T, E>[]): Result<T[], E> {
   const values: T[] = [];
 
   for (const result of results) {

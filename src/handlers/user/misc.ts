@@ -1,7 +1,7 @@
 /**
  * Miscellaneous Handlers
  * REFACTOR-009: Split userHandlers.ts
- * 
+ *
  * Обработчики для профиля, помощи, обратной связи, AI, промокодов
  */
 
@@ -14,17 +14,16 @@ import { BUTTONS, ERRORS } from '../../constants';
  * Register miscellaneous handlers
  */
 export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
-  
   // Промокод
   bot.hears('🎁 Отримати промокод', async (ctx: BotContext) => {
     try {
       const userId = ctx.from?.id;
-      
+
       if (!userId) {
         await ctx.reply(ERRORS.USER_NOT_FOUND);
         return;
       }
-      
+
       await ctx.scene.enter('PROMO_SCENE');
       logger.userAction(userId, 'get_promo');
     } catch (error) {
@@ -32,25 +31,25 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
       await ctx.reply(ERRORS.GENERIC);
     }
   });
-  
+
   // Профиль
   bot.hears([BUTTONS.PROFILE_OLD, BUTTONS.PROFILE], async (ctx: BotContext) => {
     await ctx.scene.enter('PROFILE_SCENE');
     logger.userAction(ctx.from!.id, 'view_profile');
   });
-  
+
   // Обратная связь
   bot.hears(BUTTONS.FEEDBACK, async (ctx: BotContext) => {
     await ctx.scene.enter('FEEDBACK_SCENE');
     logger.userAction(ctx.from!.id, 'start_feedback');
   });
-  
+
   // AI Ассистент
   bot.hears(BUTTONS.AI_ASSISTANT, async (ctx: BotContext) => {
     await ctx.scene.enter('AI_SCENE');
     logger.userAction(ctx.from!.id, 'start_ai');
   });
-  
+
   // Помощь
   bot.hears(BUTTONS.HELP, async (ctx) => {
     const helpMessage = `
@@ -92,21 +91,19 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
       reply_markup: Markup.inlineKeyboard([
         [
           Markup.button.callback('📖 Каталог', 'catalog_genres'),
-          Markup.button.callback('🔍 Пошук', 'start_search')
+          Markup.button.callback('🔍 Пошук', 'start_search'),
         ],
         [
           Markup.button.callback('🤖 AI Помічник', 'start_ai'),
-          Markup.button.callback('👤 Профіль', 'view_profile')
+          Markup.button.callback('👤 Профіль', 'view_profile'),
         ],
-        [
-          Markup.button.callback('🏠 На головну', 'home')
-        ]
-      ]).reply_markup
+        [Markup.button.callback('🏠 На головну', 'home')],
+      ]).reply_markup,
     });
 
     logger.userAction(ctx.from!.id, 'view_help');
   });
-  
+
   // Actions для help
   bot.action('start_search', async (ctx) => {
     try {
@@ -117,7 +114,7 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
       await ctx.answerCbQuery('❌ Помилка');
     }
   });
-  
+
   bot.action('start_ai', async (ctx) => {
     try {
       await ctx.answerCbQuery();
@@ -127,7 +124,7 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
       await ctx.answerCbQuery('❌ Помилка');
     }
   });
-  
+
   bot.action('view_profile', async (ctx) => {
     try {
       await ctx.answerCbQuery();
