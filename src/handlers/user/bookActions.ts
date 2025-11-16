@@ -295,7 +295,7 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
               'Можливі причини:\n' +
               '• Файл застарів у Telegram\n' +
               '• Файл ще не додано\n\n' +
-              "Зверніться до адміністратора через /feedback"
+              'Зверніться до адміністратора через /feedback'
           );
         }
       }
