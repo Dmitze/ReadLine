@@ -307,7 +307,13 @@ export class BookService {
         return new Err(new Error(`Book with id ${bookId} not found`));
       }
 
-      const result = await updateBookInfo(bookId, recommendedAge, contentWarnings);
+      let result = 0;
+      if (recommendedAge !== undefined) {
+        result += await updateBookInfo(bookId, 'recommended_age', recommendedAge);
+      }
+      if (contentWarnings !== undefined) {
+        result += await updateBookInfo(bookId, 'content_warnings', JSON.stringify(contentWarnings));
+      }
       if (result === 0) {
         return new Err(new Error('No updates were made'));
       }

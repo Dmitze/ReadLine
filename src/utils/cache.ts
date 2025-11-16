@@ -157,9 +157,15 @@ class CacheService {
 export const cache = new CacheService();
 
 // Періодична очистка expired записів (кожні 10 хвилин)
-setInterval(() => {
+// Зберігаємо reference для можливості очистки в тестах
+export const cleanupInterval = setInterval(() => {
   cache.cleanup();
 }, 10 * 60 * 1000);
+
+// Дозволяємо unref в Node.js environment щоб не блокувати exit
+if (cleanupInterval.unref) {
+  cleanupInterval.unref();
+}
 
 // Cache keys для різних типів даних
 export const CACHE_KEYS = {

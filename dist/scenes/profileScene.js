@@ -133,7 +133,9 @@ profileScene.action('show_stats', async (ctx) => {
 });
 profileScene.action('start_ai_assistant', async (ctx) => {
     await ctx.answerCbQuery('🤖 Запускаю AI Підбір...');
-    logger_1.logger.userAction(ctx.from.id, 'start_ai_assistant_from_profile');
+    if (ctx.from?.id) {
+        logger_1.logger.userAction(ctx.from.id, 'start_ai_assistant_from_profile');
+    }
     await ctx.scene?.leave();
     return ctx.scene?.enter('AI_ASSISTANT_SCENE');
 });

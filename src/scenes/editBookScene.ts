@@ -1,22 +1,28 @@
 import { Scenes, Markup } from 'telegraf';
-import { getBookById, updateBook, deleteBook } from '../database/models';
+import { getBookById, updateBook } from '../database/models';
 import { logger } from '../utils/logger';
-import { BotContext, WizardState } from '../types/telegraf';
-import { handleResult } from '../utils/resultHandler';
+import { BotContext } from '../types/telegraf';
 import { getBookIdText } from '../utils/helpers';
+
+interface EditBookState {
+  bookId: number;
+  book?: any;
+  updates?: Record<string, any>;
+  editingField?: string;
+}
 
 const editBookScene = new Scenes.WizardScene(
   'EDIT_BOOK_SCENE',
   // Крок 1: Показати поточні дані книги та меню редагування
   async (ctx: BotContext) => {
-    const bookId = (ctx.scene.state as any).bookId;
+    const state = ctx.scene.state as EditBookState;
     
-    if (!bookId) {
+    if (!state.bookId) {
       await ctx.reply('❌ Помилка: ID книги не знайдено');
       return ctx.scene.leave();
     }
     
-    const book = await getBookById(bookId);
+    const book = await getBookById(state.bookId);
       
       if (!book) {
         await ctx.reply('❌ Книга не знайдена');
@@ -24,7 +30,8 @@ const editBookScene = new Scenes.WizardScene(
       }
       
       // Зберігаємо дані книги в state
-      (ctx.wizard.state as any).book = book;
+      const wizardState = ctx.wizard.state as EditBookState;
+      wizardState.book = book;
       
       const bookInfo = `
 📖 *Поточні дані книги:*${getBookIdText(book.id)}
@@ -64,7 +71,7 @@ const editBookScene = new Scenes.WizardScene(
     }
     
     const action = ctx.callbackQuery.data;
-    const state = ctx.wizard.state as any;
+    const state = ctx.wizard.state as EditBookState;
     
     if (action === 'cancel_edit') {
       await ctx.answerCbQuery('Скасовано');
@@ -92,7 +99,9 @@ const editBookScene = new Scenes.WizardScene(
         return;
       }
       
-      await updateBook(state.book.id, updates);
+      if (state.book) {
+        await updateBook(state.book.id, updates);
+      }
       await ctx.answerCbQuery('✅ Зміни збережено!');
       
       // Показуємо що саме змінено
@@ -114,7 +123,9 @@ const editBookScene = new Scenes.WizardScene(
         { parse_mode: 'Markdown' }
       );
       
-      logger.adminAction(ctx.from!.id, 'edit_book', { bookId: state.book.id, updates });
+      if (ctx.from && state.book) {
+        logger.adminAction(ctx.from.id, 'edit_book', { bookId: state.book.id, updates });
+      }
       
       return ctx.scene.leave();
     }
@@ -184,7 +195,7 @@ const editBookScene = new Scenes.WizardScene(
   
   // Крок 3: Отримання нового значення
   async (ctx: BotContext) => {
-    const state = ctx.wizard.state as any;
+    const state = ctx.wizard.state as EditBookState;
     
     // Обробка callback для доступності
     if (ctx.callbackQuery && 'data' in ctx.callbackQuery) {
@@ -222,6 +233,12 @@ const editBookScene = new Scenes.WizardScene(
         
         // Показуємо меню редагування з оновленою інформацією
         const { Markup } = await import('telegraf');
+        
+        if (!state.book) {
+          await ctx.reply('❌ Помилка: дані книги відсутні');
+          return ctx.scene.leave();
+        }
+        
         await ctx.editMessageText(
           '📝 *Редагування книги*\n\n' +
           `📖 ${state.book.title}\n` +
@@ -258,6 +275,12 @@ const editBookScene = new Scenes.WizardScene(
         
         // Показуємо меню редагування
         const { Markup } = await import('telegraf');
+        
+        if (!state.book) {
+          await ctx.reply('❌ Помилка: дані книги відсутні');
+          return ctx.scene.leave();
+        }
+        
         await ctx.editMessageText(
           '📝 *Редагування книги*\n\n' +
           `📖 ${state.book.title}\n` +
