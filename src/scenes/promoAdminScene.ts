@@ -10,7 +10,6 @@ import {
   getExtendedPromoStats,
   getAllPromoCodes,
   getPromoCodeByCode,
-  getDiscountTypeText,
 } from '../database/promoCodeFunctions';
 
 const promoAdminScene = new Scenes.BaseScene<BotContext>('PROMO_ADMIN_SCENE');
@@ -95,7 +94,7 @@ promoAdminScene.action('promo_list', async (ctx) => {
     const status = promo.is_active ? '✅' : '❌';
     message += `${status} <code>${promo.code}</code>\n`;
     message += `   ${promo.description}\n`;
-    message += `   💰 ${promo.discount_value}${promo.discount_type === 'percentage' ? '%' : ' грн'}\n\n`;
+    message += `   📚 Yakaboo Unlimited\n\n`;
   }
 
   if (promoCodes.length > 10) {
@@ -247,10 +246,10 @@ promoAdminScene.on('text', async (ctx) => {
   await ctx.reply(
     '✅ *ПРОМОКОД УСПІШНО ДОДАНИЙ!*\n\n' +
       `🎫 *Код:* \`${newPromo.code}\`\n` +
-      `📝 *Опис:* ${newPromo.description}\n` +
-      `💰 *Тип:* ${getDiscountTypeText(newPromo.discount_type)}\n` +
-      `🎯 *Значення:* ${newPromo.discount_value}${newPromo.discount_type === 'percentage' ? '%' : ' грн'}\n\n` +
-      '✨ Користувачі зможуть отримати цей промокод через кнопку "🎁 Отримати промокод"',
+      `📚 *Тип:* Yakaboo Unlimited підписка\n` +
+      `📝 *Опис:* ${newPromo.description}\n\n` +
+      '✨ Користувачі зможуть отримати цей промокод через кнопку "🎁 Отримати промокод"\n\n' +
+      '🔄 Після використання промокод можна повернути, і він стане доступним знову.',
     { parse_mode: 'Markdown' }
   );
 

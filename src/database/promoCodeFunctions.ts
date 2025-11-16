@@ -9,8 +9,7 @@ export interface PromoCode {
   id?: number;
   code: string;
   description: string;
-  discount_type: 'percentage' | 'fixed' | 'shipping';
-  discount_value: number;
+  promo_type: 'yakaboo_unlimited';
   is_active: boolean;
   created_at?: string;
   created_by?: number;
@@ -31,19 +30,13 @@ export const addPromoCode = (code: string, adminId?: number): Promise<number> =>
     const details = generatePromoCodeDetails(code);
 
     const query = `
-      INSERT INTO promo_codes (code, description, discount_type, discount_value, created_by)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO promo_codes (code, description, promo_type, created_by)
+      VALUES (?, ?, ?, ?)
     `;
 
     db.run(
       query,
-      [
-        code.toUpperCase(),
-        details.description,
-        details.discount_type,
-        details.discount_value,
-        adminId || null,
-      ],
+      [code.toUpperCase(), details.description, details.promo_type, adminId || null],
       function (err) {
         if (err) {
           logger.error('Error adding promo code', err, { code });
@@ -58,93 +51,16 @@ export const addPromoCode = (code: string, adminId?: number): Promise<number> =>
 };
 
 /**
- * Автоматична генерація деталей промокоду на основі коду
+ * Генерація деталей промокоду
+ * Всі промокоди дають доступ до Yakaboo Unlimited
  */
-function generatePromoCodeDetails(code: string): {
+function generatePromoCodeDetails(_code: string): {
   description: string;
-  discount_type: 'percentage' | 'fixed' | 'shipping';
-  discount_value: number;
+  promo_type: 'yakaboo_unlimited';
 } {
-  const codeUpper = code.toUpperCase();
-
-  // Вітальні промокоди
-  if (codeUpper.includes('WELCOME') || codeUpper.includes('NEW') || codeUpper.includes('HELLO')) {
-    return {
-      description: '🎉 Вітальний промокод - знижка 15% на перше замовлення на Yakaboo.ua',
-      discount_type: 'percentage',
-      discount_value: 15,
-    };
-  }
-
-  // Сезонні промокоди
-  if (codeUpper.includes('SUMMER') || codeUpper.includes('ЛІТО')) {
-    return {
-      description: '☀️ Літня знижка - спеціальна пропозиція 20% на Yakaboo.ua',
-      discount_type: 'percentage',
-      discount_value: 20,
-    };
-  }
-
-  if (codeUpper.includes('SPRING') || codeUpper.includes('ВЕСНА')) {
-    return {
-      description: '🌸 Весняна знижка - спеціальна пропозиція 20% на Yakaboo.ua',
-      discount_type: 'percentage',
-      discount_value: 20,
-    };
-  }
-
-  if (codeUpper.includes('WINTER') || codeUpper.includes('ЗИМА')) {
-    return {
-      description: '❄️ Зимова знижка - спеціальна пропозиція 20% на Yakaboo.ua',
-      discount_type: 'percentage',
-      discount_value: 20,
-    };
-  }
-
-  if (codeUpper.includes('AUTUMN') || codeUpper.includes('FALL') || codeUpper.includes('ОСІНЬ')) {
-    return {
-      description: '🍂 Осіння знижка - спеціальна пропозиція 20% на Yakaboo.ua',
-      discount_type: 'percentage',
-      discount_value: 20,
-    };
-  }
-
-  // Безкоштовна доставка
-  if (codeUpper.includes('SHIP') || codeUpper.includes('DELIVERY') || codeUpper.includes('FREE')) {
-    return {
-      description: '🚚 Безкоштовна доставка для вашого замовлення на Yakaboo.ua',
-      discount_type: 'shipping',
-      discount_value: 0,
-    };
-  }
-
-  // Студентські промокоди
-  if (codeUpper.includes('STUDENT') || codeUpper.includes('СТУДЕНТ')) {
-    return {
-      description: '🎓 Студентська знижка 15% на Yakaboo.ua',
-      discount_type: 'percentage',
-      discount_value: 15,
-    };
-  }
-
-  // Промокоди з числами (витягуємо відсоток)
-  const numberMatch = codeUpper.match(/(\d+)/);
-  if (numberMatch) {
-    const value = parseInt(numberMatch[1]);
-    if (value >= 5 && value <= 50) {
-      return {
-        description: `💰 Спеціальна знижка ${value}% за промокодом на Yakaboo.ua`,
-        discount_type: 'percentage',
-        discount_value: value,
-      };
-    }
-  }
-
-  // За замовчуванням
   return {
-    description: '🎁 Спеціальна знижка 10% за промокодом на Yakaboo.ua',
-    discount_type: 'percentage',
-    discount_value: 10,
+    description: '📚 Промокод на доступ до Yakaboo Unlimited',
+    promo_type: 'yakaboo_unlimited',
   };
 }
 
@@ -218,6 +134,60 @@ export const markPromoCodeAsUsed = (userId: number, promoCodeId: number): Promis
           logger.info('Promo code marked as used', { userId, promoCodeId });
           resolve();
         }
+      }
+    );
+  });
+};
+
+/**
+ * Отримати промокод користувача
+ */
+export const getUserPromoCode = (userId: number): Promise<PromoCode | undefined> => {
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT pc.* FROM promo_codes pc
+       INNER JOIN used_promo_codes upc ON pc.id = upc.promo_code_id
+       WHERE upc.user_id = ?`,
+      [userId],
+      (err, row: PromoCode) => {
+        if (err) reject(err);
+        else resolve(row);
+      }
+    );
+  });
+};
+
+/**
+ * Повернути промокод (видалити прив'язку до користувача)
+ */
+export const returnPromoCode = (userId: number): Promise<boolean> => {
+  return new Promise((resolve, reject) => {
+    db.run('DELETE FROM used_promo_codes WHERE user_id = ?', [userId], function (err) {
+      if (err) {
+        logger.error('Error returning promo code', err, { userId });
+        reject(err);
+      } else {
+        logger.info('Promo code returned', { userId, changes: this.changes });
+        resolve(this.changes > 0);
+      }
+    });
+  });
+};
+
+/**
+ * Отримати доступний промокод (не використаний)
+ */
+export const getAvailablePromoCodeForUser = (): Promise<PromoCode | undefined> => {
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT * FROM promo_codes 
+       WHERE is_active = 1 
+       AND id NOT IN (SELECT promo_code_id FROM used_promo_codes)
+       LIMIT 1`,
+      [],
+      (err, row: PromoCode) => {
+        if (err) reject(err);
+        else resolve(row);
       }
     );
   });
