@@ -53,5 +53,13 @@ export function validateEnv(): Env {
 /**
  * Get validated environment variables
  * Safe to use after calling validateEnv() at app startup
+ * Note: Call validateEnv() after dotenv.config() to ensure .env is loaded
  */
-export const env = validateEnv();
+let _env: Env | null = null;
+
+export function getEnv(): Env {
+  if (!_env) {
+    _env = validateEnv();
+  }
+  return _env;
+}

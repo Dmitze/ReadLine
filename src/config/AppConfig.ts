@@ -4,7 +4,7 @@
  * Uses Zod-validated environment variables
  */
 
-import { env } from './envSchema';
+import { getEnv } from './envSchema';
 
 export interface AppConfig {
   // Bot
@@ -81,6 +81,7 @@ export class ConfigManager {
    * Uses validated env from envSchema
    */
   private loadConfig(): AppConfig {
+    const env = getEnv();
     return {
       bot: {
         token: env.BOT_TOKEN,
