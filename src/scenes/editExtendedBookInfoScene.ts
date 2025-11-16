@@ -410,7 +410,7 @@ editExtendedBookInfoScene.action('save_warnings', async (ctx) => {
     const book = await getBookById(state.bookId);
     await updateBookInfo(
       state.bookId,
-      book?.recommended_age || 0,
+      String(book?.recommended_age || 0),
       warnings.length > 0 ? warnings : undefined
     );
 

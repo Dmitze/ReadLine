@@ -20,7 +20,7 @@ const bot = new Telegraf<BotContext>(env.BOT_TOKEN);
 
 // Встановлюємо персистентне головне меню
 bot.telegram.setChatMenuButton({
-  menu_button: {
+  menuButton: {
     type: 'commands',
   },
 });

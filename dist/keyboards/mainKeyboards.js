@@ -205,6 +205,7 @@ const getEnhancedBookKeyboard = (book, isSaved = false) => {
         telegraf_1.Markup.button.callback('📊 Відгуки', `reviews_${book.id}`),
         telegraf_1.Markup.button.callback('🔍 Схожі книги', `similar_${book.id}`),
     ]);
+    keyboard.push([telegraf_1.Markup.button.callback('⬅️ Назад до меню', 'back_to_menu')]);
     return telegraf_1.Markup.inlineKeyboard(keyboard).reply_markup;
 };
 exports.getEnhancedBookKeyboard = getEnhancedBookKeyboard;

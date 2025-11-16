@@ -388,6 +388,37 @@ const migration007_AddExtendedBookInfo: IMigration = {
   },
 };
 
+/**
+ * MIGRATION 008 - Add EPUB support
+ */
+const migration008_AddEpubSupport: IMigration = {
+  version: '008_20251116_add_epub_support',
+  name: 'Add EPUB support',
+
+  up: async (db: Database) => {
+    const sql = `
+      -- Add EPUB file support to books table
+      ALTER TABLE books ADD COLUMN epub_file_id TEXT;
+      ALTER TABLE books ADD COLUMN epub_url TEXT;
+
+      -- Create indexes for performance
+      CREATE INDEX IF NOT EXISTS idx_books_epub_file_id ON books(epub_file_id);
+    `;
+
+    try {
+      await db.run(sql);
+    } catch (error) {
+      // Columns might already exist
+      console.warn('EPUB columns might already exist');
+    }
+  },
+
+  down: async (db: Database) => {
+    // SQLite doesn't support DROP COLUMN easily
+    console.warn('Rollback not supported for EPUB support migration');
+  },
+};
+
 // Export all migrations
 export const allMigrations: IMigration[] = [
   migration001_CreateCoreTables,
@@ -397,4 +428,5 @@ export const allMigrations: IMigration[] = [
   migration005_AddStatistics,
   migration006_AddSoftDeleteSupport,
   migration007_AddExtendedBookInfo,
+  migration008_AddEpubSupport,
 ];

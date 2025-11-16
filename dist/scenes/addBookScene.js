@@ -48,15 +48,9 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
     (0, utils_1.logUserAction)(ctx, 'start_add_book');
     await ctx.reply(`${(0, utils_1.getProgress)(0)}\n📖 Введіть назву книги:\n\n` +
         `${utils_1.examples.title}\n\n` +
-        '💡 Або натисніть /cancel для скасування', {
-        reply_markup: telegraf_1.Markup.keyboard([['❌ Скасувати']]).resize().reply_markup,
-    });
+        '💡 Або натисніть /cancel для скасування');
     return ctx.wizard.next();
 }, async (ctx) => {
-    if (ctx.message && 'text' in ctx.message && ctx.message.text === '❌ Скасувати') {
-        await ctx.reply('❌ Додавання книги скасовано');
-        return ctx.scene?.leave();
-    }
     if (!ctx.message || !('text' in ctx.message)) {
         await ctx.reply('❌ Будь ласка, надішліть текст (назву книги).');
         return;
@@ -77,15 +71,9 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
     (0, utils_1.logUserAction)(ctx, 'entered_title', { title });
     await ctx.reply(`${(0, utils_1.getProgress)(1)}\n👤 Введіть автора книги:\n\n` +
         `${utils_1.examples.author}\n\n` +
-        '💡 Або натисніть /cancel для скасування', {
-        reply_markup: telegraf_1.Markup.keyboard([['❌ Скасувати']]).resize().reply_markup,
-    });
+        '💡 Або натисніть /cancel для скасування');
     return ctx.wizard.next();
 }, async (ctx) => {
-    if (ctx.message && 'text' in ctx.message && ctx.message.text === '❌ Скасувати') {
-        await ctx.reply('❌ Додавання книги скасовано');
-        return ctx.scene?.leave();
-    }
     if (!ctx.message || !('text' in ctx.message)) {
         await ctx.reply("❌ Будь ласка, надішліть текст (ім'я автора).");
         return;
@@ -179,10 +167,6 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
     }
     return;
 }, async (ctx) => {
-    if (ctx.message && 'text' in ctx.message && ctx.message.text === '❌ Скасувати') {
-        await ctx.reply('❌ Додавання книги скасовано');
-        return ctx.scene?.leave();
-    }
     if (!ctx.message || !('text' in ctx.message)) {
         await ctx.reply('❌ Будь ласка, надішліть текст (опис книги).');
         return;
@@ -237,7 +221,6 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
                 [{ text: '📄 Файл', callback_data: 'type_file' }],
                 [{ text: '🎧 Аудіокнига', callback_data: 'type_audio' }],
                 [{ text: '🔗 Посилання', callback_data: 'type_link' }],
-                [{ text: '❌ Скасувати', callback_data: 'cancel_add' }],
             ],
         },
     });

@@ -50,6 +50,11 @@ const container = (0, ContainerBootstrap_1.getContainer)();
     process.exit(1);
 });
 const bot = new telegraf_1.Telegraf(env.BOT_TOKEN);
+bot.telegram.setChatMenuButton({
+    menuButton: {
+        type: 'commands',
+    },
+});
 (0, middlewareSetup_1.setupMiddleware)(bot);
 bot.catch(async (err, ctx) => {
     logger_1.logger.error('Bot error', err instanceof Error ? err : new Error(String(err)), {
@@ -133,7 +138,12 @@ bot.start(async (ctx) => {
         const isNew = await (0, userFunctions_1.isNewUser)(userId);
         if (isNew) {
             logger_1.logger.info('New user detected, starting onboarding', { userId, username });
-            return ctx.scene?.enter('ONBOARDING_SCENE');
+            if (ctx.scene) {
+                return ctx.scene.enter('ONBOARDING_SCENE');
+            }
+            else {
+                logger_1.logger.error('Scene context not available for onboarding', { userId });
+            }
         }
         const welcomeMessage = '╔═══════════════════════════╗\n' +
             '   📚 *ReadLine Бібліотека* 📚\n' +
@@ -271,6 +281,18 @@ bot.action('random_book', async (ctx) => {
     }
     else {
         await ctx.reply('❌ На жаль, зараз немає доступних книг');
+    }
+});
+bot.action('back_to_menu', async (ctx) => {
+    try {
+        await ctx.answerCbQuery();
+        await ctx.reply('👋 Повертаємось до головного меню', {
+            reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)(),
+        });
+        logger_1.logger.userAction(ctx.from.id, 'back_to_menu');
+    }
+    catch (error) {
+        logger_1.logger.error('Error in back_to_menu handler', error instanceof Error ? error : new Error(String(error)));
     }
 });
 bot.action('back_to_admin', async (ctx) => {

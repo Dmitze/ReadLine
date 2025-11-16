@@ -12,6 +12,8 @@ export interface Book {
   photo_file_id: string;
   file_url?: string;
   pdf_file_id?: string;
+  epub_file_id?: string;
+  epub_url?: string;
   audio_file_id?: string;
   audio_duration?: number;
   audio_external_link?: string;

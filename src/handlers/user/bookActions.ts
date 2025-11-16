@@ -208,7 +208,120 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      await ctx.answerCbQuery('Завантаження PDF...');
+      const bookId = parseInt(match[1], 10);
+      logger.info('PDF download requested', {
+        userId: ctx.from?.id,
+        bookId,
+      });
+
+      await ctx.answerCbQuery('⏳ Завантаження PDF...');
+
+      const book = await getBookById(bookId);
+
+      if (!book) {
+        logger.warn('Book not found for download', { bookId });
+        await ctx.reply('❌ Книга не знайдена');
+        return;
+      }
+
+      // Детальне логування доступності файлів
+      logger.info('Book file availability', {
+        bookId,
+        title: book.title,
+        hasPdfFileId: !!book.pdf_file_id,
+        hasFileUrl: !!book.file_url,
+        pdfFileId: book.pdf_file_id ? 'present' : 'missing',
+        fileUrl: book.file_url ? 'present' : 'missing',
+      });
+
+      if (!book.pdf_file_id && !book.file_url) {
+        logger.warn('No PDF file available', { bookId, title: book.title });
+        await ctx.reply(
+          `❌ PDF файл недоступний для книги "${book.title}".\n\n` +
+            'Зверніться до адміністратора для додавання файлу.'
+        );
+        return;
+      }
+
+      await incrementDownloads(bookId);
+
+      try {
+        if (book.pdf_file_id) {
+          // Спробуємо відправити файл через Telegram
+          logger.info('Sending PDF via Telegram file_id', {
+            bookId,
+            fileIdLength: book.pdf_file_id.length,
+          });
+
+          await ctx.replyWithDocument(book.pdf_file_id, {
+            caption: `📄 ${book.title} - ${book.author}`,
+          });
+
+          logger.info('PDF sent successfully', { bookId, userId: ctx.from?.id });
+        } else if (book.file_url) {
+          // Якщо є зовнішнє посилання, відправляємо його
+          logger.info('Sending PDF via URL', { bookId, urlLength: book.file_url.length });
+
+          await ctx.reply(`📥 Посилання для завантаження PDF:\n\n${book.file_url}`, {
+            disable_web_page_preview: false,
+          });
+
+          logger.info('PDF URL sent successfully', { bookId, userId: ctx.from?.id });
+        }
+      } catch (fileError) {
+        logger.error(
+          'Error sending PDF file',
+          fileError instanceof Error ? fileError : new Error(String(fileError)),
+          {
+            bookId,
+            title: book.title,
+            hasPdfFileId: !!book.pdf_file_id,
+            hasFileUrl: !!book.file_url,
+          }
+        );
+
+        // Якщо файл не знайдено в Telegram, пробуємо надати посилання
+        if (book.file_url) {
+          await ctx.reply(
+            `📥 Файл тимчасово недоступний через Telegram.\n\n` +
+              `Посилання для завантаження:\n${book.file_url}`,
+            {
+              disable_web_page_preview: false,
+            }
+          );
+        } else {
+          await ctx.reply(
+            '❌ Файл тимчасово недоступний.\n\n' +
+              'Можливі причини:\n' +
+              '• Файл застарів у Telegram\n' +
+              '• Файл ще не додано\n\n' +
+              "Зверніться до адміністратора через /feedback"
+          );
+        }
+      }
+
+      logger.userAction(ctx.from!.id, 'download_pdf', { bookId });
+    })().catch((error) => {
+      logger.error(
+        'Error downloading PDF',
+        error instanceof Error ? error : new Error(String(error)),
+        { userId: ctx.from?.id }
+      );
+      ctx.reply(ERRORS.DOWNLOAD_ERROR);
+    });
+    return;
+  });
+
+  // Скачать EPUB
+  bot.action(/download_epub_(\d+)/, async (ctx: BotContext) => {
+    (async () => {
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
+        return;
+      }
+
+      await ctx.answerCbQuery('Завантаження EPUB...');
 
       const bookId = parseInt(match[1], 10);
       const book = await getBookById(bookId);
@@ -218,38 +331,34 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      if (!book.pdf_file_id && !book.file_url) {
-        await ctx.reply('❌ PDF файл недоступний для цієї книги');
+      if (!book.epub_file_id && !book.epub_url) {
+        await ctx.reply('❌ EPUB файл недоступний для цієї книги');
         return;
       }
 
       await incrementDownloads(bookId);
 
       try {
-        if (book.pdf_file_id) {
-          // Спробуємо відправити файл через Telegram
-          await ctx.replyWithDocument(book.pdf_file_id, {
-            caption: `📄 ${book.title} - ${book.author}`,
+        if (book.epub_file_id) {
+          await ctx.replyWithDocument(book.epub_file_id, {
+            caption: `📱 ${book.title} - ${book.author}`,
           });
-        } else if (book.file_url) {
-          // Якщо є зовнішнє посилання, відправляємо його
-          await ctx.reply(`📥 Посилання для завантаження:\n\n${book.file_url}`, {
+        } else if (book.epub_url) {
+          await ctx.reply(`📥 Посилання для завантаження EPUB:\n\n${book.epub_url}`, {
             disable_web_page_preview: false,
           });
         } else {
-          // Якщо немає ні file_id, ні url - помилка
-          throw new Error('File not available');
+          throw new Error('EPUB file not available');
         }
       } catch (fileError) {
         logger.error(
-          'Error sending file',
+          'Error sending EPUB file',
           fileError instanceof Error ? fileError : new Error(String(fileError))
         );
 
-        // Якщо файл не знайдено в Telegram, пробуємо надати посилання
-        if (book.file_url) {
+        if (book.epub_url) {
           await ctx.reply(
-            `📥 Файл тимчасово недоступний.\n\nПосилання для завантаження:\n${book.file_url}`,
+            `📥 Файл тимчасово недоступний.\n\nПосилання для завантаження:\n${book.epub_url}`,
             {
               disable_web_page_preview: false,
             }
@@ -261,10 +370,10 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
         }
       }
 
-      logger.userAction(ctx.from!.id, 'download_pdf', { bookId });
+      logger.userAction(ctx.from!.id, 'download_epub', { bookId });
     })().catch((error) => {
       logger.error(
-        'Error downloading PDF',
+        'Error downloading EPUB',
         error instanceof Error ? error : new Error(String(error)),
         { userId: ctx.from?.id }
       );
