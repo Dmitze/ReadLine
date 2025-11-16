@@ -90,8 +90,11 @@ const getAdaptiveGenreKeyboard = (ctx, genres) => {
 };
 exports.getAdaptiveGenreKeyboard = getAdaptiveGenreKeyboard;
 const getGenreKeyboard = (genres) => {
-    const keyboard = genres.map((genre) => [genre]);
-    return telegraf_1.Markup.keyboard(keyboard).resize().reply_markup;
+    const keyboard = genres.map((genre) => [
+        telegraf_1.Markup.button.callback(genre, `genre_${genre}`)
+    ]);
+    keyboard.push([telegraf_1.Markup.button.callback('⬅️ Назад', 'catalog_books')]);
+    return telegraf_1.Markup.inlineKeyboard(keyboard).reply_markup;
 };
 exports.getGenreKeyboard = getGenreKeyboard;
 const getAdaptiveBookKeyboard = (ctx, book, isSaved = false) => {

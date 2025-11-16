@@ -12,6 +12,7 @@ import { BUTTONS, ERRORS, CONFIG } from '../../constants';
 import { cache, CACHE_KEYS, CACHE_TTL } from '../../utils/cache';
 import {
   getGenres,
+  getBooksByGenre,
   getBooksByGenreWithPagination,
   getTopBooks,
   getMostDownloadedBooks,
@@ -119,6 +120,51 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       logger.userAction(ctx.from!.id, 'view_catalog_genres');
     } catch (error) {
       logger.error('Error showing genres catalog', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  // Обробник вибору жанру
+  bot.action(/genre_(.+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match) return;
+
+      await ctx.answerCbQuery();
+
+      const genre = match[1];
+      const books = await getBooksByGenre(genre);
+
+      if (books.length === 0) {
+        await ctx.editMessageText(
+          `📭 <b>Книги жанру "${genre}"</b>\n\nНа жаль, книг цього жанру ще немає.`,
+          {
+            parse_mode: 'HTML',
+            reply_markup: Markup.inlineKeyboard([
+              [Markup.button.callback('⬅️ Назад до жанрів', 'catalog_genres')]
+            ]).reply_markup
+          }
+        );
+        return;
+      }
+
+      let message = `📖 <b>ЖАНР: ${genre.toUpperCase()}</b>\n\n`;
+      message += `Знайдено ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}:\n\n`;
+
+      const keyboard = books.slice(0, 10).map((book) => [
+        Markup.button.callback(`📖 ${book.title} - ${book.author}`, `view_book_${book.id}`)
+      ]);
+
+      keyboard.push([Markup.button.callback('⬅️ Назад до жанрів', 'catalog_genres')]);
+
+      await ctx.editMessageText(message, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup
+      });
+
+      logger.userAction(ctx.from!.id, 'view_genre_books', { genre, count: books.length });
+    } catch (error) {
+      logger.error('Error showing genre books', error, { userId: ctx.from?.id });
       await ctx.answerCbQuery('❌ Помилка');
     }
   });

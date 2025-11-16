@@ -127,10 +127,13 @@ export const getAdaptiveGenreKeyboard = (ctx: Context, genres: string[]) => {
 
 // Стара версія для зворотної сумісності
 export const getGenreKeyboard = (genres: string[]) => {
-  const keyboard = genres.map((genre) => [genre]);
-  // Персистентне меню завжди доступне
+  const keyboard = genres.map((genre) => [
+    Markup.button.callback(genre, `genre_${genre}`)
+  ]);
+  
+  keyboard.push([Markup.button.callback('⬅️ Назад', 'catalog_books')]);
 
-  return Markup.keyboard(keyboard).resize().reply_markup;
+  return Markup.inlineKeyboard(keyboard).reply_markup;
 };
 
 // Адаптивна клавіатура для книги (Завдання 30)
