@@ -168,15 +168,15 @@ export const initDatabase = (): Promise<void> => {
     `;
 
     const alterBooksTableQueries = [
-      `ALTER TABLE books ADD COLUMN pdf_file_id TEXT;`,
-      `ALTER TABLE books ADD COLUMN audio_file_id TEXT;`,
-      `ALTER TABLE books ADD COLUMN audio_duration INTEGER;`,
-      `ALTER TABLE books ADD COLUMN audio_external_link TEXT;`,
-      `ALTER TABLE books ADD COLUMN narrator TEXT;`,
-      `ALTER TABLE books ADD COLUMN online_link TEXT;`,
-      `ALTER TABLE books ADD COLUMN external_link TEXT;`,
-      `ALTER TABLE books ADD COLUMN recommended_age INTEGER;`,
-      `ALTER TABLE books ADD COLUMN content_warnings TEXT;`
+      'ALTER TABLE books ADD COLUMN pdf_file_id TEXT;',
+      'ALTER TABLE books ADD COLUMN audio_file_id TEXT;',
+      'ALTER TABLE books ADD COLUMN audio_duration INTEGER;',
+      'ALTER TABLE books ADD COLUMN audio_external_link TEXT;',
+      'ALTER TABLE books ADD COLUMN narrator TEXT;',
+      'ALTER TABLE books ADD COLUMN online_link TEXT;',
+      'ALTER TABLE books ADD COLUMN external_link TEXT;',
+      'ALTER TABLE books ADD COLUMN recommended_age INTEGER;',
+      'ALTER TABLE books ADD COLUMN content_warnings TEXT;'
     ];
 
     db.serialize(() => {
