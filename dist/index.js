@@ -37,101 +37,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const telegraf_1 = require("telegraf");
-const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
 const logger_1 = require("./utils/logger");
-const envSchema_1 = require("./config/envSchema");
-const env = (0, envSchema_1.validateEnv)();
-logger_1.logger.info('Environment validation passed', { nodeEnv: env.NODE_ENV });
+const environmentSetup_1 = require("./bootstrap/environmentSetup");
+const middlewareSetup_1 = require("./bootstrap/middlewareSetup");
+const sceneSetup_1 = require("./bootstrap/sceneSetup");
 const ContainerBootstrap_1 = require("./core/ContainerBootstrap");
+const models_1 = require("./database/models");
+const env = (0, environmentSetup_1.setupEnvironment)();
 const container = (0, ContainerBootstrap_1.getContainer)();
 (0, ContainerBootstrap_1.bootstrapContainer)(container).catch((error) => {
     logger_1.logger.error('Failed to bootstrap container', error);
     process.exit(1);
 });
-const rateLimit_1 = require("./middleware/rateLimit");
-const constants_1 = require("./constants");
-const addBookScene_1 = __importDefault(require("./scenes/addBookScene"));
-const editBookScene_1 = __importDefault(require("./scenes/editBookScene"));
-const manageBooksScene_1 = __importDefault(require("./scenes/manageBooksScene"));
-const searchScene_1 = __importDefault(require("./scenes/searchScene"));
-const profileScene_1 = __importDefault(require("./scenes/profileScene"));
-const rateBookScene_1 = __importDefault(require("./scenes/rateBookScene"));
-const feedbackScene_1 = __importDefault(require("./scenes/feedbackScene"));
-const aiScene_1 = __importDefault(require("./scenes/aiScene"));
-const replyFeedbackScene_1 = __importDefault(require("./scenes/replyFeedbackScene"));
-const onboardingScene_1 = __importDefault(require("./scenes/onboardingScene"));
-const settingsScene_1 = __importDefault(require("./scenes/settingsScene"));
-const aiAssistantScene_1 = __importDefault(require("./scenes/aiAssistantScene"));
-const promoAdminScene_1 = __importDefault(require("./scenes/promoAdminScene"));
-const editExtendedBookInfoScene_1 = __importDefault(require("./scenes/editExtendedBookInfoScene"));
-const models_1 = require("./database/models");
-function validateEnvVariables() {
-    const errors = [];
-    const warnings = [];
-    if (!process.env.BOT_TOKEN) {
-        errors.push('BOT_TOKEN is required');
-    }
-    else if (process.env.BOT_TOKEN.length < constants_1.LIMITS.BOT_TOKEN_MIN) {
-        errors.push('BOT_TOKEN appears to be invalid (too short)');
-    }
-    if (!process.env.GEMINI_API_KEY) {
-        warnings.push('GEMINI_API_KEY is not set - AI features will be disabled');
-    }
-    else if (process.env.GEMINI_API_KEY.length < constants_1.LIMITS.API_KEY_MIN) {
-        warnings.push('GEMINI_API_KEY appears to be invalid (too short) - AI features may not work');
-    }
-    if (errors.length > 0) {
-        logger_1.logger.error('Environment validation failed - Critical configuration errors', new Error(errors.join(', ')));
-        logger_1.logger.error('Configuration required', new Error('Create .env file with: BOT_TOKEN, GEMINI_API_KEY (optional)'));
-        process.exit(1);
-    }
-    if (warnings.length > 0) {
-        logger_1.logger.warn('Environment validation warnings', { warnings });
-    }
-    logger_1.logger.info('Environment variables validated successfully');
-}
-validateEnvVariables();
 const bot = new telegraf_1.Telegraf(env.BOT_TOKEN);
-bot.use(async (ctx, next) => {
-    logger_1.logger.info('Processing update', { updateId: ctx.update.update_id });
-    await next();
-});
-bot.use(rateLimit_1.rateLimitMessage);
-bot.use(rateLimit_1.rateLimitCommand);
-bot.on('callback_query', rateLimit_1.rateLimitCallback);
-bot.use(async (ctx, next) => {
-    if (ctx.message && 'text' in ctx.message) {
-        const text = ctx.message.text;
-        if (text === '/start') {
-            if (ctx.scene) {
-                await ctx.scene.leave();
-                logger_1.logger.info('User left scene via /start', { userId: ctx.from?.id });
-            }
-            return next();
-        }
-        if (text === '/cancel' || text === '❌ Скасувати') {
-            if (ctx.scene) {
-                try {
-                    await ctx.scene.leave();
-                    logger_1.logger.info('User left scene via cancel', { userId: ctx.from?.id, command: text });
-                }
-                catch (error) {
-                    logger_1.logger.error('Error leaving scene', error instanceof Error ? error : new Error(String(error)));
-                }
-            }
-            if (ctx.session) {
-                ctx.session = {};
-            }
-            const { getMainMenuKeyboard } = await Promise.resolve().then(() => __importStar(require('./keyboards/mainKeyboards')));
-            await ctx.reply('❌ Операцію скасовано\n\nОберіть дію з меню:', {
-                reply_markup: getMainMenuKeyboard()
-            });
-            return;
-        }
-    }
-    return next();
-});
+(0, middlewareSetup_1.setupMiddleware)(bot);
 bot.catch(async (err, ctx) => {
     logger_1.logger.error('Bot error', err instanceof Error ? err : new Error(String(err)), {
         updateId: ctx.update.update_id,
@@ -162,22 +81,7 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('uncaughtException', (error) => {
     logger_1.logger.error('Uncaught Exception', error instanceof Error ? error : new Error(String(error)));
 });
-const stage = new telegraf_1.Scenes.Stage([
-    addBookScene_1.default,
-    editBookScene_1.default,
-    manageBooksScene_1.default,
-    searchScene_1.default,
-    profileScene_1.default,
-    rateBookScene_1.default,
-    feedbackScene_1.default,
-    aiScene_1.default,
-    replyFeedbackScene_1.default,
-    onboardingScene_1.default,
-    settingsScene_1.default,
-    aiAssistantScene_1.default,
-    promoAdminScene_1.default,
-    editExtendedBookInfoScene_1.default
-]);
+const stage = (0, sceneSetup_1.createStage)();
 const mainKeyboards_1 = require("./keyboards/mainKeyboards");
 bot.use((0, telegraf_1.session)());
 bot.use(async (ctx, next) => {
