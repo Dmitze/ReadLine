@@ -137,7 +137,11 @@ bot.start(async (ctx) => {
     if (isNew) {
       // Новий користувач - запускаємо онбординг
       logger.info('New user detected, starting onboarding', { userId, username });
-      return ctx.scene?.enter('ONBOARDING_SCENE');
+      if (ctx.scene) {
+        return ctx.scene.enter('ONBOARDING_SCENE');
+      } else {
+        logger.error('Scene context not available for onboarding', { userId });
+      }
     }
 
     // Існуючий користувач - показуємо звичайне привітання

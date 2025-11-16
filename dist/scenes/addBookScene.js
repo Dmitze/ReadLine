@@ -102,9 +102,7 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
     (0, utils_1.logUserAction)(ctx, 'entered_author', { author });
     const keyboard = [];
     for (let i = 0; i < utils_1.popularGenres.length; i += 4) {
-        const row = utils_1.popularGenres
-            .slice(i, i + 4)
-            .map((genre) => ({
+        const row = utils_1.popularGenres.slice(i, i + 4).map((genre) => ({
             text: genre,
             callback_data: `genre_popular_${utils_1.popularGenres.indexOf(genre)}`,
         }));
@@ -126,9 +124,7 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
             const allGenres = [...utils_1.popularGenres, ...utils_1.otherGenres];
             const keyboard = [];
             for (let i = 0; i < allGenres.length; i += 3) {
-                const row = allGenres
-                    .slice(i, i + 3)
-                    .map((genre) => ({
+                const row = allGenres.slice(i, i + 3).map((genre) => ({
                     text: genre,
                     callback_data: `genre_all_${allGenres.indexOf(genre)}`,
                 }));
