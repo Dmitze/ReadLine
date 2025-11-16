@@ -12,7 +12,7 @@ export interface ValidationRule {
 export interface ValidationError {
   field: string;
   message: string;
-  value?: any;
+  value?: unknown;
 }
 
 export interface ValidationResult {
@@ -36,7 +36,7 @@ export class Validator {
   /**
    * Валідувати значення
    */
-  static validate(value: any, rules: string[]): ValidationError | null {
+  static validate(value: unknown, rules: string[]): ValidationError | null {
     for (const rule of rules) {
       const error = this.validateRule(value, rule);
       if (error) return error;
@@ -47,7 +47,7 @@ export class Validator {
   /**
    * Валідувати одне правило
    */
-  private static validateRule(value: any, rule: string): ValidationError | null {
+  private static validateRule(value: unknown, rule: string): ValidationError | null {
     const [name, ...params] = rule.split(':');
 
     switch (name) {
@@ -88,31 +88,31 @@ export class Validator {
         break;
 
       case 'email':
-        if (!this.patterns.email.test(value)) {
+        if (typeof value !== 'string' || !this.patterns.email.test(value)) {
           return { field: '', message: 'Invalid email format', value };
         }
         break;
 
       case 'username':
-        if (!this.patterns.username.test(value)) {
+        if (typeof value !== 'string' || !this.patterns.username.test(value)) {
           return { field: '', message: 'Username must be 3-20 characters (alphanumeric, - or _)', value };
         }
         break;
 
       case 'url':
-        if (!this.patterns.url.test(value)) {
+        if (typeof value !== 'string' || !this.patterns.url.test(value)) {
           return { field: '', message: 'Invalid URL format', value };
         }
         break;
 
       case 'uuid':
-        if (!this.patterns.uuid.test(value)) {
+        if (typeof value !== 'string' || !this.patterns.uuid.test(value)) {
           return { field: '', message: 'Invalid UUID format', value };
         }
         break;
 
       case 'phone':
-        if (!this.patterns.phone.test(value)) {
+        if (typeof value !== 'string' || !this.patterns.phone.test(value)) {
           return { field: '', message: 'Invalid phone number format', value };
         }
         break;
@@ -150,7 +150,7 @@ export class Validator {
       case 'between':
         {
           const [min, max] = params.map(p => parseInt(p, 10));
-          const len = typeof value === 'string' ? value.length : value;
+          const len = typeof value === 'string' ? value.length : (typeof value === 'number' ? value : 0);
           if (len < min || len > max) {
             return { field: '', message: `Value must be between ${min} and ${max}`, value };
           }
@@ -159,6 +159,9 @@ export class Validator {
 
       case 'pattern':
         {
+          if (typeof value !== 'string') {
+            return { field: '', message: 'Value must be a string for pattern validation', value };
+          }
           const pattern = new RegExp(params[0]);
           if (!pattern.test(value)) {
             return { field: '', message: `Value does not match pattern ${params[0]}`, value };
@@ -188,25 +191,25 @@ export class Validator {
         break;
 
       case 'slug':
-        if (!this.patterns.slug.test(value)) {
+        if (typeof value !== 'string' || !this.patterns.slug.test(value)) {
           return { field: '', message: 'Value must be a valid slug (lowercase, numbers, hyphens)', value };
         }
         break;
 
       case 'latin':
-        if (!/^[a-zA-Z0-9\s.,'"-]+$/.test(value)) {
+        if (typeof value !== 'string' || !/^[a-zA-Z0-9\s.,'"-]+$/.test(value)) {
           return { field: '', message: 'Value must contain only Latin characters', value };
         }
         break;
 
       case 'ukrainian':
-        if (!this.patterns.ukrainian.test(value)) {
+        if (typeof value !== 'string' || !this.patterns.ukrainian.test(value)) {
           return { field: '', message: 'Value must contain only Ukrainian characters', value };
         }
         break;
 
       case 'safe':
-        if (this.hasSuspiciousPatterns(value)) {
+        if (typeof value !== 'string' || this.hasSuspiciousPatterns(value)) {
           return { field: '', message: 'Value contains suspicious patterns', value };
         }
         break;
@@ -233,7 +236,7 @@ export class Validator {
   /**
    * Санітизувати значення
    */
-  static sanitize(value: any, type: string = 'string'): any {
+  static sanitize(value: unknown, type: string = 'string'): unknown {
     if (value === null || value === undefined) {
       return null;
     }
@@ -247,7 +250,7 @@ export class Validator {
           .replace(/on\w+\s*=/gi, '');
 
       case 'number':
-        const num = parseFloat(value);
+        const num = typeof value === 'string' || typeof value === 'number' ? parseFloat(String(value)) : NaN;
         return isNaN(num) ? 0 : num;
 
       case 'boolean':
@@ -264,7 +267,7 @@ export class Validator {
 
       case 'object':
         if (typeof value === 'object' && value !== null) {
-          const sanitized: any = {};
+          const sanitized: Record<string, unknown> = {};
           for (const [key, val] of Object.entries(value)) {
             sanitized[key] = this.sanitize(val, 'string');
           }
@@ -280,7 +283,7 @@ export class Validator {
   /**
    * Валідувати об'єкт по схемі
    */
-  static validateObject(data: any, schema: Record<string, string[]>): ValidationResult {
+  static validateObject(data: Record<string, unknown>, schema: Record<string, string[]>): ValidationResult {
     const errors: ValidationError[] = [];
 
     for (const [field, rules] of Object.entries(schema)) {
@@ -305,13 +308,13 @@ export class Validator {
   /**
    * Валідувати і санітизувати об'єкт
    */
-  static validateAndSanitize(data: any, schema: Record<string, { rules: string[]; type?: string }>): {
+  static validateAndSanitize(data: Record<string, unknown>, schema: Record<string, { rules: string[]; type?: string }>): {
     valid: boolean;
-    data: any;
+    data: Record<string, unknown>;
     errors: ValidationError[];
   } {
     const errors: ValidationError[] = [];
-    const sanitized: any = {};
+    const sanitized: Record<string, unknown> = {};
 
     for (const [field, config] of Object.entries(schema)) {
       const value = data[field];
@@ -387,7 +390,7 @@ export class ValidationBuilder {
     return this;
   }
 
-  in(...values: any[]): this {
+  in(...values: unknown[]): this {
     this.addRule(`in:${values.join(':')}`);
     return this;
   }
@@ -414,7 +417,7 @@ export class ValidationBuilder {
     return this.rules;
   }
 
-  validate(data: any): ValidationResult {
+  validate(data: Record<string, unknown>): ValidationResult {
     return Validator.validateObject(data, this.rules);
   }
 }

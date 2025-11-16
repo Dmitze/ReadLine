@@ -4,6 +4,7 @@
  */
 
 import { Database as SqliteDatabase } from 'sqlite3';
+import { logger } from '../utils/logger';
 
 export type { SqliteDatabase as Database };
 
@@ -79,28 +80,29 @@ export class DatabaseWrapper {
 
   /**
    * Виконати кілька запитів в транзакції
+   * Fixed: proper async/await without Promise anti-pattern
    */
   async transaction<T>(callback: () => Promise<T>): Promise<T> {
-    return new Promise(async (resolve, reject) => {
-      this.db.run('BEGIN TRANSACTION', async (err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-
-        try {
-          const result = await callback();
-          this.db.run('COMMIT', (err) => {
-            if (err) reject(err);
-            else resolve(result);
-          });
-        } catch (error) {
-          this.db.run('ROLLBACK', () => {
-            reject(error);
-          });
-        }
-      });
-    });
+    try {
+      // Begin transaction
+      await this.run('BEGIN TRANSACTION');
+      
+      // Execute callback
+      const result = await callback();
+      
+      // Commit on success
+      await this.run('COMMIT');
+      
+      return result;
+    } catch (error) {
+      // Rollback on error
+      try {
+        await this.run('ROLLBACK');
+      } catch (rollbackError) {
+        logger.error('Failed to rollback transaction', rollbackError instanceof Error ? rollbackError : new Error(String(rollbackError)));
+      }
+      throw error;
+    }
   }
 
   /**
@@ -113,8 +115,15 @@ export class DatabaseWrapper {
 
   /**
    * Підрахувати кількість записів
+   * NOTE: table and where parameters should be from trusted sources only
+   * Consider using QueryBuilder for dynamic queries
    */
   async count(table: string, where?: string, params: SQLParameters = []): Promise<number> {
+    // Validate table name to prevent SQL injection
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(table)) {
+      throw new Error(`Invalid table name: ${table}`);
+    }
+    
     const query = where 
       ? `SELECT COUNT(*) as count FROM ${table} WHERE ${where}`
       : `SELECT COUNT(*) as count FROM ${table}`;

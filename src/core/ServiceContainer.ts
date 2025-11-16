@@ -144,7 +144,7 @@ export class ServiceContainer implements IServiceContainer {
     // Call dispose methods if they exist
     for (const definition of this.services.values()) {
       if (definition.instance && typeof definition.instance.dispose === 'function') {
-        definition.instance.dispose().catch((err) => {
+        definition.instance.dispose().catch((err: unknown) => {
           logger.error('Error disposing service', err instanceof Error ? err : new Error(String(err)));
         });
       }

@@ -187,7 +187,11 @@ onboardingScene.action(/onboarding_genre_(.+)/, async (ctx: BotContext) => {
       parse_mode: 'Markdown',
       reply_markup: Markup.inlineKeyboard(genreButtons).reply_markup
     }
-  ).catch(() => {});
+  ).catch((error) => {
+    logger.debug('Failed to edit message', { 
+      error: error instanceof Error ? error.message : String(error)
+    });
+  });
 });
 
 // Завершення вибору жанрів

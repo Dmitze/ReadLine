@@ -17,7 +17,7 @@ if (!fs_1.default.existsSync(dbDir)) {
 exports.db = new sqlite3_1.default.Database(dbPath);
 exports.db.exec(`
   PRAGMA foreign_keys = ON;
-  PRAGMA busy_timeout = 3000;
+  PRAGMA busy_timeout = ${require('../constants/timeouts').TIMEOUTS.DATABASE_BUSY};
   PRAGMA journal_mode = WAL;
 `, (err) => {
     if (err) {
@@ -26,7 +26,7 @@ exports.db.exec(`
     else {
         logger_1.logger.info('SQLite PRAGMA configured', {
             foreign_keys: 'ON',
-            busy_timeout: 3000,
+            busy_timeout: require('../constants/timeouts').TIMEOUTS.DATABASE_BUSY,
             journal_mode: 'WAL'
         });
     }

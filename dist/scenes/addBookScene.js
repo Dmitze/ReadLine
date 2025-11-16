@@ -831,7 +831,11 @@ addBookScene.action('back_to_admin', async (ctx) => {
     const feedbackAlert = pendingFeedback.length > 0
         ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
         : '✅ Всі повідомлення прочитані';
-    await ctx.deleteMessage().catch(() => { });
+    await ctx.deleteMessage().catch((error) => {
+        logger_1.logger.debug('Failed to delete message', {
+            error: error instanceof Error ? error.message : String(error)
+        });
+    });
     await ctx.reply('🛠️ <b>Панель адміністратора</b>\n\n' +
         '📊 <b>Статистика:</b>\n' +
         `📚 Книг в каталозі: ${stats.totalBooks}\n` +

@@ -2,6 +2,7 @@ import sqlite3 from 'sqlite3';
 import fs from 'fs';
 import path from 'path';
 import { logger } from '../utils/logger';
+import { TIMEOUTS } from '../constants/timeouts';
 
 // Environment variables are initialized in index.ts (entry point)
 
@@ -144,7 +145,7 @@ export const db = new sqlite3.Database(dbPath);
 // ✅ ВИПРАВЛЕНО #7: PRAGMA для SQLite оптимізації
 db.exec(`
   PRAGMA foreign_keys = ON;
-  PRAGMA busy_timeout = 3000;
+  PRAGMA busy_timeout = ${TIMEOUTS.DATABASE_BUSY};
   PRAGMA journal_mode = WAL;
 `, (err) => {
   if (err) {
@@ -152,7 +153,7 @@ db.exec(`
   } else {
     logger.info('SQLite PRAGMA configured', { 
       foreign_keys: 'ON', 
-      busy_timeout: 3000,
+      busy_timeout: TIMEOUTS.DATABASE_BUSY,
       journal_mode: 'WAL'
     });
   }

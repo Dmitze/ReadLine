@@ -107,7 +107,7 @@ export class InputSanitizer {
   /**
    * Санітизувати для JSON
    */
-  static sanitizeForJson(value: any): string {
+  static sanitizeForJson(value: unknown): string {
     return JSON.stringify(value)
       .replace(/\\/g, '\\\\')
       .replace(/"/g, '\\"')
@@ -142,7 +142,7 @@ export class InputSanitizer {
   /**
    * Санітизувати об'єкт
    */
-  static sanitizeObject(obj: any, options: SanitizeOptions = {}): any {
+  static sanitizeObject(obj: unknown, options: SanitizeOptions = {}): unknown {
     if (obj === null || obj === undefined) {
       return obj;
     }
@@ -156,7 +156,7 @@ export class InputSanitizer {
     }
 
     if (typeof obj === 'object') {
-      const sanitized: any = {};
+      const sanitized: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(obj)) {
         sanitized[key] = this.sanitizeObject(value, options);
       }
@@ -205,7 +205,7 @@ export class InputSanitizer {
   /**
    * Повна санітизація для вводу з Телеграму
    */
-  static sanitizeTelegramInput(value: any): string {
+  static sanitizeTelegramInput(value: unknown): string {
     if (typeof value !== 'string') {
       return '';
     }

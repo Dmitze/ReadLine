@@ -5,16 +5,24 @@ import dotenv from 'dotenv';
 // Ініціалізація змінних оточення
 dotenv.config();
 
+// Імпорт utilities (перед validate)
+import { logger } from './utils/logger';
+
 // Validate environment variables at startup
 import { validateEnv } from './config/envSchema';
 const env = validateEnv();
 logger.info('Environment validation passed', { nodeEnv: env.NODE_ENV });
 
-// Імпорт utilities
-import { logger } from './utils/logger';
+// ✅ REFACTOR-008: Initialize Service Container
+import { getContainer, bootstrapContainer } from './core/ContainerBootstrap';
+const container = getContainer();
+bootstrapContainer(container).catch((error) => {
+  logger.error('Failed to bootstrap container', error);
+  process.exit(1);
+});
 import { rateLimitMessage, rateLimitCallback, rateLimitCommand } from './middleware/rateLimit';
 import { BotContext } from './types/telegraf';
-import { ERRORS } from './constants';
+import { ERRORS, LIMITS } from './constants';
 
 // База даних ініціалізується автоматично при імпорті models
 
@@ -41,14 +49,14 @@ function validateEnvVariables() {
   
   if (!process.env.BOT_TOKEN) {
     errors.push('BOT_TOKEN is required');
-  } else if (process.env.BOT_TOKEN.length < 20) {
+  } else if (process.env.BOT_TOKEN.length < LIMITS.BOT_TOKEN_MIN) {
     errors.push('BOT_TOKEN appears to be invalid (too short)');
   }
   
   // ✅ НОВИЙ: Валідація GEMINI_API_KEY
   if (!process.env.GEMINI_API_KEY) {
     warnings.push('GEMINI_API_KEY is not set - AI features will be disabled');
-  } else if (process.env.GEMINI_API_KEY.length < 20) {
+  } else if (process.env.GEMINI_API_KEY.length < LIMITS.API_KEY_MIN) {
     warnings.push('GEMINI_API_KEY appears to be invalid (too short) - AI features may not work');
   }
   

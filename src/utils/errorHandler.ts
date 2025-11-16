@@ -38,7 +38,7 @@ export class AppError extends Error {
 /**
  * Обгортка для async функцій з автоматичною обробкою помилок
  */
-export function asyncHandler<T extends any[], R>(
+export function asyncHandler<T extends unknown[], R>(
   fn: (...args: T) => Promise<R>,
   errorType: ErrorType = ErrorType.UNKNOWN
 ): (...args: T) => Promise<R | undefined> {
@@ -58,7 +58,7 @@ export function asyncHandler<T extends any[], R>(
 export function handleError(
   error: unknown,
   type: ErrorType = ErrorType.UNKNOWN,
-  context?: any
+  context?: Record<string, unknown>
 ): void {
   const err = error instanceof Error ? error : new Error(String(error));
   

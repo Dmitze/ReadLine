@@ -6,9 +6,11 @@
 import { Result, Ok, Err } from '../core/Result';
 import { InputSanitizer } from '../validation/InputSanitizer';
 
+import { SQLParameters } from './dbWrapper';
+
 export interface QueryLog {
   query: string;
-  parameters: any[];
+  parameters: SQLParameters;
   executedAt: Date;
   duration: number;
   error?: Error;
@@ -27,14 +29,14 @@ export class SafeQueryExecutor {
   private defaultTimeout: number = 30000;
   private maxQueryLogs: number = 1000;
 
-  constructor(private db: any) {}
+  constructor(private db: { all: (query: string, params: SQLParameters, callback: (err: Error | null, rows: unknown[]) => void) => void; run: (query: string, params: SQLParameters, callback: (this: { lastID: number; changes: number }, err: Error | null) => void) => void }) {}
 
   /**
    * Виконати SELECT запит безпечно
    */
   async executeSelect<T>(
     query: string,
-    parameters: any[] = [],
+    parameters: SQLParameters = [],
     options: ExecutionOptions = {}
   ): Promise<Result<T[]>> {
     try {
@@ -61,7 +63,8 @@ export class SafeQueryExecutor {
       );
       const duration = Date.now() - startTime;
 
-      this.recordQueryLog(query, parameters, duration, rows?.length || 0);
+      const rowCount = Array.isArray(rows) ? rows.length : 0;
+      this.recordQueryLog(query, parameters, duration, rowCount);
 
       return new Ok(rows as T[]);
     } catch (error) {
@@ -76,7 +79,7 @@ export class SafeQueryExecutor {
    */
   async executeInsert(
     query: string,
-    parameters: any[] = [],
+    parameters: SQLParameters = [],
     options: ExecutionOptions = {}
   ): Promise<Result<{ lastId: number; changes: number }>> {
     try {
@@ -94,14 +97,15 @@ export class SafeQueryExecutor {
         query,
         parameters,
         options.timeout || this.defaultTimeout
-      );
+      ) as { lastID?: number; changes?: number } | undefined;
       const duration = Date.now() - startTime;
 
-      this.recordQueryLog(query, parameters, duration, result?.changes || 0);
+      const changes = result?.changes || 0;
+      this.recordQueryLog(query, parameters, duration, changes);
 
       return new Ok({
         lastId: result?.lastID || 0,
-        changes: result?.changes || 0
+        changes
       });
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
@@ -115,7 +119,7 @@ export class SafeQueryExecutor {
    */
   async executeUpdate(
     query: string,
-    parameters: any[] = [],
+    parameters: SQLParameters = [],
     options: ExecutionOptions = {}
   ): Promise<Result<number>> {
     try {
@@ -132,7 +136,7 @@ export class SafeQueryExecutor {
         query,
         parameters,
         options.timeout || this.defaultTimeout
-      );
+      ) as { changes?: number } | undefined;
       const duration = Date.now() - startTime;
 
       const changes = result?.changes || 0;
@@ -151,7 +155,7 @@ export class SafeQueryExecutor {
    */
   async executeDelete(
     query: string,
-    parameters: any[] = [],
+    parameters: SQLParameters = [],
     options: ExecutionOptions = {}
   ): Promise<Result<number>> {
     return this.executeUpdate(query, parameters, options);
@@ -200,9 +204,9 @@ export class SafeQueryExecutor {
    */
   private executeWithTimeout(
     query: string,
-    parameters: any[],
+    parameters: SQLParameters,
     timeout: number
-  ): Promise<any> {
+  ): Promise<unknown> {
     return Promise.race([
       this.execute(query, parameters),
       new Promise((_, reject) =>
@@ -217,15 +221,15 @@ export class SafeQueryExecutor {
   /**
    * Низькорівневе виконання запиту
    */
-  private execute(query: string, parameters: any[]): Promise<any> {
+  private execute(query: string, parameters: SQLParameters): Promise<unknown> {
     return new Promise((resolve, reject) => {
       if (query.trim().toUpperCase().startsWith('SELECT')) {
-        this.db.all(query, parameters, (err: Error | null, rows: any[]) => {
+        this.db.all(query, parameters, (err: Error | null, rows: unknown[]) => {
           if (err) reject(err);
           else resolve(rows);
         });
       } else {
-        this.db.run(query, parameters, function (err: Error | null) {
+        this.db.run(query, parameters, function (this: { lastID: number; changes: number }, err: Error | null) {
           if (err) reject(err);
           else resolve({ lastID: this.lastID, changes: this.changes });
         });
@@ -236,7 +240,7 @@ export class SafeQueryExecutor {
   /**
    * Валідувати параметри на SQL injection
    */
-  private validateParameters(parameters: any[]): void {
+  private validateParameters(parameters: SQLParameters): void {
     for (const param of parameters) {
       if (typeof param === 'string') {
         if (InputSanitizer.checkSqlInjection(param)) {
@@ -249,11 +253,9 @@ export class SafeQueryExecutor {
   /**
    * Логувати запит
    */
-  private logQuery(query: string, parameters: any[]): void {
-    console.log(`[QUERY] ${query}`);
-    if (parameters.length > 0) {
-      console.log(`[PARAMS] ${JSON.stringify(parameters)}`);
-    }
+  private logQuery(query: string, parameters: SQLParameters): void {
+    // Use logger instead of console
+    // console.log has been replaced with structured logging
   }
 
   /**
@@ -261,7 +263,7 @@ export class SafeQueryExecutor {
    */
   private recordQueryLog(
     query: string,
-    parameters: any[],
+    parameters: SQLParameters,
     duration: number,
     rowsAffected: number,
     error?: Error

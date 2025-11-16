@@ -151,6 +151,10 @@ export const COMMANDS = {
   CANCEL: 'cancel',
 } as const;
 
+// ✅ REFACTOR-011: Export additional constants
+export * from './timeouts';
+export * from './limits';
+
 // ✅ ВИПРАВЛЕНО #10: AI повідомлення винесені в константи
 export const AI_MESSAGES = {
   FALLBACK_RECOMMENDATIONS: [

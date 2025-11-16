@@ -357,7 +357,7 @@ export function createSecurityMiddlewareStack(config?: {
     /**
      * Apply all middleware in order
      */
-    apply: (bot: any) => {
+    apply: (bot: { use: (middleware: unknown) => void }) => {
       bot.use(corsMiddleware(config?.cors));
       bot.use(securityHeadersMiddleware(config?.headers));
       bot.use(createSecurityContextMiddleware(securityContext));

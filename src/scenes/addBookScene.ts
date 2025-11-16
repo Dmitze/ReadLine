@@ -1021,7 +1021,11 @@ addBookScene.action('back_to_admin', async (ctx: BotContext) => {
     : '✅ Всі повідомлення прочитані';
   
   // Видаляємо попереднє повідомлення (ігноруємо помилки)
-  await ctx.deleteMessage().catch(() => {});
+  await ctx.deleteMessage().catch((error) => {
+    logger.debug('Failed to delete message', { 
+      error: error instanceof Error ? error.message : String(error)
+    });
+  });
   
   // Показуємо адмін-панель ДО виходу зі сцени
   await ctx.reply(

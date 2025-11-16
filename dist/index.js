@@ -39,11 +39,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const telegraf_1 = require("telegraf");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
+const logger_1 = require("./utils/logger");
 const envSchema_1 = require("./config/envSchema");
 const env = (0, envSchema_1.validateEnv)();
 logger_1.logger.info('Environment validation passed', { nodeEnv: env.NODE_ENV });
-const logger_1 = require("./utils/logger");
+const ContainerBootstrap_1 = require("./core/ContainerBootstrap");
+const container = (0, ContainerBootstrap_1.getContainer)();
+(0, ContainerBootstrap_1.bootstrapContainer)(container).catch((error) => {
+    logger_1.logger.error('Failed to bootstrap container', error);
+    process.exit(1);
+});
 const rateLimit_1 = require("./middleware/rateLimit");
+const constants_1 = require("./constants");
 const addBookScene_1 = __importDefault(require("./scenes/addBookScene"));
 const editBookScene_1 = __importDefault(require("./scenes/editBookScene"));
 const manageBooksScene_1 = __importDefault(require("./scenes/manageBooksScene"));
@@ -65,13 +72,13 @@ function validateEnvVariables() {
     if (!process.env.BOT_TOKEN) {
         errors.push('BOT_TOKEN is required');
     }
-    else if (process.env.BOT_TOKEN.length < 20) {
+    else if (process.env.BOT_TOKEN.length < constants_1.LIMITS.BOT_TOKEN_MIN) {
         errors.push('BOT_TOKEN appears to be invalid (too short)');
     }
     if (!process.env.GEMINI_API_KEY) {
         warnings.push('GEMINI_API_KEY is not set - AI features will be disabled');
     }
-    else if (process.env.GEMINI_API_KEY.length < 20) {
+    else if (process.env.GEMINI_API_KEY.length < constants_1.LIMITS.API_KEY_MIN) {
         warnings.push('GEMINI_API_KEY appears to be invalid (too short) - AI features may not work');
     }
     if (errors.length > 0) {
