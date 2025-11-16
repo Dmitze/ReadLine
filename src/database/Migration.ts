@@ -4,6 +4,7 @@
  */
 
 import { Database, DatabaseWrapper } from './dbWrapper';
+import { logger } from '../utils/logger';
 
 export interface IMigration {
   version: string;
@@ -102,7 +103,7 @@ export class MigrationRunner {
     for (const migration of pending) {
       const startTime = Date.now();
       try {
-        console.log(`\n📦 Running migration: ${migration.version} - ${migration.name}`);
+        logger.info(`\n📦 Running migration: ${migration.version} - ${migration.name}`);
         await migration.up(this.db);
 
         const duration = Date.now() - startTime;
@@ -118,9 +119,9 @@ export class MigrationRunner {
           duration
         });
 
-        console.log(`✅ Completed in ${duration}ms`);
+        logger.info(`✅ Completed in ${duration}ms`);
       } catch (error) {
-        console.error(`❌ Migration failed: ${migration.version}`);
+        logger.error(`❌ Migration failed: ${migration.version}`);
         throw error;
       }
     }
@@ -155,7 +156,7 @@ export class MigrationRunner {
       }
 
       try {
-        console.log(`\n🔄 Rolling back: ${record.version} - ${record.name}`);
+        logger.info(`\n🔄 Rolling back: ${record.version} - ${record.name}`);
         await migration.down(this.db);
 
         const sql = `DELETE FROM ${this.tableName} WHERE version = ?`;
@@ -166,9 +167,9 @@ export class MigrationRunner {
           name: record.name
         });
 
-        console.log('✅ Rolled back');
+        logger.info('✅ Rolled back');
       } catch (error) {
-        console.error(`❌ Rollback failed: ${record.version}`);
+        logger.error(`❌ Rollback failed: ${record.version}`);
         throw error;
       }
     }
@@ -200,7 +201,7 @@ export class MigrationRunner {
    * Reset database (rollback all migrations)
    */
   async reset(): Promise<void> {
-    console.log('\n⚠️  Resetting database - rolling back all migrations...');
+    logger.info('\n⚠️  Resetting database - rolling back all migrations...');
     const executed = await this.getExecuted();
 
     for (let i = executed.length - 1; i >= 0; i--) {
@@ -208,7 +209,7 @@ export class MigrationRunner {
       const migration = this.migrations.get(record.version);
 
       if (!migration?.down) {
-        console.warn(`⚠️  No rollback for: ${record.version}`);
+        logger.warn(`⚠️  No rollback for: ${record.version}`);
         continue;
       }
 
@@ -218,14 +219,14 @@ export class MigrationRunner {
           `DELETE FROM ${this.tableName} WHERE version = ?`,
           [record.version]
         );
-        console.log(`✅ Rolled back: ${record.version}`);
+        logger.info(`✅ Rolled back: ${record.version}`);
       } catch (error) {
-        console.error(`❌ Failed to rollback: ${record.version}`);
+        logger.error(`❌ Failed to rollback: ${record.version}`);
         throw error;
       }
     }
 
-    console.log('✅ Database reset complete');
+    logger.info('✅ Database reset complete');
   }
 }
 
