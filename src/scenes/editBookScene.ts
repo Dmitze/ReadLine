@@ -9,6 +9,7 @@ interface EditBookState {
   book?: any;
   updates?: Record<string, any>;
   editingField?: string;
+  selectedGenres?: string[];
 }
 
 const editBookScene = new Scenes.WizardScene(
@@ -158,8 +159,11 @@ const editBookScene = new Scenes.WizardScene(
     } else if (state.editingField === 'photo') {
       await ctx.reply('🖼️ Надішліть нове фото обкладинки або натисніть /skip щоб пропустити');
     } else if (state.editingField === 'genre') {
-      // Показуємо кнопки з жанрами
-      const genres = [
+      // Ініціалізуємо масив обраних жанрів з поточних жанрів книги
+      state.selectedGenres = state.book?.genre ? state.book.genre.split(', ').filter(Boolean) : [];
+
+      // Показуємо кнопки з жанрами (багатовибір)
+      const popularGenres = [
         'Фантастика',
         'Sci-Fi',
         'Кіберпанк',
@@ -172,6 +176,9 @@ const editBookScene = new Scenes.WizardScene(
         'Пригоди',
         'Історичні пригоди',
         'Бойовик',
+      ];
+
+      const otherGenres = [
         'Романтика',
         'Любовний роман',
         'Мелодрама',
@@ -195,17 +202,58 @@ const editBookScene = new Scenes.WizardScene(
         'Сатира',
       ];
 
-      const keyboard = [];
-      for (let i = 0; i < genres.length; i += 2) {
-        const row = [{ text: genres[i], callback_data: `set_genre_${i}` }];
-        if (i + 1 < genres.length) {
-          row.push({ text: genres[i + 1], callback_data: `set_genre_${i + 1}` });
+      // Популярні жанри
+      const popularKeyboard = [];
+      for (let i = 0; i < popularGenres.length; i += 2) {
+        const row = [
+          Markup.button.callback(
+            `${state.selectedGenres.includes(popularGenres[i]) ? '✅' : ''} ${popularGenres[i]}`,
+            `genre_${popularGenres[i]}`
+          ),
+        ];
+        if (i + 1 < popularGenres.length) {
+          row.push(
+            Markup.button.callback(
+              `${state.selectedGenres.includes(popularGenres[i + 1]) ? '✅' : ''} ${popularGenres[i + 1]}`,
+              `genre_${popularGenres[i + 1]}`
+            )
+          );
         }
-        keyboard.push(row);
+        popularKeyboard.push(row);
       }
-      keyboard.push([{ text: '⬅️ Назад', callback_data: 'back_to_menu' }]);
 
-      await ctx.reply('🎭 Оберіть новий жанр:', {
+      // Інші жанри
+      const otherKeyboard = [];
+      for (let i = 0; i < otherGenres.length; i += 2) {
+        const row = [
+          Markup.button.callback(
+            `${state.selectedGenres.includes(otherGenres[i]) ? '✅' : ''} ${otherGenres[i]}`,
+            `genre_${otherGenres[i]}`
+          ),
+        ];
+        if (i + 1 < otherGenres.length) {
+          row.push(
+            Markup.button.callback(
+              `${state.selectedGenres.includes(otherGenres[i + 1]) ? '✅' : ''} ${otherGenres[i + 1]}`,
+              `genre_${otherGenres[i + 1]}`
+            )
+          );
+        }
+        otherKeyboard.push(row);
+      }
+
+      const keyboard = [
+        ...popularKeyboard,
+        [Markup.button.callback('📖 Більше жанрів...', 'show_more_genres')],
+        [Markup.button.callback('✅ Готово', 'genres_done')],
+        [Markup.button.callback('⬅️ Назад', 'back_to_menu')],
+      ];
+
+      const selectedText =
+        state.selectedGenres.length > 0 ? `\n\n✅ Вибрано: ${state.selectedGenres.join(', ')}` : '';
+
+      await ctx.reply(`🎭 Оберіть жанри (до 5):${selectedText}\n\n📚 *Популярні жанри:*`, {
+        parse_mode: 'Markdown',
         reply_markup: { inline_keyboard: keyboard },
       });
     } else {
@@ -230,9 +278,31 @@ const editBookScene = new Scenes.WizardScene(
         return;
       }
 
-      if (action.startsWith('set_genre_')) {
-        const genreIndex = parseInt(action.replace('set_genre_', ''));
-        const genres = [
+      // Обробка вибору жанрів
+      if (action.startsWith('genre_')) {
+        const selectedGenre = action.replace('genre_', '');
+
+        if (!state.selectedGenres) {
+          state.selectedGenres = [];
+        }
+
+        const index = state.selectedGenres.indexOf(selectedGenre);
+        if (index > -1) {
+          // Видаляємо жанр якщо він вже обраний
+          state.selectedGenres.splice(index, 1);
+          await ctx.answerCbQuery(`❌ ${selectedGenre} видалено`);
+        } else {
+          // Додаємо жанр якщо він ще не обраний (максимум 5)
+          if (state.selectedGenres.length >= 5) {
+            await ctx.answerCbQuery('❌ Максимум 5 жанрів!', { show_alert: true });
+            return;
+          }
+          state.selectedGenres.push(selectedGenre);
+          await ctx.answerCbQuery(`✅ ${selectedGenre} додано (${state.selectedGenres.length}/5)`);
+        }
+
+        // Оновлюємо клавіатуру з новими галочками
+        const popularGenres = [
           'Фантастика',
           'Sci-Fi',
           'Кіберпанк',
@@ -245,6 +315,53 @@ const editBookScene = new Scenes.WizardScene(
           'Пригоди',
           'Історичні пригоди',
           'Бойовик',
+        ];
+
+        const popularKeyboard = [];
+        for (let i = 0; i < popularGenres.length; i += 2) {
+          const row = [
+            Markup.button.callback(
+              `${state.selectedGenres.includes(popularGenres[i]) ? '✅' : ''} ${popularGenres[i]}`,
+              `genre_${popularGenres[i]}`
+            ),
+          ];
+          if (i + 1 < popularGenres.length) {
+            row.push(
+              Markup.button.callback(
+                `${state.selectedGenres.includes(popularGenres[i + 1]) ? '✅' : ''} ${popularGenres[i + 1]}`,
+                `genre_${popularGenres[i + 1]}`
+              )
+            );
+          }
+          popularKeyboard.push(row);
+        }
+
+        const keyboard = [
+          ...popularKeyboard,
+          [Markup.button.callback('📖 Більше жанрів...', 'show_more_genres')],
+          [Markup.button.callback('✅ Готово', 'genres_done')],
+          [Markup.button.callback('⬅️ Назад', 'back_to_menu')],
+        ];
+
+        const selectedText =
+          state.selectedGenres.length > 0
+            ? `\n\n✅ Вибрано: ${state.selectedGenres.join(', ')}`
+            : '';
+
+        await ctx.editMessageText(
+          `🎭 Оберіть жанри (до 5):${selectedText}\n\n📚 *Популярні жанри:*`,
+          {
+            parse_mode: 'Markdown',
+            reply_markup: { inline_keyboard: keyboard },
+          }
+        );
+
+        return;
+      }
+
+      // Показати більше жанрів
+      if (action === 'show_more_genres') {
+        const otherGenres = [
           'Романтика',
           'Любовний роман',
           'Мелодрама',
@@ -268,11 +385,116 @@ const editBookScene = new Scenes.WizardScene(
           'Сатира',
         ];
 
-        const selectedGenre = genres[genreIndex];
-        state.updates = state.updates || {};
-        state.updates.genre = selectedGenre;
+        const otherKeyboard = [];
+        for (let i = 0; i < otherGenres.length; i += 2) {
+          const row = [
+            Markup.button.callback(
+              `${state.selectedGenres && state.selectedGenres.includes(otherGenres[i]) ? '✅' : ''} ${otherGenres[i]}`,
+              `genre_${otherGenres[i]}`
+            ),
+          ];
+          if (i + 1 < otherGenres.length) {
+            row.push(
+              Markup.button.callback(
+                `${state.selectedGenres && state.selectedGenres.includes(otherGenres[i + 1]) ? '✅' : ''} ${otherGenres[i + 1]}`,
+                `genre_${otherGenres[i + 1]}`
+              )
+            );
+          }
+          otherKeyboard.push(row);
+        }
 
-        await ctx.answerCbQuery('✅ Жанр обрано');
+        const keyboard = [
+          ...otherKeyboard,
+          [Markup.button.callback('✅ Готово', 'genres_done')],
+          [Markup.button.callback('⬅️ Назад до популярних', 'back_to_popular_genres')],
+        ];
+
+        const selectedText =
+          state.selectedGenres && state.selectedGenres.length > 0
+            ? `\n\n✅ Вибрано: ${state.selectedGenres.join(', ')}`
+            : '';
+
+        await ctx.editMessageText(`🎭 Оберіть жанри (до 5):${selectedText}\n\n📚 *Інші жанри:*`, {
+          parse_mode: 'Markdown',
+          reply_markup: { inline_keyboard: keyboard },
+        });
+
+        await ctx.answerCbQuery();
+        return;
+      }
+
+      // Повернення до популярних жанрів
+      if (action === 'back_to_popular_genres') {
+        const popularGenres = [
+          'Фантастика',
+          'Sci-Fi',
+          'Кіберпанк',
+          'Фентезі',
+          'Антиутопія',
+          'Детектив',
+          'Трилер',
+          'Нуар',
+          'Шпигунський роман',
+          'Пригоди',
+          'Історичні пригоди',
+          'Бойовик',
+        ];
+
+        const popularKeyboard = [];
+        for (let i = 0; i < popularGenres.length; i += 2) {
+          const row = [
+            Markup.button.callback(
+              `${state.selectedGenres && state.selectedGenres.includes(popularGenres[i]) ? '✅' : ''} ${popularGenres[i]}`,
+              `genre_${popularGenres[i]}`
+            ),
+          ];
+          if (i + 1 < popularGenres.length) {
+            row.push(
+              Markup.button.callback(
+                `${state.selectedGenres && state.selectedGenres.includes(popularGenres[i + 1]) ? '✅' : ''} ${popularGenres[i + 1]}`,
+                `genre_${popularGenres[i + 1]}`
+              )
+            );
+          }
+          popularKeyboard.push(row);
+        }
+
+        const keyboard = [
+          ...popularKeyboard,
+          [Markup.button.callback('📖 Більше жанрів...', 'show_more_genres')],
+          [Markup.button.callback('✅ Готово', 'genres_done')],
+          [Markup.button.callback('⬅️ Назад', 'back_to_menu')],
+        ];
+
+        const selectedText =
+          state.selectedGenres && state.selectedGenres.length > 0
+            ? `\n\n✅ Вибрано: ${state.selectedGenres.join(', ')}`
+            : '';
+
+        await ctx.editMessageText(
+          `🎭 Оберіть жанри (до 5):${selectedText}\n\n📚 *Популярні жанри:*`,
+          {
+            parse_mode: 'Markdown',
+            reply_markup: { inline_keyboard: keyboard },
+          }
+        );
+
+        await ctx.answerCbQuery();
+        return;
+      }
+
+      // Завершення вибору жанрів
+      if (action === 'genres_done') {
+        if (!state.selectedGenres || state.selectedGenres.length === 0) {
+          await ctx.answerCbQuery('❌ Оберіть хоча б один жанр!', { show_alert: true });
+          return;
+        }
+
+        state.updates = state.updates || {};
+        state.updates.genre = state.selectedGenres.join(', ');
+
+        await ctx.answerCbQuery('✅ Жанри обрано');
 
         // Повертаємося на крок 0 (меню редагування)
         ctx.wizard.selectStep(0);
@@ -289,7 +511,7 @@ const editBookScene = new Scenes.WizardScene(
           '📝 *Редагування книги*\n\n' +
             `📖 ${state.book.title}\n` +
             `👤 ${state.book.author}\n\n` +
-            `✅ Жанр змінено на: ${selectedGenre}\n\n` +
+            `✅ Жанри змінено на: ${state.selectedGenres.join(', ')}\n\n` +
             'Оберіть що хочете змінити або збережіть зміни:',
           {
             parse_mode: 'Markdown',

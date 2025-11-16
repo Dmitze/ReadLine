@@ -10,13 +10,25 @@ const rateBookScene = new Scenes.WizardScene(
   'RATE_BOOK_SCENE',
   // Крок 1: Вибір рейтингу
   async (ctx: BotContext) => {
-    // Отримуємо bookId з session або з state
+    // Отримуємо bookId з різних можливих джерел
     const bookId =
-      ctx.session?.bookToRate || (ctx.scene?.state as any)?.bookId || (ctx.wizard?.state as any)?.bookId;
+      ctx.session?.bookToRate ||
+      (ctx.scene?.state as any)?.bookId ||
+      (ctx.wizard?.state as any)?.bookId;
 
     if (!bookId) {
-      await ctx.reply('❌ Помилка: книга не знайдена.');
+      logger.error('Rate book scene: bookId not found', new Error('Missing bookId'), {
+        session: ctx.session,
+        sceneState: ctx.scene?.state,
+        wizardState: ctx.wizard?.state,
+      });
+      await ctx.reply('❌ Помилка: книга не знайдена. Спробуйте ще раз.');
       return ctx.scene?.leave();
+    }
+
+    // Зберігаємо bookId в wizard state для наступних кроків
+    if (ctx.wizard?.state) {
+      (ctx.wizard.state as any).bookId = bookId;
     }
 
     const book = await getBookById(bookId);
@@ -77,7 +89,10 @@ const rateBookScene = new Scenes.WizardScene(
   },
   // Крок 3: Збереження відгуку
   async (ctx: BotContext) => {
-    const bookId = (ctx.scene?.state as any)?.bookId;
+    const bookId =
+      (ctx.wizard?.state as any)?.bookId ||
+      ctx.session?.bookToRate ||
+      (ctx.scene?.state as any)?.bookId;
     const rating = (ctx.wizard?.state as any)?.rating;
     let comment = null;
 
@@ -92,6 +107,16 @@ const rateBookScene = new Scenes.WizardScene(
     } else {
       await ctx.reply('❌ Будь ласка, надішліть текст або натисніть "Пропустити".');
       return;
+    }
+
+    if (!bookId || !rating) {
+      logger.error('Rate book scene: missing bookId or rating', new Error('Missing data'), {
+        bookId,
+        rating,
+        wizardState: ctx.wizard?.state,
+      });
+      await ctx.reply('❌ Помилка: не вдалося зберегти відгук. Спробуйте ще раз.');
+      return ctx.scene?.leave();
     }
 
     const reviewData = {
