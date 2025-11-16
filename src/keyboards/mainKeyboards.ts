@@ -112,8 +112,7 @@ export const getAdaptiveGenreKeyboard = (ctx: Context, genres: string[]) => {
     buttons.push(genres.slice(i, i + config.buttonsPerRow));
   }
 
-  // Додаємо навігаційні кнопки
-  buttons.push(['⬅️ Назад', '🏠 На головну']);
+  // Персистентне меню завжди доступне
 
   // Для десктопів - inline клавіатура
   if (config.useInline) {
@@ -129,7 +128,7 @@ export const getAdaptiveGenreKeyboard = (ctx: Context, genres: string[]) => {
 // Стара версія для зворотної сумісності
 export const getGenreKeyboard = (genres: string[]) => {
   const keyboard = genres.map((genre) => [genre]);
-  keyboard.push(['⬅️ Назад', '🏠 На головну']);
+  // Персистентне меню завжди доступне
 
   return Markup.keyboard(keyboard).resize().reply_markup;
 };
@@ -286,12 +285,12 @@ export const getEnhancedBookKeyboard = (book: Book, isSaved: boolean = false) =>
     Markup.button.callback('🔍 Схожі книги', `similar_${book.id}`),
   ]);
 
-  // Четвертий рядок - кнопка "Назад"
-  keyboard.push([Markup.button.callback('⬅️ Назад до меню', 'back_to_menu')]);
+  // Персистентне меню завжди доступне - немає потреби в кнопці "Назад"
 
   return Markup.inlineKeyboard(keyboard).reply_markup;
 };
 
 export const getBackKeyboard = () => {
-  return Markup.keyboard([['⬅️ Назад']]).resize().reply_markup;
+  // Персистентне меню завжди доступне
+  return Markup.removeKeyboard().reply_markup;
 };

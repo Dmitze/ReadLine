@@ -82,7 +82,6 @@ const getAdaptiveGenreKeyboard = (ctx, genres) => {
     for (let i = 0; i < genres.length; i += config.buttonsPerRow) {
         buttons.push(genres.slice(i, i + config.buttonsPerRow));
     }
-    buttons.push(['⬅️ Назад', '🏠 На головну']);
     if (config.useInline) {
         const inlineButtons = buttons.map((row) => row.map((text) => telegraf_1.Markup.button.callback(text, `genre_${text.replace(/[^\w]/g, '_')}`)));
         return telegraf_1.Markup.inlineKeyboard(inlineButtons).reply_markup;
@@ -92,7 +91,6 @@ const getAdaptiveGenreKeyboard = (ctx, genres) => {
 exports.getAdaptiveGenreKeyboard = getAdaptiveGenreKeyboard;
 const getGenreKeyboard = (genres) => {
     const keyboard = genres.map((genre) => [genre]);
-    keyboard.push(['⬅️ Назад', '🏠 На головну']);
     return telegraf_1.Markup.keyboard(keyboard).resize().reply_markup;
 };
 exports.getGenreKeyboard = getGenreKeyboard;
@@ -205,12 +203,11 @@ const getEnhancedBookKeyboard = (book, isSaved = false) => {
         telegraf_1.Markup.button.callback('📊 Відгуки', `reviews_${book.id}`),
         telegraf_1.Markup.button.callback('🔍 Схожі книги', `similar_${book.id}`),
     ]);
-    keyboard.push([telegraf_1.Markup.button.callback('⬅️ Назад до меню', 'back_to_menu')]);
     return telegraf_1.Markup.inlineKeyboard(keyboard).reply_markup;
 };
 exports.getEnhancedBookKeyboard = getEnhancedBookKeyboard;
 const getBackKeyboard = () => {
-    return telegraf_1.Markup.keyboard([['⬅️ Назад']]).resize().reply_markup;
+    return telegraf_1.Markup.removeKeyboard().reply_markup;
 };
 exports.getBackKeyboard = getBackKeyboard;
 //# sourceMappingURL=mainKeyboards.js.map

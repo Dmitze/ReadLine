@@ -14,5 +14,5 @@ export declare const getAdaptiveGenreKeyboard: (ctx: Context, genres: string[]) 
 export declare const getGenreKeyboard: (genres: string[]) => import("@telegraf/types").ReplyKeyboardMarkup;
 export declare const getAdaptiveBookKeyboard: (ctx: Context, book: Book, isSaved?: boolean) => import("@telegraf/types").InlineKeyboardMarkup;
 export declare const getEnhancedBookKeyboard: (book: Book, isSaved?: boolean) => import("@telegraf/types").InlineKeyboardMarkup;
-export declare const getBackKeyboard: () => import("@telegraf/types").ReplyKeyboardMarkup;
+export declare const getBackKeyboard: () => import("@telegraf/types").ReplyKeyboardRemove;
 //# sourceMappingURL=mainKeyboards.d.ts.map
