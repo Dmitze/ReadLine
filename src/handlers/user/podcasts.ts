@@ -1,0 +1,246 @@
+/**
+ * Podcast Handlers
+ * Обробники для роботи з підкастами
+ */
+
+import { Telegraf, Markup } from 'telegraf';
+import { BotContext } from '../../types/telegraf';
+import { logger } from '../../utils/logger';
+import { ERRORS } from '../../constants';
+import {
+  getAllPodcasts,
+  getPodcastById,
+  getPodcastReviews,
+  incrementPodcastListens,
+} from '../../database/tables/podcasts';
+
+/**
+ * Register podcast-related handlers
+ */
+export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
+  // Каталог підкастів
+  bot.action('catalog_podcasts', async (ctx: BotContext) => {
+    try {
+      await ctx.answerCbQuery();
+
+      const podcasts = await getAllPodcasts();
+
+      if (podcasts.length === 0) {
+        await ctx.editMessageText(
+          '🎙️ <b>ПІДКАСТИ</b>\n\n' + '📭 Підкастів поки немає.\n\nСлідкуйте за оновленнями!',
+          {
+            parse_mode: 'HTML',
+            reply_markup: Markup.inlineKeyboard([
+              [Markup.button.callback('⬅️ Назад до каталогу', 'catalog_back_main')],
+            ]).reply_markup,
+          }
+        );
+        return;
+      }
+
+      let message = '🎙️ <b>ПІДКАСТИ</b>\n\n';
+      message += `Знайдено ${podcasts.length} підкастів:\n\n`;
+
+      const keyboard = [];
+
+      podcasts.forEach((podcast, index) => {
+        keyboard.push([
+          Markup.button.callback(
+            `${index + 1}. ${podcast.theme} ${podcast.rating ? '⭐' + podcast.rating.toFixed(1) : ''}`,
+            `view_podcast_${podcast.id}`
+          ),
+        ]);
+      });
+
+      keyboard.push([Markup.button.callback('⬅️ Назад до каталогу', 'catalog_back_main')]);
+
+      await ctx.editMessageText(message, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+      });
+
+      logger.userAction(ctx.from!.id, 'view_podcasts_catalog');
+    } catch (error) {
+      logger.error('Error showing podcasts catalog', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  // Перегляд конкретного підкасту
+  bot.action(/view_podcast_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match) return;
+
+      await ctx.answerCbQuery();
+
+      const podcastId = parseInt(match[1], 10);
+      const podcast = await getPodcastById(podcastId);
+
+      if (!podcast) {
+        await ctx.answerCbQuery('❌ Підкаст не знайдено', { show_alert: true });
+        return;
+      }
+
+      const reviews = await getPodcastReviews(podcastId);
+      const reviewsCount = reviews.length;
+
+      let message = `🎙️ <b>${podcast.theme}</b>\n\n`;
+      message += `📝 ${podcast.description}\n\n`;
+      message += `━━━━━━━━━━━━━━━━━━━\n\n`;
+
+      if (podcast.duration) {
+        const minutes = Math.floor(podcast.duration / 60);
+        const seconds = podcast.duration % 60;
+        message += `⏱️ Тривалість: ${minutes}:${seconds.toString().padStart(2, '0')}\n`;
+      }
+
+      message += `👂 Прослуховувань: ${podcast.listens_count || 0}\n`;
+      message += `⭐ Рейтинг: ${podcast.rating ? podcast.rating.toFixed(1) : 'Немає оцінок'} (${reviewsCount} відгуків)\n\n`;
+      message += `━━━━━━━━━━━━━━━━━━━`;
+
+      const keyboard = [
+        [Markup.button.callback('🎧 Слухати підкаст', `listen_podcast_${podcastId}`)],
+        [Markup.button.callback('💬 Відгуки', `podcast_reviews_${podcastId}`)],
+        [Markup.button.callback('⬅️ Назад до списку', 'catalog_podcasts')],
+      ];
+
+      // Якщо є обкладинка
+      if (podcast.cover_photo_id) {
+        await ctx.deleteMessage().catch(() => {});
+        await ctx.replyWithPhoto(podcast.cover_photo_id, {
+          caption: message,
+          parse_mode: 'HTML',
+          reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+        });
+      } else {
+        await ctx.editMessageText(message, {
+          parse_mode: 'HTML',
+          reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+        });
+      }
+
+      logger.userAction(ctx.from!.id, 'view_podcast', { podcastId, theme: podcast.theme });
+    } catch (error) {
+      logger.error('Error showing podcast', error, { userId: ctx.from?.id, match: ctx.match });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  // Слухати підкаст
+  bot.action(/listen_podcast_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match) return;
+
+      await ctx.answerCbQuery('🎧 Завантаження підкасту...');
+
+      const podcastId = parseInt(match[1], 10);
+      const userId = ctx.from?.id;
+
+      if (!userId) {
+        await ctx.answerCbQuery('❌ Помилка ідентифікації', { show_alert: true });
+        return;
+      }
+
+      const podcast = await getPodcastById(podcastId);
+
+      if (!podcast) {
+        await ctx.answerCbQuery('❌ Підкаст не знайдено', { show_alert: true });
+        return;
+      }
+
+      // Збільшуємо лічильник
+      await incrementPodcastListens(podcastId, userId);
+
+      // Відправляємо файл
+      if (podcast.file_type === 'audio' && podcast.file_id) {
+        await ctx.replyWithAudio(podcast.file_id, {
+          caption: `🎙️ ${podcast.theme}\n\n📝 ${podcast.description}`,
+          parse_mode: 'HTML',
+        });
+      } else if (podcast.file_type === 'link' && podcast.file_url) {
+        await ctx.reply(
+          `🎙️ <b>${podcast.theme}</b>\n\n` +
+            `📝 ${podcast.description}\n\n` +
+            `🔗 <b>Посилання:</b>\n${podcast.file_url}`,
+          { parse_mode: 'HTML' }
+        );
+      } else if (podcast.file_type === 'archive' && podcast.file_id) {
+        await ctx.replyWithDocument(podcast.file_id, {
+          caption: `🎙️ ${podcast.theme}\n\n📝 ${podcast.description}`,
+          parse_mode: 'HTML',
+        });
+      } else {
+        await ctx.reply('❌ Файл підкасту недоступний.');
+      }
+
+      logger.userAction(userId, 'listen_podcast', { podcastId, theme: podcast.theme });
+    } catch (error) {
+      logger.error('Error sending podcast', error, { userId: ctx.from?.id, match: ctx.match });
+      await ctx.reply('❌ Помилка при завантаженні підкасту');
+    }
+  });
+
+  // Переглянути відгуки
+  bot.action(/podcast_reviews_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match) return;
+
+      await ctx.answerCbQuery();
+
+      const podcastId = parseInt(match[1], 10);
+      const podcast = await getPodcastById(podcastId);
+      const reviews = await getPodcastReviews(podcastId);
+
+      if (!podcast) {
+        await ctx.answerCbQuery('❌ Підкаст не знайдено', { show_alert: true });
+        return;
+      }
+
+      if (reviews.length === 0) {
+        await ctx.editMessageText(
+          `💬 <b>ВІДГУКИ</b>\n\n` +
+            `🎙️ ${podcast.theme}\n\n` +
+            `📭 Відгуків поки немає. Будьте першим!`,
+          {
+            parse_mode: 'HTML',
+            reply_markup: Markup.inlineKeyboard([
+              [Markup.button.callback('⬅️ Назад', `view_podcast_${podcastId}`)],
+            ]).reply_markup,
+          }
+        );
+        return;
+      }
+
+      let message = `💬 <b>ВІДГУКИ</b>\n\n`;
+      message += `🎙️ ${podcast.theme}\n\n`;
+      message += `━━━━━━━━━━━━━━━━━━━\n\n`;
+
+      reviews.slice(0, 5).forEach((review, index) => {
+        message += `${index + 1}. ${'⭐'.repeat(review.rating)}\n`;
+        if (review.comment) {
+          message += `   ${review.comment}\n`;
+        }
+        message += `\n`;
+      });
+
+      if (reviews.length > 5) {
+        message += `\n<i>Показано 5 з ${reviews.length} відгуків</i>`;
+      }
+
+      await ctx.editMessageText(message, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback('⬅️ Назад', `view_podcast_${podcastId}`)],
+        ]).reply_markup,
+      });
+
+      logger.userAction(ctx.from!.id, 'view_podcast_reviews', { podcastId });
+    } catch (error) {
+      logger.error('Error showing podcast reviews', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+}

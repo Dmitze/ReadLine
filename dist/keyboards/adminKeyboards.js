@@ -6,9 +6,13 @@ const getAdminMenuKeyboard = (pendingReviews = 0, pendingFeedback = 0) => {
     const reviewsButtonText = pendingReviews > 0 ? `📝 Відгуки (${pendingReviews}) 🔔` : '📝 Модерація';
     const feedbackButtonText = pendingFeedback > 0 ? `📞 Повідомлення (${pendingFeedback}) 🔔` : '📞 Повідомлення';
     return telegraf_1.Markup.inlineKeyboard([
-        [telegraf_1.Markup.button.callback('➕ Додати книгу', 'add_book')],
+        [
+            telegraf_1.Markup.button.callback('➕ Додати книгу', 'add_book'),
+            telegraf_1.Markup.button.callback('🎙️ Додати підкаст', 'add_podcast'),
+        ],
         [telegraf_1.Markup.button.callback('📚 Управління книгами', 'manage_books')],
         [telegraf_1.Markup.button.callback('📖✨ Інформація про книги', 'manage_extended_book_info')],
+        [telegraf_1.Markup.button.callback('📚 Заявки на книги', 'admin_book_requests')],
         [telegraf_1.Markup.button.callback('🎁 Керування промокодами', 'manage_promo_codes')],
         [telegraf_1.Markup.button.callback(reviewsButtonText, 'moderate_reviews')],
         [telegraf_1.Markup.button.callback(feedbackButtonText, 'view_feedback')],

@@ -119,6 +119,28 @@ export default (bot: Telegraf<BotContext>) => {
     return;
   });
 
+  bot.action('add_podcast', async (ctx: BotContext) => {
+    (async () => {
+      await ctx.answerCbQuery('Відкриваємо форму додавання підкасту...');
+
+      const adminCheck = await isAdmin(ctx.from.id);
+      if (!adminCheck) {
+        await ctx.reply('❌ У вас немає доступу до цієї функції.');
+        return;
+      }
+
+      ctx.scene.enter('ADD_PODCAST_SCENE');
+    })().catch((error) => {
+      logger.error(
+        'Error entering add podcast scene',
+        error instanceof Error ? error : new Error(String(error)),
+        { userId: ctx.from?.id }
+      );
+      ctx.reply('❌ Виникла помилка при переході до додавання підкасту.');
+    });
+    return;
+  });
+
   bot.action('manage_books', async (ctx: BotContext) => {
     (async () => {
       await ctx.answerCbQuery('Завантаження списку книг...');

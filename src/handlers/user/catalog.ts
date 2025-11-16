@@ -32,7 +32,28 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
   // Каталог - главное меню
   bot.hears([BUTTONS.CATALOG_OLD, BUTTONS.CATALOG], async (ctx) => {
     try {
-      await ctx.reply('📚 <b>КАТАЛОГ КНИГ</b>\n\n' + 'Оберіть спосіб перегляду:', {
+      await ctx.reply('📚 <b>КАТАЛОГ</b>\n\n' + 'Оберіть розділ:', {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+          [
+            Markup.button.callback('📖 Книги', 'catalog_books'),
+            Markup.button.callback('🎙️ Підкасти', 'catalog_podcasts'),
+          ],
+        ]).reply_markup,
+      });
+
+      logger.userAction(ctx.from!.id, 'view_catalog_main');
+    } catch (error) {
+      logger.error('Error showing catalog', error, { userId: ctx.from?.id });
+      await ctx.reply(ERRORS.GENERIC);
+    }
+  });
+
+  // Каталог книг
+  bot.action('catalog_books', async (ctx: BotContext) => {
+    try {
+      await ctx.answerCbQuery();
+      await ctx.editMessageText('📚 <b>КАТАЛОГ КНИГ</b>\n\n' + 'Оберіть спосіб перегляду:', {
         parse_mode: 'HTML',
         reply_markup: Markup.inlineKeyboard([
           [
@@ -48,13 +69,33 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
             Markup.button.callback('📥 За завантаженнями', 'catalog_downloads'),
           ],
           [Markup.button.callback('🏷️ За тегами', 'catalog_tags')],
+          [Markup.button.callback('⬅️ Назад до каталогу', 'catalog_back_main')],
         ]).reply_markup,
       });
 
-      logger.userAction(ctx.from!.id, 'view_catalog');
+      logger.userAction(ctx.from!.id, 'view_catalog_books');
     } catch (error) {
-      logger.error('Error showing catalog', error, { userId: ctx.from?.id });
-      await ctx.reply(ERRORS.GENERIC);
+      logger.error('Error showing catalog books', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  // Назад до головного каталогу
+  bot.action('catalog_back_main', async (ctx: BotContext) => {
+    try {
+      await ctx.answerCbQuery();
+      await ctx.editMessageText('📚 <b>КАТАЛОГ</b>\n\n' + 'Оберіть розділ:', {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+          [
+            Markup.button.callback('📖 Книги', 'catalog_books'),
+            Markup.button.callback('🎙️ Підкасти', 'catalog_podcasts'),
+          ],
+        ]).reply_markup,
+      });
+    } catch (error) {
+      logger.error('Error going back to main catalog', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
     }
   });
 

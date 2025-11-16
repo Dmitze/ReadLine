@@ -5,6 +5,7 @@ import menuHandlers from './menu';
 import statsHandlers from './stats';
 import reviewsHandlers from './reviews';
 import feedbackHandlers from './feedback';
+import { registerAdminBookRequestHandlers } from './bookRequests';
 
 export default (bot: Telegraf<BotContext>) => {
   logger.info('Admin handlers registered');
@@ -13,4 +14,5 @@ export default (bot: Telegraf<BotContext>) => {
   statsHandlers(bot);
   reviewsHandlers(bot);
   feedbackHandlers(bot);
+  registerAdminBookRequestHandlers(bot);
 };

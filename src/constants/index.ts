@@ -14,6 +14,7 @@ export const BUTTONS = {
   HELP: 'ℹ️ Допомога',
   AI_ASSISTANT: '🤖 AI Помічник',
   FEEDBACK: "📞 Зворотній зв'язок",
+  REQUEST_PHYSICAL_BOOK: '📚 Замовити фізичну книгу',
   BACK: '⬅️ Назад',
   HOME: '🏠 На головну',
   // Швидкі дії

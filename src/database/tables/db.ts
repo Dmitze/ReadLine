@@ -170,6 +170,74 @@ export const initDatabase = (): Promise<void> => {
       );
     `;
 
+    const createPodcastsTable = `
+      CREATE TABLE IF NOT EXISTS podcasts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        theme TEXT NOT NULL,
+        description TEXT NOT NULL,
+        file_type TEXT NOT NULL CHECK(file_type IN ('audio', 'link', 'archive')),
+        file_url TEXT,
+        file_id TEXT,
+        file_name TEXT,
+        file_size INTEGER,
+        duration INTEGER,
+        cover_photo_id TEXT,
+        rating REAL DEFAULT 0,
+        listens_count INTEGER DEFAULT 0,
+        is_available BOOLEAN DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        created_by INTEGER,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    const createPodcastReviewsTable = `
+      CREATE TABLE IF NOT EXISTS podcast_reviews (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        podcast_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+        comment TEXT,
+        is_published BOOLEAN DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (podcast_id) REFERENCES podcasts(id) ON DELETE CASCADE,
+        UNIQUE(podcast_id, user_id)
+      );
+    `;
+
+    const createPodcastListensTable = `
+      CREATE TABLE IF NOT EXISTS podcast_listens (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        podcast_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        listened_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (podcast_id) REFERENCES podcasts(id) ON DELETE CASCADE
+      );
+    `;
+
+    const createBookRequestsTable = `
+      CREATE TABLE IF NOT EXISTS book_requests (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        book_title TEXT NOT NULL,
+        book_author TEXT NOT NULL,
+        book_genre TEXT,
+        status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected', 'issued', 'returned', 'overdue')),
+        priority TEXT NOT NULL DEFAULT 'medium' CHECK(priority IN ('low', 'medium', 'high', 'urgent')),
+        comment TEXT,
+        admin_comment TEXT,
+        issued_at DATETIME,
+        due_date DATETIME,
+        returned_at DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        reviewed_by INTEGER,
+        reviewed_at DATETIME,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (reviewed_by) REFERENCES admins(id)
+      );
+    `;
+
     const alterBooksTableQueries = [
       'ALTER TABLE books ADD COLUMN pdf_file_id TEXT;',
       'ALTER TABLE books ADD COLUMN audio_file_id TEXT;',
@@ -192,6 +260,17 @@ export const initDatabase = (): Promise<void> => {
       db.run(createPromoCodesTable);
       db.run(createBookRatingStatsTable);
       db.run(createAudioProgressTable);
+      db.run(createPodcastsTable);
+      db.run(createPodcastReviewsTable);
+      db.run(createPodcastListensTable);
+      db.run(createBookRequestsTable);
+
+      // Ініціалізуємо систему фізичних книг
+      import('./physicalBooks').then(({ initPhysicalBooksSystem }) => {
+        initPhysicalBooksSystem().catch((err) => {
+          logger.error('Error initializing physical books system', err);
+        });
+      });
 
       alterBooksTableQueries.forEach((query) => {
         db.run(query, (err) => {
@@ -200,6 +279,30 @@ export const initDatabase = (): Promise<void> => {
           }
         });
       });
+
+      // Створюємо індекси для підкастів
+      db.run('CREATE INDEX IF NOT EXISTS idx_podcasts_theme ON podcasts(theme)');
+      db.run('CREATE INDEX IF NOT EXISTS idx_podcasts_rating ON podcasts(rating)');
+      db.run('CREATE INDEX IF NOT EXISTS idx_podcasts_created_at ON podcasts(created_at)');
+      db.run('CREATE INDEX IF NOT EXISTS idx_podcasts_available ON podcasts(is_available)');
+      db.run(
+        'CREATE INDEX IF NOT EXISTS idx_podcast_reviews_podcast ON podcast_reviews(podcast_id)'
+      );
+      db.run('CREATE INDEX IF NOT EXISTS idx_podcast_reviews_user ON podcast_reviews(user_id)');
+      db.run(
+        'CREATE INDEX IF NOT EXISTS idx_podcast_reviews_published ON podcast_reviews(is_published)'
+      );
+      db.run(
+        'CREATE INDEX IF NOT EXISTS idx_podcast_listens_podcast ON podcast_listens(podcast_id)'
+      );
+      db.run('CREATE INDEX IF NOT EXISTS idx_podcast_listens_user ON podcast_listens(user_id)');
+
+      // Створюємо індекси для book_requests
+      db.run('CREATE INDEX IF NOT EXISTS idx_book_requests_user ON book_requests(user_id)');
+      db.run('CREATE INDEX IF NOT EXISTS idx_book_requests_status ON book_requests(status)');
+      db.run('CREATE INDEX IF NOT EXISTS idx_book_requests_priority ON book_requests(priority)');
+      db.run('CREATE INDEX IF NOT EXISTS idx_book_requests_due_date ON book_requests(due_date)');
+      db.run('CREATE INDEX IF NOT EXISTS idx_book_requests_created_at ON book_requests(created_at)');
 
       db.get('SELECT COUNT(*) as count FROM books', (err, row: any) => {
         if (err) {

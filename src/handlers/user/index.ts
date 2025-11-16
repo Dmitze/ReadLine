@@ -15,6 +15,9 @@ import { registerLibraryHandlers } from './library';
 import { registerNavigationHandlers } from './navigation';
 import { registerTopAndNewHandlers } from './topAndNew';
 import { registerMiscHandlers } from './misc';
+import { registerPodcastHandlers } from './podcasts';
+import { registerPhysicalBooksHandlers } from './physicalBooks';
+import { registerBookRequestHandlers } from './bookRequests';
 
 // Флаг для предотвращения повторной регистрации
 let handlersRegistered = false;
@@ -38,6 +41,9 @@ export function registerUserHandlers(bot: Telegraf<BotContext>): void {
     registerMiscHandlers(bot);
     registerCatalogHandlers(bot);
     registerBookActionHandlers(bot);
+    registerPodcastHandlers(bot);
+    registerPhysicalBooksHandlers(bot);
+    registerBookRequestHandlers(bot);
 
     handlersRegistered = true;
     logger.info('✅ All user handlers registered successfully');

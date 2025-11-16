@@ -13,6 +13,9 @@ import settingsScene from '../scenes/settingsScene';
 import aiAssistantScene from '../scenes/aiAssistantScene';
 import promoAdminScene from '../scenes/promoAdminScene';
 import editExtendedBookInfoScene from '../scenes/editExtendedBookInfoScene';
+import addPodcastScene from '../scenes/addPodcastScene';
+import requestPhysicalBookScene from '../scenes/requestPhysicalBookScene';
+import createBookRequestScene from '../scenes/createBookRequestScene';
 
 export function createStage() {
   return new Scenes.Stage([
@@ -30,5 +33,8 @@ export function createStage() {
     aiAssistantScene,
     promoAdminScene,
     editExtendedBookInfoScene,
+    addPodcastScene,
+    requestPhysicalBookScene,
+    createBookRequestScene,
   ] as never[]);
 }

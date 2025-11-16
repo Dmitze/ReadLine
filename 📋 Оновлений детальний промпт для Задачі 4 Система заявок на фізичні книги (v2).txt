@@ -1,0 +1,1938 @@
+# 📋 Фінальний детальний промпт для Задачі 4: Система заявок на фізичні книги (v3 - ФІНАЛ)
+
+---
+
+## 🎯 Мета задачі
+
+Додати функціонал заявок на отримання фізичних книг. Користувачі зможуть залишати заявки на книги, вказуючи свої контактні дані, а адміністратор зможе переглядати ці заявки та керувати ними. **Книги видаються БЕЗ обмеження терміну** - користувач повертає коли захоче. **Без зазначення конкретного місця в бібліотеці.**
+
+---
+
+## 🔍 Що саме реалізуємо
+
+### Основні компоненти:
+
+1. **База даних** - нові таблиці для заявок
+2. **Логіка додавання книг** - прапорець "Є фізично"
+3. **Картка книги** - відображення статусу та кнопка заявки
+4. **Scene для створення заявки** - wizard збору даних
+5. **Список заявок користувача** - перегляд своїх заявок
+6. **Адмін-панель** - управління заявками
+7. **Система сповіщень** - повідомлення про статуси
+
+---
+
+## 📊 ЧАСТИНА 1: БАЗА ДАНИХ
+
+### Крок 1.1: Створити міграцію для таблиці заявок
+
+**Файл:** `src/database/migrations/YYYYMMDD_create_book_requests.sql`
+
+```sql
+-- Міграція: Створення таблиці заявок на книги
+-- Дата: 2025-11-16
+
+-- Таблиця заявок на фізичні книги
+CREATE TABLE IF NOT EXISTS book_requests (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  book_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  full_name TEXT NOT NULL,
+  callsign TEXT NOT NULL,
+  unit TEXT NOT NULL,
+  phone TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'issued', 'returned', 'rejected', 'cancelled')),
+  comment TEXT,
+  admin_comment TEXT,
+  issued_at DATETIME,
+  returned_at DATETIME,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  processed_by INTEGER,
+  processed_at DATETIME,
+  FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+);
+
+-- Індекси для швидкого пошуку
+CREATE INDEX IF NOT EXISTS idx_book_requests_book_id ON book_requests(book_id);
+CREATE INDEX IF NOT EXISTS idx_book_requests_user_id ON book_requests(user_id);
+CREATE INDEX IF NOT EXISTS idx_book_requests_status ON book_requests(status);
+CREATE INDEX IF NOT EXISTS idx_book_requests_created_at ON book_requests(created_at);
+
+-- Індекс для пошуку активних заявок користувача на конкретну книгу
+CREATE INDEX IF NOT EXISTS idx_book_requests_user_book_active 
+ON book_requests(user_id, book_id, status);
+```
+
+### Крок 1.2: Оновити таблицю books
+
+**Файл:** `src/database/migrations/YYYYMMDD_add_physical_copy_to_books.sql`
+
+```sql
+-- Міграція: Додавання полів для фізичних примірників книг
+-- Дата: 2025-11-16
+
+-- Додаємо поле "чи є фізичний примірник"
+ALTER TABLE books ADD COLUMN has_physical_copy BOOLEAN DEFAULT 0;
+
+-- Додаємо поля для управління кількістю
+ALTER TABLE books ADD COLUMN physical_copies_total INTEGER DEFAULT 0;
+ALTER TABLE books ADD COLUMN physical_copies_available INTEGER DEFAULT 0;
+
+-- Індекс для швидкого пошуку книг з фізичними примірниками
+CREATE INDEX IF NOT EXISTS idx_books_has_physical ON books(has_physical_copy);
+CREATE INDEX IF NOT EXISTS idx_books_physical_available ON books(physical_copies_available);
+
+-- Оновлюємо існуючі книги
+-- Якщо є file_type = 'physical', встановлюємо has_physical_copy = 1
+UPDATE books 
+SET has_physical_copy = 1, 
+    physical_copies_total = 1, 
+    physical_copies_available = 1 
+WHERE file_type = 'physical';
+```
+
+### Крок 1.3: Створити TypeScript інтерфейси
+
+**Файл:** `src/database/tables/bookRequests.ts` (новий файл)
+
+**Що реалізуємо:**
+
+```typescript
+// Інтерфейс BookRequest з полями:
+interface BookRequest {
+  id?: number;
+  book_id: number;
+  user_id: number;
+  full_name: string;
+  callsign: string;
+  unit: string;
+  phone: string;
+  status: 'pending' | 'approved' | 'issued' | 'returned' | 'rejected' | 'cancelled';
+  comment?: string;
+  admin_comment?: string;
+  issued_at?: string;
+  returned_at?: string;
+  created_at?: string;
+  updated_at?: string;
+  processed_by?: number;
+  processed_at?: string;
+}
+
+// Функції для роботи з заявками:
+- createBookRequest(request: BookRequest): Promise<number>
+  // Створити нову заявку, повертає ID
+
+- getRequestById(requestId: number): Promise<BookRequest | undefined>
+  // Отримати заявку за ID
+
+- getUserRequests(userId: number): Promise<BookRequest[]>
+  // Отримати всі заявки користувача
+
+- getUserActiveRequest(userId: number, bookId: number): Promise<BookRequest | undefined>
+  // Перевірити чи має користувач активну заявку на книгу
+
+- getAllRequests(status?: string): Promise<BookRequest[]>
+  // Отримати всі заявки (для адміна), опціонально фільтрувати за статусом
+
+- getPendingRequests(): Promise<BookRequest[]>
+  // Отримати заявки що очікують розгляду
+
+- updateRequestStatus(requestId: number, status: string, adminId?: number, adminComment?: string): Promise<void>
+  // Оновити статус заявки
+
+- cancelRequest(requestId: number): Promise<void>
+  // Скасувати заявку користувачем
+
+- markAsIssued(requestId: number): Promise<void>
+  // Позначити що книгу видано (issued_at = NOW)
+
+- markAsReturned(requestId: number): Promise<void>
+  // Позначити що книгу повернуто (returned_at = NOW)
+
+- getRequestWithBookInfo(requestId: number): Promise<BookRequest & Book>
+  // Отримати заявку з інформацією про книгу (JOIN)
+
+- getRequestsStatistics(): Promise<{
+    total: number;
+    pending: number;
+    approved: number;
+    issued: number;
+    returned: number;
+    rejected: number;
+    cancelled: number;
+  }>
+  // Статистика по заявках
+```
+
+**Додаткові функції для роботи з книгами:**
+
+```typescript
+// У файл src/database/tables/books.ts додати:
+
+- decrementAvailableCopies(bookId: number): Promise<void>
+  // Зменшити кількість доступних примірників на 1
+
+- incrementAvailableCopies(bookId: number): Promise<void>
+  // Збільшити кількість доступних примірників на 1
+
+- getBookAvailability(bookId: number): Promise<{
+    hasPhysicalCopy: boolean;
+    total: number;
+    available: number;
+    issued: number;
+  }>
+  // Отримати інформацію про наявність книги
+```
+
+---
+
+## 📱 ЧАСТИНА 2: АДМІН-ПАНЕЛЬ - ДОДАВАННЯ КНИГИ
+
+### Крок 2.1: Оновити Scene для додавання книги
+
+**Файл:** `src/scenes/addBookScene.ts`
+
+**Що змінюємо:**
+
+Додаємо НОВИЙ КРОК після введення опису, перед завантаженням файлів:
+
+```
+Існуючі кроки:
+1. Тема (title)
+2. Автор (author)
+3. Жанр (genre)
+4. Опис (description)
+5. Обкладинка (photo) - опціонально
+
+--> 🆕 НОВИЙ КРОК 6: Наявність фізичного примірника
+
+6. Чи є фізична копія?
+   - Показати повідомлення з поясненням
+   - Дві кнопки: [✅ Є фізично] [❌ Немає фізично]
+   
+   Якщо "✅ Є фізично":
+     6a. Скільки примірників? (введення числа 1-99)
+   
+   Якщо "❌ Немає фізично":
+     → Пропустити, перейти до файлів
+
+7. Тип файлу (фізична/електронна/аудіо/посилання)
+8. Завантаження файлу
+9. Теги
+10. Попередній перегляд
+11. Публікація
+```
+
+**Детальна реалізація кроку 6:**
+
+```
+State об'єкт scene доповнюємо:
+{
+  ...existing fields...
+  has_physical_copy?: boolean;
+  physical_copies_total?: number;
+  step?: string;
+}
+
+Крок 6 - Показ повідомлення:
+
+await ctx.reply(
+  '📦 <b>НАЯВНІСТЬ ФІЗИЧНОГО ПРИМІРНИКА</b>\n\n' +
+  'Чи є ця книга у фізичному вигляді?\n\n' +
+  '━━━━━━━━━━━━━━━━━━━\n\n' +
+  '💡 <b>Пояснення:</b>\n\n' +
+  '<b>✅ Є фізично</b> - якщо книга є в наявності:\n' +
+  '• Користувачі зможуть залишати заявки на неї\n' +
+  '• Потрібно буде вказати кількість примірників\n\n' +
+  '<b>❌ Немає фізично</b> - якщо тільки електронна версія:\n' +
+  '• Користувачі побачать тільки електронну версію\n' +
+  '• Кнопка "Залишити заявку" не відображатиметься',
+  {
+    parse_mode: 'HTML',
+    reply_markup: Markup.inlineKeyboard([
+      [Markup.button.callback('✅ Є фізично', 'book_has_physical')],
+      [Markup.button.callback('❌ Немає фізично', 'book_no_physical')],
+      [Markup.button.callback('⬅️ Назад', 'book_back_to_description')],
+    ]).reply_markup,
+  }
+);
+
+state.step = 'physical_copy_choice';
+
+Обробник кнопки "✅ Є фізично":
+
+bot.action('book_has_physical', async (ctx) => {
+  await ctx.answerCbQuery();
+  state.has_physical_copy = true;
+  state.step = 'physical_copies_count';
+  
+  await ctx.editMessageText(
+    '📚 <b>КІЛЬКІСТЬ ПРИМІРНИКІВ</b>\n\n' +
+    'Скільки примірників цієї книги є в наявності?\n\n' +
+    '💡 Введіть число від 1 до 99\n\n' +
+    'Приклад: <code>3</code>',
+    { parse_mode: 'HTML' }
+  );
+});
+
+Обробник текстового введення кількості:
+
+if (state.step === 'physical_copies_count') {
+  const count = parseInt(text.trim());
+  
+  // Валідація
+  if (isNaN(count) || count < 1 || count > 99) {
+    await ctx.reply('❌ Невірне число. Введіть число від 1 до 99.');
+    return;
+  }
+  
+  state.physical_copies_total = count;
+  
+  await ctx.reply(
+    `✅ Кількість примірників: ${count}\n\n` +
+    'Переходимо до завантаження файлів...'
+  );
+  
+  // Перехід до наступного кроку (тип файлу)
+  state.step = 'file_type';
+  await showFileTypeSelection(ctx);
+}
+
+Обробник кнопки "❌ Немає фізично":
+
+bot.action('book_no_physical', async (ctx) => {
+  await ctx.answerCbQuery();
+  state.has_physical_copy = false;
+  state.physical_copies_total = 0;
+  
+  await ctx.editMessageText(
+    '✅ <b>Зрозуміло!</b>\n\n' +
+    'Ця книга буде доступна тільки в електронному вигляді.\n\n' +
+    'Користувачі не побачать кнопку "Залишити заявку".\n\n' +
+    'Переходимо до завантаження файлів...',
+    { parse_mode: 'HTML' }
+  );
+  
+  // Перехід до наступного кроку
+  state.step = 'file_type';
+  setTimeout(() => showFileTypeSelection(ctx), 2000);
+});
+```
+
+**Оновлення попереднього перегляду:**
+
+```
+У функції showPreview() додати:
+
+let physicalStatus = '';
+if (state.has_physical_copy) {
+  physicalStatus = 
+    `📦 Фізична копія: ✅ Є в наявності\n` +
+    `   └─ Кількість: ${state.physical_copies_total} примірників\n`;
+} else {
+  physicalStatus = `📦 Фізична копія: ❌ Немає в наявності\n`;
+}
+
+const previewMessage = 
+  '📝 <b>ПОПЕРЕДНІЙ ПЕРЕГЛЯД</b>\n\n' +
+  `📖 <b>Назва:</b> ${state.title}\n` +
+  `👤 <b>Автор:</b> ${state.author}\n` +
+  `📚 <b>Жанр:</b> ${state.genre}\n` +
+  `📝 <b>Опис:</b> ${state.description}\n\n` +
+  `━━━━━━━━━━━━━━━━━━━\n\n` +
+  `${physicalStatus}\n` +
+  `${fileInfo}\n` +
+  `${tagsInfo}\n\n` +
+  `━━━━━━━━━━━━━━━━━━━\n\n` +
+  'Все вірно? Опублікувати книгу?';
+```
+
+**Збереження в БД:**
+
+```
+У функції publishBook():
+
+const bookData = {
+  title: state.title,
+  author: state.author,
+  genre: state.genre,
+  description: state.description,
+  photo_file_id: state.cover_photo_id,
+  file_type: state.file_type,
+  file_url: state.file_url,
+  file_id: state.file_id,
+  // 🆕 НОВІ ПОЛЯ:
+  has_physical_copy: state.has_physical_copy ? 1 : 0,
+  physical_copies_total: state.physical_copies_total || 0,
+  physical_copies_available: state.physical_copies_total || 0,
+  created_by: ctx.from?.id,
+};
+
+await addBook(bookData);
+```
+
+---
+
+## 📖 ЧАСТИНА 3: КАРТКА КНИГИ ДЛЯ КОРИСТУВАЧА
+
+### Крок 3.1: Оновити відображення картки книги
+
+**Файл:** `src/handlers/user/bookActions.ts` або `src/utils/bookDisplay.ts`
+
+**Що змінюємо:**
+
+У функції `displayBookCard()` або `showBookDetails()`:
+
+```typescript
+Логіка відображення:
+
+1. Отримати інформацію про книгу:
+   const book = await getBookById(bookId);
+   const availability = await getBookAvailability(bookId);
+
+2. Сформувати текст статусу:
+
+   let statusText = '\n━━━━━━━━━━━━━━━━━━━\n\n📊 СТАТУС КНИГИ:\n\n';
+   
+   // Фізична копія
+   if (book.has_physical_copy) {
+     if (availability.available > 0) {
+       statusText += 
+         `📦 Фізична копія: ✅ Є в наявності\n` +
+         `   └─ Доступно: ${availability.available} з ${availability.total} примірників\n\n`;
+     } else {
+       statusText += 
+         `📦 Фізична копія: 🟡 Всі примірники видані\n` +
+         `   └─ Доступно: 0 з ${availability.total} примірників\n\n`;
+     }
+   } else {
+     statusText += `📦 Фізична копія: ❌ Немає в наявності\n\n`;
+   }
+   
+   // Електронна версія
+   if (book.file_url || book.file_id) {
+     statusText += `💾 Електронна версія: ✅ Доступна\n`;
+   } else {
+     statusText += `💾 Електронна версія: ❌ Недоступна\n`;
+   }
+   
+   // Аудіо версія
+   if (book.audio_file_id || book.audio_external_link) {
+     statusText += `🎧 Аудіокнига: ✅ Доступна\n`;
+   } else {
+     statusText += `🎧 Аудіокнига: ❌ Недоступна\n`;
+   }
+   
+   // Додаткова інформація якщо є фізична копія
+   if (book.has_physical_copy && availability.available > 0) {
+     statusText += 
+       `\n━━━━━━━━━━━━━━━━━━━\n\n` +
+       `ℹ️ Ви можете залишити заявку на фізичний примірник\n` +
+       `або завантажити електронну версію.\n\n` +
+       `⏱️ <b>Термін користування: БЕЗ ОБМЕЖЕНЬ</b>\n` +
+       `Повернете коли захочете!`;
+   } else if (book.has_physical_copy && availability.available === 0) {
+     statusText += 
+       `\n━━━━━━━━━━━━━━━━━━━\n\n` +
+       `ℹ️ Всі фізичні примірники зараз у користувачів.\n` +
+       `Ви можете стати в чергу або завантажити електронну версію.\n\n` +
+       `⏱️ <b>Термін користування: БЕЗ ОБМЕЖЕНЬ</b>\n` +
+       `(точний час повернення невідомий)`;
+   } else {
+     statusText += 
+       `\n━━━━━━━━━━━━━━━━━━━\n\n` +
+       `ℹ️ Цієї книги немає в фізичній бібліотеці,\n` +
+       `але ви можете завантажити електронну версію.`;
+   }
+
+3. Сформувати кнопки:
+
+   const buttons = [];
+   
+   // Кнопка заявки на фізичну книгу
+   if (book.has_physical_copy) {
+     if (availability.available > 0) {
+       buttons.push([
+         Markup.button.callback('📋 Залишити заявку на фізичну', `request_book_${bookId}`)
+       ]);
+     } else {
+       buttons.push([
+         Markup.button.callback('📋 Стати в чергу', `queue_book_${bookId}`)
+       ]);
+     }
+   }
+   
+   // Кнопка завантаження електронної версії
+   if (book.file_url || book.file_id) {
+     buttons.push([
+       Markup.button.callback('📥 Завантажити електронну', `download_book_${bookId}`)
+     ]);
+   }
+   
+   // Кнопка аудіо
+   if (book.audio_file_id || book.audio_external_link) {
+     buttons.push([
+       Markup.button.callback('🎧 Слухати аудіо', `listen_audio_${bookId}`)
+     ]);
+   }
+   
+   // Інші кнопки
+   buttons.push([
+     Markup.button.callback('⭐ Оцінити', `rate_book_${bookId}`),
+     Markup.button.callback('💬 Відгуки', `reviews_book_${bookId}`)
+   ]);
+   
+   buttons.push([
+     Markup.button.callback('⬅️ Назад', 'catalog_back')
+   ]);
+
+4. Відправити повідомлення:
+
+   const message = 
+     `📖 <b>${book.title}</b>\n` +
+     `👤 ${book.author}\n` +
+     `📚 ${book.genre}\n` +
+     `📝 ${book.description}\n` +
+     statusText;
+   
+   if (book.photo_file_id) {
+     await ctx.replyWithPhoto(book.photo_file_id, {
+       caption: message,
+       parse_mode: 'HTML',
+       reply_markup: Markup.inlineKeyboard(buttons).reply_markup,
+     });
+   } else {
+     await ctx.reply(message, {
+       parse_mode: 'HTML',
+       reply_markup: Markup.inlineKeyboard(buttons).reply_markup,
+     });
+   }
+```
+
+---
+
+## 📝 ЧАСТИНА 4: SCENE СТВОРЕННЯ ЗАЯВКИ
+
+### Крок 4.1: Створити Scene для заявки на книгу
+
+**Файл:** `src/scenes/bookRequestScene.ts` (новий файл)
+
+**Структура Scene:**
+
+```typescript
+Scene State:
+{
+  bookId: number;
+  book: Book;           // Інформація про книгу
+  full_name?: string;
+  callsign?: string;
+  unit?: string;
+  phone?: string;
+  comment?: string;
+  step: string;         // 'warning', 'full_name', 'callsign', 'unit', 'phone', 'comment', 'confirmation'
+}
+
+Кроки Scene:
+
+1. ENTER - Попередження та інформація
+2. Крок 1 - ПІБ
+3. Крок 2 - Позивний
+4. Крок 3 - Підрозділ
+5. Крок 4 - Номер телефону
+6. Крок 5 - Коментар (опціонально)
+7. Крок 6 - Підтвердження
+8. LEAVE - Відправка заявки
+```
+
+**Детальна реалізація кожного кроку:**
+
+```typescript
+// ENTER - Попередження
+bookRequestScene.enter(async (ctx) => {
+  const bookId = (ctx.scene.state as any).bookId;
+  
+  if (!bookId) {
+    await ctx.reply('❌ Помилка: не вказано книгу');
+    return ctx.scene.leave();
+  }
+  
+  const book = await getBookById(bookId);
+  if (!book) {
+    await ctx.reply('❌ Книгу не знайдено');
+    return ctx.scene.leave();
+  }
+  
+  // Перевірити чи є фізична копія
+  if (!book.has_physical_copy) {
+    await ctx.reply('❌ Для цієї книги неможливо залишити заявку - немає фізичного примірника');
+    return ctx.scene.leave();
+  }
+  
+  // Перевірити чи користувач вже має активну заявку
+  const activeRequest = await getUserActiveRequest(ctx.from.id, bookId);
+  if (activeRequest) {
+    await ctx.reply(
+      '⚠️ <b>У вас вже є активна заявка на цю книгу!</b>\n\n' +
+      `📋 Номер заявки: #${activeRequest.id}\n` +
+      `📊 Статус: ${getStatusText(activeRequest.status)}\n\n` +
+      'Перегляньте свої заявки в профілі.',
+      {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback('📋 Мої заявки', 'my_requests')],
+          [Markup.button.callback('⬅️ Назад', 'back_to_book')]
+        ]).reply_markup
+      }
+    );
+    return ctx.scene.leave();
+  }
+  
+  (ctx.scene.state as any).book = book;
+  (ctx.scene.state as any).step = 'warning';
+  
+  await ctx.reply(
+    '📋 <b>ЗАЯВКА НА ФІЗИЧНУ КНИГУ</b>\n\n' +
+    `📖 Книга: ${book.title}\n` +
+    `👤 Автор: ${book.author}\n\n` +
+    '━━━━━━━━━━━━━━━━━━━\n\n' +
+    'Ви збираєтесь залишити заявку на отримання фізичної копії цієї книги.\n\n' +
+    'ℹ️ <b>Що далі:</b>\n' +
+    '1️⃣ Заповніть контактні дані\n' +
+    '2️⃣ Адміністратор розгляне заявку (зазвичай до 24 годин)\n' +
+    '3️⃣ Ви отримаєте повідомлення про рішення\n' +
+    '4️⃣ Якщо схвалено - інструкція де забрати книгу\n\n' +
+    '⚠️ <b>Важливі моменти:</b>\n' +
+    '• Вказуйте реальні дані для зв\'язку\n' +
+    '• Книгу потрібно буде повернути (коли захочете)\n' +
+    '• 📌 <b>ТЕРМІН КОРИСТУВАННЯ: БЕЗ ОБМЕЖЕНЬ</b>\n' +
+    '• Користуйтесь скільки потрібно, поверніть коли зручно\n' +
+    '• При втраті або пошкодженні - компенсація вартості\n\n' +
+    '━━━━━━━━━━━━━━━━━━━',
+    {
+      parse_mode: 'HTML',
+      reply_markup: Markup.inlineKeyboard([
+        [Markup.button.callback('✅ Продовжити', 'request_continue')],
+        [Markup.button.callback('❌ Скасувати', 'request_cancel')]
+      ]).reply_markup
+    }
+  );
+});
+
+// Кнопка "Продовжити"
+bookRequestScene.action('request_continue', async (ctx) => {
+  await ctx.answerCbQuery();
+  (ctx.scene.state as any).step = 'full_name';
+  
+  await ctx.editMessageText(
+    '👤 <b>КРОК 1/4: ПІБ</b>\n\n' +
+    'Введіть ваше повне ім\'я (Прізвище Ім\'я По батькові):\n\n' +
+    '💡 <i>Приклад: Іваненко Іван Іванович</i>',
+    {
+      parse_mode: 'HTML',
+      reply_markup: Markup.keyboard([['❌ Скасувати']]).resize().reply_markup
+    }
+  );
+});
+
+// Обробник текстових повідомлень
+bookRequestScene.on('text', async (ctx) => {
+  const state = ctx.scene.state as any;
+  const text = ctx.message.text.trim();
+  
+  // Скасування
+  if (text === '❌ Скасувати') {
+    await ctx.reply('❌ Створення заявки скасовано.', {
+      reply_markup: { remove_keyboard: true }
+    });
+    return ctx.scene.leave();
+  }
+  
+  // Крок 1: ПІБ
+  if (state.step === 'full_name') {
+    if (text.length < 5) {
+      await ctx.reply('❌ ПІБ занадто короткий. Мінімум 5 символів. Спробуйте ще раз:');
+      return;
+    }
+    
+    // Перевірка на кирилицю (опціонально)
+    if (!/[а-яА-ЯіІїЇєЄґҐ]/.test(text)) {
+      await ctx.reply('❌ Будь ласка, введіть ПІБ кирилицею. Спробуйте ще раз:');
+      return;
+    }
+    
+    state.full_name = text;
+    state.step = 'callsign';
+    
+    await ctx.reply(
+      '✅ ПІБ збережено!\n\n' +
+      '🎯 <b>КРОК 2/4: ПОЗИВНИЙ</b>\n\n' +
+      'Введіть ваш позивний:\n\n' +
+      '💡 <i>Приклад: Воїн, Сокіл, Грім тощо</i>',
+      { parse_mode: 'HTML' }
+    );
+    return;
+  }
+  
+  // Крок 2: Позивний
+  if (state.step === 'callsign') {
+    if (text.length < 2) {
+      await ctx.reply('❌ Позивний занадто короткий. Мінімум 2 символи. Спробуйте ще раз:');
+      return;
+    }
+    
+    state.callsign = text;
+    state.step = 'unit';
+    
+    await ctx.reply(
+      '✅ Позивний збережено!\n\n' +
+      '🏢 <b>КРОК 3/4: ПІДРОЗДІЛ</b>\n\n' +
+      'Введіть ваш підрозділ:\n\n' +
+      '💡 <i>Приклад: 1-ша рота, 2-й батальйон, штаб тощо</i>',
+      { parse_mode: 'HTML' }
+    );
+    return;
+  }
+  
+  // Крок 3: Підрозділ
+  if (state.step === 'unit') {
+    if (text.length < 3) {
+      await ctx.reply('❌ Назва підрозділу занадто коротка. Мінімум 3 символи. Спробуйте ще раз:');
+      return;
+    }
+    
+    state.unit = text;
+    state.step = 'phone';
+    
+    await ctx.reply(
+      '✅ Підрозділ збережено!\n\n' +
+      '📞 <b>КРОК 4/4: НОМЕР ТЕЛЕФОНУ</b>\n\n' +
+      'Введіть номер телефону:\n\n' +
+      '💡 <i>Приклад: +380991234567</i>',
+      {
+        parse_mode: 'HTML',
+        reply_markup: Markup.keyboard([
+          [Markup.button.contactRequest('📱 Поділитися номером')],
+          ['❌ Скасувати']
+        ]).resize().reply_markup
+      }
+    );
+    return;
+  }
+  
+  // Крок 4: Номер телефону (текстом)
+  if (state.step === 'phone') {
+    // Базова валідація номера
+    const phoneRegex = /^(\+380|380|0)\d{9}$/;
+    const cleanPhone = text.replace(/[\s\-\(\)]/g, '');
+    
+    if (!phoneRegex.test(cleanPhone)) {
+      await ctx.reply(
+        '❌ Невірний формат номера телефону.\n\n' +
+        'Введіть номер у форматі:\n' +
+        '+380991234567 або 0991234567'
+      );
+      return;
+    }
+    
+    // Нормалізація номера
+    let normalizedPhone = cleanPhone;
+    if (normalizedPhone.startsWith('380')) {
+      normalizedPhone = '+' + normalizedPhone;
+    } else if (normalizedPhone.startsWith('0')) {
+      normalizedPhone = '+38' + normalizedPhone;
+    }
+    
+    state.phone = normalizedPhone;
+    state.step = 'comment_choice';
+    
+    await ctx.reply(
+      '✅ Номер телефону збережено!\n\n' +
+      '💬 Бажаєте додати коментар до заявки?\n\n' +
+      '💡 <i>Наприклад: "Заберу завтра після обіду" або "Можна зв\'язатися вечером"</i>',
+      {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback('✍️ Додати коментар', 'request_add_comment')],
+          [Markup.button.callback('⏭️ Пропустити', 'request_skip_comment')]
+        ]).reply_markup
+      }
+    );
+    return;
+  }
+  
+  // Крок 5: Коментар (якщо користувач обрав додати)
+  if (state.step === 'comment') {
+    if (text.length > 500) {
+      await ctx.reply('❌ Коментар занадто довгий. Максимум 500 символів.');
+      return;
+    }
+    
+    state.comment = text;
+    await showConfirmation(ctx);
+    return;
+  }
+});
+
+// Обробник контакту (поділитися номером)
+bookRequestScene.on('contact', async (ctx) => {
+  const state = ctx.scene.state as any;
+  
+  if (state.step === 'phone') {
+    const phone = ctx.message.contact.phone_number;
+    state.phone = phone.startsWith('+') ? phone : '+' + phone;
+    state.step = 'comment_choice';
+    
+    await ctx.reply(
+      '✅ Номер телефону збережено!\n\n' +
+      '💬 Бажаєте додати коментар до заявки?',
+      {
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback('✍️ Додати коментар', 'request_add_comment')],
+          [Markup.button.callback('⏭️ Пропустити', 'request_skip_comment')]
+        ]).reply_markup
+      }
+    );
+  }
+});
+
+// Кнопка "Додати коментар"
+bookRequestScene.action('request_add_comment', async (ctx) => {
+  await ctx.answerCbQuery();
+  (ctx.scene.state as any).step = 'comment';
+  
+  await ctx.editMessageText(
+    '💬 <b>КОМЕНТАР</b>\n\n' +
+    'Введіть ваш коментар (максимум 500 символів):\n\n' +
+    '💡 <i>Наприклад: "Заберу завтра після обіду"</i>',
+    { parse_mode: 'HTML' }
+  );
+});
+
+// Кнопка "Пропустити коментар"
+bookRequestScene.action('request_skip_comment', async (ctx) => {
+  await ctx.answerCbQuery();
+  (ctx.scene.state as any).comment = null;
+  await showConfirmation(ctx);
+});
+
+// Функція показу підтвердження
+async function showConfirmation(ctx: any) {
+  const state = ctx.scene.state;
+  
+  const message = 
+    '📋 <b>ПЕРЕГЛЯД ЗАЯВКИ</b>\n\n' +
+    `📖 Книга: ${state.book.title}\n` +
+    `👤 Автор: ${state.book.author}\n\n` +
+    '━━━━━━━━━━━━━━━━━━━\n\n' +
+    '<b>ВАШІ КОНТАКТНІ ДАНІ:</b>\n\n' +
+    `👤 ПІБ: ${state.full_name}\n` +
+    `🎯 Позивний: ${state.callsign}\n` +
+    `🏢 Підрозділ: ${state.unit}\n` +
+    `📞 Телефон: ${state.phone}\n` +
+    (state.comment ? `💬 Коментар: ${state.comment}\n` : '') +
+    '\n━━━━━━━━━━━━━━━━━━━\n\n' +
+    '⏱️ <b>ТЕРМІН КОРИСТУВАННЯ: БЕЗ ОБМЕЖЕНЬ</b>\n' +
+    'Користуйтесь скільки потрібно!\n\n' +
+    '✅ Все вірно?';
+  
+  await ctx.reply(message, {
+    parse_mode: 'HTML',
+    reply_markup: Markup.inlineKeyboard([
+      [Markup.button.callback('✅ Підтвердити заявку', 'request_confirm')],
+      [Markup.button.callback('✏️ Редагувати', 'request_edit')],
+      [Markup.button.callback('❌ Скасувати', 'request_cancel')]
+    ]).reply_markup
+  });
+  
+  state.step = 'confirmation';
+}
+
+// Кнопка "Підтвердити заявку"
+bookRequestScene.action('request_confirm', async (ctx) => {
+  await ctx.answerCbQuery('📤 Відправка заявки...');
+  
+  const state = ctx.scene.state as any;
+  
+  try {
+    // Створити заявку в БД
+    const requestId = await createBookRequest({
+      book_id: state.bookId,
+      user_id: ctx.from.id,
+      full_name: state.full_name,
+      callsign: state.callsign,
+      unit: state.unit,
+      phone: state.phone,
+      comment: state.comment || null,
+      status: 'pending'
+    });
+    
+    // Зменшити кількість доступних примірників
+    await decrementAvailableCopies(state.bookId);
+    
+    // Відправити сповіщення адміну
+    await notifyAdminNewRequest(requestId);
+    
+    // Показати підтвердження користувачу
+    await ctx.editMessageText(
+      '✅ <b>ЗАЯВКУ ВІДПРАВЛЕНО!</b>\n\n' +
+      `📋 Номер заявки: #${requestId}\n` +
+      `📅 Дата: ${new Date().toLocaleString('uk-UA')}\n\n` +
+      `📖 Книга: ${state.book.title}\n\n` +
+      '━━━━━━━━━━━━━━━━━━━\n\n' +
+      'ℹ️ <b>Що далі:</b>\n\n' +
+      '1️⃣ Адміністратор розгляне вашу заявку\n' +
+      '2️⃣ Ви отримаєте повідомлення про рішення\n' +
+      '3️⃣ Якщо схвалено - інструкція де і коли забрати\n\n' +
+      '⏱️ Зазвичай заявки розглядаються протягом 24 годин.\n\n' +
+      '📲 Ви отримаєте сповіщення прямо в цьому чаті!\n\n' +
+      '💡 <b>ВАЖЛИВО:</b>\n' +
+      '• Термін користування книгою: БЕЗ ОБМЕЖЕНЬ\n' +
+      '• Повернете коли захочете або закінчите читати\n' +
+      '• Збережіть книгу в хорошому стані',
+      {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback('📋 Мої заявки', 'my_requests')],
+          [Markup.button.callback('📖 До каталогу', 'catalog')],
+          [Markup.button.callback('🏠 На головну', 'home')]
+        ]).reply_markup
+      }
+    );
+    
+    // Прибрати клавіатуру
+    await ctx.reply('✅ Готово!', {
+      reply_markup: { remove_keyboard: true }
+    });
+    
+    logger.userAction(ctx.from.id, 'create_book_request', {
+      requestId,
+      bookId: state.bookId,
+      bookTitle: state.book.title
+    });
+    
+    return ctx.scene.leave();
+    
+  } catch (error) {
+    logger.error('Error creating book request', error, { userId: ctx.from.id });
+    await ctx.reply('❌ Помилка при створенні заявки. Спробуйте пізніше.');
+    return ctx.scene.leave();
+  }
+});
+
+// Кнопка "Скасувати"
+bookRequestScene.action('request_cancel', async (ctx) => {
+  await ctx.answerCbQuery('❌ Скасовано');
+  await ctx.editMessageText('❌ Створення заявки скасовано.');
+  await ctx.reply('Ви можете створити нову заявку будь-коли.', {
+    reply_markup: { remove_keyboard: true }
+  });
+  return ctx.scene.leave();
+});
+```
+
+---
+
+## 📋 ЧАСТИНА 5: МОЇ ЗАЯВКИ (КОРИСТУВАЧ)
+
+### Крок 5.1: Створити обробник перегляду заявок
+
+**Файл:** `src/handlers/user/myRequests.ts` (новий файл)
+
+**Що реалізуємо:**
+
+```typescript
+1. Кнопка "📋 Мої заявки" у профілі або головному меню
+
+2. Функція показу списку заявок:
+   - Отримати всі заявки користувача: getUserRequests(userId)
+   - Згрупувати за статусами
+   - Показати список з inline кнопками для кожної заявки
+
+3. Функція показу деталей конкретної заявки:
+   - Отримати заявку з інформацією про книгу
+   - Показати всі деталі
+   - Кнопки залежно від статусу:
+     • pending → [Скасувати заявку]
+     • approved → [Підтвердити отримання]
+     • issued → [Повернути книгу]
+     • returned/rejected/cancelled → [Переглянути причину]
+
+4. Функція скасування заявки користувачем:
+   - Підтвердження
+   - Оновлення статусу на 'cancelled'
+   - Збільшення physical_copies_available
+   - Сповіщення адміну
+
+5. Функція підтвердження отримання книги:
+   - Підтвердження
+   - Оновлення статусу на 'issued'
+   - Встановлення issued_at
+   - Сповіщення адміну
+
+6. Функція повернення книги:
+   - Підтвердження
+   - Сповіщення адміну про запит на повернення
+   - Очікування інструкцій від адміна
+```
+
+**Приклад коду структури:**
+
+```
+Список заявок:
+
+const requests = await getUserRequests(userId);
+
+if (requests.length === 0) {
+  await ctx.reply('📋 У вас поки немає заявок на книги.');
+  return;
+}
+
+// Групуємо за статусами
+const pending = requests.filter(r => r.status === 'pending');
+const approved = requests.filter(r => r.status === 'approved');
+const issued = requests.filter(r => r.status === 'issued');
+const returned = requests.filter(r => r.status === 'returned');
+const rejected = requests.filter(r => r.status === 'rejected');
+const cancelled = requests.filter(r => r.status === 'cancelled');
+
+let message = '📋 <b>МОЇ ЗАЯВКИ НА КНИГИ</b>\n\n';
+message += `Знайдено ${requests.length} заявок:\n\n`;
+message += '━━━━━━━━━━━━━━━━━━━\n\n';
+
+// Показуємо кожну заявку
+requests.forEach((request, index) => {
+  const statusIcon = getStatusIcon(request.status);
+  const statusText = getStatusText(request.status);
+  
+  message += `${index + 1}️⃣ ${statusIcon} ${statusText}\n`;
+  message += `📖 Книга: ${request.book.title}\n`;
+  message += `📅 Створено: ${formatDate(request.created_at)}\n`;
+  
+  if (request.status === 'issued' && request.issued_at) {
+    const daysAgo = getDaysAgo(request.issued_at);
+    message += `⏱️ У вас вже: ${daysAgo} днів\n`;
+  }
+  
+  message += `\nКнопка: [Переглянути заявку #${request.id}]\n\n`;
+  message += '━━━━━━━━━━━━━━━━━━━\n\n';
+});
+
+message += 'Статистика:\n';
+message += `• Очікує розгляду: ${pending.length}\n`;
+message += `• Схвалено (готові до видачі): ${approved.length}\n`;
+message += `• У вас зараз: ${issued.length}\n`;
+message += `• Повернуто раніше: ${returned.length}\n`;
+message += `• Відхилено: ${rejected.length}\n`;
+
+// Кнопки для кожної заявки
+const buttons = requests.map(r => [
+  Markup.button.callback(
+    `${getStatusIcon(r.status)} #${r.id} - ${r.book.title}`,
+    `view_request_${r.id}`
+  )
+]);
+
+buttons.push([Markup.button.callback('🔄 Оновити', 'refresh_requests')]);
+buttons.push([Markup.button.callback('⬅️ Назад', 'back_to_profile')]);
+```
+
+---
+
+## 🔐 ЧАСТИНА 6: АДМІН-ПАНЕЛЬ
+
+### Крок 6.1: Додати розділ управління заявками
+
+**Файл:** `src/handlers/admin/requests.ts` (новий файл)
+
+**Що реалізуємо:**
+
+```typescript
+1. Кнопка "📋 Заявки на книги" в адмін-меню
+
+2. Функція показу списку заявок з фільтрами:
+   const allRequests = await getAllRequests();
+   
+   Фільтри:
+   - [🟡 Нові заявки] - status = 'pending'
+   - [🟢 Схвалені] - status = 'approved'
+   - [📕 У користуванні] - status = 'issued'
+   - [🔵 Запити на повернення] - (додатковий прапорець у заявці)
+   - [✅ Завершені] - status = 'returned'
+   - [🔴 Відхилені] - status = 'rejected'
+   - [📊 Всі заявки] - без фільтру
+
+3. Функція показу деталей заявки для адміна:
+   - Інформація про книгу (наявність, ID)
+   - Контактні дані користувача
+   - Коментар користувача
+   - Кнопки дій:
+     • pending → [✅ Схвалити] [❌ Відхилити]
+     • approved → [💬 Написати користувачу]
+     • issued → [Відзначити повернення]
+
+4. Функція схвалення заявки:
+   - Запит інструкції де забрати
+   - Оновлення статусу на 'approved'
+   - Збереження admin_comment
+   - Сповіщення користувачу
+
+5. Функція відхилення заявки:
+   - Запит причини
+   - Оновлення статусу на 'rejected'
+   - Збільшення physical_copies_available
+   - Збереження admin_comment
+   - Сповіщення користувачу
+
+6. Функція відзначення повернення:
+   - Підтвердження
+   - Оновлення статусу на 'returned'
+   - Встановлення returned_at
+   - Збільшення physical_copies_available
+   - Сповіщення користувачу
+
+7. Статистика для адміна:
+   const stats = await getRequestsStatistics();
+   Показати загальну статистику, найпопулярніші книги тощо
+```
+
+**Приклад структури обробника схвалення:**
+
+```
+bot.action(/admin_approve_request_(\d+)/, async (ctx) => {
+  const requestId = parseInt(ctx.match[1]);
+  
+  await ctx.answerCbQuery();
+  
+  // Встановити state що очікуємо інструкції
+  (ctx.session as any).waitingForApprovalInstructions = requestId;
+  
+  await ctx.editMessageText(
+    '✅ <b>СХВАЛЕННЯ ЗАЯВКИ</b>\n\n' +
+    'Додайте інструкцію для користувача (де і коли забрати книгу):\n\n' +
+    '💡 <i>Приклад:\n' +
+    '"Книга готова до видачі.\n\n' +
+    '📍 Де забрати: Бібліотека, будівля штабу, кімната 205\n' +
+    '⏰ Коли: Пн-Пт: 9:00 - 18:00\n' +
+    '📞 Контакт: +380501234567 (бібліотекар)\n\n' +
+    '📋 При собі мати посвідчення та назвати номер заявки.\n\n' +
+    '⏱️ ТЕРМІН КОРИСТУВАННЯ: БЕЗ ОБМЕЖЕНЬ\n' +
+    'Користуйтесь скільки потрібно, поверніть коли дочитаєте!"</i>',
+    {
+      parse_mode: 'HTML',
+      reply_markup: Markup.inlineKeyboard([
+        [Markup.button.callback('❌ Скасувати', 'admin_cancel_approval')]
+      ]).reply_markup
+    }
+  );
+});
+
+// Обробник текстового введення інструкцій
+bot.on('text', async (ctx) => {
+  const session = ctx.session as any;
+  
+  if (session.waitingForApprovalInstructions) {
+    const requestId = session.waitingForApprovalInstructions;
+    const instructions = ctx.message.text;
+    
+    try {
+      // Оновити статус заявки
+      await updateRequestStatus(
+        requestId,
+        'approved',
+        ctx.from.id,
+        instructions
+      );
+      
+      // Отримати інформацію про заявку
+      const request = await getRequestWithBookInfo(requestId);
+      
+      // Відправити сповіщення користувачу
+      await ctx.telegram.sendMessage(
+        request.user_id,
+        '🎉 <b>ВАШУ ЗАЯВКУ СХВАЛЕНО!</b>\n\n' +
+        `📋 Заявка: #${requestId}\n` +
+        `📖 Книга: ${request.book.title}\n` +
+        `👤 Автор: ${request.book.author}\n\n` +
+        '━━━━━━━━━━━━━━━━━━━\n\n' +
+        '📍 <b>ДЕ І КОЛИ ЗАБРАТИ:</b>\n\n' +
+        instructions +
+        '\n\n━━━━━━━━━━━━━━━━━━━\n\n' +
+        '📞 З питань звертайтесь до адміністратора бібліотеки.',
+        {
+          parse_mode: 'HTML',
+          reply_markup: Markup.inlineKeyboard([
+            [Markup.button.callback('✅ Підтвердити отримання книги', `confirm_receive_${requestId}`)],
+            [Markup.button.callback('📋 Мої заявки', 'my_requests')],
+            [Markup.button.callback('🏠 На головну', 'home')]
+          ]).reply_markup
+        }
+      );
+      
+      // Підтвердження адміну
+      await ctx.reply(
+        '✅ <b>ЗАЯВКУ СХВАЛЕНО!</b>\n\n' +
+        `📋 Заявка: #${requestId}\n` +
+        `👤 Користувач: ${request.full_name}\n` +
+        `📖 Книга: ${request.book.title}\n\n` +
+        'Користувачу відправлено інструкції.',
+        { parse_mode: 'HTML' }
+      );
+      
+      logger.adminAction(ctx.from.id, 'approve_request', { requestId });
+      
+      // Очистити state
+      delete session.waitingForApprovalInstructions;
+      
+    } catch (error) {
+      logger.error('Error approving request', error);
+      await ctx.reply('❌ Помилка при схваленні заявки');
+    }
+  }
+});
+```
+
+---
+
+## 🔔 ЧАСТИНА 7: СИСТЕМА СПОВІЩЕНЬ
+
+### Крок 7.1: Створити функції сповіщень
+
+**Файл:** `src/utils/requestNotifications.ts` (новий файл)
+
+**Що реалізуємо:**
+
+```typescript
+Функції:
+
+1. notifyAdminNewRequest(requestId: number): Promise<void>
+   - Відправити повідомлення всім адмінам про нову заявку
+
+2. notifyUserRequestApproved(userId: number, requestId: number, instructions: string): Promise<void>
+   - Повідомлення користувачу що заявку схвалено
+
+3. notifyUserRequestRejected(userId: number, requestId: number, reason: string): Promise<void>
+   - Повідомлення користувачу що заявку відхилено
+
+4. notifyAdminRequestCancelled(requestId: number): Promise<void>
+   - Повідомлення адміну що користувач скасував заявку
+
+5. notifyAdminReturnRequest(requestId: number): Promise<void>
+   - Повідомлення адміну що користувач хоче повернути книгу
+
+6. notifyAdminBookReturned(requestId: number): Promise<void>
+   - Повідомлення адміну що книгу повернуто
+
+7. notifyUserReturnInstructions(userId: number, requestId: number, instructions: string): Promise<void>
+   - Інструкції користувачу де здати книгу
+
+8. notifyUserBookReturned(userId: number, requestId: number): Promise<void>
+   - Підтвердження користувачу що повернення зафіксовано
+```
+
+---
+
+## 📊 ЧАСТИНА 8: КОНСТАНТИ ТА УТИЛІТИ
+
+### Крок 8.1: Додати константи статусів
+
+**Файл:** `src/constants/requestStatuses.ts` (новий файл)
+
+```typescript
+export const REQUEST_STATUSES = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  ISSUED: 'issued',
+  RETURNED: 'returned',
+  REJECTED: 'rejected',
+  CANCELLED: 'cancelled',
+} as const;
+
+export function getStatusText(status: string): string {
+  switch (status) {
+    case 'pending':
+      return 'Очікує розгляду';
+    case 'approved':
+      return 'Схвалено - готова до видачі';
+    case 'issued':
+      return 'У користуванні';
+    case 'returned':
+      return 'Повернуто';
+    case 'rejected':
+      return 'Відхилено';
+    case 'cancelled':
+      return 'Скасовано';
+    default:
+      return 'Невідомий статус';
+  }
+}
+
+export function getStatusIcon(status: string): string {
+  switch (status) {
+    case 'pending':
+      return '🟡';
+    case 'approved':
+      return '🟢';
+    case 'issued':
+      return '📕';
+    case 'returned':
+      return '✅';
+    case 'rejected':
+      return '🔴';
+    case 'cancelled':
+      return '❌';
+    default:
+      return '⚪';
+  }
+}
+```
+
+### Крок 8.2: Додати утиліти для дат
+
+**Файл:** `src/utils/dateHelpers.ts`
+
+```typescript
+export function getDaysAgo(date: string): number {
+  const then = new Date(date);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - then.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+}
+
+export function formatDate(date: string): string {
+  return new Date(date).toLocaleDateString('uk-UA', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+```
+
+---
+
+## 🔗 ЧАСТИНА 9: ІНТЕГРАЦІЯ
+
+### Крок 9.1: Зареєструвати handlers і scenes
+
+**Файл:** `src/index.ts`
+
+```typescript
+// Імпорти
+import bookRequestScene from './scenes/bookRequestScene';
+import { registerMyRequestsHandlers } from './handlers/user/myRequests';
+import { registerAdminRequestHandlers } from './handlers/admin/requests';
+
+// Реєстрація scene
+const stage = new Scenes.Stage<BotContext>([
+  // ...існуючі scenes
+  bookRequestScene,
+]);
+
+// Реєстрація handlers
+registerMyRequestsHandlers(bot);
+registerAdminRequestHandlers(bot);
+
+// Ініціалізація Б
+Так, вибачте! Продовжую з місця де зупинився:
+
+---
+
+## 🔗 ЧАСТИНА 9: ІНТЕГРАЦІЯ (продовження)
+
+### Крок 9.1: Зареєструвати handlers і scenes
+
+**Файл:** `src/index.ts`
+
+```typescript
+// Імпорти
+import bookRequestScene from './scenes/bookRequestScene';
+import { registerMyRequestsHandlers } from './handlers/user/myRequests';
+import { registerAdminRequestHandlers } from './handlers/admin/requests';
+import { createBookRequestTables } from './database/tables/bookRequests';
+
+// Реєстрація scene
+const stage = new Scenes.Stage<BotContext>([
+  // ...існуючі scenes
+  onboardingScene,
+  searchScene,
+  addBookScene,
+  editBookScene,
+  promoAdminScene,
+  bookRequestScene,  // 🆕 НОВА SCENE
+]);
+
+bot.use(session());
+bot.use(stage.middleware());
+
+// Реєстрація handlers
+registerCatalogHandlers(bot);
+registerBookHandlers(bot);
+registerMyRequestsHandlers(bot);      // 🆕 НОВИЙ HANDLER
+registerAdminRequestHandlers(bot);    // 🆕 НОВИЙ HANDLER
+
+// Ініціалізація БД при старті
+async function initializeDatabase() {
+  await createBookTables();
+  await createUserTables();
+  await createBookRequestTables();    // 🆕 НОВА ТАБЛИЦЯ
+  logger.info('Database initialized');
+}
+
+initializeDatabase().catch(err => {
+  logger.error('Database initialization failed', err);
+  process.exit(1);
+});
+```
+
+### Крок 9.2: Додати обробник кнопки заявки
+
+**Файл:** `src/handlers/user/bookActions.ts`
+
+```typescript
+// Обробник кнопки "Залишити заявку"
+bot.action(/request_book_(\d+)/, async (ctx: BotContext) => {
+  try {
+    await ctx.answerCbQuery();
+    const bookId = parseInt(ctx.match[1], 10);
+    
+    // Перевірити чи книга існує і має фізичний примірник
+    const book = await getBookById(bookId);
+    if (!book || !book.has_physical_copy) {
+      await ctx.answerCbQuery('❌ Ця книга недоступна для заявки', { show_alert: true });
+      return;
+    }
+    
+    // Перевірити наявність
+    const availability = await getBookAvailability(bookId);
+    if (availability.available === 0) {
+      await ctx.answerCbQuery('❌ Всі примірники видані', { show_alert: true });
+      return;
+    }
+    
+    // Запустити scene створення заявки
+    await ctx.scene.enter('BOOK_REQUEST_SCENE', { bookId });
+    
+  } catch (error) {
+    logger.error('Error starting book request', error, { userId: ctx.from?.id });
+    await ctx.answerCbQuery('❌ Помилка', { show_alert: true });
+  }
+});
+
+// Обробник кнопки "Стати в чергу" (для майбутньої реалізації)
+bot.action(/queue_book_(\d+)/, async (ctx: BotContext) => {
+  await ctx.answerCbQuery('🔔 Функція черги буде додана незабаром', { show_alert: true });
+});
+```
+
+### Крок 9.3: Додати кнопку "Мої заявки" в профіль
+
+**Файл:** `src/handlers/user/profile.ts`
+
+```typescript
+bot.hears([BUTTONS.PROFILE, BUTTONS.PROFILE_OLD], async (ctx) => {
+  try {
+    const userId = ctx.from?.id;
+    if (!userId) return;
+    
+    const user = await getUserById(userId);
+    if (!user) {
+      await ctx.reply(ERRORS.USER_NOT_FOUND);
+      return;
+    }
+    
+    // Отримати статистику заявок
+    const requests = await getUserRequests(userId);
+    const activeRequests = requests.filter(r => 
+      ['pending', 'approved', 'issued'].includes(r.status)
+    );
+    
+    const message = 
+      `👤 <b>МІЙ ПРОФІЛЬ</b>\n\n` +
+      `📛 Ім'я: ${user.first_name}\n` +
+      `🆔 ID: ${user.id}\n` +
+      `📅 Реєстрація: ${formatDate(user.created_at)}\n\n` +
+      `━━━━━━━━━━━━━━━━━━━\n\n` +
+      `📊 <b>СТАТИСТИКА:</b>\n\n` +
+      `💾 Збережено книг: ${await getSavedBooksCount(userId)}\n` +
+      `💬 Відгуків залишено: ${await getUserReviewsCount(userId)}\n` +
+      `📋 Активних заявок: ${activeRequests.length}\n`;
+    
+    await ctx.reply(message, {
+      parse_mode: 'HTML',
+      reply_markup: Markup.inlineKeyboard([
+        [Markup.button.callback('💾 Мої збережені', 'my_saved')],
+        [Markup.button.callback('📋 Мої заявки на книги', 'my_requests')],  // 🆕 НОВА КНОПКА
+        [Markup.button.callback('💬 Мої відгуки', 'my_reviews')],
+        [Markup.button.callback('⚙️ Налаштування', 'settings')],
+      ]).reply_markup,
+    });
+    
+  } catch (error) {
+    logger.error('Error showing profile', error, { userId: ctx.from?.id });
+    await ctx.reply(ERRORS.GENERIC);
+  }
+});
+```
+
+### Крок 9.4: Оновити адмін-меню
+
+**Файл:** `src/handlers/admin/menu.ts`
+
+```typescript
+bot.command('admin', checkAdmin, async (ctx: BotContext) => {
+  // Отримати статистику нових заявок
+  const pendingRequests = await getPendingRequests();
+  const pendingCount = pendingRequests.length;
+  
+  await ctx.reply(
+    '🔐 <b>АДМІН-ПАНЕЛЬ</b>\n\nОберіть дію:',
+    {
+      parse_mode: 'HTML',
+      reply_markup: Markup.inlineKeyboard([
+        [
+          Markup.button.callback('📚 Додати книгу', 'admin_add_book'),
+          Markup.button.callback('🎙️ Додати підкаст', 'admin_add_podcast'),
+        ],
+        [
+          Markup.button.callback('📖 Управління книгами', 'admin_manage_books'),
+          Markup.button.callback('🎧 Управління підкастами', 'admin_manage_podcasts'),
+        ],
+        [
+          // 🆕 НОВА КНОПКА з лічильником
+          Markup.button.callback(
+            `📋 Заявки на книги ${pendingCount > 0 ? `(${pendingCount})` : ''}`,
+            'admin_requests'
+          ),
+        ],
+        [
+          Markup.button.callback('📊 Статистика', 'admin_stats'),
+          Markup.button.callback('💬 Відгуки', 'admin_reviews'),
+        ],
+        [
+          Markup.button.callback('🎁 Промокоди', 'admin_promo'),
+          Markup.button.callback('📞 Зворотній зв\'язок', 'admin_feedback'),
+        ],
+      ]).reply_markup,
+    }
+  );
+});
+
+// Обробник кнопки "Заявки на книги"
+bot.action('admin_requests', checkAdminCallback, async (ctx: BotContext) => {
+  await ctx.answerCbQuery();
+  await showAdminRequestsMenu(ctx);  // Функція з admin/requests.ts
+});
+```
+
+---
+
+## 🧪 ЧАСТИНА 10: ТЕСТУВАННЯ
+
+### Крок 10.1: Сценарії для тестування
+
+**Тестувати потрібно наступні сценарії:**
+
+```
+1. ДОДАВАННЯ КНИГИ АДМІНОМ:
+   ✅ Додати книгу БЕЗ фізичного примірника
+   ✅ Додати книгу З фізичним примірником (1 примірник)
+   ✅ Додати книгу З фізичним примірником (3 примірники)
+   ✅ Перевірити що поля has_physical_copy та physical_copies встановлені правильно
+
+2. ПЕРЕГЛЯД КНИГИ КОРИСТУВАЧЕМ:
+   ✅ Книга БЕЗ фізичного примірника → кнопка "Залишити заявку" відсутня
+   ✅ Книга З фізичним примірником (доступна) → кнопка "Залишити заявку" присутня
+   ✅ Книга З фізичним примірником (всі видані) → кнопка "Стати в чергу"
+   ✅ Статус відображається правильно
+
+3. СТВОРЕННЯ ЗАЯВКИ:
+   ✅ Заповнити всі поля коректно → заявка створена
+   ✅ Некоректне ПІБ (< 5 символів) → помилка валідації
+   ✅ Некоректний телефон → помилка валідації
+   ✅ Спроба створити дубль заявки → попередження про існуючу заявку
+   ✅ Після створення → physical_copies_available зменшилась на 1
+   ✅ Адмін отримав сповіщення
+
+4. СХВАЛЕННЯ ЗАЯВКИ АДМІНОМ:
+   ✅ Схвалити заявку → статус = 'approved'
+   ✅ Користувач отримав сповіщення з інструкціями
+   ✅ Кнопка "Підтвердити отримання" працює
+
+5. ВІДХИЛЕННЯ ЗАЯВКИ АДМІНОМ:
+   ✅ Відхилити заявку → статус = 'rejected'
+   ✅ physical_copies_available збільшилась на 1
+   ✅ Користувач отримав сповіщення з причиною
+
+6. ПІДТВЕРДЖЕННЯ ОТРИМАННЯ:
+   ✅ Користувач підтвердив → статус = 'issued'
+   ✅ issued_at встановлено
+   ✅ Адмін отримав сповіщення
+
+7. ПОВЕРНЕННЯ КНИГИ:
+   ✅ Користувач ініціює повернення → адмін отримав сповіщення
+   ✅ Адмін надсилає інструкції → користувач отримав
+   ✅ Користувач підтверджує здачу → статус = 'returned'
+   ✅ physical_copies_available збільшилась на 1
+   ✅ returned_at встановлено
+
+8. СКАСУВАННЯ ЗАЯВКИ КОРИСТУВАЧЕМ:
+   ✅ Скасувати заявку зі статусом 'pending' → статус = 'cancelled'
+   ✅ physical_copies_available збільшилась на 1
+   ✅ Адмін отримав сповіщення
+
+9. ПЕРЕГЛЯД ЗАЯВОК КОРИСТУВАЧЕМ:
+   ✅ "Мої заявки" відображає всі заявки
+   ✅ Групування по статусах працює
+   ✅ Деталі заявки відображаються правильно
+   ✅ Кнопки змінюються залежно від статусу
+
+10. АДМІН-ПАНЕЛЬ:
+    ✅ Список заявок відображається
+    ✅ Фільтри працюють
+    ✅ Лічильник нових заявок в меню
+    ✅ Статистика відображається правильно
+    ✅ Деталі заявки для адміна показують всю інформацію
+
+11. КРАЙНІ ВИПАДКИ:
+    ✅ Користувач видаляє повідомлення під час wizard → graceful fallback
+    ✅ Книгу видалено після створення заявки → обробка помилки
+    ✅ Два користувачі одночасно створюють заявки на останній примірник → race condition
+    ✅ Адмін схвалює заявку коли примірників вже немає → валідація
+```
+
+### Крок 10.2: SQL запити для перевірки
+
+```sql
+-- Перевірити чи всі книги мають правильні поля
+SELECT id, title, has_physical_copy, physical_copies_total, physical_copies_available 
+FROM books;
+
+-- Перевірити заявки
+SELECT r.id, r.status, r.user_id, b.title, r.created_at
+FROM book_requests r
+JOIN books b ON r.book_id = b.id
+ORDER BY r.created_at DESC;
+
+-- Перевірити консистентність даних
+SELECT 
+  b.id,
+  b.title,
+  b.physical_copies_total,
+  b.physical_copies_available,
+  (SELECT COUNT(*) FROM book_requests WHERE book_id = b.id AND status IN ('approved', 'issued')) as issued_count
+FROM books b
+WHERE b.has_physical_copy = 1;
+
+-- Має бути: physical_copies_available + issued_count = physical_copies_total
+```
+
+---
+
+## 📝 ЧАСТИНА 11: ДОКУМЕНТАЦІЯ
+
+### Крок 11.1: README для розробників
+
+**Файл:** `docs/BOOK_REQUESTS.md` (новий файл)
+
+```markdown
+# Система заявок на фізичні книги
+
+## Огляд
+
+Система дозволяє користувачам залишати заявки на отримання фізичних примірників книг з бібліотеки. Адміністратор може схвалювати або відхиляти заявки.
+
+## Основні компоненти
+
+### База даних
+
+- **books** - таблиця книг (оновлена):
+  - `has_physical_copy` - чи є фізичний примірник (boolean)
+  - `physical_copies_total` - загальна кількість примірників
+  - `physical_copies_available` - доступна кількість
+
+- **book_requests** - таблиця заявок:
+  - Контактні дані користувача
+  - Статус заявки
+  - Дати створення/видачі/повернення
+
+### Статуси заявок
+
+1. **pending** - очікує розгляду адміном
+2. **approved** - схвалено, готова до видачі
+3. **issued** - видано користувачу
+4. **returned** - повернуто
+5. **rejected** - відхилено адміном
+6. **cancelled** - скасовано користувачем
+
+### Workflow
+
+```
+Користувач створює заявку
+        ↓
+    [pending]
+        ↓
+    Адмін розглядає
+        ↓
+   [approved] або [rejected]
+        ↓
+Користувач підтверджує отримання
+        ↓
+    [issued]
+        ↓
+Користувач повертає книгу
+        ↓
+    [returned]
+```
+
+### Важливі функції
+
+#### bookRequests.ts
+- `createBookRequest()` - створити заявку
+- `getUserRequests()` - отримати заявки користувача
+- `updateRequestStatus()` - оновити статус
+- `getRequestsStatistics()` - статистика
+
+#### books.ts
+- `decrementAvailableCopies()` - зменшити кількість
+- `incrementAvailableCopies()` - збільшити кількість
+- `getBookAvailability()` - перевірити наявність
+
+## Обмеження
+
+- Термін користування: **БЕЗ ОБМЕЖЕНЬ**
+- Один користувач може мати лише одну активну заявку на книгу
+- Не зазначається конкретне місце в бібліотеці
+
+## Безпека
+
+- Валідація всіх введених даних
+- Перевірка наявності перед створенням заявки
+- Транзакції для критичних операцій (race conditions)
+```
+
+---
+
+## 🔒 ЧАСТИНА 12: БЕЗПЕКА ТА ВАЛІДАЦІЯ
+
+### Крок 12.1: Валідація даних
+
+**Файл:** `src/validation/bookRequestValidation.ts` (новий файл)
+
+```typescript
+import { z } from 'zod';
+
+// Схема валідації для створення заявки
+export const createRequestSchema = z.object({
+  book_id: z.number().int().positive(),
+  user_id: z.number().int().positive(),
+  full_name: z.string()
+    .min(5, 'ПІБ занадто короткий')
+    .max(100, 'ПІБ занадто довгий')
+    .regex(/[а-яА-ЯіІїЇєЄґҐ]/, 'ПІБ має містити кирилицю'),
+  callsign: z.string()
+    .min(2, 'Позивний занадто короткий')
+    .max(50, 'Позивний занадто довгий'),
+  unit: z.string()
+    .min(3, 'Назва підрозділу занадто коротка')
+    .max(100, 'Назва підрозділу занадто довга'),
+  phone: z.string()
+    .regex(/^\+380\d{9}$/, 'Невірний формат номера телефону'),
+  comment: z.string()
+    .max(500, 'Коментар занадто довгий')
+    .optional(),
+});
+
+// Функція валідації
+export function validateCreateRequest(data: unknown) {
+  return createRequestSchema.safeParse(data);
+}
+
+// Нормалізація номера телефону
+export function normalizePhone(phone: string): string {
+  const cleaned = phone.replace(/[\s\-\(\)]/g, '');
+  
+  if (cleaned.startsWith('+380')) {
+    return cleaned;
+  }
+  if (cleaned.startsWith('380')) {
+    return '+' + cleaned;
+  }
+  if (cleaned.startsWith('0')) {
+    return '+38' + cleaned;
+  }
+  
+  throw new Error('Невірний формат номера');
+}
+```
+
+### Крок 12.2: Обробка race conditions
+
+```typescript
+// У функції createBookRequest() використовувати транзакцію:
+
+async function createBookRequest(data: BookRequest): Promise<number> {
+  return new Promise((resolve, reject) => {
+    db.serialize(() => {
+      db.run('BEGIN TRANSACTION');
+      
+      try {
+        // 1. Перевірити наявність
+        db.get(
+          'SELECT physical_copies_available FROM books WHERE id = ?',
+          [data.book_id],
+          (err, row: { physical_copies_available: number }) => {
+            if (err) {
+              db.run('ROLLBACK');
+              return reject(err);
+            }
+            
+            if (!row || row.physical_copies_available === 0) {
+              db.run('ROLLBACK');
+              return reject(new Error('Немає доступних примірників'));
+            }
+            
+            // 2. Створити заявку
+            db.run(
+              'INSERT INTO book_requests (book_id, user_id, full_name, callsign, unit, phone, comment, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+              [data.book_id, data.user_id, data.full_name, data.callsign, data.unit, data.phone, data.comment, 'pending'],
+              function (err) {
+                if (err) {
+                  db.run('ROLLBACK');
+                  return reject(err);
+                }
+                
+                const requestId = this.lastID;
+                
+                // 3. Зменшити кількість доступних
+                db.run(
+                  'UPDATE books SET physical_copies_available = physical_copies_available - 1 WHERE id = ?',
+                  [data.book_id],
+                  (err) => {
+                    if (err) {
+                      db.run('ROLLBACK');
+                      return reject(err);
+                    }
+                    
+                    db.run('COMMIT');
+                    resolve(requestId);
+                  }
+                );
+              }
+            );
+          }
+        );
+      } catch (error) {
+        db.run('ROLLBACK');
+        reject(error);
+      }
+    });
+  });
+}
+```
+
+---
+
+## 📊 ЧАСТИНА 13: ФІНАЛЬНИЙ ЧЕКЛИСТ
+
+### Файли які потрібно створити/оновити:
+
+```
+✅ НОВІ ФАЙЛИ:
+
+1. src/database/migrations/YYYYMMDD_create_book_requests.sql
+2. src/database/migrations/YYYYMMDD_add_physical_copy_to_books.sql
+3. src/database/tables/bookRequests.ts
+4. src/scenes/bookRequestScene.ts
+5. src/handlers/user/myRequests.ts
+6. src/handlers/admin/requests.ts
+7. src/utils/requestNotifications.ts
+8. src/constants/requestStatuses.ts
+9. src/validation/bookRequestValidation.ts
+10. docs/BOOK_REQUESTS.md
+
+✅ ОНОВИТИ ІСНУЮЧІ ФАЙЛИ:
+
+1. src/scenes/addBookScene.ts - додати крок "Чи є фізично"
+2. src/handlers/user/bookActions.ts - оновити картку книги, додати обробник заявки
+3. src/handlers/user/profile.ts - додати кнопку "Мої заявки"
+4. src/handlers/admin/menu.ts - додати кнопку "Заявки на книги"
+5. src/database/tables/books.ts - додати функції increment/decrementAvailableCopies
+6. src/index.ts - зареєструвати scene та handlers
+7. src/constants/index.ts - додати нові кнопки
+8. src/utils/dateHelpers.ts - додати функції для дат
+```
+
+### Порядок реалізації (рекомендований):
+
+```
+ДЕНЬ 1: База даних
+1. Створити міграції
+2. Створити інтерфейси TypeScript
+3. Реалізувати функції в bookRequests.ts
+4. Оновити функції в books.ts
+5. Протестувати SQL запити
+
+ДЕНЬ 2: Додавання книги
+1. Оновити addBookScene.ts
+2. Додати крок "Чи є фізично"
+3. Протестувати додавання книг з/без фізичного примірника
+4. Перевірити збереження в БД
+
+ДЕНЬ 3: Картка книги та заявка
+1. Оновити відображення картки книги
+2. Додати логіку показу статусу
+3. Створити bookRequestScene.ts
+4. Реалізувати всі кроки wizard
+5. Протестувати створення заявки
+
+ДЕНЬ 4: Мої заявки (користувач)
+1. Створити myRequests.ts
+2. Реалізувати список заявок
+3. Реалізувати деталі заявки
+4. Додати функції скасування/підтвердження
+5. Протестувати всі сценарії
+
+ДЕНЬ 5: Адмін-панель
+1. Створити admin/requests.ts
+2. Реалізувати список заявок з фільтрами
+3. Реалізувати схвалення/відхилення
+4. Додати статистику
+5. Протестувати workflow
+
+ДЕНЬ 6: Сповіщення та polish
+1. Створити requestNotifications.ts
+2. Інтегрувати сповіщення у всі сценарії
+3. Додати константи та утиліти
+4. Фінальне тестування
+5. Документація
+```
+
+---
+
+## 🎯 ПІДСУМОК
+
+### Що ми реалізували:
+
+1. ✅ **Додавання книг** - адмін обирає "Є/Немає фізично"
+2. ✅ **Картка книги** - показує статус БЕЗ місця в бібліотеці
+3. ✅ **Створення заявки** - wizard з 4 кроків + коментар
+4. ✅ **Мої заявки** - користувач бачить всі свої заявки
+5. ✅ **Адмін-панель** - управління заявками
+6. ✅ **Термін користування** - БЕЗ ОБМЕЖЕНЬ
+7. ✅ **Сповіщення** - на всі зміни статусів
+8. ✅ **Статистика** - для адміна
+
+### Ключові особливості:
+
+- 📦 **Немає місця в бібліотеці** - тільки наявність/кількість
+- ⏱️ **Без терміну повернення** - користувач повертає коли захоче
+- 🔒 **Безпека** - валідація, транзакції, обробка race conditions
+- 📊 **Статистика** - повна аналітика для адміна
+- 🔔 **Сповіщення** - користувач і адмін завжди в курсі
+
+---
+
+**Це повний, детальний промпт для реалізації системи заявок на фізичні книги! Чи є ще якісь питання або уточнення?** 🚀
