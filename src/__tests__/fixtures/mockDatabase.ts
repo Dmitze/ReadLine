@@ -100,7 +100,7 @@ export class MockDatabase {
   /**
    * Execute raw query (for testing)
    */
-  async run(sql: string, params?: any[]): Promise<void> {
+  async run(_sql: string, _params?: any[]): Promise<void> {
     // Simplified - just mark as executed
     // In real tests, use structured methods
   }
