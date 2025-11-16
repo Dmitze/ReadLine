@@ -11,4 +11,23 @@ module.exports = {
   restoreMocks: true,
   detectOpenHandles: true,
   detectLeaks: false,
+  coverageDirectory: 'coverage',
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.test.ts',
+    '!src/**/__tests__/**',
+    '!src/types/**',
+    '!src/index.ts',
+    '!src/scenes/**',
+    '!src/api/RestAPI.ts',
+  ],
+  coverageThreshold: {
+    global: {
+      branches: 5,
+      functions: 10,
+      lines: 15,
+      statements: 15,
+    },
+  },
+  maxWorkers: 1,
 };
