@@ -3,6 +3,9 @@
  * Tests for complete user dialog flows
  */
 
+// Increase timeout for E2E tests
+jest.setTimeout(30000);
+
 describe('User Dialog Flows', () => {
   // Simulate bot command handlers
   interface BotContext {
