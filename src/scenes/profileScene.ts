@@ -217,7 +217,7 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
          caption,
          parse_mode: 'HTML',
          reply_markup: keyboard
-       }).catch((photoError) => {
+       }).catch((photoError: Error) => {
          logger.debug('Photo error, sending as text');
          ctx.reply(caption, {
            parse_mode: 'HTML',
