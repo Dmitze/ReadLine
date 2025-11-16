@@ -10,7 +10,9 @@ const rateBookScene = new Scenes.WizardScene(
   'RATE_BOOK_SCENE',
   // Крок 1: Вибір рейтингу
   async (ctx: BotContext) => {
-    const bookId = (ctx.scene?.state as any)?.bookId;
+    // Отримуємо bookId з session або з state
+    const bookId =
+      ctx.session?.bookToRate || (ctx.scene?.state as any)?.bookId || (ctx.wizard?.state as any)?.bookId;
 
     if (!bookId) {
       await ctx.reply('❌ Помилка: книга не знайдена.');

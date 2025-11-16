@@ -18,6 +18,13 @@ bootstrapContainer(container).catch((error) => {
 
 const bot = new Telegraf<BotContext>(env.BOT_TOKEN);
 
+// Встановлюємо персистентне головне меню
+bot.telegram.setChatMenuButton({
+  menu_button: {
+    type: 'commands',
+  },
+});
+
 setupMiddleware(bot);
 
 bot.catch(async (err, ctx) => {
