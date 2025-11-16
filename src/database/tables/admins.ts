@@ -94,11 +94,11 @@ export const getExtendedAdminStats = (): Promise<ExtendedAdminStats> => {
       avgRating: 'SELECT AVG(rating) as avg FROM books WHERE rating IS NOT NULL',
       pendingReviews: 'SELECT COUNT(*) as count FROM reviews WHERE is_published = 0',
       pendingFeedback: 'SELECT COUNT(*) as count FROM feedback WHERE status = "pending"',
-      newUsersToday: `SELECT COUNT(DISTINCT user_id) as count FROM saved_books WHERE DATE(created_at) = DATE('now')`,
-      newBooksThisMonth: `SELECT COUNT(*) as count FROM books WHERE DATE(created_at) >= DATE('now', 'start of month')`,
-      activeUsersThisMonth: `SELECT COUNT(DISTINCT user_id) as count FROM saved_books WHERE DATE(created_at) >= DATE('now', 'start of month')`,
-      topGenres: `SELECT genre, COUNT(*) as count FROM books GROUP BY genre ORDER BY count DESC LIMIT 5`,
-      topRatedBooks: `SELECT title, rating, author FROM books WHERE rating IS NOT NULL ORDER BY rating DESC LIMIT 5`
+      newUsersToday: 'SELECT COUNT(DISTINCT user_id) as count FROM saved_books WHERE DATE(created_at) = DATE(\'now\')',
+      newBooksThisMonth: 'SELECT COUNT(*) as count FROM books WHERE DATE(created_at) >= DATE(\'now\', \'start of month\')',
+      activeUsersThisMonth: 'SELECT COUNT(DISTINCT user_id) as count FROM saved_books WHERE DATE(created_at) >= DATE(\'now\', \'start of month\')',
+      topGenres: 'SELECT genre, COUNT(*) as count FROM books GROUP BY genre ORDER BY count DESC LIMIT 5',
+      topRatedBooks: 'SELECT title, rating, author FROM books WHERE rating IS NOT NULL ORDER BY rating DESC LIMIT 5'
     };
 
     const stats: any = {};
