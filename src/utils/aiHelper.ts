@@ -4,7 +4,7 @@
  */
 
 import { Book } from '../database/models';
-import { logger } from './logger';
+import { logger, LogMetadata } from './logger';
 
 export interface UserProfile {
   favoriteGenres: string[];
@@ -56,7 +56,7 @@ async function actualNaturalLanguageSearch(
     try {
       const { getSavedBooks } = await import('../database/models');
       const savedBooks = await getSavedBooks(userId);
-      userSavedBooks = new Set(savedBooks.map(b => b.id));
+      userSavedBooks = new Set(savedBooks.map(b => b.id).filter((id): id is number => id !== undefined));
       
       // Визначаємо улюблені жанри з історії
       const genreCounts: Record<string, number> = {};
@@ -68,7 +68,7 @@ async function actualNaturalLanguageSearch(
         .slice(0, 3)
         .map(([genre]) => genre);
     } catch (error) {
-      logger.warn('Failed to load user history for personalization', error);
+      logger.warn('Failed to load user history for personalization', error as LogMetadata);
     }
   }
   
@@ -115,10 +115,10 @@ async function actualNaturalLanguageSearch(
     // Бонус за схожість з збереженими книгами (той самий автор)
     if (userId) {
       const aSimilar = allBooks.some(book => 
-        userSavedBooks.has(book.id) && book.author === a.author
+        book.id !== undefined && userSavedBooks.has(book.id) && book.author === a.author
       );
       const bSimilar = allBooks.some(book => 
-        userSavedBooks.has(book.id) && book.author === b.author
+        book.id !== undefined && userSavedBooks.has(book.id) && book.author === b.author
       );
       if (aSimilar) scoreA += 30;
       if (bSimilar) scoreB += 30;
@@ -482,14 +482,14 @@ export async function interactiveBookSelection(userAnswers: UserAnswers, allBook
   // 1. ФІЛЬТР за інтересами
   const interestFilters: { [key: string]: (book: Book) => boolean } = {
     interest_fiction: (book) => 
-      book.genre && (
+      typeof book.genre === 'string' && (
         book.genre.toLowerCase().includes('романтик') ||
         book.genre.toLowerCase().includes('драма') ||
         book.genre.toLowerCase().includes('художн') ||
         book.genre.toLowerCase().includes('любов')
       ),
     interest_nonfiction: (book) =>
-      book.genre && (
+      typeof book.genre === 'string' && (
         book.genre.toLowerCase().includes('біографія') ||
         book.genre.toLowerCase().includes('самовдосконален') ||
         book.genre.toLowerCase().includes('історія') ||
@@ -497,7 +497,7 @@ export async function interactiveBookSelection(userAnswers: UserAnswers, allBook
         book.genre.toLowerCase().includes('бізнес')
       ),
     interest_educational: (book) =>
-      book.genre && (
+      typeof book.genre === 'string' && (
         book.genre.toLowerCase().includes('навчальн') ||
         book.genre.toLowerCase().includes('психологія') ||
         book.genre.toLowerCase().includes('саморозвиток') ||
@@ -506,7 +506,7 @@ export async function interactiveBookSelection(userAnswers: UserAnswers, allBook
     interest_any: () => true
   };
   
-  const filterFunc = interestFilters[interest] || interestFilters.interest_any;
+  const filterFunc = (interest && interestFilters[interest]) || interestFilters.interest_any;
   candidates = candidates.filter(filterFunc);
   
   if (candidates.length === 0) {
@@ -555,7 +555,7 @@ export async function interactiveBookSelection(userAnswers: UserAnswers, allBook
     mood_any: (book) => (book.rating || 0) * 10 + (book.downloads_count || 0)
   };
   
-  const scoreFunc = moodScores[mood] || moodScores.mood_any;
+  const scoreFunc = (mood && moodScores[mood]) || moodScores.mood_any;
   
   // 3. СОРТУВАННЯ за комбінацією факторів
   candidates.sort((a, b) => {
@@ -579,4 +579,5 @@ export async function interactiveBookSelection(userAnswers: UserAnswers, allBook
   const maxBooks = Math.min(7, candidates.length);
   return candidates.slice(0, maxBooks);
 }
+
 
