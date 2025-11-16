@@ -48,6 +48,8 @@ export class BookService {
 
   /**
    * Створити нову книгу
+   * @param input - Дані для створення книги
+   * @returns Result з ID нової книги
    */
   async createBook(input: CreateBookInput): Promise<Result<number>> {
     try {
@@ -76,6 +78,8 @@ export class BookService {
 
   /**
    * Отримати книгу за ID
+   * @param bookId - ID книги
+   * @returns Result з даними книги включаючи відгуки та рейтинг
    */
   async getBookById(bookId: number): Promise<Result<any>> {
     try {
