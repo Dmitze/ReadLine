@@ -24,10 +24,17 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      await ctx.scene.enter('PROMO_SCENE');
-      logger.userAction(userId, 'get_promo');
+      // Відправляємо повідомлення про промокод
+      await ctx.reply(
+        `🎁 <b>Промокод</b>\n\n` +
+          `Для отримання промокоду зверніться до адміністратора боту.\n\n` +
+          `📞 Використайте кнопку "Зворотній зв'язок" у головному меню.`,
+        { parse_mode: 'HTML' }
+      );
+
+      logger.userAction(userId, 'view_promo_info');
     } catch (error) {
-      logger.error('Error getting promo', error, { userId: ctx.from?.id });
+      logger.error('Error showing promo info', error, { userId: ctx.from?.id });
       await ctx.reply(ERRORS.GENERIC);
     }
   });

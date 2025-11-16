@@ -225,14 +225,40 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
 
       await incrementDownloads(bookId);
 
-      if (book.pdf_file_id) {
-        await ctx.replyWithDocument(book.pdf_file_id, {
-          caption: `📄 ${book.title} - ${book.author}`,
-        });
-      } else if (book.file_url) {
-        await ctx.reply(`📥 Посилання для завантаження:\n${book.file_url}`, {
-          disable_web_page_preview: false,
-        });
+      try {
+        if (book.pdf_file_id) {
+          // Спробуємо відправити файл через Telegram
+          await ctx.replyWithDocument(book.pdf_file_id, {
+            caption: `📄 ${book.title} - ${book.author}`,
+          });
+        } else if (book.file_url) {
+          // Якщо є зовнішнє посилання, відправляємо його
+          await ctx.reply(`📥 Посилання для завантаження:\n\n${book.file_url}`, {
+            disable_web_page_preview: false,
+          });
+        } else {
+          // Якщо немає ні file_id, ні url - помилка
+          throw new Error('File not available');
+        }
+      } catch (fileError) {
+        logger.error(
+          'Error sending file',
+          fileError instanceof Error ? fileError : new Error(String(fileError))
+        );
+
+        // Якщо файл не знайдено в Telegram, пробуємо надати посилання
+        if (book.file_url) {
+          await ctx.reply(
+            `📥 Файл тимчасово недоступний.\n\nПосилання для завантаження:\n${book.file_url}`,
+            {
+              disable_web_page_preview: false,
+            }
+          );
+        } else {
+          await ctx.reply(
+            '❌ Файл тимчасово недоступний. Спробуйте пізніше або зверніться до адміністратора.'
+          );
+        }
       }
 
       logger.userAction(ctx.from!.id, 'download_pdf', { bookId });
@@ -415,7 +441,7 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
       ctx.session = ctx.session || {};
       ctx.session.bookToRate = bookId;
 
-      await ctx.scene.enter('RATE_BOOK_SCENE');
+      await ctx.scene.enter('RATE_BOOK_SCENE', { bookId });
 
       logger.userAction(ctx.from!.id, 'start_rate_book', { bookId });
     })().catch((error) => {

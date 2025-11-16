@@ -23,12 +23,9 @@ export const formatBookCaption = async (
   const safeGenre = escapeHtml(book.genre);
   const safeDescription = escapeHtml(book.description);
 
-  // Красивий заголовок
+  // Красивий заголовок (БЕЗ ID тут, він буде в кінці)
   let caption = '━━━━━━━━━━━━━━━━━━━━━\n';
   caption += `📖 <b>${safeTitle}</b>\n`;
-  if (book.id) {
-    caption += `🆔 ID: <code>${book.id}</code>\n`;
-  }
   caption += '━━━━━━━━━━━━━━━━━━━━━\n\n';
 
   // Автор
@@ -70,11 +67,13 @@ export const formatBookCaption = async (
     const halfStar = book.rating % 1 >= 0.5 ? '⭐' : '';
     const stars = '⭐'.repeat(fullStars) + halfStar;
     const emptyStars = '☆'.repeat(5 - Math.ceil(book.rating));
-    caption += `${stars}${emptyStars} <b>${book.rating.toFixed(1)}/5</b>`;
+    caption += `⭐ <b>Рейтинг:</b> ${stars}${emptyStars} <b>${book.rating.toFixed(1)}/5</b>`;
     if (book.reviews_count && book.reviews_count > 0) {
-      caption += ` 💬 ${book.reviews_count} ${getReviewsWord(book.reviews_count)}`;
+      caption += ` (${book.reviews_count} ${getReviewsWord(book.reviews_count)})`;
     }
     caption += '\n\n';
+  } else {
+    caption += `⭐ <b>Рейтинг:</b> Ще не оцінена\n\n`;
   }
 
   // ✅ НОВЕ: Розширена інформація про книгу (розподіл рейтингів, вікові обмеження, варнінги)
@@ -174,6 +173,11 @@ export const formatBookCaption = async (
 
   // Статус з кольоровим індикатором
   caption += `\n${book.is_available ? '🟢 <b>Доступна</b>' : '🔴 <b>Недоступна</b>'}`;
+
+  // ID книги в кінці (маленьким шрифтом)
+  if (book.id) {
+    caption += `\n\n<i>ID: ${book.id}</i>`;
+  }
 
   return caption;
 };

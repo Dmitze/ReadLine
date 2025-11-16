@@ -286,6 +286,9 @@ export const getEnhancedBookKeyboard = (book: Book, isSaved: boolean = false) =>
     Markup.button.callback('🔍 Схожі книги', `similar_${book.id}`),
   ]);
 
+  // Четвертий рядок - кнопка "Назад"
+  keyboard.push([Markup.button.callback('⬅️ Назад до меню', 'back_to_menu')]);
+
   return Markup.inlineKeyboard(keyboard).reply_markup;
 };
 

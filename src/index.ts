@@ -308,6 +308,22 @@ bot.action('random_book', async (ctx) => {
   }
 });
 
+// Глобальний обробник "Назад до меню"
+bot.action('back_to_menu', async (ctx) => {
+  try {
+    await ctx.answerCbQuery();
+    await ctx.reply('👋 Повертаємось до головного меню', {
+      reply_markup: getMainMenuKeyboard(),
+    });
+    logger.userAction(ctx.from!.id, 'back_to_menu');
+  } catch (error) {
+    logger.error(
+      'Error in back_to_menu handler',
+      error instanceof Error ? error : new Error(String(error))
+    );
+  }
+});
+
 // Глобальний обробник "Назад до адмін-панелі"
 bot.action('back_to_admin', async (ctx) => {
   try {
