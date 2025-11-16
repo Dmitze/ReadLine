@@ -4,6 +4,7 @@
  */
 
 import { BotContext } from '../types/telegraf';
+import { logger } from '../utils/logger';
 
 export interface CORSConfig {
   origin?: string | string[] | ((origin: string) => boolean);
@@ -132,7 +133,7 @@ export function requestValidationMiddleware() {
      const callbackData = (ctx.callbackQuery as any)?.data;
      if (callbackData && typeof callbackData === 'string') {
        if (callbackData.length > 64) {
-         console.warn('⚠️ Large callback_query data detected');
+         logger.warn('⚠️ Large callback_query data detected');
        }
      }
 
@@ -140,7 +141,7 @@ export function requestValidationMiddleware() {
      const messageText = (ctx.message as any)?.text;
      if (messageText && typeof messageText === 'string') {
        if (messageText.length > 4096) {
-         console.warn('⚠️ Large message text detected');
+         logger.warn('⚠️ Large message text detected');
          await ctx.reply(
            '⚠️ Повідомлення занадто велике. Максимум 4096 символів.'
          );
@@ -157,7 +158,7 @@ export function requestValidationMiddleware() {
 
     for (const input of userInput) {
       if (input && hasSQLInjectionPattern(input as string)) {
-        console.warn('⚠️ Potential SQL injection detected:', input);
+        logger.warn(`⚠️ Potential SQL injection detected: ${input}`);
         (ctx as any).isBlocked = true;
         await ctx.reply('❌ Некоректний запит.');
         return;
@@ -196,7 +197,7 @@ export function xssPreventionMiddleware() {
      if (messageText && typeof messageText === 'string') {
        const isXSSDetected = checkXSSPatterns(messageText);
        if (isXSSDetected) {
-         console.warn('⚠️ Potential XSS detected:', messageText);
+         logger.warn(`⚠️ Potential XSS detected: ${messageText}`);
          (ctx as any).isBlocked = true;
          await ctx.reply('❌ Некоректний формат повідомлення.');
          return;
@@ -269,7 +270,7 @@ export class SecurityContext {
     // Block after 3 suspicious activities
     if (context.suspiciousActivities >= 3) {
       context.isBlocked = true;
-      console.warn(`⚠️ User ${userId} blocked due to suspicious activity`);
+      logger.warn(`⚠️ User ${userId} blocked due to suspicious activity`);
     }
   }
 
@@ -290,7 +291,7 @@ export class SecurityContext {
     if (context) {
       context.isBlocked = false;
       context.suspiciousActivities = 0;
-      console.log(`✅ User ${userId} unblocked`);
+      logger.info(`✅ User ${userId} unblocked`);
     }
   }
 
@@ -325,7 +326,7 @@ export function createSecurityContextMiddleware(
     const userContext = securityContext.checkUser(userId);
 
     if (userContext.isBlocked) {
-      console.warn(`⚠️ Blocked user ${userId} attempted access`);
+      logger.warn(`⚠️ Blocked user ${userId} attempted access`);
       return;
     }
 
