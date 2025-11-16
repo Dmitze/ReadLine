@@ -218,25 +218,52 @@ searchScene.on('text', async (ctx: BotContext) => {
     return ctx.scene?.leave();
   }
 
-  // Простий пошук через models.searchBooks
+  // ✅ ВИПРАВЛЕНО БАГ #4: Пошук з урахуванням типу
   let books: Book[] = [];
   let searchTypeText = '';
+  const { db } = await import('../database/models');
 
-  // Використовуємо базову функцію пошуку з models.ts
-  books = await searchBooks(searchTerm, SEARCH_LIMIT);
-
-  switch (searchType) {
-    case 'title':
-      searchTypeText = '📖 за назвою';
-      break;
-    case 'author':
-      searchTypeText = '👤 за автором';
-      break;
-    case 'genre':
-      searchTypeText = '📚 за жанром';
-      break;
-    default:
-      searchTypeText = '🔍 загальний';
+  // Виконуємо пошук залежно від типу
+  if (searchType === 'title') {
+    searchTypeText = '📖 за назвою';
+    books = await new Promise<Book[]>((resolve, reject) => {
+      db.all(
+        'SELECT * FROM books WHERE title LIKE ? ORDER BY rating DESC LIMIT ?',
+        [`%${searchTerm}%`, SEARCH_LIMIT],
+        (err, rows: Book[]) => {
+          if (err) reject(err);
+          else resolve(rows || []);
+        }
+      );
+    });
+  } else if (searchType === 'author') {
+    searchTypeText = '👤 за автором';
+    books = await new Promise<Book[]>((resolve, reject) => {
+      db.all(
+        'SELECT * FROM books WHERE author LIKE ? ORDER BY rating DESC LIMIT ?',
+        [`%${searchTerm}%`, SEARCH_LIMIT],
+        (err, rows: Book[]) => {
+          if (err) reject(err);
+          else resolve(rows || []);
+        }
+      );
+    });
+  } else if (searchType === 'genre') {
+    searchTypeText = '📚 за жанром';
+    books = await new Promise<Book[]>((resolve, reject) => {
+      db.all(
+        'SELECT * FROM books WHERE genre LIKE ? ORDER BY rating DESC LIMIT ?',
+        [`%${searchTerm}%`, SEARCH_LIMIT],
+        (err, rows: Book[]) => {
+          if (err) reject(err);
+          else resolve(rows || []);
+        }
+      );
+    });
+  } else {
+    searchTypeText = '🔍 загальний';
+    // Використовуємо базову функцію пошуку з models.ts для загального пошуку
+    books = await searchBooks(searchTerm, SEARCH_LIMIT);
   }
 
   logger.info('Search results', { booksFound: books.length });
