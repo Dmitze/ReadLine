@@ -6,6 +6,7 @@
 import { MigrationRunner } from './Migration';
 import { Database, DatabaseWrapper } from './dbWrapper';
 import { allMigrations } from './migrations';
+import { logger } from '../utils/logger';
 
 export interface MigrationStatus {
   total: number;
@@ -43,23 +44,23 @@ export class MigrationManager {
    * Run all pending migrations
    */
   async migrate(): Promise<{ count: number; migrations: string[] }> {
-    console.log('🔄 Running database migrations...\n');
+    logger.info('🔄 Running database migrations...\n');
 
     const status = await this.getStatus();
-    console.log(`📊 Status: ${status.executed}/${status.total} migrations completed\n`);
+    logger.info(`📊 Status: ${status.executed}/${status.total} migrations completed\n`);
 
     if (status.pending === 0) {
-      console.log('✅ Database is up to date - no pending migrations');
+      logger.info('✅ Database is up to date - no pending migrations');
       return { count: 0, migrations: [] };
     }
 
-    console.log(`⏳ Running ${status.pending} pending migrations...\n`);
+    logger.info(`⏳ Running ${status.pending} pending migrations...\n`);
 
     const results = await this.runner.runPending();
 
-    console.log('\n✅ Migration complete!');
-    console.log(`📦 ${results.length} migrations executed`);
-    console.log(`⏱️  Total time: ${results.reduce((sum, r) => sum + r.duration, 0)}ms\n`);
+    logger.info('\n✅ Migration complete!');
+    logger.info(`📦 ${results.length} migrations executed`);
+    logger.info(`⏱️  Total time: ${results.reduce((sum, r) => sum + r.duration, 0)}ms\n`);
 
     return {
       count: results.length,
@@ -71,12 +72,12 @@ export class MigrationManager {
    * Rollback last migration or specific version
    */
   async rollback(targetVersion?: string): Promise<{ count: number; migrations: string[] }> {
-    console.log('🔄 Rolling back migrations...\n');
+    logger.info('🔄 Rolling back migrations...\n');
 
     const results = await this.runner.rollback(targetVersion);
 
-    console.log('\n✅ Rollback complete!');
-    console.log(`🔙 ${results.length} migrations rolled back\n`);
+    logger.info('\n✅ Rollback complete!');
+    logger.info(`🔙 ${results.length} migrations rolled back\n`);
 
     return {
       count: results.length,
@@ -115,7 +116,7 @@ export class MigrationManager {
    * Reset database (rollback all migrations)
    */
   async reset(): Promise<void> {
-    console.log('⚠️  CAUTION: This will delete all data!\n');
+    logger.info('⚠️  CAUTION: This will delete all data!\n');
 
     // In production, require confirmation
     if (process.env.NODE_ENV === 'production') {
@@ -129,14 +130,14 @@ export class MigrationManager {
    * Fresh database (reset + migrate)
    */
   async fresh(): Promise<void> {
-    console.log('🔄 Refreshing database...\n');
+    logger.info('🔄 Refreshing database...\n');
 
     if (process.env.NODE_ENV === 'production') {
       throw new Error('Cannot refresh database in production');
     }
 
     await this.reset();
-    console.log('\n');
+    logger.info('\n');
     await this.migrate();
   }
 
@@ -146,11 +147,11 @@ export class MigrationManager {
   async printStatus(): Promise<void> {
     const status = await this.getStatus();
 
-    console.log('\n📊 Database Migration Status\n');
-    console.log(`Total Migrations: ${status.total}`);
-    console.log(`✅ Executed: ${status.executed}`);
-    console.log(`⏳ Pending: ${status.pending}`);
-    console.log('\n' + '─'.repeat(60) + '\n');
+    logger.info('\n📊 Database Migration Status\n');
+    logger.info(`Total Migrations: ${status.total}`);
+    logger.info(`✅ Executed: ${status.executed}`);
+    logger.info(`⏳ Pending: ${status.pending}`);
+    logger.info('\n' + '─'.repeat(60) + '\n');
 
     for (const migration of status.migrations) {
       const icon = migration.status === 'executed' ? '✅' : '⏳';
@@ -159,12 +160,12 @@ export class MigrationManager {
           ? ` (${migration.duration}ms, ${migration.executedAt})`
           : '';
 
-      console.log(
+      logger.info(
         `${icon} ${migration.version.padEnd(35)} ${migration.name}${executedInfo}`
       );
     }
 
-    console.log('\n' + '─'.repeat(60) + '\n');
+    logger.info('\n' + '─'.repeat(60) + '\n');
   }
 
   /**
@@ -183,7 +184,7 @@ export class MigrationManager {
       throw new Error(`Migration already executed: ${version}`);
     }
 
-    console.log(`🔄 Running migration: ${version} - ${migration.name}`);
+    logger.info(`🔄 Running migration: ${version} - ${migration.name}`);
     const startTime = Date.now();
 
     try {
@@ -195,9 +196,9 @@ export class MigrationManager {
         [version, migration.name, duration]
       );
 
-      console.log(`✅ Migration executed in ${duration}ms`);
+      logger.info(`✅ Migration executed in ${duration}ms`);
     } catch (error) {
-      console.error(`❌ Migration failed: ${version}`);
+      logger.error(`❌ Migration failed: ${version}`);
       throw error;
     }
   }
