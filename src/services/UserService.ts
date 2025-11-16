@@ -28,6 +28,9 @@ export class UserService {
 
   /**
    * Отримати або створити користувача
+   * @param telegramId - Telegram ID користувача
+   * @param input - Опціональні дані для створення нового користувача
+   * @returns Result з даними користувача
    */
   async getOrCreateUser(telegramId: number, input?: CreateUserInput): Promise<Result<any>> {
     try {
