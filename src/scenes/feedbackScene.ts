@@ -108,7 +108,7 @@ feedbackScene.on('text', async (ctx: BotContext) => {
       }
     }).then(() => {
       sentCount++;
-    }).catch((error) => {
+    }).catch((error: Error) => {
       logger.error('Error sending to admin', error instanceof Error ? error : new Error(String(error)), { adminId: admin.user_id });
     });
   }
