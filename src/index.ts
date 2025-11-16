@@ -1,145 +1,31 @@
 // src/index.ts - Основний файл бота
-import { Telegraf, Scenes, session } from 'telegraf';
-import dotenv from 'dotenv';
-
-// Ініціалізація змінних оточення
-dotenv.config();
-
-// Імпорт utilities (перед validate)
+import { Telegraf, session } from 'telegraf';
+import { BotContext } from './types/telegraf';
 import { logger } from './utils/logger';
-
-// Validate environment variables at startup
-import { validateEnv } from './config/envSchema';
-const env = validateEnv();
-logger.info('Environment validation passed', { nodeEnv: env.NODE_ENV });
-
-// ✅ REFACTOR-008: Initialize Service Container
+import { setupEnvironment } from './bootstrap/environmentSetup';
+import { setupMiddleware } from './bootstrap/middlewareSetup';
+import { createStage } from './bootstrap/sceneSetup';
 import { getContainer, bootstrapContainer } from './core/ContainerBootstrap';
+import { db } from './database/models';
+
+const env = setupEnvironment();
+
 const container = getContainer();
 bootstrapContainer(container).catch((error) => {
   logger.error('Failed to bootstrap container', error);
   process.exit(1);
 });
-import { rateLimitMessage, rateLimitCallback, rateLimitCommand } from './middleware/rateLimit';
-import { BotContext } from './types/telegraf';
-import { ERRORS, LIMITS } from './constants';
 
-// База даних ініціалізується автоматично при імпорті models
-
-// Імпорт сцен
-import addBookScene from './scenes/addBookScene';
-import editBookScene from './scenes/editBookScene';
-import manageBooksScene from './scenes/manageBooksScene';
-import searchScene from './scenes/searchScene';
-import profileScene from './scenes/profileScene';
-import rateBookScene from './scenes/rateBookScene';
-import feedbackScene from './scenes/feedbackScene';
-import aiScene from './scenes/aiScene';
-import replyFeedbackScene from './scenes/replyFeedbackScene';
-import onboardingScene from './scenes/onboardingScene';
-import settingsScene from './scenes/settingsScene';
-import aiAssistantScene from './scenes/aiAssistantScene';
-import promoAdminScene from './scenes/promoAdminScene';
-import editExtendedBookInfoScene from './scenes/editExtendedBookInfoScene';
-import { db } from './database/models';
-// ✅ ВИПРАВЛЕНО: Валідація критичних env variables при старті
-function validateEnvVariables() {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  
-  if (!process.env.BOT_TOKEN) {
-    errors.push('BOT_TOKEN is required');
-  } else if (process.env.BOT_TOKEN.length < LIMITS.BOT_TOKEN_MIN) {
-    errors.push('BOT_TOKEN appears to be invalid (too short)');
-  }
-  
-  // ✅ НОВИЙ: Валідація GEMINI_API_KEY
-  if (!process.env.GEMINI_API_KEY) {
-    warnings.push('GEMINI_API_KEY is not set - AI features will be disabled');
-  } else if (process.env.GEMINI_API_KEY.length < LIMITS.API_KEY_MIN) {
-    warnings.push('GEMINI_API_KEY appears to be invalid (too short) - AI features may not work');
-  }
-  
-  if (errors.length > 0) {
-     logger.error('Environment validation failed - Critical configuration errors', new Error(errors.join(', ')));
-     logger.error('Configuration required', new Error('Create .env file with: BOT_TOKEN, GEMINI_API_KEY (optional)'));
-     process.exit(1);
-   }
-   
-   if (warnings.length > 0) {
-     logger.warn('Environment validation warnings', { warnings });
-   }
-  
-  logger.info('Environment variables validated successfully');
-}
-
-validateEnvVariables();
-
-// Ініціалізація бота з validated env
 const bot = new Telegraf<BotContext>(env.BOT_TOKEN);
 
-// Middleware для логування та rate limiting
-bot.use(async (ctx, next) => {
-  logger.info('Processing update', { updateId: ctx.update.update_id });
-  await next();
-});
+setupMiddleware(bot);
 
-// Rate limiting
-bot.use(rateLimitMessage);
-bot.use(rateLimitCommand);
-bot.on('callback_query', rateLimitCallback);
-
-// Глобальний обробник команд /start та /cancel - працює навіть в scenes
-bot.use(async (ctx, next) => {
-  if (ctx.message && 'text' in ctx.message) {
-    const text = ctx.message.text;
-    
-    // Якщо команда /start - виходимо зі scene та обробляємо
-    if (text === '/start') {
-      if (ctx.scene) {
-        await ctx.scene.leave();
-        logger.info('User left scene via /start', { userId: ctx.from?.id });
-      }
-      return next();
-    }
-    
-    // Якщо команда /cancel або кнопка скасування - виходимо зі scene
-    if (text === '/cancel' || text === '❌ Скасувати') {
-      // Виходимо зі scene якщо в ньому
-      if (ctx.scene) {
-        try {
-          await ctx.scene.leave();
-          logger.info('User left scene via cancel', { userId: ctx.from?.id, command: text });
-        } catch (error) {
-          logger.error('Error leaving scene', error instanceof Error ? error : new Error(String(error)));
-        }
-      }
-      
-      // Очищаємо session state
-      if (ctx.session) {
-        ctx.session = {};
-      }
-      
-      // Завжди показуємо головне меню після скасування
-      const { getMainMenuKeyboard } = await import('./keyboards/mainKeyboards');
-      await ctx.reply('❌ Операцію скасовано\n\nОберіть дію з меню:', {
-        reply_markup: getMainMenuKeyboard()
-      });
-      return; // Не викликаємо next() - зупиняємо обробку
-    }
-  }
-  
-  return next();
-});
-
-// Глобальний обробник помилок
 bot.catch(async (err, ctx) => {
   logger.error('Bot error', err instanceof Error ? err : new Error(String(err)), {
     updateId: ctx.update.update_id,
     userId: ctx.from?.id,
   });
   
-  // ✅ ВИПРАВЛЕНО: Обробка callback queries
   if (ctx.callbackQuery) {
     try {
       await ctx.answerCbQuery('❌ Виникла помилка');
@@ -160,37 +46,16 @@ bot.catch(async (err, ctx) => {
     logger.error('Failed to send error message to user', replyError instanceof Error ? replyError : new Error(String(replyError)));
   }
 });
-  
-  // Обробка необроблених promise rejections
-  process.on('unhandledRejection', (reason, promise) => {
-   logger.error('Unhandled Promise Rejection', new Error(String(reason)), { promise: String(promise) });
-  });
-  
-  // Обробка необроблених виключень
-  process.on('uncaughtException', (error) => {
-   logger.error('Uncaught Exception', error instanceof Error ? error : new Error(String(error)));
-  // Не виходимо одразу, даємо можливість graceful shutdown
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Promise Rejection', new Error(String(reason)), { promise: String(promise) });
 });
 
-// NOTE: Stage з Telegraf потребує 'as any' через типізаційні конфлікти з BotContext
-// Це відоме обмеження Telegraf.js, не критична проблема
-// Реєстрація сесій та сцен
-const stage = new Scenes.Stage([
-  addBookScene as any,
-  editBookScene as any,
-  manageBooksScene as any,
-  searchScene as any, 
-  profileScene as any,
-  rateBookScene as any,
-  feedbackScene as any,
-  aiScene as any,
-  replyFeedbackScene as any,
-  onboardingScene as any,
-  settingsScene as any,
-  aiAssistantScene as any,
-  promoAdminScene as any,
-  editExtendedBookInfoScene as any
-]);
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception', error instanceof Error ? error : new Error(String(error)));
+});
+
+const stage = createStage();
 
 // Імпорт клавіатур (потрібно для middleware)
 import { getMainMenuKeyboard } from './keyboards/mainKeyboards';
