@@ -2,7 +2,6 @@
  * SQL Injection Protection Tests
  */
 
-import { SafeQueryExecutor } from '../../database/SafeQueryExecutor';
 import { InputSanitizer } from '../../validation/InputSanitizer';
 
 describe('SQL Injection Protection', () => {
@@ -14,10 +13,10 @@ describe('SQL Injection Protection', () => {
 
     it('should allow safe inputs', () => {
       const safeInputs = [
-        "Harry Potter",
-        "J.K. Rowling",
-        "Science Fiction",
-        "Book about programming"
+        'Harry Potter',
+        'J.K. Rowling',
+        'Science Fiction',
+        'Book about programming'
       ];
 
       safeInputs.forEach(input => {
