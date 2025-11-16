@@ -125,14 +125,25 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
   });
 
   // Обробник вибору жанру
-  bot.action(/genre_(.+)/, async (ctx: BotContext) => {
+  bot.action(/genre_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
       if (!match) return;
 
       await ctx.answerCbQuery();
 
-      const genre = match[1];
+      // Отримуємо індекс жанру
+      const genreIndex = parseInt(match[1], 10);
+      
+      // Отримуємо список жанрів з кешу
+      const genres = await cache.getOrSet(CACHE_KEYS.GENRES, () => getGenres(), CACHE_TTL.LONG);
+      
+      if (!genres || genreIndex >= genres.length) {
+        await ctx.answerCbQuery('❌ Жанр не знайдено', { show_alert: true });
+        return;
+      }
+      
+      const genre = genres[genreIndex];
       const books = await getBooksByGenre(genre);
 
       if (books.length === 0) {

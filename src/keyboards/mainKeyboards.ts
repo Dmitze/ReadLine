@@ -127,8 +127,9 @@ export const getAdaptiveGenreKeyboard = (ctx: Context, genres: string[]) => {
 
 // Стара версія для зворотної сумісності
 export const getGenreKeyboard = (genres: string[]) => {
-  const keyboard = genres.map((genre) => [
-    Markup.button.callback(genre, `genre_${genre}`)
+  const keyboard = genres.map((genre, index) => [
+    // Використовуємо індекс замість повного тексту для callback_data (обмеження 64 байти)
+    Markup.button.callback(genre, `genre_${index}`)
   ]);
   
   keyboard.push([Markup.button.callback('⬅️ Назад', 'catalog_books')]);
