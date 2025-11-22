@@ -54,6 +54,7 @@ uploads/*
 *.swo
 *.sublime-*
 .copilot/
+msp.json
 
 # OS generated files
 Thumbs.db
@@ -69,7 +70,4 @@ Thumbs.db
 .yarn/
 msp.json
 .db-shm" 
-.db-wal" database/*.db-shm
-database/*.db-wal
-database/*.db-shm
-database/*.db-wal
+.db-wal" 
