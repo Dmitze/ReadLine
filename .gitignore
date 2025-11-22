@@ -71,3 +71,5 @@ msp.json
 .db-shm" 
 .db-wal" database/*.db-shm
 database/*.db-wal
+database/*.db-shm
+database/*.db-wal
