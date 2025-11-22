@@ -16,6 +16,7 @@ import editExtendedBookInfoScene from '../scenes/editExtendedBookInfoScene';
 import addPodcastScene from '../scenes/addPodcastScene';
 import requestPhysicalBookScene from '../scenes/requestPhysicalBookScene';
 import createBookRequestScene from '../scenes/createBookRequestScene';
+import bookOrderScene from '../scenes/bookOrderScene';
 
 export function createStage() {
   return new Scenes.Stage([
@@ -36,5 +37,6 @@ export function createStage() {
     addPodcastScene,
     requestPhysicalBookScene,
     createBookRequestScene,
+    bookOrderScene,
   ] as never[]);
 }
