@@ -16,6 +16,7 @@ export const getAdminMenuKeyboard = (pendingReviews: number = 0, pendingFeedback
     [Markup.button.callback('📚 Управління книгами', 'manage_books')],
     [Markup.button.callback('📖✨ Інформація про книги', 'manage_extended_book_info')],
     [Markup.button.callback('📚 Заявки на книги', 'admin_book_requests')],
+    [Markup.button.callback('📋 Замовлення книг', 'admin_orders')],
     [Markup.button.callback('🎁 Керування промокодами', 'manage_promo_codes')],
     [Markup.button.callback(reviewsButtonText, 'moderate_reviews')],
     [Markup.button.callback(feedbackButtonText, 'view_feedback')],
