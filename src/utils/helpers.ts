@@ -160,6 +160,17 @@ export const formatBookCaption = async (
     caption += '\n';
   }
 
+  // Фізична наявність
+  const physicalAvailable = (book as any).is_physically_available;
+  if (physicalAvailable) {
+    caption += '📚 <b>ФІЗИЧНА НАЯВНІСТЬ:</b>\n';
+    caption += '   ✅ Книга є в бібліотеці Галичини\n';
+    caption += '   📍 Можна замовити для отримання\n\n';
+  } else {
+    caption += '📚 <b>ФІЗИЧНА НАЯВНІСТЬ:</b>\n';
+    caption += '   ❌ Тільки електронна версія\n\n';
+  }
+
   // Диктор для аудіокниг
   if (book.narrator) {
     const safeNarrator = escapeHtml(book.narrator);
