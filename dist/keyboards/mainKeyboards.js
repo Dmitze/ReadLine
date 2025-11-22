@@ -161,6 +161,11 @@ const getAdaptiveBookKeyboard = (ctx, book, isSaved = false) => {
 exports.getAdaptiveBookKeyboard = getAdaptiveBookKeyboard;
 const getEnhancedBookKeyboard = (book, isSaved = false) => {
     const keyboard = [];
+    if (book.is_physically_available) {
+        keyboard.push([
+            telegraf_1.Markup.button.callback('📋 Замовити книгу', `order_book_${book.id}`)
+        ]);
+    }
     const formatRow = [];
     if (book.file_url || book.pdf_file_id) {
         const format = book.file_format || 'PDF';
