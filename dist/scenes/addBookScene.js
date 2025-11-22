@@ -555,7 +555,7 @@ addBookScene.action('confirm_book', async (ctx) => {
         description: state.description,
         photo_file_id: state.photoFileId || 'default_book_cover',
         file_type: file_type,
-        is_physically_available: state.is_physically_available ? 1 : 0
+        is_physically_available: state.is_physically_available ? 1 : 0,
     };
     if (state.bookFile) {
         bookData.file_url = state.bookFile;
@@ -586,7 +586,11 @@ addBookScene.action('confirm_book', async (ctx) => {
             await (0, tagFunctions_1.addBookTag)(bookId, tagId);
         }
     }
-    const finalCaption = await (0, helpers_1.formatBookCaption)({ ...bookData, id: bookId, is_available: true });
+    const finalCaption = await (0, helpers_1.formatBookCaption)({
+        ...bookData,
+        id: bookId,
+        is_available: true,
+    });
     if (bookData.photo_file_id && bookData.photo_file_id !== 'default_book_cover') {
         await ctx.replyWithPhoto(bookData.photo_file_id, {
             caption: finalCaption,
