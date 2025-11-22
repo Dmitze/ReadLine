@@ -44,6 +44,62 @@ async function lazyLoadModule(modulePath) {
     const module = await Promise.resolve(`${modulePath}`).then(s => __importStar(require(s)));
     return module;
 }
+async function showFinalPreview(ctx, state) {
+    const { getAllTags } = await Promise.resolve().then(() => __importStar(require('../database/tagFunctions')));
+    let tagsText = '';
+    if (state.selectedTags && state.selectedTags.length > 0) {
+        const allTags = await getAllTags();
+        const selectedTagNames = state.selectedTags
+            .map(tagId => allTags.find(t => t.id === tagId)?.name)
+            .filter(Boolean)
+            .join(', ');
+        tagsText = `\n🏷️ Теги: ${selectedTagNames}`;
+    }
+    const formats = [];
+    if (state.bookFile)
+        formats.push('📄 Файл');
+    if (state.bookAudio)
+        formats.push('🎧 Аудіо');
+    if (state.bookLink)
+        formats.push('🔗 Посилання');
+    const formatsText = formats.length > 0
+        ? '\n📎 Формати: ' + formats.join(', ')
+        : '';
+    const physicalText = state.is_physically_available
+        ? '\n📦 Фізична наявність: ✅ Є в бібліотеці'
+        : '\n📦 Фізична наявність: ❌ Тільки електронна';
+    const previewText = `
+📝 <b>ПОПЕРЕДНІЙ ПЕРЕГЛЯД</b>
+
+📖 <b>${state.title}</b>
+👤 ${state.author}
+📚 ${state.genre}
+📝 ${state.description}${tagsText}${formatsText}${physicalText}
+
+━━━━━━━━━━━━━━━━━━━
+
+Все вірно? Опублікувати книгу?
+  `.trim();
+    if (state.photoFileId && state.photoFileId !== 'default_book_cover') {
+        await ctx.replyWithPhoto(state.photoFileId, {
+            caption: previewText,
+            parse_mode: 'HTML',
+            reply_markup: telegraf_1.Markup.inlineKeyboard([
+                [telegraf_1.Markup.button.callback('✅ Підтвердити і опублікувати', 'confirm_book')],
+                [telegraf_1.Markup.button.callback('❌ Скасувати', 'cancel_book')]
+            ]).reply_markup
+        });
+    }
+    else {
+        await ctx.reply(previewText, {
+            parse_mode: 'HTML',
+            reply_markup: telegraf_1.Markup.inlineKeyboard([
+                [telegraf_1.Markup.button.callback('✅ Підтвердити і опублікувати', 'confirm_book')],
+                [telegraf_1.Markup.button.callback('❌ Скасувати', 'cancel_book')]
+            ]).reply_markup
+        });
+    }
+}
 const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (ctx) => {
     (0, utils_1.logUserAction)(ctx, 'start_add_book');
     await ctx.reply(`${(0, utils_1.getProgress)(0)}\n📖 Введіть назву книги:\n\n` +
@@ -326,10 +382,10 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
     if (state.addingAdditionalFormat) {
         state.addingAdditionalFormat = false;
         state.bookType = undefined;
-        await (0, utils_1.showFormatSelection)(ctx);
+        await (0, utils_1.showFormatSelection)(ctx, state);
         return;
     }
-    await (0, utils_1.showFormatSelection)(ctx);
+    await (0, utils_1.showFormatSelection)(ctx, state);
     return ctx.wizard.next();
 }, async (ctx) => {
     const state = ctx.wizard?.state;
@@ -400,15 +456,24 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
             });
             state.addingAdditionalFormat = false;
             state.bookType = undefined;
-            await (0, utils_1.showFormatSelection)(ctx);
+            await (0, utils_1.showFormatSelection)(ctx, state);
         }
         return;
     }
     if (ctx.callbackQuery && 'data' in ctx.callbackQuery) {
         const action = ctx.callbackQuery.data;
         if (action === 'preview_skip_tags') {
-            await ctx.answerCbQuery('✅ Переходимо до підтвердження');
-            await (0, utils_1.showBookPreview)(ctx);
+            await ctx.answerCbQuery('✅ Переходимо далі');
+            await ctx.reply('📦 <b>ЧИ Є ЦЯ КНИГА ФІЗИЧНО В НАЯВНОСТІ?</b>\n\n' +
+                'Якщо книга є в бібліотеці Галичини і ви можете передати її користувачу - оберіть "Так".\n\n' +
+                '✅ <b>Так</b> - користувачі зможуть залишати замовлення на цю книгу\n' +
+                '❌ <b>Ні</b> - тільки електронна версія', {
+                parse_mode: 'HTML',
+                reply_markup: telegraf_1.Markup.inlineKeyboard([
+                    [telegraf_1.Markup.button.callback('✅ Так, є в наявності', 'book_physical_yes')],
+                    [telegraf_1.Markup.button.callback('❌ Ні, тільки електронна', 'book_physical_no')]
+                ]).reply_markup
+            });
             return ctx.wizard.next();
         }
         if (action.startsWith('preview_tag_')) {
@@ -447,6 +512,26 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
             return ctx.scene?.leave();
         }
     }
+}, async (ctx) => {
+    const state = ctx.wizard?.state;
+    if (ctx.callbackQuery && 'data' in ctx.callbackQuery) {
+        const action = ctx.callbackQuery.data;
+        if (action === 'book_physical_yes') {
+            await ctx.answerCbQuery('✅ Книга буде доступна для замовлення');
+            state.is_physically_available = true;
+            await ctx.editMessageText('✅ Книга позначена як фізично доступна');
+        }
+        else if (action === 'book_physical_no') {
+            await ctx.answerCbQuery('✅ Тільки електронна версія');
+            state.is_physically_available = false;
+            await ctx.editMessageText('✅ Книга буде доступна тільки в електронному вигляді');
+        }
+        else {
+            return;
+        }
+        await showFinalPreview(ctx, state);
+        return ctx.wizard.next();
+    }
 }, async (_ctx) => {
     return;
 });
@@ -470,6 +555,7 @@ addBookScene.action('confirm_book', async (ctx) => {
         description: state.description,
         photo_file_id: state.photoFileId || 'default_book_cover',
         file_type: file_type,
+        is_physically_available: state.is_physically_available ? 1 : 0
     };
     if (state.bookFile) {
         bookData.file_url = state.bookFile;
@@ -583,8 +669,9 @@ addBookScene.action('edit_photo', async (ctx) => {
     return ctx.wizard.selectStep(5);
 });
 addBookScene.action('edit_formats', async (ctx) => {
+    const state = ctx.wizard?.state;
     await ctx.answerCbQuery('✏️ Редагуємо формати');
-    await (0, utils_1.showFormatSelection)(ctx);
+    await (0, utils_1.showFormatSelection)(ctx, state);
 });
 addBookScene.command('exit', async (ctx) => {
     await ctx.reply('❌ Ви впевнені, що хочете скасувати додавання книги?', {
