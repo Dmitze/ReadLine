@@ -563,4 +563,31 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
     });
     return;
   });
+
+  // Замовити фізичну книгу
+  bot.action(/order_book_(\d+)/, async (ctx: BotContext) => {
+    (async () => {
+      const match = ctx.match;
+      if (!match || !match[1]) {
+        await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
+        return;
+      }
+      const bookId = parseInt(match[1], 10);
+
+      await ctx.answerCbQuery('📋 Відкриваємо форму замовлення...');
+
+      // Перейти до сцени замовлення
+      await ctx.scene.enter('BOOK_ORDER_SCENE', { bookId });
+
+      logger.userAction(ctx.from!.id, 'start_order_book', { bookId });
+    })().catch((error) => {
+      logger.error(
+        'Error starting book order',
+        error instanceof Error ? error : new Error(String(error)),
+        { userId: ctx.from?.id }
+      );
+      ctx.reply(ERRORS.GENERIC);
+    });
+    return;
+  });
 }
