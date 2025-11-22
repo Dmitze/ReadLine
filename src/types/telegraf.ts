@@ -57,6 +57,9 @@ export interface WizardState {
   // Additional format flag
   addingAdditionalFormat?: boolean; // Чи додаємо додатковий формат
 
+  // Physical availability
+  is_physically_available?: boolean; // Чи є книга фізично в наявності
+
   // AI Assistant (Завдання 29)
   useAI?: boolean; // Чи використовувати AI для розпізнавання
   aiRecognized?: boolean; // Чи була інформація розпізнана AI
