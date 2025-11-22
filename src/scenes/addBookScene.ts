@@ -27,6 +27,66 @@ async function lazyLoadModule(modulePath: string) {
 
 // Helper functions are now imported from utils modules
 
+// Функція попереднього перегляду книги перед публікацією
+async function showFinalPreview(ctx: BotContext, state: WizardState) {
+  const { getAllTags } = await import('../database/tagFunctions');
+  
+  let tagsText = '';
+  if (state.selectedTags && state.selectedTags.length > 0) {
+    const allTags = await getAllTags();
+    const selectedTagNames = state.selectedTags
+      .map(tagId => allTags.find(t => t.id === tagId)?.name)
+      .filter(Boolean)
+      .join(', ');
+    tagsText = `\n🏷️ Теги: ${selectedTagNames}`;
+  }
+
+  const formats = [];
+  if (state.bookFile) formats.push('📄 Файл');
+  if (state.bookAudio) formats.push('🎧 Аудіо');
+  if (state.bookLink) formats.push('🔗 Посилання');
+  
+  const formatsText = formats.length > 0 
+    ? '\n📎 Формати: ' + formats.join(', ')
+    : '';
+  
+  const physicalText = state.is_physically_available
+    ? '\n📦 Фізична наявність: ✅ Є в бібліотеці'
+    : '\n📦 Фізична наявність: ❌ Тільки електронна';
+
+  const previewText = `
+📝 <b>ПОПЕРЕДНІЙ ПЕРЕГЛЯД</b>
+
+📖 <b>${state.title}</b>
+👤 ${state.author}
+📚 ${state.genre}
+📝 ${state.description}${tagsText}${formatsText}${physicalText}
+
+━━━━━━━━━━━━━━━━━━━
+
+Все вірно? Опублікувати книгу?
+  `.trim();
+
+  if (state.photoFileId && state.photoFileId !== 'default_book_cover') {
+    await ctx.replyWithPhoto(state.photoFileId, {
+      caption: previewText,
+      parse_mode: 'HTML',
+      reply_markup: Markup.inlineKeyboard([
+        [Markup.button.callback('✅ Підтвердити і опублікувати', 'confirm_book')],
+        [Markup.button.callback('❌ Скасувати', 'cancel_book')]
+      ]).reply_markup
+    });
+  } else {
+    await ctx.reply(previewText, {
+      parse_mode: 'HTML',
+      reply_markup: Markup.inlineKeyboard([
+        [Markup.button.callback('✅ Підтвердити і опублікувати', 'confirm_book')],
+        [Markup.button.callback('❌ Скасувати', 'cancel_book')]
+      ]).reply_markup
+    });
+  }
+}
+
 const addBookScene = new Scenes.WizardScene(
   'ADD_BOOK_SCENE',
 
@@ -400,12 +460,12 @@ const addBookScene = new Scenes.WizardScene(
     if (state.addingAdditionalFormat) {
       state.addingAdditionalFormat = false;
       state.bookType = undefined;
-      await showFormatSelection(ctx);
+      await showFormatSelection(ctx, state);
       return;
     }
 
     // Показуємо вибір додаткових форматів
-    await showFormatSelection(ctx);
+    await showFormatSelection(ctx, state);
     return ctx.wizard.next();
   },
 
@@ -477,7 +537,7 @@ const addBookScene = new Scenes.WizardScene(
         });
         state.addingAdditionalFormat = false;
         state.bookType = undefined;
-        await showFormatSelection(ctx);
+        await showFormatSelection(ctx, state);
       }
       return;
     }
@@ -487,8 +547,23 @@ const addBookScene = new Scenes.WizardScene(
       const action = ctx.callbackQuery.data;
 
       if (action === 'preview_skip_tags') {
-        await ctx.answerCbQuery('✅ Переходимо до підтвердження');
-        await showBookPreview(ctx);
+        await ctx.answerCbQuery('✅ Переходимо далі');
+        
+        // Показуємо крок "Чи є фізично?"
+        await ctx.reply(
+          '📦 <b>ЧИ Є ЦЯ КНИГА ФІЗИЧНО В НАЯВНОСТІ?</b>\n\n' +
+          'Якщо книга є в бібліотеці Галичини і ви можете передати її користувачу - оберіть "Так".\n\n' +
+          '✅ <b>Так</b> - користувачі зможуть залишати замовлення на цю книгу\n' +
+          '❌ <b>Ні</b> - тільки електронна версія',
+          {
+            parse_mode: 'HTML',
+            reply_markup: Markup.inlineKeyboard([
+              [Markup.button.callback('✅ Так, є в наявності', 'book_physical_yes')],
+              [Markup.button.callback('❌ Ні, тільки електронна', 'book_physical_no')]
+            ]).reply_markup
+          }
+        );
+        
         return ctx.wizard.next();
       }
 
@@ -539,7 +614,32 @@ const addBookScene = new Scenes.WizardScene(
     }
   },
 
-  // Крок 9: Підтвердження (викликається тільки через showBookPreview)
+  // Крок 9: Фізична наявність
+  async (ctx: BotContext) => {
+    const state = ctx.wizard?.state as WizardState;
+    
+    if (ctx.callbackQuery && 'data' in ctx.callbackQuery) {
+      const action = ctx.callbackQuery.data;
+      
+      if (action === 'book_physical_yes') {
+        await ctx.answerCbQuery('✅ Книга буде доступна для замовлення');
+        state.is_physically_available = true;
+        await ctx.editMessageText('✅ Книга позначена як фізично доступна');
+      } else if (action === 'book_physical_no') {
+        await ctx.answerCbQuery('✅ Тільки електронна версія');
+        state.is_physically_available = false;
+        await ctx.editMessageText('✅ Книга буде доступна тільки в електронному вигляді');
+      } else {
+        return;
+      }
+      
+      // Показуємо попередній перегляд
+      await showFinalPreview(ctx, state);
+      return ctx.wizard.next();
+    }
+  },
+  
+  // Крок 10: Підтвердження
   async (_ctx: BotContext) => {
     // Цей крок використовується тільки для обробки callback'ів підтвердження
     return;
@@ -562,13 +662,14 @@ addBookScene.action('confirm_book', async (ctx: BotContext) => {
   else if (state.bookAudio) file_type = 'audio';
   else if (state.bookLink) file_type = 'link';
 
-  const bookData: any = {
+  const bookData: unknown = {
     title: state.title,
     author: state.author,
     genre: state.genre,
     description: state.description,
     photo_file_id: state.photoFileId || 'default_book_cover',
     file_type: file_type,
+    is_physically_available: state.is_physically_available ? 1 : 0
   };
 
   if (state.bookFile) {
@@ -607,7 +708,11 @@ addBookScene.action('confirm_book', async (ctx: BotContext) => {
     }
   }
 
-  const finalCaption = await formatBookCaption({ ...bookData, id: bookId, is_available: true });
+  const finalCaption = await formatBookCaption({
+    ...bookData,
+    id: bookId,
+    is_available: true,
+  } as any);
   if (bookData.photo_file_id && bookData.photo_file_id !== 'default_book_cover') {
     await ctx.replyWithPhoto(bookData.photo_file_id, {
       caption: finalCaption,
@@ -709,8 +814,9 @@ addBookScene.action('edit_photo', async (ctx: BotContext) => {
 });
 
 addBookScene.action('edit_formats', async (ctx: BotContext) => {
+  const state = ctx.wizard?.state as WizardState;
   await ctx.answerCbQuery('✏️ Редагуємо формати');
-  await showFormatSelection(ctx);
+  await showFormatSelection(ctx, state);
 });
 
 // Швидкий вихід з підтвердженням
@@ -765,7 +871,7 @@ addBookScene.action('back_to_admin', async (ctx: BotContext) => {
       : '✅ Всі повідомлення прочитані';
 
   // Видаляємо попереднє повідомлення (ігноруємо помилки)
-  await ctx.deleteMessage().catch((error) => {
+  await ctx.deleteMessage().catch((error: unknown) => {
     logger.debug('Failed to delete message', {
       error: error instanceof Error ? error.message : String(error),
     });
