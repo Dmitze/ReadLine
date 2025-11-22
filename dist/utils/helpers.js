@@ -158,6 +158,16 @@ const formatBookCaption = async (book, tags) => {
         });
         caption += '\n';
     }
+    const physicalAvailable = book.is_physically_available;
+    if (physicalAvailable) {
+        caption += '📚 <b>ФІЗИЧНА НАЯВНІСТЬ:</b>\n';
+        caption += '   ✅ Книга є в бібліотеці Галичини\n';
+        caption += '   📍 Можна замовити для отримання\n\n';
+    }
+    else {
+        caption += '📚 <b>ФІЗИЧНА НАЯВНІСТЬ:</b>\n';
+        caption += '   ❌ Тільки електронна версія\n\n';
+    }
     if (book.narrator) {
         const safeNarrator = escapeHtml(book.narrator);
         caption += `🎙️ <b>Читає:</b> ${safeNarrator}\n\n`;
