@@ -224,6 +224,13 @@ export const getAdaptiveBookKeyboard = (ctx: Context, book: Book, isSaved: boole
 export const getEnhancedBookKeyboard = (book: Book, isSaved: boolean = false) => {
   const keyboard: any[][] = [];
 
+  // Кнопка замовлення фізичної книги (якщо доступна)
+  if ((book as any).is_physically_available) {
+    keyboard.push([
+      Markup.button.callback('📋 Замовити книгу', `order_book_${book.id}`)
+    ]);
+  }
+
   // Перший рядок - доступні формати (динамічно)
   const formatRow: any[] = [];
 
