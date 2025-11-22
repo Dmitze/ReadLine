@@ -69,4 +69,5 @@ Thumbs.db
 .yarn/
 msp.json
 .db-shm" 
-.db-wal" 
+.db-wal" database/*.db-shm
+database/*.db-wal
