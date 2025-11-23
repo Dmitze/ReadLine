@@ -202,3 +202,67 @@ export async function trySequence<T, E = Error>(
 
   return err(new Error('No operations provided') as any);
 }
+
+/**
+ * ✅ Стандартизована обробка Result для middleware
+ * Використовувати замість try/catch в сценах та handlers
+ */
+export async function handleResult<T>(
+  operation: () => Promise<Result<T>>,
+  onSuccess: (value: T) => Promise<void> | void,
+  onError?: (error: Error) => Promise<void> | void,
+  logContext?: string
+): Promise<void> {
+  const result = await operation();
+
+  if (result.isOk()) {
+    await onSuccess(result.value);
+  } else {
+    if (logContext) {
+      console.error(`[${logContext}] Error:`, result.error);
+    }
+    if (onError) {
+      await onError(result.error);
+    } else {
+      // Default error handling - rethrow for upper level handling
+      throw result.error;
+    }
+  }
+}
+
+/**
+ * ✅ Wrapper для async функцій з автоматичною обробкою помилок
+ * Повертає Result замість throw
+ */
+export function withResult<T extends any[], R>(
+  fn: (...args: T) => Promise<R>
+): (...args: T) => Promise<Result<R>> {
+  return async (...args: T) => {
+    try {
+      const result = await fn(...args);
+      return ok(result);
+    } catch (error) {
+      return err(error instanceof Error ? error : new Error(String(error)));
+    }
+  };
+}
+
+/**
+ * ✅ Стандартизований error handler для сцен
+ * Логує помилку та надсилає повідомлення користувачу
+ */
+export async function handleSceneError(
+  ctx: any,
+  error: Error,
+  userMessage: string = '❌ Виникла помилка. Спробуйте ще раз.',
+  logContext?: string
+): Promise<void> {
+  const context = logContext || 'SceneError';
+  console.error(`[${context}]`, error);
+
+  try {
+    await ctx.reply(userMessage);
+  } catch (replyError) {
+    console.error(`[${context}] Failed to send error message:`, replyError);
+  }
+}
