@@ -1,10 +1,12 @@
 import { Scenes, Markup } from 'telegraf';
 import { addBook } from '../database/models';
 import { addBookTag } from '../database/tagFunctions';
-import { formatBookCaption } from '../utils/helpers';
+import { formatBookCaption, escapeHtml } from '../utils/helpers';
 import { logger } from '../utils/logger';
 import { BotContext, WizardState } from '../types/telegraf';
 import { validateBookData } from '../utils/validation';
+import { validateDocument, validateAudio, MAX_FILE_SIZES } from '../utils/fileValidation';
+import { RateLimiter } from '../middleware/RateLimiter';
 import {
   getCachedTags,
   getProgress,
@@ -19,11 +21,39 @@ import {
   otherGenres,
 } from './addBook/utils';
 
+// Type guards for message types
+function isMessageWithDocument(ctx: BotContext): ctx is BotContext & {
+  message: { document: { file_id: string; file_name?: string; file_size?: number; mime_type?: string } }
+} {
+  return ctx.message && 'document' in ctx.message && ctx.message.document !== undefined;
+}
+
+function isMessageWithAudio(ctx: BotContext): ctx is BotContext & {
+  message: { audio: { file_id: string; file_name?: string; duration?: number } }
+} {
+  return ctx.message && 'audio' in ctx.message && ctx.message.audio !== undefined;
+}
+
+function isMessageWithVoice(ctx: BotContext): ctx is BotContext & {
+  message: { voice: { file_id: string; duration?: number } }
+} {
+  return ctx.message && 'voice' in ctx.message && ctx.message.voice !== undefined;
+}
+
+function isMessageWithText(ctx: BotContext): ctx is BotContext & {
+  message: { text: string }
+} {
+  return ctx.message && 'text' in ctx.message && typeof ctx.message.text === 'string';
+}
+
 // Ліниве завантаження модулів
 async function lazyLoadModule(modulePath: string) {
   const module = await import(modulePath);
   return module;
 }
+
+// ✅ Rate limiter для завантаження файлів
+const fileUploadLimiter = new RateLimiter({ maxRequests: 5, windowMs: 60000 }); // 5 файлів на хвилину
 
 // Helper functions are now imported from utils modules
 
@@ -36,7 +66,8 @@ async function showFinalPreview(ctx: BotContext, state: WizardState) {
     const allTags = await getAllTags();
     const selectedTagNames = state.selectedTags
       .map(tagId => allTags.find(t => t.id === tagId)?.name)
-      .filter(Boolean)
+      .filter((name): name is string => name !== undefined)
+      .map(name => escapeHtml(name))
       .join(', ');
     tagsText = `\n🏷️ Теги: ${selectedTagNames}`;
   }
@@ -57,31 +88,37 @@ async function showFinalPreview(ctx: BotContext, state: WizardState) {
   const previewText = `
 📝 <b>ПОПЕРЕДНІЙ ПЕРЕГЛЯД</b>
 
-📖 <b>${state.title}</b>
-👤 ${state.author}
-📚 ${state.genre}
-📝 ${state.description}${tagsText}${formatsText}${physicalText}
+📖 <b>${escapeHtml(state.title || 'Невідома назва')}</b>
+👤 ${escapeHtml(state.author || 'Невідомий автор')}
+📚 ${escapeHtml(state.genre || 'Невідомий жанр')}
+📝 ${escapeHtml(state.description || 'Без опису')}${tagsText}${formatsText}${physicalText}
 
 ━━━━━━━━━━━━━━━━━━━
 
 Все вірно? Опублікувати книгу?
   `.trim();
 
+  const userId = ctx.from?.id;
+  if (!userId) {
+    await ctx.reply('❌ Помилка: користувач не ідентифікований');
+    return ctx.scene?.leave();
+  }
+
   if (state.photoFileId && state.photoFileId !== 'default_book_cover') {
     await ctx.replyWithPhoto(state.photoFileId, {
       caption: previewText,
       parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard([
-        [Markup.button.callback('✅ Підтвердити і опублікувати', 'confirm_book')],
-        [Markup.button.callback('❌ Скасувати', 'cancel_book')]
+        [Markup.button.callback('✅ Підтвердити і опублікувати', `confirm_book_${userId}`)],
+        [Markup.button.callback('❌ Скасувати', `cancel_book_${userId}`)]
       ]).reply_markup
     });
   } else {
     await ctx.reply(previewText, {
       parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard([
-        [Markup.button.callback('✅ Підтвердити і опублікувати', 'confirm_book')],
-        [Markup.button.callback('❌ Скасувати', 'cancel_book')]
+        [Markup.button.callback('✅ Підтвердити і опублікувати', `confirm_book_${userId}`)],
+        [Markup.button.callback('❌ Скасувати', `cancel_book_${userId}`)]
       ]).reply_markup
     });
   }
@@ -157,16 +194,22 @@ const addBookScene = new Scenes.WizardScene(
     logUserAction(ctx, 'entered_author', { author });
 
     // Клавіатура з популярними жанрами
+    const userId = ctx.from?.id;
+    if (!userId) {
+      await ctx.reply('❌ Помилка: користувач не ідентифікований');
+      return ctx.scene?.leave();
+    }
+
     const keyboard = [];
     for (let i = 0; i < popularGenres.length; i += 4) {
       const row = popularGenres.slice(i, i + 4).map((genre) => ({
         text: genre,
-        callback_data: `genre_popular_${popularGenres.indexOf(genre)}`,
+        callback_data: `genre_popular_${popularGenres.indexOf(genre)}_${userId}`,
       }));
       keyboard.push(row);
     }
 
-    keyboard.push([{ text: '📚 Всі жанри', callback_data: 'show_all_genres' }]);
+    keyboard.push([{ text: '📚 Всі жанри', callback_data: `show_all_genres_${userId}` }]);
 
     if (!state.selectedGenres) {
       state.selectedGenres = [];
@@ -185,18 +228,31 @@ const addBookScene = new Scenes.WizardScene(
     if (ctx.callbackQuery && 'data' in ctx.callbackQuery) {
       const action = ctx.callbackQuery.data;
 
-      if (action === 'show_all_genres') {
+      if (action.startsWith('show_all_genres_')) {
+        const expectedUserId = parseInt(action.split('_')[3]);
+        const currentUserId = ctx.from?.id;
+
+        // ✅ CSRF перевірка
+        if (!currentUserId || expectedUserId !== currentUserId) {
+          await ctx.answerCbQuery('❌ Некоректний запит');
+          logger.warn('CSRF attempt blocked in show_all_genres', {
+            expectedUserId,
+            currentUserId
+          });
+          return;
+        }
+
         // Показати всі жанри
         const allGenres = [...popularGenres, ...otherGenres];
         const keyboard: any[] = [];
         for (let i = 0; i < allGenres.length; i += 3) {
           const row = allGenres.slice(i, i + 3).map((genre) => ({
             text: genre,
-            callback_data: `genre_all_${allGenres.indexOf(genre)}`,
+            callback_data: `genre_all_${allGenres.indexOf(genre)}_${currentUserId}`,
           }));
           keyboard.push(row);
         }
-        keyboard.push([{ text: '✅ Далі', callback_data: 'genres_done' }]);
+        keyboard.push([{ text: '✅ Далі', callback_data: `genres_done_${currentUserId}` }]);
 
         await ctx.editMessageText(
           `${getProgress(2)}\n📚 Оберіть жанри з повного списку (1-5 жанрів):`,
@@ -205,7 +261,20 @@ const addBookScene = new Scenes.WizardScene(
         return;
       }
 
-      if (action === 'genres_done') {
+      if (action.startsWith('genres_done_')) {
+        const expectedUserId = parseInt(action.split('_')[2]);
+        const currentUserId = ctx.from?.id;
+
+        // ✅ CSRF перевірка
+        if (!currentUserId || expectedUserId !== currentUserId) {
+          await ctx.answerCbQuery('❌ Некоректний запит');
+          logger.warn('CSRF attempt blocked in genres_done', {
+            expectedUserId,
+            currentUserId
+          });
+          return;
+        }
+
         if (!state.selectedGenres || state.selectedGenres.length === 0) {
           await ctx.answerCbQuery('❌ Оберіть хоча б один жанр');
           return;
@@ -225,7 +294,22 @@ const addBookScene = new Scenes.WizardScene(
       }
 
       if (action.startsWith('genre_popular_') || action.startsWith('genre_all_')) {
-        const genreIndex = parseInt(action.split('_')[2]);
+        const parts = action.split('_');
+        const genreIndex = parseInt(parts[2]);
+        const expectedUserId = parseInt(parts[3]);
+        const currentUserId = ctx.from?.id;
+
+        // ✅ CSRF перевірка
+        if (!currentUserId || expectedUserId !== currentUserId) {
+          await ctx.answerCbQuery('❌ Некоректний запит');
+          logger.warn('CSRF attempt blocked in genre selection', {
+            expectedUserId,
+            currentUserId,
+            action
+          });
+          return;
+        }
+
         const genres = action.startsWith('genre_popular_')
           ? popularGenres
           : [...popularGenres, ...otherGenres];
@@ -292,11 +376,17 @@ const addBookScene = new Scenes.WizardScene(
     autoSaveState(state);
     logUserAction(ctx, 'entered_description', { descriptionLength: description.length });
 
+    const userId = ctx.from?.id;
+    if (!userId) {
+      await ctx.reply('❌ Помилка: користувач не ідентифікований');
+      return ctx.scene?.leave();
+    }
+
     await ctx.reply(
       `${getProgress(4)}\n🖼️ Завантажте фото обкладинки книги (або натисніть "Пропустити"):`,
       {
         reply_markup: Markup.inlineKeyboard([
-          [{ text: '⏭️ Пропустити', callback_data: 'skip_photo' }],
+          [{ text: '⏭️ Пропустити', callback_data: `skip_photo_${userId}` }],
         ]).reply_markup,
       }
     );
@@ -310,8 +400,21 @@ const addBookScene = new Scenes.WizardScene(
     if (
       ctx.callbackQuery &&
       'data' in ctx.callbackQuery &&
-      ctx.callbackQuery.data === 'skip_photo'
+      ctx.callbackQuery.data.startsWith('skip_photo_')
     ) {
+      const expectedUserId = parseInt(ctx.callbackQuery.data.split('_')[2]);
+      const currentUserId = ctx.from?.id;
+
+      // ✅ CSRF перевірка
+      if (!currentUserId || expectedUserId !== currentUserId) {
+        await ctx.answerCbQuery('❌ Некоректний запит');
+        logger.warn('CSRF attempt blocked in skip_photo', {
+          expectedUserId,
+          currentUserId
+        });
+        return;
+      }
+
       state.photoFileId = 'default_book_cover';
       await ctx.answerCbQuery('Пропущено');
       await ctx.editMessageText('🖼️ Фото пропущено, буде використана стандартна обкладинка');
@@ -333,12 +436,19 @@ const addBookScene = new Scenes.WizardScene(
 
     autoSaveState(state);
 
+    const userId = ctx.from?.id;
+    if (!userId) {
+      await ctx.reply('❌ Помилка: користувач не ідентифікований');
+      return ctx.scene?.leave();
+    }
+
     await ctx.reply(`${getProgress(5)}\n📎 Оберіть тип книги:`, {
       reply_markup: {
         inline_keyboard: [
-          [{ text: '📄 Файл', callback_data: 'type_file' }],
-          [{ text: '🎧 Аудіокнига', callback_data: 'type_audio' }],
-          [{ text: '🔗 Посилання', callback_data: 'type_link' }],
+          [{ text: '📄 Файл', callback_data: `type_file_${userId}` }],
+          [{ text: '🎧 Аудіокнига', callback_data: `type_audio_${userId}` }],
+          [{ text: '🔗 Посилання', callback_data: `type_link_${userId}` }],
+          [{ text: '📚 Тільки фізична', callback_data: `type_physical_${userId}` }],
         ],
       },
     });
@@ -353,7 +463,22 @@ const addBookScene = new Scenes.WizardScene(
       return;
     }
 
-    const type = ctx.callbackQuery.data;
+    const callbackData = ctx.callbackQuery.data;
+    const parts = callbackData.split('_');
+    const type = parts[0] + '_' + parts[1]; // type_file, type_audio, etc.
+    const expectedUserId = parseInt(parts[2]);
+    const currentUserId = ctx.from?.id;
+
+    // ✅ CSRF перевірка
+    if (!currentUserId || expectedUserId !== currentUserId) {
+      await ctx.answerCbQuery('❌ Некоректний запит');
+      logger.warn('CSRF attempt blocked in type selection', {
+        expectedUserId,
+        currentUserId,
+        callbackData
+      });
+      return;
+    }
 
     if (type === 'cancel_add') {
       await ctx.answerCbQuery('❌ Скасовано');
@@ -380,10 +505,26 @@ const addBookScene = new Scenes.WizardScene(
     } else if (type === 'type_link') {
       await ctx.answerCbQuery('🔗 Посилання обрано');
       messageText = `🔗 Введіть посилання на книгу:\n\n${examples.link}`;
+    } else if (type === 'type_physical') {
+      await ctx.answerCbQuery('📚 Тільки фізична обрано');
+      // Пропускаємо крок завантаження/вводу і одразу переходимо до тегів
+      state.addingAdditionalFormat = false;
+      try {
+        await ctx.editMessageText('📚 Обрано: тільки фізична книга (без електронних форматів)');
+      } catch {
+        await ctx.reply('📚 Обрано: тільки фізична книга (без електронних форматів)');
+      }
+      logUserAction(ctx, 'selected_book_type', { type });
+      await proceedToTags(ctx);
+      return ctx.wizard.selectStep(8);
     }
 
     logUserAction(ctx, 'selected_book_type', { type });
-    await ctx.editMessageText(messageText);
+    try {
+      await ctx.editMessageText(messageText);
+    } catch {
+      await ctx.reply(messageText);
+    }
     return ctx.wizard.next();
   },
 
@@ -401,32 +542,68 @@ const addBookScene = new Scenes.WizardScene(
       return ctx.scene?.leave();
     }
 
+    // ✅ Перевірка rate limit для завантаження файлів
+    const userId = ctx.from?.id;
+    if (userId) {
+      const { allowed } = await fileUploadLimiter.check(ctx);
+      if (!allowed) {
+        await ctx.reply('❌ Занадто багато завантажень файлів. Спробуйте через хвилину.', {
+          reply_markup: { remove_keyboard: true },
+        });
+        return;
+      }
+    }
+
     let uploadSuccess = false;
 
     if (state.bookType === 'type_file') {
-      if (ctx.message && 'document' in ctx.message && ctx.message.document) {
-        const document = (ctx.message as any).document;
+      if (isMessageWithDocument(ctx)) {
+        const document = ctx.message.document;
+
+        // ✅ Валідація розміру файлу перед обробкою
+        const validation = validateDocument(
+          document.file_size,
+          document.mime_type,
+          document.file_name
+        );
+
+        if (!validation.isValid) {
+          await ctx.reply(`❌ ${validation.error}`);
+          return;
+        }
+
+        // ✅ Додаткова перевірка розміру
+        if (document.file_size && document.file_size > MAX_FILE_SIZES.DOCUMENT) {
+          await ctx.reply(
+            `❌ Файл занадто великий (${(document.file_size / 1024 / 1024).toFixed(2)} MB). ` +
+            `Максимум ${(MAX_FILE_SIZES.DOCUMENT / 1024 / 1024).toFixed(0)} MB.`
+          );
+          return;
+        }
         uploadSuccess = await handleFileUpload(ctx, async () => {
           state.bookFile = document.file_id;
           state.bookFileName = document.file_name || 'unknown';
           await ctx.reply(`✅ Файл завантажено: ${state.bookFileName}`);
           logUserAction(ctx, 'uploaded_file', { fileName: state.bookFileName });
         });
-      } else {
+      }
+
+      if (!uploadSuccess) {
         await ctx.reply('❌ Будь ласка, надішліть файл.');
         return;
       }
     } else if (state.bookType === 'type_audio') {
-      if (ctx.message && 'audio' in ctx.message && ctx.message.audio) {
-        const audio = (ctx.message as any).audio;
+      const message = ctx.message as any; // Type assertion to avoid type narrowing issues
+      if (message && 'audio' in message && message.audio) {
+        const audio = message.audio;
         uploadSuccess = await handleFileUpload(ctx, async () => {
           state.bookAudio = audio.file_id;
           state.bookAudioName = audio.file_name || 'audiobook';
           await ctx.reply(`✅ Аудіофайл завантажено: ${state.bookAudioName}`);
           logUserAction(ctx, 'uploaded_audio', { fileName: state.bookAudioName });
         });
-      } else if (ctx.message && 'voice' in ctx.message && ctx.message.voice) {
-        const voice = (ctx.message as any).voice;
+      } else if (message && 'voice' in message && message.voice) {
+        const voice = message.voice;
         uploadSuccess = await handleFileUpload(ctx, async () => {
           state.bookAudio = voice.file_id;
           state.bookAudioName = 'voice_message';
@@ -475,6 +652,18 @@ const addBookScene = new Scenes.WizardScene(
 
     // ВИПРАВЛЕННЯ: Якщо додаємо додатковий формат, обробляємо завантаження файлу
     if (state.addingAdditionalFormat && ctx.message && !ctx.callbackQuery) {
+      // ✅ Перевірка rate limit для додаткових завантажень
+      const userId = ctx.from?.id;
+      if (userId) {
+        const { allowed } = await fileUploadLimiter.check(ctx);
+        if (!allowed) {
+          await ctx.reply('❌ Занадто багато завантажень файлів. Спробуйте через хвилину.', {
+            reply_markup: { remove_keyboard: true },
+          });
+          return;
+        }
+      }
+
       let uploadSuccess = false;
 
       if (state.bookType === 'type_file') {
@@ -492,7 +681,7 @@ const addBookScene = new Scenes.WizardScene(
         }
       } else if (state.bookType === 'type_audio') {
         if (ctx.message && 'audio' in ctx.message && ctx.message.audio) {
-          const audio = (ctx.message as any).audio;
+          const audio = ctx.message.audio;
           uploadSuccess = await handleFileUpload(ctx, async () => {
             state.bookAudio = audio.file_id;
             state.bookAudioName = audio.file_name || 'audiobook';
@@ -500,14 +689,16 @@ const addBookScene = new Scenes.WizardScene(
             logUserAction(ctx, 'uploaded_audio', { fileName: state.bookAudioName });
           });
         } else if (ctx.message && 'voice' in ctx.message && ctx.message.voice) {
-          const voice = (ctx.message as any).voice;
+          const voice = ctx.message.voice;
           uploadSuccess = await handleFileUpload(ctx, async () => {
             state.bookAudio = voice.file_id;
             state.bookAudioName = 'voice_message';
             await ctx.reply('✅ Голосове повідомлення завантажено');
             logUserAction(ctx, 'uploaded_voice');
           });
-        } else {
+        }
+
+        if (!uploadSuccess) {
           await ctx.reply('❌ Будь ласка, надішліть аудіофайл.');
           return;
         }
@@ -546,29 +737,71 @@ const addBookScene = new Scenes.WizardScene(
     if (ctx.callbackQuery && 'data' in ctx.callbackQuery) {
       const action = ctx.callbackQuery.data;
 
-      if (action === 'preview_skip_tags') {
+      if (action.startsWith('preview_skip_tags_')) {
+        // ✅ Перевірка CSRF для preview_skip_tags
+        const expectedUserId = parseInt(action.split('_')[3]);
+        const currentUserId = ctx.from?.id;
+        if (!currentUserId || expectedUserId !== currentUserId) {
+          await ctx.answerCbQuery('❌ Некоректний запит');
+          logger.warn('CSRF attempt blocked in skip tags', {
+            expectedUserId,
+            currentUserId,
+            action
+          });
+          return;
+        }
+
         await ctx.answerCbQuery('✅ Переходимо далі');
-        
+
         // Показуємо крок "Чи є фізично?"
+        const userId = ctx.from?.id;
+        if (!userId) {
+          await ctx.reply('❌ Помилка: користувач не ідентифікований');
+          return ctx.scene?.leave();
+        }
+
         await ctx.reply(
-          '📦 <b>ЧИ Є ЦЯ КНИГА ФІЗИЧНО В НАЯВНОСТІ?</b>\n\n' +
-          'Якщо книга є в бібліотеці Галичини і ви можете передати її користувачу - оберіть "Так".\n\n' +
-          '✅ <b>Так</b> - користувачі зможуть залишати замовлення на цю книгу\n' +
-          '❌ <b>Ні</b> - тільки електронна версія',
+          `${getProgress(7)}\n\n📦 <b>ЧИ Є ЦЯ КНИГА ФІЗИЧНО В НАЯВНОСТІ?</b>\n\n` +
+            'Якщо книга є в бібліотеці Галичини і ви можете передати її користувачу - оберіть "Так".\n\n' +
+            '✅ <b>Так</b> - користувачі зможуть залишати замовлення на цю книгу\n' +
+            '❌ <b>Ні</b> - тільки електронна версія',
           {
             parse_mode: 'HTML',
             reply_markup: Markup.inlineKeyboard([
-              [Markup.button.callback('✅ Так, є в наявності', 'book_physical_yes')],
-              [Markup.button.callback('❌ Ні, тільки електронна', 'book_physical_no')]
+              [Markup.button.callback('✅ Так, є в наявності', `book_physical_yes_${userId}`)],
+              [Markup.button.callback('❌ Ні, тільки електронна', `book_physical_no_${userId}`)]
             ]).reply_markup
           }
         );
-        
+
         return ctx.wizard.next();
       }
 
-      if (action.startsWith('preview_tag_')) {
-        const tagId = parseInt(action.split('_')[2]);
+      if (action.startsWith('preview_tag_') || action.startsWith('tag_')) {
+        // ✅ Перевірка CSRF: перевіряємо userId в callback_data
+        const parts = action.split('_');
+        let tagId: number;
+        let expectedUserId: number | undefined;
+
+        if (action.startsWith('preview_tag_')) {
+          tagId = parseInt(parts[2]);
+          expectedUserId = parseInt(parts[3]);
+        } else {
+          tagId = parseInt(parts[1]);
+          expectedUserId = parseInt(parts[2]);
+        }
+
+        // ✅ CSRF перевірка
+        const currentUserId = ctx.from?.id;
+        if (!currentUserId || expectedUserId !== currentUserId) {
+          await ctx.answerCbQuery('❌ Некоректний запит');
+          logger.warn('CSRF attempt blocked in tag selection', {
+            expectedUserId,
+            currentUserId,
+            action
+          });
+          return;
+        }
 
         if (!state.selectedTags) {
           state.selectedTags = [];
@@ -595,7 +828,7 @@ const addBookScene = new Scenes.WizardScene(
         }
 
         await ctx.editMessageText(
-          `${getProgress(8)}\n🏷️ *Додайте теги до книги (опціонально):*\n\n` +
+          `${getProgress(6)}\n🏷️ *Додайте теги до книги (опціонально):*\n\n` +
             `Оберіть один або кілька тегів, які підходять до цієї книги.${selectedText}\n\n` +
             'Натисніть "Далі" коли закінчите або щоб пропустити цей крок.',
           {
@@ -606,7 +839,20 @@ const addBookScene = new Scenes.WizardScene(
         return;
       }
 
-      if (action === 'cancel_add') {
+      if (action.startsWith('cancel_add_')) {
+        const expectedUserId = parseInt(action.split('_')[2]);
+        const currentUserId = ctx.from?.id;
+
+        // ✅ CSRF перевірка
+        if (!currentUserId || expectedUserId !== currentUserId) {
+          await ctx.answerCbQuery('❌ Некоректний запит');
+          logger.warn('CSRF attempt blocked in cancel_add', {
+            expectedUserId,
+            currentUserId
+          });
+          return;
+        }
+
         await ctx.answerCbQuery('❌ Скасовано');
         await ctx.reply('❌ Додавання книги скасовано');
         return ctx.scene?.leave();
@@ -620,12 +866,38 @@ const addBookScene = new Scenes.WizardScene(
     
     if (ctx.callbackQuery && 'data' in ctx.callbackQuery) {
       const action = ctx.callbackQuery.data;
-      
-      if (action === 'book_physical_yes') {
+
+      if (action.startsWith('book_physical_yes_')) {
+        const expectedUserId = parseInt(action.split('_')[3]);
+        const currentUserId = ctx.from?.id;
+
+        // ✅ CSRF перевірка
+        if (!currentUserId || expectedUserId !== currentUserId) {
+          await ctx.answerCbQuery('❌ Некоректний запит');
+          logger.warn('CSRF attempt blocked in book_physical_yes', {
+            expectedUserId,
+            currentUserId
+          });
+          return;
+        }
+
         await ctx.answerCbQuery('✅ Книга буде доступна для замовлення');
         state.is_physically_available = true;
         await ctx.editMessageText('✅ Книга позначена як фізично доступна');
-      } else if (action === 'book_physical_no') {
+      } else if (action.startsWith('book_physical_no_')) {
+        const expectedUserId = parseInt(action.split('_')[3]);
+        const currentUserId = ctx.from?.id;
+
+        // ✅ CSRF перевірка
+        if (!currentUserId || expectedUserId !== currentUserId) {
+          await ctx.answerCbQuery('❌ Некоректний запит');
+          logger.warn('CSRF attempt blocked in book_physical_no', {
+            expectedUserId,
+            currentUserId
+          });
+          return;
+        }
+
         await ctx.answerCbQuery('✅ Тільки електронна версія');
         state.is_physically_available = false;
         await ctx.editMessageText('✅ Книга буде доступна тільки в електронному вигляді');
@@ -652,7 +924,20 @@ addBookScene.use(async (_ctx, next) => {
 });
 
 // Обробники дій
-addBookScene.action('confirm_book', async (ctx: BotContext) => {
+addBookScene.action(/^confirm_book_(\d+)$/, async (ctx: BotContext) => {
+  const expectedUserId = parseInt(ctx.match[1]);
+  const currentUserId = ctx.from?.id;
+
+  // ✅ CSRF перевірка
+  if (!currentUserId || expectedUserId !== currentUserId) {
+    await ctx.answerCbQuery('❌ Некоректний запит');
+    logger.warn('CSRF attempt blocked in confirm_book', {
+      expectedUserId,
+      currentUserId
+    });
+    return;
+  }
+
   const state = ctx.wizard?.state as WizardState;
 
   await ctx.answerCbQuery('✅ Книга додається...');
@@ -662,14 +947,14 @@ addBookScene.action('confirm_book', async (ctx: BotContext) => {
   else if (state.bookAudio) file_type = 'audio';
   else if (state.bookLink) file_type = 'link';
 
-  const bookData: unknown = {
+  const bookData: any = {
     title: state.title,
     author: state.author,
     genre: state.genre,
     description: state.description,
     photo_file_id: state.photoFileId || 'default_book_cover',
     file_type: file_type,
-    is_physically_available: state.is_physically_available ? 1 : 0
+    is_physically_available: state.is_physically_available ? 1 : 0,
   };
 
   if (state.bookFile) {
@@ -697,22 +982,25 @@ addBookScene.action('confirm_book', async (ctx: BotContext) => {
   const validation = validateBookData(bookData);
   if (!validation.isValid) {
     await ctx.reply('❌ Помилка валідації: ' + validation.errors.join(', '));
+    cleanupWizardState(ctx);  // ✅ Cleanup при помилці
     return ctx.scene?.leave();
   }
 
   const bookId = await addBook(bookData);
 
   if (state.selectedTags && state.selectedTags.length > 0) {
-    for (const tagId of state.selectedTags) {
-      await addBookTag(bookId, tagId);
-    }
+    // ✅ Batch операція для додавання тегів
+    const { db } = await import('../database/models');
+    const { TagRepository } = await import('../repositories/TagRepository');
+    const tagRepo = new TagRepository(db);
+    await tagRepo.addBookTags(bookId, state.selectedTags);
   }
 
   const finalCaption = await formatBookCaption({
     ...bookData,
     id: bookId,
     is_available: true,
-  } as any);
+  } as import('../database/models').Book);
   if (bookData.photo_file_id && bookData.photo_file_id !== 'default_book_cover') {
     await ctx.replyWithPhoto(bookData.photo_file_id, {
       caption: finalCaption,
@@ -736,23 +1024,51 @@ addBookScene.action('confirm_book', async (ctx: BotContext) => {
   await ctx.reply('✅ Книга успішно опублікована!', {
     reply_markup: {
       remove_keyboard: true,
-      inline_keyboard: [[{ text: '🏠 Назад до адмін-панелі', callback_data: 'back_to_admin' }]],
+      inline_keyboard: [[{ text: '🏠 Назад до адмін-панелі', callback_data: `back_to_admin_${currentUserId}` }]],
     },
   });
 
+  cleanupWizardState(ctx);  // ✅ Cleanup після успішного додавання
   return ctx.scene.leave();
 });
 
-addBookScene.action('cancel_book', async (ctx: BotContext) => {
+addBookScene.action(/^cancel_book_(\d+)$/, async (ctx: BotContext) => {
+  const expectedUserId = parseInt(ctx.match[1]);
+  const currentUserId = ctx.from?.id;
+
+  // ✅ CSRF перевірка
+  if (!currentUserId || expectedUserId !== currentUserId) {
+    await ctx.answerCbQuery('❌ Некоректний запит');
+    logger.warn('CSRF attempt blocked in cancel_book', {
+      expectedUserId,
+      currentUserId
+    });
+    return;
+  }
+
   await ctx.answerCbQuery('❌ Скасовано');
   await ctx.reply('❌ Додавання книги скасовано', {
     reply_markup: { remove_keyboard: true },
   });
+  cleanupWizardState(ctx);  // ✅ Cleanup при скасуванні
   return ctx.scene.leave();
 });
 
 // Обробники додавання додаткових форматів
-addBookScene.action('add_more_file', async (ctx: BotContext) => {
+addBookScene.action(/^add_more_file_(\d+)$/, async (ctx: BotContext) => {
+  const expectedUserId = parseInt(ctx.match[1]);
+  const currentUserId = ctx.from?.id;
+
+  // ✅ CSRF перевірка
+  if (!currentUserId || expectedUserId !== currentUserId) {
+    await ctx.answerCbQuery('❌ Некоректний запит');
+    logger.warn('CSRF attempt blocked in add_more_file', {
+      expectedUserId,
+      currentUserId
+    });
+    return;
+  }
+
   const state = ctx.wizard?.state as WizardState;
   state.bookType = 'type_file';
   state.addingAdditionalFormat = true;
@@ -761,7 +1077,20 @@ addBookScene.action('add_more_file', async (ctx: BotContext) => {
   await ctx.editMessageText('📎 Надішліть файл книги:');
 });
 
-addBookScene.action('add_more_audio', async (ctx: BotContext) => {
+addBookScene.action(/^add_more_audio_(\d+)$/, async (ctx: BotContext) => {
+  const expectedUserId = parseInt(ctx.match[1]);
+  const currentUserId = ctx.from?.id;
+
+  // ✅ CSRF перевірка
+  if (!currentUserId || expectedUserId !== currentUserId) {
+    await ctx.answerCbQuery('❌ Некоректний запит');
+    logger.warn('CSRF attempt blocked in add_more_audio', {
+      expectedUserId,
+      currentUserId
+    });
+    return;
+  }
+
   const state = ctx.wizard?.state as WizardState;
   state.bookType = 'type_audio';
   state.addingAdditionalFormat = true;
@@ -770,7 +1099,20 @@ addBookScene.action('add_more_audio', async (ctx: BotContext) => {
   await ctx.editMessageText('🎧 Надішліть аудіофайл книги:');
 });
 
-addBookScene.action('add_more_link', async (ctx: BotContext) => {
+addBookScene.action(/^add_more_link_(\d+)$/, async (ctx: BotContext) => {
+  const expectedUserId = parseInt(ctx.match[1]);
+  const currentUserId = ctx.from?.id;
+
+  // ✅ CSRF перевірка
+  if (!currentUserId || expectedUserId !== currentUserId) {
+    await ctx.answerCbQuery('❌ Некоректний запит');
+    logger.warn('CSRF attempt blocked in add_more_link', {
+      expectedUserId,
+      currentUserId
+    });
+    return;
+  }
+
   const state = ctx.wizard?.state as WizardState;
   state.bookType = 'type_link';
   state.addingAdditionalFormat = true;
@@ -780,40 +1122,118 @@ addBookScene.action('add_more_link', async (ctx: BotContext) => {
 });
 
 // Обробник "Далі до тегів"
-addBookScene.action('skip_more_formats', async (ctx: BotContext) => {
+addBookScene.action(/^skip_more_formats_(\d+)$/, async (ctx: BotContext) => {
+  const expectedUserId = parseInt(ctx.match[1]);
+  const currentUserId = ctx.from?.id;
+
+  // ✅ CSRF перевірка
+  if (!currentUserId || expectedUserId !== currentUserId) {
+    await ctx.answerCbQuery('❌ Некоректний запит');
+    logger.warn('CSRF attempt blocked in skip_more_formats', {
+      expectedUserId,
+      currentUserId
+    });
+    return;
+  }
+
   await ctx.answerCbQuery('✅ Переходимо до тегів');
   await proceedToTags(ctx);
 });
 
 // Обробники редагування з прев'ю
-addBookScene.action('edit_title', async (ctx: BotContext) => {
+addBookScene.action(/^edit_title_(\d+)$/, async (ctx: BotContext) => {
+  const expectedUserId = parseInt(ctx.match[1]);
+  const currentUserId = ctx.from?.id;
+
+  // ✅ CSRF перевірка
+  if (!currentUserId || expectedUserId !== currentUserId) {
+    await ctx.answerCbQuery('❌ Некоректний запит');
+    logger.warn('CSRF attempt blocked in edit_title', {
+      expectedUserId,
+      currentUserId
+    });
+    return;
+  }
+
   await ctx.answerCbQuery('✏️ Редагуємо назву');
   await ctx.reply(`${getProgress(1)}\n📖 Введіть нову назву книги:\n\n${examples.title}`);
   return ctx.wizard.selectStep(1);
 });
 
-addBookScene.action('edit_author', async (ctx: BotContext) => {
+addBookScene.action(/^edit_author_(\d+)$/, async (ctx: BotContext) => {
+  const expectedUserId = parseInt(ctx.match[1]);
+  const currentUserId = ctx.from?.id;
+
+  // ✅ CSRF перевірка
+  if (!currentUserId || expectedUserId !== currentUserId) {
+    await ctx.answerCbQuery('❌ Некоректний запит');
+    logger.warn('CSRF attempt blocked in edit_author', {
+      expectedUserId,
+      currentUserId
+    });
+    return;
+  }
+
   await ctx.answerCbQuery('✏️ Редагуємо автора');
   await ctx.reply(`${getProgress(2)}\n👤 Введіть нового автора книги:\n\n${examples.author}`);
   return ctx.wizard.selectStep(2);
 });
 
-addBookScene.action('edit_description', async (ctx: BotContext) => {
+addBookScene.action(/^edit_description_(\d+)$/, async (ctx: BotContext) => {
+  const expectedUserId = parseInt(ctx.match[1]);
+  const currentUserId = ctx.from?.id;
+
+  // ✅ CSRF перевірка
+  if (!currentUserId || expectedUserId !== currentUserId) {
+    await ctx.answerCbQuery('❌ Некоректний запит');
+    logger.warn('CSRF attempt blocked in edit_description', {
+      expectedUserId,
+      currentUserId
+    });
+    return;
+  }
+
   await ctx.answerCbQuery('✏️ Редагуємо опис');
   await ctx.reply(`${getProgress(3)}\n📝 Введіть новий опис книги:\n\n${examples.description}`);
   return ctx.wizard.selectStep(4);
 });
 
-addBookScene.action('edit_photo', async (ctx: BotContext) => {
+addBookScene.action(/^edit_photo_(\d+)$/, async (ctx: BotContext) => {
+  const expectedUserId = parseInt(ctx.match[1]);
+  const currentUserId = ctx.from?.id;
+
+  // ✅ CSRF перевірка
+  if (!currentUserId || expectedUserId !== currentUserId) {
+    await ctx.answerCbQuery('❌ Некоректний запит');
+    logger.warn('CSRF attempt blocked in edit_photo', {
+      expectedUserId,
+      currentUserId
+    });
+    return;
+  }
+
   await ctx.answerCbQuery('✏️ Редагуємо фото');
   await ctx.reply(`${getProgress(4)}\n🖼️ Завантажте нове фото обкладинки:`, {
-    reply_markup: Markup.inlineKeyboard([[{ text: '⏭️ Пропустити', callback_data: 'skip_photo' }]])
+    reply_markup: Markup.inlineKeyboard([[{ text: '⏭️ Пропустити', callback_data: `skip_photo_${currentUserId}` }]])
       .reply_markup,
   });
   return ctx.wizard.selectStep(5);
 });
 
-addBookScene.action('edit_formats', async (ctx: BotContext) => {
+addBookScene.action(/^edit_formats_(\d+)$/, async (ctx: BotContext) => {
+  const expectedUserId = parseInt(ctx.match[1]);
+  const currentUserId = ctx.from?.id;
+
+  // ✅ CSRF перевірка
+  if (!currentUserId || expectedUserId !== currentUserId) {
+    await ctx.answerCbQuery('❌ Некоректний запит');
+    logger.warn('CSRF attempt blocked in edit_formats', {
+      expectedUserId,
+      currentUserId
+    });
+    return;
+  }
+
   const state = ctx.wizard?.state as WizardState;
   await ctx.answerCbQuery('✏️ Редагуємо формати');
   await showFormatSelection(ctx, state);
@@ -821,29 +1241,74 @@ addBookScene.action('edit_formats', async (ctx: BotContext) => {
 
 // Швидкий вихід з підтвердженням
 addBookScene.command('exit', async (ctx) => {
+  const userId = ctx.from?.id;
+  if (!userId) {
+    await ctx.reply('❌ Помилка: користувач не ідентифікований');
+    return;
+  }
+
   await ctx.reply('❌ Ви впевнені, що хочете скасувати додавання книги?', {
     reply_markup: Markup.inlineKeyboard([
       [
-        { text: '✅ Так, скасувати', callback_data: 'confirm_cancel' },
-        { text: '❌ Ні, продовжити', callback_data: 'continue_adding' },
+        { text: '✅ Так, скасувати', callback_data: `confirm_cancel_${userId}` },
+        { text: '❌ Ні, продовжити', callback_data: `continue_adding_${userId}` },
       ],
     ]).reply_markup,
   });
 });
 
-addBookScene.action('confirm_cancel', async (ctx) => {
+addBookScene.action(/^confirm_cancel_(\d+)$/, async (ctx) => {
+  const expectedUserId = parseInt(ctx.match[1]);
+  const currentUserId = ctx.from?.id;
+
+  // ✅ CSRF перевірка
+  if (!currentUserId || expectedUserId !== currentUserId) {
+    await ctx.answerCbQuery('❌ Некоректний запит');
+    logger.warn('CSRF attempt blocked in confirm_cancel', {
+      expectedUserId,
+      currentUserId
+    });
+    return;
+  }
+
   await ctx.answerCbQuery();
   await ctx.reply('❌ Додавання книги скасовано');
   return ctx.scene.leave();
 });
 
-addBookScene.action('continue_adding', async (ctx) => {
+addBookScene.action(/^continue_adding_(\d+)$/, async (ctx) => {
+  const expectedUserId = parseInt(ctx.match[1]);
+  const currentUserId = ctx.from?.id;
+
+  // ✅ CSRF перевірка
+  if (!currentUserId || expectedUserId !== currentUserId) {
+    await ctx.answerCbQuery('❌ Некоректний запит');
+    logger.warn('CSRF attempt blocked in continue_adding', {
+      expectedUserId,
+      currentUserId
+    });
+    return;
+  }
+
   await ctx.answerCbQuery();
   await ctx.reply('✅ Продовжуємо додавання книги...');
 });
 
 // Обробник кнопки "Назад до адмін-панелі"
-addBookScene.action('back_to_admin', async (ctx: BotContext) => {
+addBookScene.action(/^back_to_admin_(\d+)$/, async (ctx: BotContext) => {
+  const expectedUserId = parseInt(ctx.match[1]);
+  const currentUserId = ctx.from?.id;
+
+  // ✅ CSRF перевірка
+  if (!currentUserId || expectedUserId !== currentUserId) {
+    await ctx.answerCbQuery('❌ Некоректний запит');
+    logger.warn('CSRF attempt blocked in back_to_admin', {
+      expectedUserId,
+      currentUserId
+    });
+    return;
+  }
+
   await ctx.answerCbQuery();
 
   const { isAdmin, getAdminStats, getPendingReviews, getPendingFeedbackMessages } =
@@ -899,18 +1364,41 @@ addBookScene.command('cancel', async (ctx) => {
   await ctx.reply('❌ Додавання книги скасовано', {
     reply_markup: { remove_keyboard: true },
   });
+  cleanupWizardState(ctx);
   return ctx.scene.leave();
 });
 
-// Cleanup
-addBookScene.leave((ctx: BotContext) => {
+// Cleanup function
+function cleanupWizardState(ctx: BotContext): void {
   const state = ctx.wizard?.state as WizardState;
   if (state) {
+    // Очищаємо всі поля стану
     Object.keys(state).forEach((key) => {
-      delete state[key];
+      delete (state as any)[key];
     });
+    logger.debug('Wizard state cleaned up', { userId: ctx.from?.id });
   }
+}
+
+// Cleanup
+addBookScene.leave((ctx: BotContext) => {
+  cleanupWizardState(ctx);
   logger.debug('AddBookScene cleanup completed', { userId: ctx.from?.id });
+});
+
+// Додаємо cleanup в усі error handlers
+addBookScene.use(async (ctx, next) => {
+  try {
+    await next();
+  } catch (error) {
+    logger.error('Error in addBookScene', error instanceof Error ? error : new Error(String(error)), {
+      userId: ctx.from?.id,
+      scene: 'addBookScene'
+    });
+    // Cleanup при помилці
+    cleanupWizardState(ctx);
+    // Не перериваємо виконання, щоб інші middleware могли обробити помилку
+  }
 });
 
 export default addBookScene;
