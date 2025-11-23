@@ -356,7 +356,10 @@ export function validateSortParams(
   allowedFields?: string[]
 ): { sortBy: string; order: 'asc' | 'desc' } {
   const defaultSort = allowedFields?.[0] || 'id';
-  const validSort = allowedFields?.includes(sortBy || '') ? sortBy : defaultSort;
+  const candidate = sortBy ?? '';
+  const validSort: string = allowedFields && allowedFields.includes(candidate)
+    ? candidate
+    : defaultSort;
   const validOrder = (order?.toLowerCase() === 'desc' ? 'desc' : 'asc') as 'asc' | 'desc';
   return { sortBy: validSort, order: validOrder };
 }
