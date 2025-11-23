@@ -149,7 +149,7 @@ export function registerBookRequestHandlers(bot: Telegraf<BotContext>): void {
       const statusEmoji = getStatusEmoji(request.status);
 
       let message = `📋 <b>ЗАЯВКА №${request.id}</b>\n\n`;
-      message += `━━━━━━━━━━━━━━━━━━━\n\n`;
+      message += '━━━━━━━━━━━━━━━━━━━\n\n';
       message += `📖 <b>Книга:</b> ${request.book_title}\n`;
       message += `✍️ <b>Автор:</b> ${request.book_author}\n`;
 
