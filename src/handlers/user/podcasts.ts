@@ -87,7 +87,7 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
 
       let message = `🎙️ <b>${podcast.theme}</b>\n\n`;
       message += `📝 ${podcast.description}\n\n`;
-      message += `━━━━━━━━━━━━━━━━━━━\n\n`;
+      message += '━━━━━━━━━━━━━━━━━━━\n\n';
 
       if (podcast.duration) {
         const minutes = Math.floor(podcast.duration / 60);
@@ -97,7 +97,7 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
 
       message += `👂 Прослуховувань: ${podcast.listens_count || 0}\n`;
       message += `⭐ Рейтинг: ${podcast.rating ? podcast.rating.toFixed(1) : 'Немає оцінок'} (${reviewsCount} відгуків)\n\n`;
-      message += `━━━━━━━━━━━━━━━━━━━`;
+      message += '━━━━━━━━━━━━━━━━━━━';
 
       const keyboard = [
         [Markup.button.callback('🎧 Слухати підкаст', `listen_podcast_${podcastId}`)],
@@ -201,9 +201,9 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
 
       if (reviews.length === 0) {
         await ctx.editMessageText(
-          `💬 <b>ВІДГУКИ</b>\n\n` +
+          '💬 <b>ВІДГУКИ</b>\n\n' +
             `🎙️ ${podcast.theme}\n\n` +
-            `📭 Відгуків поки немає. Будьте першим!`,
+            '📭 Відгуків поки немає. Будьте першим!',
           {
             parse_mode: 'HTML',
             reply_markup: Markup.inlineKeyboard([
@@ -214,16 +214,16 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      let message = `💬 <b>ВІДГУКИ</b>\n\n`;
+      let message = '💬 <b>ВІДГУКИ</b>\n\n';
       message += `🎙️ ${podcast.theme}\n\n`;
-      message += `━━━━━━━━━━━━━━━━━━━\n\n`;
+      message += '━━━━━━━━━━━━━━━━━━━\n\n';
 
       reviews.slice(0, 5).forEach((review, index) => {
         message += `${index + 1}. ${'⭐'.repeat(review.rating)}\n`;
         if (review.comment) {
           message += `   ${review.comment}\n`;
         }
-        message += `\n`;
+        message += '\n';
       });
 
       if (reviews.length > 5) {
