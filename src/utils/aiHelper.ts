@@ -5,6 +5,7 @@
 
 import { Book } from '../database/models';
 import { logger, LogMetadata } from './logger';
+import { LIMITS } from '../constants/limits';
 
 export interface UserProfile {
   favoriteGenres: string[];
@@ -27,13 +28,24 @@ export async function naturalLanguageSearch(
   allBooks: Book[],
   userId?: number
 ): Promise<Book[]> {
-  // Обгортаємо в Promise.race з timeout
-  return Promise.race([
-    actualNaturalLanguageSearch(query, allBooks, userId),
-    new Promise<Book[]>((_, reject) =>
-      setTimeout(() => reject(new Error('AI search timeout (10s)')), 10000)
-    ),
-  ]);
+  const { LIMITS } = await import('../constants/limits');
+
+  // ✅ Подвійна захист від зависання: Promise.race + AbortController
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), LIMITS.AI_SEARCH_TIMEOUT);
+
+  try {
+    return await Promise.race([
+      actualNaturalLanguageSearch(query, allBooks, userId),
+      new Promise<Book[]>((_, reject) => {
+        controller.signal.addEventListener('abort', () =>
+          reject(new Error('AI search timeout (10s)'))
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**
@@ -138,7 +150,7 @@ async function actualNaturalLanguageSearch(
 
       return scoreB - scoreA;
     })
-    .slice(0, 10);
+    .slice(0, LIMITS.SEARCH_RESULTS);
 }
 
 /**
@@ -177,12 +189,32 @@ export async function getPersonalCollection(
 
   // Беремо топ 5 та додаємо AI анотації
   const topBooks = candidates.slice(0, 5);
-  const booksWithAI = await Promise.all(
-    topBooks.map(async (book) => ({
+
+  // ✅ ВИПРАВЛЕНО: Batch processing з обмеженням паралельності
+  async function processBooksInBatches<T, R>(
+    items: T[],
+    processor: (item: T) => Promise<R>,
+    batchSize: number = LIMITS.AI_BATCH_SIZE
+  ): Promise<R[]> {
+    const results: R[] = [];
+
+    for (let i = 0; i < items.length; i += batchSize) {
+      const batch = items.slice(i, i + batchSize);
+      const batchResults = await Promise.all(batch.map(processor));
+      results.push(...batchResults);
+    }
+
+    return results;
+  }
+
+  const booksWithAI = await processBooksInBatches(
+    topBooks,
+    async (book) => ({
       ...book,
-      aiSummary: await generateAISummary(book),
-      reason: await generateRecommendationReason(book, userProfile),
-    }))
+      aiSummary: await generateAISummary(book).catch(() => 'Резюме недоступне'),
+      reason: await generateRecommendationReason(book, userProfile).catch(() => 'Рекомендація недоступна'),
+    }),
+    2  // ✅ Ще більше обмежуємо паралельність для стабільності
   );
 
   return booksWithAI;
@@ -323,6 +355,8 @@ function checkAiRateLimitPerUser(userId: number): boolean {
  * ✅ ВИПРАВЛЕНО #47: додано per-user rate limiting (не глобальний)
  */
 export async function askAI(question: string, userId?: number): Promise<string> {
+  const { LIMITS } = await import('../constants/limits');
+
   // Перевірка rate limit для користувача
   if (userId && !checkAiRateLimitPerUser(userId)) {
     throw new Error(
@@ -343,22 +377,24 @@ export async function askAI(question: string, userId?: number): Promise<string> 
       process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta';
     const url = `${apiBaseUrl}/models/${model}:generateContent?key=${apiKey}`;
 
-    // ✅ ВИПРАВЛЕНО #58: timeout для network requests
+    // ✅ ВИПРАВЛЕНО: подвійний timeout захист для AI API запитів
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutMs = LIMITS.AI_REQUEST_TIMEOUT;
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: `Ти - помічник бібліотеки Warrior's Library. Відповідай українською мовою на будь-які питання користувача. Ти можеш:
+    const response = await Promise.race([
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: `Ти - помічник бібліотеки Warrior's Library. Відповідай українською мовою на будь-які питання користувача. Ти можеш:
 - Рекомендувати книги (наприклад "дай топ 10 фантастичних книг")
 - Розповідати про авторів (наприклад "хто такий Гоголь")
 - Відповідати на загальні питання про літературу
@@ -366,16 +402,21 @@ export async function askAI(question: string, userId?: number): Promise<string> 
 - Обговорювати жанри та стилі
 
 Відповідай детально та корисно. Питання користувача: ${question}`,
-              },
-            ],
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.9,
+            maxOutputTokens: 2000,
           },
-        ],
-        generationConfig: {
-          temperature: 0.9,
-          maxOutputTokens: 2000,
-        },
+        }),
       }),
-    });
+      // ✅ Додатковий timeout через Promise.race
+      new Promise<Response>((_, reject) =>
+        setTimeout(() => reject(new Error('AI request timeout')), timeoutMs)
+      ),
+    ]);
 
     clearTimeout(timeoutId);
 
@@ -478,6 +519,167 @@ export interface UserAnswers {
 }
 
 /**
+ * Rerank books using AI (stub implementation)
+ * Reorders books based on AI analysis of query relevance
+ */
+export async function rerankBooksWithAI(query: string, candidates: Book[]): Promise<Book[]> {
+  if (!isAIEnabled()) {
+    // Return original order if AI is disabled
+    return candidates;
+  }
+
+  try {
+    // Try to get AI ranking
+    const rankingPrompt = `Given the search query "${query}", rank these books by relevance. Return only a JSON array of book IDs in the preferred order: [${candidates.map(b => b.id).join(',')}]`;
+
+    const aiResponse = await askAI(rankingPrompt);
+
+    // Try to parse AI response as JSON
+    try {
+      const parsed = JSON.parse(aiResponse);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        // Reorder candidates based on AI ranking
+        const idToBook = new Map(candidates.map(book => [book.id, book]));
+        const reordered: Book[] = [];
+
+        for (const id of parsed) {
+          const book = idToBook.get(id);
+          if (book) {
+            reordered.push(book);
+            idToBook.delete(id);
+          }
+        }
+
+        // Add remaining books in original order
+        reordered.push(...Array.from(idToBook.values()));
+
+        return reordered;
+      }
+    } catch (parseError) {
+      logger.warn('Failed to parse AI ranking response', { error: parseError instanceof Error ? parseError.message : String(parseError) });
+    }
+
+    // Fallback to original order
+    return candidates;
+  } catch (error) {
+    logger.warn('AI reranking failed, using original order', { error: error instanceof Error ? error.message : String(error) });
+    return candidates;
+  }
+}
+
+/**
+ * Expand query with AI-generated synonyms and related terms
+ */
+export async function expandQueryWithAI(query: string): Promise<string[]> {
+  const lowerQuery = query.toLowerCase();
+  const baseTerms = lowerQuery.split(/\s+/).filter(term => term.length > 0);
+
+  if (!isAIEnabled()) {
+    // When AI is disabled, ensure the original query is always included, along with basic expansions.
+    return Array.from(new Set([lowerQuery, ...expandQueryBasic(query)]));
+  }
+
+  try {
+    const expansionPrompt = `Given the search query "${query}", suggest related search terms, synonyms, and alternative phrasings in Ukrainian. Return only a comma-separated list of terms.`;
+
+    const aiResponse = await askAI(expansionPrompt);
+
+    // Parse AI response and combine with base terms
+    const aiTerms = aiResponse
+      .split(',')
+      .map(term => term.trim().toLowerCase())
+      .filter(term => term.length > 0);
+
+    // Use a Set to ensure uniqueness, and include the original query, tokenized terms, and AI terms.
+    const termSet = new Set([lowerQuery, ...baseTerms, ...aiTerms]);
+    return Array.from(termSet);
+  } catch (error) {
+    logger.warn('AI query expansion failed, using basic expansion', { error: error instanceof Error ? error.message : String(error) });
+    // Fallback to basic expansion, ensuring the original query is included.
+    return Array.from(new Set([lowerQuery, ...expandQueryBasic(query)]));
+  }
+}
+
+/**
+ * Basic query expansion without AI
+ */
+export function expandQueryBasic(query: string): string[] {
+  const terms = query.toLowerCase().split(/\s+/).filter(term => term.length > 0);
+
+  // Add basic synonyms and related terms
+  const expansions: Record<string, string[]> = {
+    'sci': ['наукова', 'технології', 'інновації'],
+    'fi': ['фантастика', 'майбутнє', 'космос'],
+    'любов': ['романтика', 'кохання', 'відносини'],
+    'кохання': ['романтика', 'любов', 'відносини'],
+    'романтик': ['романтика', 'любов', 'відносини'],
+    'детектив': ['кримінал', 'розслідування', 'таємниця'],
+    'фантастика': ['sci-fi', 'майбутнє', 'космос', 'технології'],
+    'жахи': ['хорор', 'страх', 'напруга'],
+    'історія': ['минуле', 'історичний', 'епоха'],
+    'романтика': ['любов', 'відносини', 'кохання'],
+    'пригоди': ['подорожі', 'екшн', 'ризико'],
+    'класика': ['література', 'традиція', 'майстри'],
+  };
+
+  const expanded = new Set<string>(terms);
+
+  for (const term of terms) {
+    const related = expansions[term];
+    if (related) {
+      related.forEach(r => expanded.add(r));
+    }
+  }
+
+  return Array.from(expanded);
+}
+
+// ✅ ВИПРАВЛЕНО: cleanup для запобігання memory leak
+let cleanupInterval: NodeJS.Timeout | null = null;
+
+if (typeof global !== 'undefined' && !cleanupInterval) {
+  cleanupInterval = setInterval(() => {
+    const now = Date.now();
+    const toDelete: number[] = [];
+
+    aiRequestsByUser.forEach((timestamps, userId) => {
+      const recent = timestamps.filter((t) => t > now - AI_RATE_WINDOW);
+      if (recent.length === 0) {
+        toDelete.push(userId);
+      } else {
+        aiRequestsByUser.set(userId, recent);
+      }
+    });
+
+    toDelete.forEach(userId => aiRequestsByUser.delete(userId));
+
+    if (toDelete.length > 0) {
+      logger.debug('AI rate limiter cleanup', { removedUsers: toDelete.length });
+    }
+  }, 5 * 60 * 1000); // Кожні 5 хвилин
+
+  // Cleanup on process exit
+  if (typeof process !== 'undefined') {
+    process.on('exit', () => {
+      if (cleanupInterval) {
+        clearInterval(cleanupInterval);
+        cleanupInterval = null;
+      }
+    });
+  }
+}
+
+/**
+ * Exported cleanup function to be used in tests
+ */
+export function cleanupAIHelper() {
+  if (cleanupInterval) {
+    clearInterval(cleanupInterval);
+    cleanupInterval = null;
+  }
+}
+
+/**
  * Інтерактивний вибір книг - реальний AI підбір
  * Вибирає цікаві книги на основі вподобань користувача
  */
@@ -531,9 +733,9 @@ export async function interactiveBookSelection(
     mood_happy: (book) => {
       let score = 0;
       const genre = book.genre?.toLowerCase() || '';
-      if (genre.includes('комед')) score += 20;
-      if (genre.includes('романтик')) score += 15;
-      if (genre.includes('пригод')) score += 10;
+      if (genre.includes('комед')) score += 100;
+      if (genre.includes('романтик')) score += 90;
+      if (genre.includes('пригод')) score += 80;
       if ((book.rating || 0) > 4.5) score += 10;
       return score;
     },
