@@ -267,13 +267,38 @@ export class ReviewRepository extends BaseRepository<Review> {
         return 0;
       }
 
-      const fields = Object.keys(updates)
-        .map((key) => `${key} = ?`)
+      // ✅ Whitelist разрешенных полей для защиты от SQL injection
+      const allowedFields = [
+        'book_id', 'user_id', 'user_name', 'rating', 'comment', 'is_published'
+      ];
+
+      // Фильтруем только разрешенные поля
+      const validUpdates: Record<string, any> = {};
+      for (const [key, value] of Object.entries(updates)) {
+        if (allowedFields.includes(key)) {
+          validUpdates[key] = value;
+        } else {
+          logger.warn(`Attempted to update forbidden field: ${key}`, { reviewId });
+        }
+      }
+
+      if (Object.keys(validUpdates).length === 0) {
+        return 0;
+      }
+
+      // Экранируем названия полей через whitelist
+      const fields = Object.keys(validUpdates)
+        .map((key) => `"${key}" = ?`)  // ✅ Используем whitelist
         .join(', ');
-      const values = Object.values(updates);
+      const values = Object.values(validUpdates);
 
       const query = `UPDATE reviews SET ${fields} WHERE id = ?`;
-      return await this.db.update(query, [...values, reviewId]);
+      const changes = await this.db.update(query, [...values, reviewId]);
+
+      if (changes > 0) {
+        logger.info(`Review updated: ${reviewId}`, { changes, fields: Object.keys(validUpdates) });
+      }
+      return changes;
     } catch (error) {
       logger.error(
         'Error updating review',
