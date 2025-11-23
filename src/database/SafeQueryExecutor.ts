@@ -5,6 +5,7 @@
 
 import { Result, Ok, Err } from '../core/Result';
 import { InputSanitizer } from '../validation/InputSanitizer';
+import { logger } from '../utils/logger';
 
 import { SQLParameters } from './dbWrapper';
 
@@ -203,7 +204,12 @@ export class SafeQueryExecutor {
       // Откатити при критичній помилці
       try {
         await this.execute('ROLLBACK', []);
-      } catch {}
+      } catch (rollbackError) {
+        // ✅ ВИПРАВЛЕНО: Логувати помилку rollback через logger
+        logger.warn('Failed to rollback transaction', {
+          error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError)
+        });
+      }
 
       const err = error instanceof Error ? error : new Error(String(error));
       return new Err(err);
