@@ -5,6 +5,12 @@ import { getProgress } from './progress';
 
 export async function showFormatSelection(ctx: BotContext): Promise<void> {
   const state = ctx.wizard?.state as WizardState;
+  const userId = ctx.from?.id;
+
+  if (!userId) {
+    await ctx.reply('❌ Помилка: користувач не ідентифікований');
+    return;
+  }
 
   const hasFile = !!state.bookFile;
   const hasAudio = !!state.bookAudio;
@@ -28,14 +34,14 @@ export async function showFormatSelection(ctx: BotContext): Promise<void> {
 
   const availableFormats = [];
   if (!hasFile)
-    availableFormats.push([{ text: '📄 Додати файл книги', callback_data: 'add_more_file' }]);
+    availableFormats.push([{ text: '📄 Додати файл книги', callback_data: `add_more_file_${userId}` }]);
   if (!hasAudio)
-    availableFormats.push([{ text: '🎧 Додати аудіофайл', callback_data: 'add_more_audio' }]);
+    availableFormats.push([{ text: '🎧 Додати аудіофайл', callback_data: `add_more_audio_${userId}` }]);
   if (!hasLink)
-    availableFormats.push([{ text: '🌐 Додати посилання', callback_data: 'add_more_link' }]);
+    availableFormats.push([{ text: '🌐 Додати посилання', callback_data: `add_more_link_${userId}` }]);
 
   if (availableFormats.length > 0) {
-    availableFormats.push([{ text: '✅ Далі до тегів', callback_data: 'skip_more_formats' }]);
+    availableFormats.push([{ text: '✅ Далі до тегів', callback_data: `skip_more_formats_${userId}` }]);
 
     await ctx.reply(
       `✅ Додано: ${addedFormats.join(', ') || 'поки нічого'}\n\n` + 'Хочете додати ще формати?',
@@ -51,21 +57,27 @@ export async function showFormatSelection(ctx: BotContext): Promise<void> {
 
 export async function proceedToTags(ctx: BotContext): Promise<void> {
   const state = ctx.wizard?.state as WizardState;
+  const userId = ctx.from?.id;
+
+  if (!userId) {
+    await ctx.reply('❌ Помилка: користувач не ідентифікований');
+    return;
+  }
 
   const allTags = await getCachedTags();
   if (allTags.length > 0) {
     const tagButtons = [];
     for (let i = 0; i < allTags.length; i += 2) {
-      const row = [Markup.button.callback(allTags[i].name, `preview_tag_${allTags[i].id}`)];
+      const row = [Markup.button.callback(allTags[i].name, `preview_tag_${allTags[i].id}_${userId}`)];
       if (i + 1 < allTags.length) {
-        row.push(Markup.button.callback(allTags[i + 1].name, `preview_tag_${allTags[i + 1].id}`));
+        row.push(Markup.button.callback(allTags[i + 1].name, `preview_tag_${allTags[i + 1].id}_${userId}`));
       }
       tagButtons.push(row);
     }
 
     tagButtons.push([
-      Markup.button.callback('✅ Далі (без тегів)', 'preview_skip_tags'),
-      Markup.button.callback('❌ Скасувати', 'cancel_add'),
+      Markup.button.callback('✅ Далі (без тегів)', `preview_skip_tags_${userId}`),
+      Markup.button.callback('❌ Скасувати', `cancel_add_${userId}`),
     ]);
 
     if (!state.selectedTags) {
@@ -89,6 +101,12 @@ export async function proceedToTags(ctx: BotContext): Promise<void> {
 
 export async function showBookPreview(ctx: BotContext): Promise<void> {
   const state = ctx.wizard?.state as WizardState;
+  const userId = ctx.from?.id;
+
+  if (!userId) {
+    await ctx.reply('❌ Помилка: користувач не ідентифікований');
+    return;
+  }
 
   const bookData: any = {
     title: state.title,
@@ -124,14 +142,14 @@ export async function showBookPreview(ctx: BotContext): Promise<void> {
   `.trim();
 
   const previewKeyboard = [
-    [{ text: '✏️ Редагувати назву', callback_data: 'edit_title' }],
-    [{ text: '✏️ Редагувати автора', callback_data: 'edit_author' }],
-    [{ text: '✏️ Редагувати опис', callback_data: 'edit_description' }],
-    [{ text: '✏️ Редагувати фото', callback_data: 'edit_photo' }],
-    [{ text: '✏️ Редагувати формати', callback_data: 'edit_formats' }],
+    [{ text: '✏️ Редагувати назву', callback_data: `edit_title_${userId}` }],
+    [{ text: '✏️ Редагувати автора', callback_data: `edit_author_${userId}` }],
+    [{ text: '✏️ Редагувати опис', callback_data: `edit_description_${userId}` }],
+    [{ text: '✏️ Редагувати фото', callback_data: `edit_photo_${userId}` }],
+    [{ text: '✏️ Редагувати формати', callback_data: `edit_formats_${userId}` }],
     [
-      { text: '✅ Підтвердити і опублікувати', callback_data: 'confirm_book' },
-      { text: '❌ Скасувати', callback_data: 'cancel_book' },
+      { text: '✅ Підтвердити і опублікувати', callback_data: `confirm_book_${userId}` },
+      { text: '❌ Скасувати', callback_data: `cancel_book_${userId}` },
     ],
   ];
 
