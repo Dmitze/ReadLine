@@ -255,12 +255,12 @@ export function registerPhysicalBooksHandlers(bot: Telegraf<BotContext>): void {
 
       // Показуємо підтвердження
       await ctx.editMessageText(
-        `❓ <b>СКАСУВАННЯ ЗАЯВКИ</b>\n\n` +
-          `━━━━━━━━━━━━━━━━━━━\n\n` +
+        '❓ <b>СКАСУВАННЯ ЗАЯВКИ</b>\n\n' +
+          '━━━━━━━━━━━━━━━━━━━\n\n' +
           `📖 <b>Книга:</b> ${request.book_title}\n` +
           `✍️ <b>Автор:</b> ${request.book_author}\n\n` +
-          `⚠️ Ви впевнені, що хочете скасувати цю заявку?\n\n` +
-          `Цю дію неможливо скасувати.`,
+          '⚠️ Ви впевнені, що хочете скасувати цю заявку?\n\n' +
+          'Цю дію неможливо скасувати.',
         {
           parse_mode: 'HTML',
           reply_markup: Markup.inlineKeyboard([
