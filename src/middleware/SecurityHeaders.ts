@@ -126,20 +126,30 @@ function isOriginAllowed(
  */
 export function requestValidationMiddleware() {
   return async (ctx: BotContext, next: () => Promise<void>) => {
+    const { LIMITS } = await import('../constants/limits');
+
     // Validate callback_query size
     const callbackData = (ctx.callbackQuery as any)?.data;
     if (callbackData && typeof callbackData === 'string') {
-      if (callbackData.length > 64) {
-        logger.warn('⚠️ Large callback_query data detected');
+      if (callbackData.length > LIMITS.MAX_CALLBACK_DATA_LENGTH) {
+        logger.warn('⚠️ Large callback_query data detected', {
+          length: callbackData.length,
+          limit: LIMITS.MAX_CALLBACK_DATA_LENGTH
+        });
+        await ctx.answerCbQuery('❌ Дані занадто великі');
+        return;
       }
     }
 
     // Validate message text size
     const messageText = (ctx.message as any)?.text;
     if (messageText && typeof messageText === 'string') {
-      if (messageText.length > 4096) {
-        logger.warn('⚠️ Large message text detected');
-        await ctx.reply('⚠️ Повідомлення занадто велике. Максимум 4096 символів.');
+      if (messageText.length > LIMITS.MESSAGE_MAX) {
+        logger.warn('⚠️ Large message text detected', {
+          length: messageText.length,
+          limit: LIMITS.MESSAGE_MAX
+        });
+        await ctx.reply(`⚠️ Повідомлення занадто велике. Максимум ${LIMITS.MESSAGE_MAX} символів.`);
         return;
       }
     }
