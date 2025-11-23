@@ -56,7 +56,13 @@ export class TagRepository extends BaseRepository<Tag> {
     }
 
     const normalized = normalizeTag(name);
-    return this.insert({ name: normalized });
+    const tagId = await this.insert({ name: normalized });
+
+    // ✅ Інвалідація кеша тегів після додавання нового тегу
+    const { invalidateTagsCache } = await import('../scenes/addBook/utils');
+    invalidateTagsCache();
+
+    return tagId;
   }
 
   /**
@@ -86,7 +92,21 @@ export class TagRepository extends BaseRepository<Tag> {
    * @returns Promise with number of affected rows
    */
   async updateTag(tagId: number, updates: Partial<Tag>): Promise<number> {
-    return this.update(tagId, updates);
+    // ✅ Whitelist для захисту від SQL injection
+    const allowedFields = ['name'];
+    const validUpdates: Record<string, any> = {};
+
+    for (const [key, value] of Object.entries(updates)) {
+      if (allowedFields.includes(key)) {
+        validUpdates[key] = value;
+      }
+    }
+
+    if (Object.keys(validUpdates).length === 0) {
+      return 0;
+    }
+
+    return this.update(tagId, validUpdates);
   }
 
   /**
@@ -161,15 +181,20 @@ export class TagRepository extends BaseRepository<Tag> {
   }
 
   /**
-   * Add multiple tags to a book
+   * Add multiple tags to a book (batch operation)
    * @param bookId Book ID
    * @param tagIds Array of tag IDs
    * @returns Promise<void>
    */
   async addBookTags(bookId: number, tagIds: number[]): Promise<void> {
-    for (const tagId of tagIds) {
-      await this.addBookTag(bookId, tagId);
-    }
+    if (tagIds.length === 0) return;
+
+    // ✅ Batch INSERT для всіх тегів за один запит
+    const placeholders = tagIds.map(() => '(?, ?)').join(', ');
+    const values = tagIds.flatMap(tagId => [bookId, tagId]);
+
+    const query = `INSERT OR IGNORE INTO book_tags (book_id, tag_id) VALUES ${placeholders}`;
+    await this.db.run(query, values);
   }
 
   /**
