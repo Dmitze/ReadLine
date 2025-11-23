@@ -4,7 +4,7 @@
  */
 
 import { IMigration } from './Migration';
-import { Database } from './dbWrapper';
+import { Database, DatabaseWrapper } from './dbWrapper';
 
 /**
  * MIGRATION 001 - Create core tables
@@ -14,7 +14,7 @@ const migration001_CreateCoreTables: IMigration = {
   version: '001_20251114_create_core_tables',
   name: 'Create core tables',
 
-  up: async (db: Database) => {
+  up: async (db: Database | DatabaseWrapper) => {
     const sql = `
       -- Users table
       CREATE TABLE IF NOT EXISTS users (
@@ -157,10 +157,10 @@ const migration001_CreateCoreTables: IMigration = {
       CREATE INDEX IF NOT EXISTS idx_feedback_created_at ON feedback(created_at);
     `;
 
-    await db.run(sql);
+    await (db as any).run(sql);
   },
 
-  down: async (db: Database) => {
+  down: async (db: Database | DatabaseWrapper) => {
     const sql = `
       DROP TABLE IF EXISTS book_tags;
       DROP TABLE IF EXISTS tags;
@@ -173,7 +173,98 @@ const migration001_CreateCoreTables: IMigration = {
       DROP TABLE IF EXISTS users;
     `;
 
-    await db.run(sql);
+    await (db as any).run(sql);
+  },
+};
+
+/**
+ * MIGRATION 009 - Add FTS5 search (books_fts) with sync triggers
+ */
+const migration009_AddFTS5Search: IMigration = {
+  version: '009_20251119_add_fts5_search',
+  name: 'Add FTS5 search virtual table and triggers',
+
+  up: async (db: Database | DatabaseWrapper) => {
+    // Create FTS5 table and triggers. If FTS5 is not available, SQL will fail; we catch and log.
+    const sql = `
+      CREATE VIRTUAL TABLE IF NOT EXISTS books_fts USING fts5(
+        title, author, description,
+        content='books', content_rowid='id'
+      );
+
+      CREATE TRIGGER IF NOT EXISTS books_ai AFTER INSERT ON books BEGIN
+        INSERT INTO books_fts(rowid, title, author, description)
+        VALUES (new.id, new.title, new.author, new.description);
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS books_ad AFTER DELETE ON books BEGIN
+        INSERT INTO books_fts(books_fts, rowid, title, author, description)
+        VALUES('delete', old.id, old.title, old.author, old.description);
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS books_au AFTER UPDATE ON books BEGIN
+        INSERT INTO books_fts(books_fts, rowid, title, author, description)
+        VALUES('delete', old.id, old.title, old.author, old.description);
+        INSERT INTO books_fts(rowid, title, author, description)
+        VALUES (new.id, new.title, new.author, new.description);
+      END;
+    `;
+
+    try {
+      await (db as any).run(sql);
+
+      // Backfill existing data
+      const backfill = `
+        INSERT INTO books_fts(rowid, title, author, description)
+        SELECT id, title, author, description FROM books
+        WHERE title IS NOT NULL AND author IS NOT NULL;
+      `;
+      await (db as any).run(backfill);
+    } catch (error) {
+      // Likely FTS5 not available in SQLite build; continue without throwing
+      console.warn('FTS5 setup failed or not available:', (error as any)?.message);
+    }
+  },
+
+  down: async (db: Database | DatabaseWrapper) => {
+    try {
+      await (db as any).run('DROP TABLE IF EXISTS books_fts');
+    } catch {
+      // ignore
+    }
+  },
+};
+
+/**
+ * MIGRATION 010 - Optionally seed demo books if none exist
+ */
+const migration010_20251119_seed_demo_books: IMigration = {
+  version: '010_20251119_seed_demo_books',
+  name: 'Seed demo books if empty',
+
+  up: async (db: Database | DatabaseWrapper) => {
+    try {
+      const row = await (db as any).get('SELECT COUNT(*) as count FROM books');
+      const count = (row?.count as number) || 0;
+      if (count > 0) return;
+
+      const demoSql = `
+        INSERT INTO books (title, author, description, genre, rating, is_published)
+        VALUES
+          ('Кобзар', 'Тарас Шевченко', 'Збірка поезій, класика української літератури.', 'Класика', 4.8, 1),
+          ('Тіні забутих предків', 'Михайло Коцюбинський', 'Поетична повість про кохання і Карпати.', 'Історична', 4.6, 1),
+          ('Місто', 'Валер''ян Підмогильний', 'Роман про життя у великому місті та пошук себе.', 'Роман', 4.5, 1),
+          ('Захар Беркут', 'Іван Франко', 'Історична повість про боротьбу з ордами.', 'Історична', 4.7, 1),
+          ('Фантастичні оповідання', 'Різні', 'Добірка сучасної української фантастики.', 'Фантастика', 4.2, 1);
+      `;
+      await (db as any).run(demoSql);
+    } catch (error) {
+      console.warn('Demo seed failed:', (error as any)?.message);
+    }
+  },
+
+  down: async (_db: Database | DatabaseWrapper) => {
+    // No-op rollback for seed
   },
 };
 
@@ -184,7 +275,7 @@ const migration002_AddActivityTracking: IMigration = {
   version: '002_20251114_add_activity_tracking',
   name: 'Add user activity tracking',
 
-  up: async (db: Database) => {
+  up: async (db: Database | DatabaseWrapper) => {
     const sql = `
       CREATE TABLE IF NOT EXISTS user_activity (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -202,11 +293,11 @@ const migration002_AddActivityTracking: IMigration = {
       CREATE INDEX IF NOT EXISTS idx_user_activity_created_at ON user_activity(created_at);
     `;
 
-    await db.run(sql);
+    await (db as any).run(sql);
   },
 
-  down: async (db: Database) => {
-    await db.run('DROP TABLE IF EXISTS user_activity');
+  down: async (db: Database | DatabaseWrapper) => {
+    await (db as any).run('DROP TABLE IF EXISTS user_activity');
   },
 };
 
@@ -217,7 +308,7 @@ const migration003_AddSearchHistory: IMigration = {
   version: '003_20251114_add_search_history',
   name: 'Add search history tracking',
 
-  up: async (db: Database) => {
+  up: async (db: Database | DatabaseWrapper) => {
     const sql = `
       CREATE TABLE IF NOT EXISTS search_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -233,11 +324,11 @@ const migration003_AddSearchHistory: IMigration = {
       CREATE INDEX IF NOT EXISTS idx_search_history_created_at ON search_history(created_at);
     `;
 
-    await db.run(sql);
+    await (db as any).run(sql);
   },
 
-  down: async (db: Database) => {
-    await db.run('DROP TABLE IF EXISTS search_history');
+  down: async (db: Database | DatabaseWrapper) => {
+    await (db as any).run('DROP TABLE IF EXISTS search_history');
   },
 };
 
@@ -248,7 +339,7 @@ const migration004_AddNotifications: IMigration = {
   version: '004_20251114_add_notifications',
   name: 'Add notifications system',
 
-  up: async (db: Database) => {
+  up: async (db: Database | DatabaseWrapper) => {
     const sql = `
       CREATE TABLE IF NOT EXISTS notifications (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -268,11 +359,11 @@ const migration004_AddNotifications: IMigration = {
       CREATE INDEX IF NOT EXISTS idx_notifications_created_at ON notifications(created_at);
     `;
 
-    await db.run(sql);
+    await (db as any).run(sql);
   },
 
-  down: async (db: Database) => {
-    await db.run('DROP TABLE IF EXISTS notifications');
+  down: async (db: Database | DatabaseWrapper) => {
+    await (db as any).run('DROP TABLE IF EXISTS notifications');
   },
 };
 
@@ -283,7 +374,7 @@ const migration005_AddStatistics: IMigration = {
   version: '005_20251114_add_statistics',
   name: 'Add statistics tracking',
 
-  up: async (db: Database) => {
+  up: async (db: Database | DatabaseWrapper) => {
     const sql = `
       CREATE TABLE IF NOT EXISTS statistics (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -299,11 +390,11 @@ const migration005_AddStatistics: IMigration = {
       CREATE INDEX IF NOT EXISTS idx_statistics_metric_date ON statistics(metric_date);
     `;
 
-    await db.run(sql);
+    await (db as any).run(sql);
   },
 
-  down: async (db: Database) => {
-    await db.run('DROP TABLE IF EXISTS statistics');
+  down: async (db: Database | DatabaseWrapper) => {
+    await (db as any).run('DROP TABLE IF EXISTS statistics');
   },
 };
 
@@ -314,7 +405,7 @@ const migration006_AddSoftDeleteSupport: IMigration = {
   version: '006_20251114_add_soft_delete_support',
   name: 'Add soft delete support',
 
-  up: async (db: Database) => {
+  up: async (db: Database | DatabaseWrapper) => {
     const sql = `
       ALTER TABLE users ADD COLUMN deleted_at TIMESTAMP;
       ALTER TABLE books ADD COLUMN deleted_at TIMESTAMP;
@@ -326,14 +417,14 @@ const migration006_AddSoftDeleteSupport: IMigration = {
     `;
 
     try {
-      await db.run(sql);
+      await (db as any).run(sql);
     } catch (error) {
       // Columns might already exist in some cases
       console.warn('Soft delete columns might already exist');
     }
   },
 
-  down: async (db: Database) => {
+  down: async (db: Database | DatabaseWrapper) => {
     // SQLite doesn't support DROP COLUMN easily, so we skip rollback
     console.warn('Rollback not supported for soft delete migration');
   },
@@ -346,7 +437,7 @@ const migration007_AddExtendedBookInfo: IMigration = {
   version: '007_20251115_add_extended_book_info',
   name: 'Add extended book information',
 
-  up: async (db: Database) => {
+  up: async (db: Database | DatabaseWrapper) => {
     const sql = `
       -- Add new columns to books table
       ALTER TABLE books ADD COLUMN recommended_age INTEGER DEFAULT 0;
@@ -375,14 +466,14 @@ const migration007_AddExtendedBookInfo: IMigration = {
     `;
 
     try {
-      await db.run(sql);
+      await (db as any).run(sql);
     } catch (error) {
       // Columns might already exist in some cases
       console.warn('Extended book info columns might already exist');
     }
   },
 
-  down: async (db: Database) => {
+  down: async (db: Database | DatabaseWrapper) => {
     // SQLite doesn't support DROP COLUMN easily, so we skip rollback
     console.warn('Rollback not supported for extended book info migration');
   },
@@ -395,7 +486,7 @@ const migration008_AddEpubSupport: IMigration = {
   version: '008_20251116_add_epub_support',
   name: 'Add EPUB support',
 
-  up: async (db: Database) => {
+  up: async (db: Database | DatabaseWrapper) => {
     const sql = `
       -- Add EPUB file support to books table
       ALTER TABLE books ADD COLUMN epub_file_id TEXT;
@@ -406,16 +497,88 @@ const migration008_AddEpubSupport: IMigration = {
     `;
 
     try {
-      await db.run(sql);
+      await (db as any).run(sql);
     } catch (error) {
       // Columns might already exist
       console.warn('EPUB columns might already exist');
     }
   },
 
-  down: async (db: Database) => {
+  down: async (db: Database | DatabaseWrapper) => {
     // SQLite doesn't support DROP COLUMN easily
     console.warn('Rollback not supported for EPUB support migration');
+  },
+};
+
+/**
+ * MIGRATION 011 - Add performance indexes
+ */
+const migration011_AddPerformanceIndexes: IMigration = {
+  version: '011_20251123_add_performance_indexes',
+  name: 'Add performance indexes for frequently queried fields',
+
+  up: async (db: Database | DatabaseWrapper) => {
+    const sql = `
+      -- ✅ Додаткові індекси для покращення продуктивності
+      CREATE INDEX IF NOT EXISTS idx_books_author ON books(author);
+      CREATE INDEX IF NOT EXISTS idx_books_rating ON books(rating);
+      CREATE INDEX IF NOT EXISTS idx_books_created_at ON books(created_at);
+      CREATE INDEX IF NOT EXISTS idx_books_is_available ON books(is_available);
+      CREATE INDEX IF NOT EXISTS idx_books_rating_desc ON books(rating DESC);
+      CREATE INDEX IF NOT EXISTS idx_books_downloads_count ON books(downloads_count);
+      CREATE INDEX IF NOT EXISTS idx_books_views_count ON books(views_count);
+
+      -- Індекси для користувачів
+      CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
+      CREATE INDEX IF NOT EXISTS idx_users_last_seen ON users(last_seen);
+
+      -- Індекси для відгуків
+      CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews(rating);
+      CREATE INDEX IF NOT EXISTS idx_reviews_created_at ON reviews(created_at);
+      CREATE INDEX IF NOT EXISTS idx_reviews_is_published ON reviews(is_published);
+
+      -- Індекси для збережених книг
+      CREATE INDEX IF NOT EXISTS idx_saved_books_saved_at ON saved_books(saved_at);
+
+      -- Індекси для тегів
+      CREATE INDEX IF NOT EXISTS idx_tags_name ON tags(name);
+
+      -- Композитні індекси для складних запитів
+      CREATE INDEX IF NOT EXISTS idx_books_genre_rating ON books(genre, rating DESC);
+      CREATE INDEX IF NOT EXISTS idx_books_available_rating ON books(is_available, rating DESC);
+      CREATE INDEX IF NOT EXISTS idx_reviews_book_rating ON reviews(book_id, rating);
+    `;
+
+    await (db as any).run(sql);
+  },
+
+  down: async (db: Database | DatabaseWrapper) => {
+    // Видаляємо індекси (якщо існують)
+    const dropSql = `
+      DROP INDEX IF EXISTS idx_books_author;
+      DROP INDEX IF EXISTS idx_books_rating;
+      DROP INDEX IF EXISTS idx_books_created_at;
+      DROP INDEX IF EXISTS idx_books_is_available;
+      DROP INDEX IF EXISTS idx_books_rating_desc;
+      DROP INDEX IF EXISTS idx_books_downloads_count;
+      DROP INDEX IF EXISTS idx_books_views_count;
+      DROP INDEX IF EXISTS idx_users_created_at;
+      DROP INDEX IF EXISTS idx_users_last_seen;
+      DROP INDEX IF EXISTS idx_reviews_rating;
+      DROP INDEX IF EXISTS idx_reviews_created_at;
+      DROP INDEX IF EXISTS idx_reviews_is_published;
+      DROP INDEX IF EXISTS idx_saved_books_saved_at;
+      DROP INDEX IF EXISTS idx_tags_name;
+      DROP INDEX IF EXISTS idx_books_genre_rating;
+      DROP INDEX IF EXISTS idx_books_available_rating;
+      DROP INDEX IF EXISTS idx_reviews_book_rating;
+    `;
+
+    try {
+      await (db as any).run(dropSql);
+    } catch (error) {
+      console.warn('Error dropping performance indexes:', (error as any)?.message);
+    }
   },
 };
 
@@ -429,4 +592,9 @@ export const allMigrations: IMigration[] = [
   migration006_AddSoftDeleteSupport,
   migration007_AddExtendedBookInfo,
   migration008_AddEpubSupport,
+  // Added in this session: FTS5 support and optional demo seed
+  migration009_AddFTS5Search,
+  migration010_20251119_seed_demo_books,
+  // Added performance indexes
+  migration011_AddPerformanceIndexes,
 ];
