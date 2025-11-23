@@ -45,8 +45,9 @@ export abstract class BaseService {
 
       return result;
     } catch (error) {
-      this.logger.error(`[${this.constructor.name}] Error in ${operationName}`, error);
-      return err(error instanceof Error ? error : new Error(String(error)));
+      const e = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`[${this.constructor.name}] Error in ${operationName}`, e);
+      return err(e);
     }
   }
 
@@ -63,8 +64,9 @@ export abstract class BaseService {
       this.logger.debug(`[${this.constructor.name}] Completed: ${operationName}`);
       return ok(result);
     } catch (error) {
-      this.logger.error(`[${this.constructor.name}] Error in ${operationName}`, error);
-      return err(error instanceof Error ? error : new Error(String(error)));
+      const e = error instanceof Error ? error : new Error(String(error));
+      this.logger.error(`[${this.constructor.name}] Error in ${operationName}`, e);
+      return err(e);
     }
   }
 
