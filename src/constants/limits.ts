@@ -19,6 +19,9 @@ export const LIMITS = {
   RECOMMENDATIONS: 10,
   TAGS_LIMIT: 10,
 
+  // Wizard steps
+  ADD_BOOK_STEPS_TOTAL: 8,
+
   // User limits
   SAVED_BOOKS_MAX: 20,
   MAX_REVIEWS_PER_USER: 100,
@@ -38,6 +41,16 @@ export const LIMITS = {
   TAG_MAX: 50,
   PROMO_CODE_MAX: 20,
 
+  // Input validation limits
+  MAX_CALLBACK_DATA_LENGTH: 64,
+  MAX_USERNAME_LENGTH: 32,
+  MAX_FIRST_NAME_LENGTH: 64,
+  MAX_LAST_NAME_LENGTH: 64,
+  MAX_GENRE_LENGTH: 50,
+  MAX_URL_LENGTH: 2048,
+  MAX_ARRAY_SIZE: 100,
+  MAX_OBJECT_DEPTH: 10,
+
   // Token/Key validation
   BOT_TOKEN_MIN: 20,
   API_KEY_MIN: 20,
@@ -53,6 +66,9 @@ export const LIMITS = {
   MAX_QUERY_METRICS: 10000,
   SLOW_QUERY_THRESHOLD: 100, // ms
   LARGE_TABLE_THRESHOLD: 10000, // rows
+
+  // Processing
+  AI_BATCH_SIZE: 3,
 
   // Rate limiting
   RATE_LIMIT_MAX_REQUESTS: 20,
@@ -76,6 +92,13 @@ export const LIMITS = {
   // Logging
   MAX_LOG_FILES: 10,
   LOG_MAX_SIZE: 10 * 1024 * 1024, // 10 MB
+
+  // Timeouts (in milliseconds)
+  AI_SEARCH_TIMEOUT: 10000,
+  AI_REQUEST_TIMEOUT: 30000,
+  CACHE_DEFAULT_TTL: 3600000, // 1 hour
+  RATE_LIMIT_WINDOW: 60000, // 1 minute
+  CLEANUP_INTERVAL: 300000, // 5 minutes
 } as const;
 
 /**
