@@ -5,6 +5,7 @@
 import { Scenes } from 'telegraf';
 import { BotContext } from '../types/telegraf';
 import { logger } from '../utils/logger';
+import { LIMITS } from '../constants/limits';
 import {
   addPromoCode,
   getExtendedPromoStats,
@@ -68,7 +69,8 @@ promoAdminScene.action('promo_add', async (ctx) => {
 promoAdminScene.action('promo_list', async (ctx) => {
   await ctx.answerCbQuery('Завантаження...');
 
-  const promoCodes = await getAllPromoCodes();
+  try {
+    const promoCodes = await getAllPromoCodes();
 
   if (promoCodes.length === 0) {
     await ctx.editMessageText(
@@ -90,11 +92,11 @@ promoAdminScene.action('promo_list', async (ctx) => {
 
   let message = '📋 <b>СПИСОК ПРОМОКОДІВ</b>\n\n';
 
-  for (const promo of promoCodes.slice(0, 10)) {
+  for (const promo of promoCodes.slice(0, LIMITS.DISPLAY_LIMIT)) {
     const status = promo.is_active ? '✅' : '❌';
     message += `${status} <code>${promo.code}</code>\n`;
     message += `   ${promo.description}\n`;
-    message += `   📚 Yakaboo Unlimited\n\n`;
+    message += '   📚 Yakaboo Unlimited\n\n';
   }
 
   if (promoCodes.length > 10) {
@@ -110,6 +112,10 @@ promoAdminScene.action('promo_list', async (ctx) => {
       ],
     },
   });
+  } catch (error) {
+    logger.error('Error loading promo codes list', error);
+    await ctx.editMessageText('❌ Помилка при завантаженні списку промокодів');
+  }
 });
 
 // Детальна статистика
@@ -222,21 +228,22 @@ promoAdminScene.on('text', async (ctx) => {
     return;
   }
 
-  // Перевіряємо чи існує
-  const existing = await getPromoCodeByCode(code);
-  if (existing) {
-    await ctx.reply(
-      '❌ *Промокод вже існує!*\n\n' +
-        `Код \`${code}\` вже додано раніше.\n` +
-        'Спробуйте інший код.',
-      { parse_mode: 'Markdown' }
-    );
-    return;
-  }
+  try {
+    // Перевіряємо чи існує
+    const existing = await getPromoCodeByCode(code);
+    if (existing) {
+      await ctx.reply(
+        '❌ *Промокод вже існує!*\n\n' +
+          `Код \`${code}\` вже додано раніше.\n` +
+          'Спробуйте інший код.',
+        { parse_mode: 'Markdown' }
+      );
+      return;
+    }
 
-  // Додаємо промокод
-  const promoId = await addPromoCode(code, ctx.from?.id);
-  const newPromo = await getPromoCodeByCode(code);
+    // Додаємо промокод
+    const promoId = await addPromoCode(code, ctx.from?.id);
+    const newPromo = await getPromoCodeByCode(code);
 
   if (!newPromo) {
     await ctx.reply('❌ Помилка при отриманні даних промокоду');
@@ -246,7 +253,7 @@ promoAdminScene.on('text', async (ctx) => {
   await ctx.reply(
     '✅ *ПРОМОКОД УСПІШНО ДОДАНИЙ!*\n\n' +
       `🎫 *Код:* \`${newPromo.code}\`\n` +
-      `📚 *Тип:* Yakaboo Unlimited підписка\n` +
+      '📚 *Тип:* Yakaboo Unlimited підписка\n' +
       `📝 *Опис:* ${newPromo.description}\n\n` +
       '✨ Користувачі зможуть отримати цей промокод через кнопку "🎁 Отримати промокод"\n\n' +
       '🔄 Після використання промокод можна повернути, і він стане доступним знову.',
@@ -261,6 +268,10 @@ promoAdminScene.on('text', async (ctx) => {
   setTimeout(async () => {
     await ctx.scene.enter('PROMO_ADMIN_SCENE');
   }, 2000);
+  } catch (error) {
+    logger.error('Error adding promo code', error);
+    await ctx.reply('❌ Помилка при додаванні промокоду. Спробуйте ще раз.');
+  }
 });
 
 // Команда скасування
