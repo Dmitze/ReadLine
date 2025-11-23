@@ -423,15 +423,15 @@ export const searchBooks = (query: string, limit: number = 20): Promise<Book[]> 
   return new Promise((resolve, reject) => {
     const searchPattern = `%${query.toLowerCase()}%`;
     const sql = `
-      SELECT * FROM books 
-      WHERE LOWER(title) LIKE ? 
-         OR LOWER(author) LIKE ? 
-         OR LOWER(description) LIKE ? 
-         OR LOWER(genre) LIKE ?
-      ORDER BY 
-        CASE 
-          WHEN LOWER(title) LIKE ? THEN 1
-          WHEN LOWER(author) LIKE ? THEN 2
+      SELECT * FROM books
+      WHERE title COLLATE NOCASE LIKE ?
+         OR author COLLATE NOCASE LIKE ?
+         OR description COLLATE NOCASE LIKE ?
+         OR genre COLLATE NOCASE LIKE ?
+      ORDER BY
+        CASE
+          WHEN title COLLATE NOCASE LIKE ? THEN 1
+          WHEN author COLLATE NOCASE LIKE ? THEN 2
           ELSE 3
         END,
         rating DESC
