@@ -38,7 +38,12 @@ export const addTag = async (name: string): Promise<number> => {
   return new Promise((resolve, reject) => {
     db.run('INSERT INTO tags (name) VALUES (?)', [normalized], function (err) {
       if (err) reject(err);
-      else resolve(this.lastID);
+      else {
+        // ✅ Інвалідація кеша тегів після додавання нового тегу
+        const { invalidateTagsCache } = require('../scenes/addBook/utils');
+        invalidateTagsCache();
+        resolve(this.lastID);
+      }
     });
   });
 };
