@@ -14,18 +14,16 @@ class RateLimiter {
   private records: Map<number, RateLimitRecord> = new Map();
   private maxRequests: number;
   private windowMs: number;
+  private cleanupTimer?: NodeJS.Timeout;
 
   constructor(maxRequests: number = 20, windowMs: number = 60000) {
     this.maxRequests = maxRequests;
     this.windowMs = windowMs;
 
-    // Очищення старих записів кожні 5 хвилин
-    setInterval(
-      () => {
-        this.cleanup();
-      },
-      5 * 60 * 1000
-    );
+    // ✅ Зберігаємо посилання на таймер
+    this.cleanupTimer = setInterval(() => {
+      this.cleanup();
+    }, 5 * 60 * 1000);
   }
 
   /**
@@ -102,6 +100,17 @@ class RateLimiter {
       windowMs: this.windowMs,
     };
   }
+
+  /**
+   * Очистити ресурси
+   */
+  destroy(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = undefined;
+    }
+    this.records.clear();
+  }
 }
 
 // Rate limit конфігурація
@@ -121,6 +130,15 @@ export const callbackLimiter = new RateLimiter(
   RATE_LIMITS.CALLBACK_MAX,
   RATE_LIMITS.CALLBACK_WINDOW
 );
+
+/**
+ * Очистити всі rate limiters (для graceful shutdown)
+ */
+export function cleanupRateLimiters(): void {
+  messageLimiter.destroy();
+  commandLimiter.destroy();
+  callbackLimiter.destroy();
+}
 
 /**
  * Middleware для rate limiting повідомлень
