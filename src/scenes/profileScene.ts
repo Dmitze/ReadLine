@@ -2,95 +2,56 @@ import { Scenes } from 'telegraf';
 import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
 import { escapeHtml, getBookIdText } from '../utils/helpers';
-import { getSmartRecommendations } from '../database/recommendationFunctions';
 import { getEnhancedBookKeyboard } from '../keyboards/mainKeyboards';
 import { handleResult } from '../utils/resultHandler';
+import { LIMITS } from '../constants/limits';
+import { createUserManagementService } from '../services/UserManagementService';
+import { db } from '../database/models';
 
 const profileScene = new Scenes.BaseScene('PROFILE_SCENE');
 
 profileScene.enter(async (ctx: BotContext) => {
-  if (!ctx.from?.id) {
-    await ctx.reply('❌ Не вдалося ідентифікувати користувача.');
-    return ctx.scene?.leave();
-  }
+   if (!ctx.from?.id) {
+     await ctx.reply('❌ Не вдалося ідентифікувати користувача.');
+     return ctx.scene?.leave();
+   }
 
-  const userId = ctx.from.id;
+   const userId = ctx.from.id;
 
-  const firstName = escapeHtml(ctx.from.first_name || '');
-  const lastName = escapeHtml(ctx.from.last_name || '');
-  const username = ctx.from.username ? `@${escapeHtml(ctx.from.username)}` : 'не встановлено';
+   // Use UserManagementService to get profile data
+   const userService = createUserManagementService(db);
+   const profileResult = await userService.getUserProfile(userId);
 
-  // Отримуємо статистику користувача
-  const { getUserDetailedStats } = await import('../database/userFunctions');
-  const stats = await getUserDetailedStats(userId);
+   if (profileResult.isErr()) {
+     logger.error('Failed to get user profile', profileResult.error);
+     await ctx.reply('❌ Помилка при завантаженні профілю.');
+     return ctx.scene?.leave();
+   }
 
-  let profileText = '<b>👤 Ваш профіль</b>\n\n';
-  profileText += `🆔 ID: ${userId}\n`;
-  profileText += `👤 Ім'я: ${firstName} ${lastName}\n`;
-  profileText += `🔖 Username: ${username}\n\n`;
-  profileText += '<b>📊 Статистика</b>\n';
-  profileText += `💾 Збережених книг: ${stats.savedBooksCount}\n`;
-  profileText += `⭐ Залишено відгуків: ${stats.reviewsCount}\n`;
+   const profile = profileResult.unwrap();
 
-  // Час прослуховування
-  const hours = Math.floor(stats.totalListeningTime / 3600);
-  const minutes = Math.floor((stats.totalListeningTime % 3600) / 60);
-  profileText += `🎧 Прослухано: ${hours}г ${minutes}хв\n`;
+   // Fill in user info from Telegram context
+   profile.firstName = escapeHtml(ctx.from.first_name || '');
+   profile.lastName = escapeHtml(ctx.from.last_name || '');
+   profile.username = ctx.from.username ? `@${escapeHtml(ctx.from.username)}` : 'не встановлено';
 
-  // Отримуємо збережені книги для аналізу жанрів
-  const { getSavedBooks } = await import('../database/models');
-  const { getBookTags } = await import('../database/tagFunctions');
-  const savedBooks = await getSavedBooks(userId);
+   // Format profile text using service
+   const profileText = userService.formatProfileText(profile);
 
-  // Збираємо жанри зі збережених книг
-  const genresFromBooks = new Set<string>();
-  savedBooks.forEach((book) => {
-    if (book.genre) {
-      genresFromBooks.add(book.genre);
-    }
-  });
+   const { Markup } = await import('telegraf');
 
-  // Об'єднуємо з улюбленими жанрами
-  const allGenres = [...new Set([...stats.favoriteGenres, ...Array.from(genresFromBooks)])];
+   await ctx.reply(profileText, {
+     parse_mode: 'HTML',
+     reply_markup: Markup.inlineKeyboard([
+       [{ text: '🤖 Персональні рекомендації', callback_data: 'show_personal_collection' }],
+       [{ text: '🎯 AI Підбір книги', callback_data: 'start_ai_assistant' }],
+       [{ text: '📊 Моя статистика', callback_data: 'show_stats' }],
+       [{ text: '⬅️ Назад', callback_data: 'profile_back' }],
+     ]).reply_markup,
+   });
 
-  if (allGenres.length > 0) {
-    profileText += '\n<b>📚 Улюблені жанри:</b>\n';
-    allGenres.slice(0, 5).forEach((genre, i) => {
-      profileText += `${i + 1}. ${genre}\n`;
-    });
-  } else {
-    profileText += '\n<i>📚 Улюблені жанри ще не встановлені</i>\n';
-  }
-
-  if (savedBooks.length > 0) {
-    const allUserTags = new Set<string>();
-    for (const book of savedBooks) {
-      const bookTags = await getBookTags(book.id!);
-      bookTags.forEach((tag) => allUserTags.add(tag.name));
-    }
-
-    if (allUserTags.size > 0) {
-      profileText += '\n<b>🏷️ Ваші інтереси (теги):</b>\n';
-      const tagsArray = Array.from(allUserTags).slice(0, 10);
-      profileText += tagsArray.map((tag) => `#${tag}`).join(' ') + '\n';
-    }
-  }
-  profileText += '\n<i>💡 Продовжуйте читати та залишати відгуки!</i>';
-
-  const { Markup } = await import('telegraf');
-
-  await ctx.reply(profileText, {
-    parse_mode: 'HTML',
-    reply_markup: Markup.inlineKeyboard([
-      [{ text: '🤖 Персональні рекомендації', callback_data: 'show_personal_collection' }],
-      [{ text: '🎯 AI Підбір книги', callback_data: 'start_ai_assistant' }],
-      [{ text: '📊 Моя статистика', callback_data: 'show_stats' }],
-      [{ text: '⬅️ Назад', callback_data: 'profile_back' }],
-    ]).reply_markup,
-  });
-
-  logger.userAction(userId, 'view_profile');
-});
+   logger.userAction(userId, 'view_profile');
+ });
 
 // Показати статистику
 profileScene.action('show_stats', async (ctx) => {
@@ -98,30 +59,18 @@ profileScene.action('show_stats', async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) return;
 
-  const { getUserDetailedStats } = await import('../database/userFunctions');
+  // Use UserManagementService to get stats
+  const userService = createUserManagementService(db);
+  const statsResult = await userService.getUserStats(userId);
 
-  // Використовуємо нову функцію для отримання статистики
-  const stats = await getUserDetailedStats(userId);
-
-  const hours = Math.floor(stats.totalListeningTime / 3600);
-  const minutes = Math.floor((stats.totalListeningTime % 3600) / 60);
-
-  let statsText = '📊 <b>Ваша детальна статистика</b>\n\n';
-  statsText += `💾 Збережено книг: ${stats.savedBooksCount}\n`;
-  statsText += `⭐ Залишено відгуків: ${stats.reviewsCount}\n`;
-  statsText += `🎧 Прослухано: ${hours}г ${minutes}хв\n\n`;
-
-  if (stats.favoriteGenres.length > 0) {
-    statsText += '📚 *Улюблені жанри:*\n';
-    stats.favoriteGenres.forEach((genre, index) => {
-      statsText += `${index + 1}. ${genre}\n`;
-    });
-    statsText += '\n';
-  } else {
-    statsText += '📚 *Улюблені жанри:* не встановлені\n\n';
+  if (statsResult.isErr()) {
+    logger.error('Failed to get user stats', statsResult.error);
+    await ctx.reply('❌ Помилка при завантаженні статистики.');
+    return;
   }
 
-  statsText += '💡 Продовжуйте читати та слухати!';
+  const stats = statsResult.unwrap();
+  const statsText = userService.formatDetailedStatsText(stats);
 
   await ctx.reply(statsText, { parse_mode: 'HTML' });
   logger.userAction(userId, 'view_stats');
@@ -159,53 +108,45 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
 
   await ctx.reply('🤖 Аналізую ваші вподобання та створюю персональну підбірку...');
 
-  // Використовуємо розумні рекомендації з урахуванням тегів, рейтингів та історії
-  const { isBookSaved, getTopBooks, getNewestBooks } = await import('../database/models');
+  // Use UserManagementService to get personal collection
+  const userService = createUserManagementService(db);
+  const collectionResult = await userService.getPersonalCollection(userId, 5);
 
-  let collection = await getSmartRecommendations(userId, 5);
-
-  if (collection.length === 0) {
-    // Fallback до топ книг
-    const topBooks = await getTopBooks(3);
-
-    if (topBooks.length > 0) {
-      collection = topBooks;
-      await ctx.reply(
-        '📚 <b>Персональна підбірка для вас</b>\n\n' +
-          '🤖 На основі найкращих книг каталогу\n' +
-          `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`,
-        { parse_mode: 'HTML' }
-      );
-    } else {
-      // Якщо навіть топ книг немає - пробуємо новинки
-      const newBooks = await getNewestBooks(3);
-
-      if (newBooks.length > 0) {
-        collection = newBooks;
-        await ctx.reply(
-          '📚 <b>Персональна підбірка для вас</b>\n\n' +
-            '🤖 Найновіші книги каталогу\n' +
-            `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`,
-          { parse_mode: 'HTML' }
-        );
-      } else {
-        await ctx.reply('😔 Не вдалося створити персональну підбірку. В каталозі поки немає книг.');
-        return;
-      }
-    }
-  } else {
-    await ctx.reply(
-      '📚 <b>Персональна підбірка для вас</b>\n\n' +
-        '🤖 Створено на основі ваших вподобань, тегів та рейтингів\n' +
-        `📖 Знайдено ${collection.length} ${collection.length === 1 ? 'книгу' : 'книг'}`,
-      { parse_mode: 'HTML' }
-    );
+  if (collectionResult.isErr()) {
+    logger.error('Failed to get personal collection', collectionResult.error);
+    await ctx.reply('❌ Помилка при створенні персональної підбірки.');
+    return;
   }
+
+  const collectionData = collectionResult.unwrap();
+
+  if (collectionData.books.length === 0) {
+    await ctx.reply('😔 Не вдалося створити персональну підбірку. В каталозі поки немає книг.');
+    return;
+  }
+
+  // Show appropriate message based on collection source
+  let messageText = '📚 <b>Персональна підбірка для вас</b>\n\n';
+  switch (collectionData.source) {
+    case 'smart_recommendations':
+      messageText += '🤖 Створено на основі ваших вподобань, тегів та рейтингів\n';
+      break;
+    case 'top_books':
+      messageText += '🤖 На основі найкращих книг каталогу\n';
+      break;
+    case 'new_books':
+      messageText += '🤖 Найновіші книги каталогу\n';
+      break;
+  }
+  messageText += `📖 Знайдено ${collectionData.count} ${collectionData.count === 1 ? 'книгу' : 'книг'}`;
+
+  await ctx.reply(messageText, { parse_mode: 'HTML' });
 
   // Показуємо книги
   const { formatBookCaption } = await import('../utils/helpers');
+  const { isBookSaved } = await import('../database/models');
 
-  for (const book of collection) {
+  for (const book of collectionData.books) {
     const caption = await formatBookCaption(book);
     const isSaved = await isBookSaved(userId, book.id!);
     const keyboard = getEnhancedBookKeyboard(book, isSaved);
@@ -239,7 +180,7 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
-  logger.userAction(userId, 'ai_personal_collection', { booksFound: collection.length });
+  logger.userAction(userId, 'ai_personal_collection', { booksFound: collectionData.count });
 });
 
 // Cleanup при виході зі сцени
