@@ -4,7 +4,7 @@ import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
 import { validateReviewData } from '../utils/validation';
 import { handleResult } from '../utils/resultHandler';
-import { getBookIdText } from '../utils/helpers';
+import { getBookIdText, safeParseInt } from '../utils/helpers';
 
 const rateBookScene = new Scenes.WizardScene(
   'RATE_BOOK_SCENE',
@@ -71,7 +71,12 @@ const rateBookScene = new Scenes.WizardScene(
       return ctx.scene?.leave();
     }
 
-    const rating = parseInt(action.replace('rating_', ''));
+    // ✅ Валідація rating з safeParseInt
+    const rating = safeParseInt(action.replace('rating_', ''), 1);
+    if (rating < 1 || rating > 5) {
+      await ctx.answerCbQuery('❌ Некоректний рейтинг');
+      return;
+    }
     (ctx.wizard?.state as any).rating = rating;
 
     await ctx.editMessageText(
