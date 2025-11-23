@@ -3,8 +3,9 @@ const sqlite3 = require('sqlite3').verbose();
 const fs = require('fs');
 const path = require('path');
 
-const dbPath = path.join(__dirname, '..', 'data', 'library.db');
-const backupPath = path.join(__dirname, '..', 'data', 'library_backup.db');
+// Use DB_PATH environment variable or default to database/library.db
+const dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'database', 'library.db');
+const backupPath = path.join(path.dirname(dbPath), `library_backup_${Date.now()}.db`);
 
 console.log('🔧 Перевірка та відновлення бази даних...\n');
 
@@ -45,7 +46,7 @@ db.get('PRAGMA integrity_check;', (err, row) => {
 });
 
 function recoverDatabase() {
-  const recoveredPath = path.join(__dirname, '..', 'data', 'library_recovered.db');
+  const recoveredPath = path.join(path.dirname(dbPath), 'library_recovered.db');
   
   console.log('📋 Експорт даних...');
   
@@ -149,24 +150,57 @@ function finishRecovery(recoveredDb, totalCopied) {
   db.close();
   recoveredDb.close();
   
-  console.log('\n🔄 Заміна старої бази на відновлену...');
-  
-  const dbPath = path.join(__dirname, '..', 'data', 'library.db');
-  const recoveredPath = path.join(__dirname, '..', 'data', 'library_recovered.db');
-  const oldPath = path.join(__dirname, '..', 'data', 'library_old.db');
-  
-  // Перейменувати стару БД
-  if (fs.existsSync(dbPath)) {
-    fs.renameSync(dbPath, oldPath);
-  }
-  
-  // Перейменувати відновлену БД
-  fs.renameSync(recoveredPath, dbPath);
-  
-  console.log('✅ База даних відновлена!');
-  console.log('\n📁 Файли:');
-  console.log('  - library.db (відновлена база)');
-  console.log('  - library_backup.db (резервна копія)');
-  console.log('  - library_old.db (стара пошкоджена база)');
-  console.log('\n🎉 Готово!');
+  // Wait a bit for file handles to be released
+  setTimeout(() => {
+    console.log('\n🔄 Заміна старої бази на відновлену...');
+    
+    const recoveredPath = path.join(path.dirname(dbPath), 'library_recovered.db');
+    const oldPath = path.join(path.dirname(dbPath), 'library_old.db');
+    
+    try {
+      // Remove WAL files first if they exist
+      const walPath = dbPath + '-wal';
+      const shmPath = dbPath + '-shm';
+      if (fs.existsSync(walPath)) {
+        fs.unlinkSync(walPath);
+        console.log('  ✅ Removed WAL file');
+      }
+      if (fs.existsSync(shmPath)) {
+        fs.unlinkSync(shmPath);
+        console.log('  ✅ Removed SHM file');
+      }
+      
+      // Try to rename old database, but don't fail if it's locked
+      if (fs.existsSync(dbPath)) {
+        try {
+          fs.renameSync(dbPath, oldPath);
+          console.log('  ✅ Moved old database to library_old.db');
+        } catch (err) {
+          console.log('  ⚠️  Could not rename old database (file may be locked)');
+          console.log('  💡 You may need to close the application and manually replace library.db');
+        }
+      }
+      
+      // Copy recovered database
+      if (fs.existsSync(recoveredPath)) {
+        fs.copyFileSync(recoveredPath, dbPath);
+        console.log('  ✅ Recovered database installed');
+      }
+      
+      console.log('\n✅ База даних відновлена!');
+      console.log('\n📁 Файли:');
+      console.log('  - library.db (відновлена база)');
+      console.log('  - library_backup.db (резервна копія)');
+      if (fs.existsSync(oldPath)) {
+        console.log('  - library_old.db (стара пошкоджена база)');
+      }
+      console.log('\n🎉 Готово!');
+      console.log('\n⚠️  Примітка: Якщо база даних була заблокована, можливо потрібно');
+      console.log('   вручну замінити library.db на library_recovered.db');
+    } catch (err) {
+      console.error('\n❌ Помилка при заміні бази даних:', err.message);
+      console.log('\n💡 Вручну виконайте:');
+      console.log(`   cp ${recoveredPath} ${dbPath}`);
+    }
+  }, 500);
 }
