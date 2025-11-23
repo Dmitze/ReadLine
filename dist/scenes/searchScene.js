@@ -34,7 +34,6 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 const telegraf_1 = require("telegraf");
-const SEARCH_LIMIT = 10;
 const searchScene = new telegraf_1.Scenes.BaseScene('SEARCH_SCENE');
 searchScene.enter(async (ctx) => {
     const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
