@@ -44,9 +44,9 @@ async function showWarningsKeyboard(ctx: BotContext, state: any) {
 
   const selectedCount = selectedWarnings.length;
   const message =
-    `⚠️ <b>ВИБЕРІТЬ ВАРНІНГИ ВМІСТУ</b>\n\n` +
+    '⚠️ <b>ВИБЕРІТЬ ВАРНІНГИ ВМІСТУ</b>\n\n' +
     `Обрано: ${selectedCount} ${selectedCount === 1 ? 'варнінг' : 'варнінгів'}\n\n` +
-    `💡 Натискайте на кнопки для вибору/зняття`;
+    '💡 Натискайте на кнопки для вибору/зняття';
 
   await ctx.reply(message, {
     parse_mode: 'HTML',
@@ -160,7 +160,7 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
     if (state.step === 'waiting_for_warnings') {
       let warnings: string[] = [];
 
-      if (message !== '-' && message.toLowerCase() !== 'none') {
+      if (typeof message === 'string' && message !== '-' && message.toLowerCase() !== 'none') {
         const validWarnings = [
           'violence',
           'explicit_content',
@@ -174,7 +174,10 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
           'self_harm',
         ];
 
-        warnings = message.split(',').map((w) => w.trim());
+        warnings = message
+          .split(',')
+          .map((w) => w.trim())
+          .filter(Boolean);
 
         // Перевіряємо кожен варнінг
         const invalidWarnings = warnings.filter((w) => !validWarnings.includes(w));
@@ -190,10 +193,11 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
       state.contentWarnings = warnings;
 
       // Збереження
+      await updateBookInfo(state.bookId, 'recommended_age', state.recommendedAge);
       await updateBookInfo(
         state.bookId,
-        state.recommendedAge,
-        warnings.length > 0 ? warnings : undefined
+        'content_warnings',
+        warnings.length > 0 ? JSON.stringify(warnings) : null
       );
 
       const ageLabels: { [key: number]: string } = {
@@ -410,8 +414,8 @@ editExtendedBookInfoScene.action('save_warnings', async (ctx) => {
     const book = await getBookById(state.bookId);
     await updateBookInfo(
       state.bookId,
-      String(book?.recommended_age || 0),
-      warnings.length > 0 ? warnings : undefined
+      'content_warnings',
+      warnings.length > 0 ? JSON.stringify(warnings) : null
     );
 
     try {
