@@ -343,6 +343,8 @@ const shutdown = async (signal) => {
         const { stopNotificationScheduler } = await Promise.resolve().then(() => __importStar(require('./utils/notifications')));
         stopNotificationScheduler(notificationScheduler);
     }
+    const { cleanupRateLimiters } = await Promise.resolve().then(() => __importStar(require('./middleware/rateLimit')));
+    cleanupRateLimiters();
     try {
         await new Promise((resolve, reject) => {
             models_1.db.close((err) => {
