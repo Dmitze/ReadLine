@@ -406,6 +406,10 @@ const shutdown = async (signal: string) => {
     stopNotificationScheduler(notificationScheduler);
   }
 
+  // Очищаємо rate limiters
+  const { cleanupRateLimiters } = await import('./middleware/rateLimit');
+  cleanupRateLimiters();
+
   // ✅ ВИПРАВЛЕНО: Закриваємо БД перед виходом
   try {
     await new Promise<void>((resolve, reject) => {
