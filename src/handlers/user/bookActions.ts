@@ -283,7 +283,7 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
         // Якщо файл не знайдено в Telegram, пробуємо надати посилання
         if (book.file_url) {
           await ctx.reply(
-            `📥 Файл тимчасово недоступний через Telegram.\n\n` +
+            '📥 Файл тимчасово недоступний через Telegram.\n\n' +
               `Посилання для завантаження:\n${book.file_url}`,
             {
               disable_web_page_preview: false,
