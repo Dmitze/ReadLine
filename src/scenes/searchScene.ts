@@ -5,8 +5,7 @@ import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
 import { handleResult } from '../utils/resultHandler';
 import { getBookIdText } from '../utils/helpers';
-
-const SEARCH_LIMIT = 10;
+import { LIMITS } from '../constants/limits';
 
 const searchScene = new Scenes.BaseScene('SEARCH_SCENE');
 
