@@ -1,29 +1,59 @@
 /**
  * Promo Code Functions - функції для роботи з промокодами
+ *
+ * @module promoCodeFunctions
  */
 
 import { db } from './models';
 import { logger } from '../utils/logger';
 
+/**
+ * Represents a promo code entity
+ */
 export interface PromoCode {
+  /** Unique identifier for the promo code */
   id?: number;
+  /** The promo code string (uppercase) */
   code: string;
+  /** Human-readable description of the promo code */
   description: string;
+  /** Type of promo code (currently only yakaboo_unlimited) */
   promo_type: 'yakaboo_unlimited';
+  /** Whether the promo code is active and can be used */
   is_active: boolean;
+  /** Timestamp when promo code was created */
   created_at?: string;
+  /** ID of the admin who created this promo code */
   created_by?: number;
 }
 
+/**
+ * Represents a used promo code record
+ */
 export interface UsedPromoCode {
+  /** Unique identifier for the usage record */
   id?: number;
+  /** ID of the user who used the promo code */
   user_id: number;
+  /** ID of the promo code that was used */
   promo_code_id: number;
+  /** Timestamp when the promo code was used */
   used_at?: string;
 }
 
 /**
- * Додати новий промокод
+ * Adds a new promo code to the database
+ *
+ * @param code - The promo code string (will be converted to uppercase)
+ * @param adminId - Optional ID of the admin creating the promo code
+ * @returns Promise resolving to the new promo code ID
+ * @throws Error if database operation fails
+ *
+ * @example
+ * ```typescript
+ * const promoId = await addPromoCode('SUMMER2024', 123);
+ * console.log(`Promo code created with ID: ${promoId}`);
+ * ```
  */
 export const addPromoCode = (code: string, adminId?: number): Promise<number> => {
   return new Promise((resolve, reject) => {
@@ -65,7 +95,19 @@ function generatePromoCodeDetails(_code: string): {
 }
 
 /**
- * Отримати промокод за кодом
+ * Retrieves a promo code by its code string
+ *
+ * @param code - The promo code string (case-insensitive, will be converted to uppercase)
+ * @returns Promise resolving to the promo code data or undefined if not found
+ * @throws Error if database operation fails
+ *
+ * @example
+ * ```typescript
+ * const promo = await getPromoCodeByCode('SUMMER2024');
+ * if (promo) {
+ *   console.log(`Found promo: ${promo.description}`);
+ * }
+ * ```
  */
 export const getPromoCodeByCode = (code: string): Promise<PromoCode | undefined> => {
   return new Promise((resolve, reject) => {
@@ -81,7 +123,19 @@ export const getPromoCodeByCode = (code: string): Promise<PromoCode | undefined>
 };
 
 /**
- * Отримати доступний промокод для користувача
+ * Gets an available promo code for a specific user (one they haven't used yet)
+ *
+ * @param userId - ID of the user to get promo code for
+ * @returns Promise resolving to the first available promo code or undefined if none available
+ * @throws Error if database operation fails
+ *
+ * @example
+ * ```typescript
+ * const promo = await getAvailablePromoCode(123);
+ * if (promo) {
+ *   console.log(`Available promo for user: ${promo.code}`);
+ * }
+ * ```
  */
 export const getAvailablePromoCode = (userId: number): Promise<PromoCode | undefined> => {
   return new Promise((resolve, reject) => {
@@ -107,7 +161,11 @@ export const getAvailablePromoCode = (userId: number): Promise<PromoCode | undef
 };
 
 /**
- * Перевірити чи користувач вже отримував промокод
+ * Checks if a user has already received any promo code
+ *
+ * @param userId - ID of the user to check
+ * @returns Promise resolving to true if user has received a promo code, false otherwise
+ * @throws Error if database operation fails
  */
 export const hasUserReceivedPromoCode = (userId: number): Promise<boolean> => {
   return new Promise((resolve, reject) => {
@@ -119,7 +177,18 @@ export const hasUserReceivedPromoCode = (userId: number): Promise<boolean> => {
 };
 
 /**
- * Позначити промокод як використаний
+ * Marks a promo code as used by a specific user
+ *
+ * @param userId - ID of the user who used the promo code
+ * @param promoCodeId - ID of the promo code that was used
+ * @returns Promise resolving when the operation is complete
+ * @throws Error if database operation fails
+ *
+ * @example
+ * ```typescript
+ * await markPromoCodeAsUsed(123, 456);
+ * console.log('Promo code marked as used');
+ * ```
  */
 export const markPromoCodeAsUsed = (userId: number, promoCodeId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -140,7 +209,11 @@ export const markPromoCodeAsUsed = (userId: number, promoCodeId: number): Promis
 };
 
 /**
- * Отримати промокод користувача
+ * Gets the promo code that was assigned to a specific user
+ *
+ * @param userId - ID of the user
+ * @returns Promise resolving to the user's promo code or undefined if none assigned
+ * @throws Error if database operation fails
  */
 export const getUserPromoCode = (userId: number): Promise<PromoCode | undefined> => {
   return new Promise((resolve, reject) => {
@@ -158,7 +231,11 @@ export const getUserPromoCode = (userId: number): Promise<PromoCode | undefined>
 };
 
 /**
- * Повернути промокод (видалити прив'язку до користувача)
+ * Returns a promo code (removes the user assignment, making it available again)
+ *
+ * @param userId - ID of the user to return the promo code from
+ * @returns Promise resolving to true if a promo code was returned, false if user had no promo code
+ * @throws Error if database operation fails
  */
 export const returnPromoCode = (userId: number): Promise<boolean> => {
   return new Promise((resolve, reject) => {
@@ -175,7 +252,10 @@ export const returnPromoCode = (userId: number): Promise<boolean> => {
 };
 
 /**
- * Отримати доступний промокод (не використаний)
+ * Gets any available promo code (not assigned to any user)
+ *
+ * @returns Promise resolving to the first available promo code or undefined if none available
+ * @throws Error if database operation fails
  */
 export const getAvailablePromoCodeForUser = (): Promise<PromoCode | undefined> => {
   return new Promise((resolve, reject) => {
@@ -194,7 +274,10 @@ export const getAvailablePromoCodeForUser = (): Promise<PromoCode | undefined> =
 };
 
 /**
- * Отримати кількість доступних промокодів
+ * Gets the count of available promo codes (active and not assigned to users)
+ *
+ * @returns Promise resolving to the number of available promo codes
+ * @throws Error if database operation fails
  */
 export const getAvailablePromoCodesCount = (): Promise<number> => {
   return new Promise((resolve, reject) => {
@@ -213,7 +296,10 @@ export const getAvailablePromoCodesCount = (): Promise<number> => {
 };
 
 /**
- * Отримати загальну кількість промокодів
+ * Gets the total count of all active promo codes
+ *
+ * @returns Promise resolving to the total number of active promo codes
+ * @throws Error if database operation fails
  */
 export const getAllPromoCodesCount = (): Promise<number> => {
   return new Promise((resolve, reject) => {
@@ -225,7 +311,10 @@ export const getAllPromoCodesCount = (): Promise<number> => {
 };
 
 /**
- * Отримати всі промокоди (для адміна)
+ * Gets all promo codes in the system (admin function)
+ *
+ * @returns Promise resolving to array of all promo codes ordered by creation date
+ * @throws Error if database operation fails
  */
 export const getAllPromoCodes = (): Promise<PromoCode[]> => {
   return new Promise((resolve, reject) => {
@@ -387,7 +476,11 @@ export const getExtendedPromoStats = (): Promise<{
 };
 
 /**
- * Деактивувати промокод
+ * Deactivates a promo code (makes it unusable)
+ *
+ * @param promoCodeId - ID of the promo code to deactivate
+ * @returns Promise resolving when deactivation is complete
+ * @throws Error if database operation fails
  */
 export const deactivatePromoCode = (promoCodeId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -399,7 +492,13 @@ export const deactivatePromoCode = (promoCodeId: number): Promise<void> => {
 };
 
 /**
- * Видалити промокод
+ * Permanently deletes a promo code from the database
+ *
+ * @param promoCodeId - ID of the promo code to delete
+ * @returns Promise resolving when deletion is complete
+ * @throws Error if database operation fails
+ *
+ * @warning This operation cannot be undone and will also remove all usage records
  */
 export const deletePromoCode = (promoCodeId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -411,7 +510,16 @@ export const deletePromoCode = (promoCodeId: number): Promise<void> => {
 };
 
 /**
- * Отримати текстовий опис типу знижки
+ * Gets human-readable text description for a discount type
+ *
+ * @param discountType - The discount type identifier
+ * @returns Human-readable description of the discount type
+ *
+ * @example
+ * ```typescript
+ * console.log(getDiscountTypeText('percentage')); // "Відсоткова знижка"
+ * console.log(getDiscountTypeText('shipping')); // "Безкоштовна доставка"
+ * ```
  */
 export const getDiscountTypeText = (discountType: string): string => {
   switch (discountType) {
