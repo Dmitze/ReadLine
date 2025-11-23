@@ -104,16 +104,37 @@ export class UserRepository extends BaseRepository<User> {
         return 0;
       }
 
-      const fields = Object.keys(updates)
-        .map((key) => `${key} = ?`)
+      // ✅ Whitelist разрешенных полей для защиты от SQL injection
+      const allowedFields = [
+        'username', 'first_name', 'last_name', 'language_code',
+        'is_admin', 'is_new', 'last_seen'
+      ];
+
+      // Фильтруем только разрешенные поля
+      const validUpdates: Record<string, any> = {};
+      for (const [key, value] of Object.entries(updates)) {
+        if (allowedFields.includes(key)) {
+          validUpdates[key] = value;
+        } else {
+          logger.warn(`Attempted to update forbidden field: ${key}`, { userId });
+        }
+      }
+
+      if (Object.keys(validUpdates).length === 0) {
+        return 0;
+      }
+
+      // Экранируем названия полей через whitelist
+      const fields = Object.keys(validUpdates)
+        .map((key) => `"${key}" = ?`)  // ✅ Используем whitelist
         .join(', ');
-      const values = Object.values(updates);
+      const values = Object.values(validUpdates);
 
       const query = `UPDATE users SET ${fields} WHERE user_id = ?`;
       const changes = await this.db.update(query, [...values, userId]);
 
       if (changes > 0) {
-        logger.info(`User updated: ${userId}`, { changes });
+        logger.info(`User updated: ${userId}`, { changes, fields: Object.keys(validUpdates) });
       }
       return changes;
     } catch (error) {
@@ -251,10 +272,10 @@ export class UserRepository extends BaseRepository<User> {
     try {
       const pattern = `%${searchTerm}%`;
       const query = `
-        SELECT * FROM users 
-        WHERE LOWER(username) LIKE LOWER(?) 
-           OR LOWER(first_name) LIKE LOWER(?)
-           OR LOWER(last_name) LIKE LOWER(?)
+        SELECT * FROM users
+        WHERE username LIKE ? COLLATE NOCASE
+           OR first_name LIKE ? COLLATE NOCASE
+           OR last_name LIKE ? COLLATE NOCASE
         ORDER BY created_at DESC
         LIMIT ?
       `;
