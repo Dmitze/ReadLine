@@ -12,7 +12,10 @@ import { TIMEOUTS } from '../../constants/timeouts';
 declare var process: {
   env: {
     DB_PATH?: string;
+    NODE_ENV?: string;
+    JEST_WORKER_ID?: string;
   };
+  exit(code?: number): never;
 };
 
 // Initialize database
@@ -28,6 +31,8 @@ if (!fs.existsSync(dbDir)) {
 export const db = new sqlite3.Database(dbPath);
 
 // Configure SQLite PRAGMA
+const isTestEnv = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+
 db.exec(
   `
   PRAGMA foreign_keys = ON;
@@ -36,13 +41,94 @@ db.exec(
 `,
   (err) => {
     if (err) {
-      logger.error('Error configuring SQLite PRAGMA', err);
+      if (!isTestEnv) {
+        logger.error('Error configuring SQLite PRAGMA', err);
+      }
     } else {
-      logger.info('SQLite PRAGMA configured', {
-        foreign_keys: 'ON',
-        busy_timeout: TIMEOUTS.DATABASE_BUSY,
-        journal_mode: 'WAL',
-      });
+      if (!isTestEnv) {
+        logger.info('SQLite PRAGMA configured', {
+          foreign_keys: 'ON',
+          busy_timeout: TIMEOUTS.DATABASE_BUSY,
+          journal_mode: 'WAL',
+        });
+      }
+
+      // Integrity check: fail fast if DB is corrupted
+      // Skip in test environment to avoid killing test process and async logging issues
+      if (!isTestEnv) {
+        try {
+          db.get('PRAGMA integrity_check;', (checkErr: any, row: any) => {
+            if (checkErr) {
+              logger.error('Integrity check failed to execute', { error: String(checkErr?.message || checkErr) });
+              logger.error('Database may be corrupted. Please recover from backup or run: node scripts/repair-database.js');
+
+              // ✅ Graceful shutdown замість process.exit
+              const gracefulShutdown = async () => {
+                try {
+                  // Закрити всі з'єднання з БД
+                  await new Promise<void>((resolve) => {
+                    db.close((err) => {
+                      if (err) logger.error('Error closing database during integrity check failure', err);
+                      resolve();
+                    });
+                  });
+
+                  // Дати час на завершення операцій
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+
+                  process.exit(1);
+                } catch (error) {
+                  logger.error('Error during graceful shutdown after integrity check failure', error);
+                  process.exit(1);
+                }
+              };
+
+              gracefulShutdown();
+              return;
+            }
+            const result = (row && (row.integrity_check || row[Object.keys(row)[0]])) as string | undefined;
+            if (!result || String(result).toLowerCase() !== 'ok') {
+              logger.error('Database integrity check failed', {
+                error: 'sqlite_corrupt',
+                integrityResult: result,
+                dbPath: dbPath,
+              });
+              logger.error('The database file appears to be corrupted.');
+              logger.error('Recovery options:');
+              logger.error('  1. Restore from backup: Check database/backup_*.db files');
+              logger.error('  2. Run repair script: node scripts/repair-database.js');
+              logger.error('  3. If database is empty, delete it and let the app recreate it');
+
+              // ✅ Graceful shutdown замість process.exit
+              const gracefulShutdown = async () => {
+                try {
+                  // Закрити всі з'єднання з БД
+                  await new Promise<void>((resolve) => {
+                    db.close((err) => {
+                      if (err) logger.error('Error closing database during integrity check failure', err);
+                      resolve();
+                    });
+                  });
+
+                  // Дати час на завершення операцій
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+
+                  process.exit(1);
+                } catch (error) {
+                  logger.error('Error during graceful shutdown after integrity check failure', error);
+                  process.exit(1);
+                }
+              };
+
+              gracefulShutdown();
+            }
+          });
+        } catch (e) {
+          logger.warn('Integrity check could not be performed', {
+            error: e instanceof Error ? e.message : String(e)
+          });
+        }
+      }
     }
   }
 );
