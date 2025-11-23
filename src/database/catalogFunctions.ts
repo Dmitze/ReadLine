@@ -1,4 +1,6 @@
 import { db, Book } from './models';
+import { safeParseFloat } from '../utils/helpers';
+import { QueryBuilder } from './QueryBuilder';
 
 /**
  * SQL Parameter Types - replaces 'any'
@@ -21,70 +23,86 @@ interface CountRow {
   total: number;
 }
 
-// Отримати книги з фільтрами та сортуванням
-export const getBooksWithFilters = (
+/**
+ * Отримати книги з фільтрами та сортуванням
+ * Використовує QueryBuilder для динамічних SQL запитів
+ * @param filters - Фільтри та налаштування сортування
+ * @returns Об'єкт з масивом книг та загальною кількістю
+ */
+export const getBooksWithFilters = async (
   filters: CatalogFilters
 ): Promise<{ books: Book[]; total: number }> => {
-  return new Promise((resolve, reject) => {
-    let query = 'SELECT * FROM books WHERE is_available = 1';
-    const params: SQLParameters = [];
+  // ✅ Використати QueryBuilder для динамічних запитів
+  const qb = new QueryBuilder()
+    .from('books')
+    .where('is_available', '=', 1);
 
-    if (filters.genre) {
-      query += ' AND genre = ?';
-      params.push(filters.genre);
+  if (filters.genre) {
+    qb.where('genre', '=', filters.genre);
+  }
+
+  if (filters.hasAudio) {
+    qb.where('audio_file_id', 'IS NOT NULL')
+      .or('audio_external_link', 'IS NOT NULL');
+  }
+
+  if (filters.minRating !== undefined) {
+    // ✅ Валідація minRating
+    const safeMinRating = safeParseFloat(filters.minRating, 0);
+    if (safeMinRating >= 0 && safeMinRating <= 5) {
+      qb.where('rating', '>=', safeMinRating);
     }
+  }
 
-    if (filters.hasAudio) {
-      query += ' AND (audio_file_id IS NOT NULL OR audio_external_link IS NOT NULL)';
-    }
+  const sortBy = filters.sortBy || 'date';
+  const sortOrder = (filters.sortOrder || 'desc').toUpperCase() as 'ASC' | 'DESC';
 
-    if (filters.minRating !== undefined) {
-      query += ' AND rating >= ?';
-      params.push(filters.minRating);
-    }
+  switch (sortBy) {
+    case 'rating':
+      qb.orderBy('rating', sortOrder)
+         .orderBy('reviews_count', 'DESC');
+      break;
+    case 'date':
+      qb.orderBy('created_at', sortOrder);
+      break;
+    case 'title':
+      qb.orderBy('title', sortOrder);
+      break;
+    case 'downloads':
+      qb.orderBy('downloads_count', sortOrder);
+      break;
+    default:
+      qb.orderBy('created_at', 'DESC');
+  }
 
-    const sortBy = filters.sortBy || 'date';
-    const sortOrder = filters.sortOrder || 'desc';
+  const countQuery = qb.clone().columns('COUNT(*) as total');
+  const dataQuery = qb
+    .limit(filters.limit || 10)
+    .offset(filters.offset || 0);
 
-    switch (sortBy) {
-      case 'rating':
-        query += ' ORDER BY rating ' + sortOrder.toUpperCase() + ', reviews_count DESC';
-        break;
-      case 'date':
-        query += ' ORDER BY created_at ' + sortOrder.toUpperCase();
-        break;
-      case 'title':
-        query += ' ORDER BY title ' + sortOrder.toUpperCase();
-        break;
-      case 'downloads':
-        query += ' ORDER BY downloads_count ' + sortOrder.toUpperCase();
-        break;
-      default:
-        query += ' ORDER BY created_at DESC';
-    }
-
-    const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) as total');
-
-    db.get(countQuery, params, (err, countRow: CountRow | undefined) => {
-      if (err) {
-        reject(err);
-        return;
-      }
-
-      const limit = filters.limit || 10;
-      const offset = filters.offset || 0;
-      query += ' LIMIT ? OFFSET ?';
-      params.push(limit, offset);
-
-      db.all(query, params, (err, rows: Book[]) => {
+  const [totalResult, books] = await Promise.all([
+    new Promise<{ total: number } | undefined>((resolve, reject) => {
+      db.get<{ total: number }>(countQuery.build().sql, countQuery.getParameters(), (err, row) => {
         if (err) reject(err);
-        else resolve({ books: rows, total: countRow?.total || 0 });
+        else resolve(row);
       });
-    });
-  });
+    }),
+    new Promise<Book[]>((resolve, reject) => {
+      db.all<Book>(dataQuery.build().sql, dataQuery.getParameters(), (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows || []);
+      });
+    })
+  ]);
+
+  return { books, total: totalResult?.total || 0 };
 };
 
-// Отримати книги з аудіо
+/**
+ * Отримати книги з аудіо
+ * @param limit - Максимальна кількість книг (за замовчуванням 10)
+ * @returns Масив книг з аудіо
+ */
 export const getBooksWithAudio = (limit: number = 10): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -103,6 +121,12 @@ export const getBooksWithAudio = (limit: number = 10): Promise<Book[]> => {
 };
 
 // Отримати книги з високим рейтингом
+/**
+ * Отримати книги з високим рейтингом
+ * @param minRating - Мінімальний рейтинг (за замовчуванням 4)
+ * @param limit - Максимальна кількість книг (за замовчуванням 10)
+ * @returns Масив книг з високим рейтингом
+ */
 export const getHighRatedBooks = (minRating: number = 4, limit: number = 10): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -117,7 +141,12 @@ export const getHighRatedBooks = (minRating: number = 4, limit: number = 10): Pr
   });
 };
 
-// Отримати книги за алфавітом
+/**
+ * Отримати книги за алфавітом
+ * @param limit - Максимальна кількість книг (за замовчуванням 10)
+ * @param offset - Зміщення для пагінації (за замовчуванням 0)
+ * @returns Об'єкт з масивом книг та загальною кількістю
+ */
 export const getBooksSortedByTitle = (
   limit: number = 10,
   offset: number = 0
@@ -137,7 +166,7 @@ export const getBooksSortedByTitle = (
           [limit, offset],
           (err, rows: Book[]) => {
             if (err) reject(err);
-            else resolve({ books: rows, total: countRow.total });
+            else resolve({ books: rows, total: countRow?.total || 0 });
           }
         );
       }
