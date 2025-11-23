@@ -5,6 +5,7 @@
 
 import { Database as SqliteDatabase } from 'sqlite3';
 import { logger } from '../utils/logger';
+import { safeParseInt } from '../utils/helpers';
 
 export type { SqliteDatabase as Database };
 
