@@ -175,10 +175,10 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
       const cacheKey = `books:search:${searchTerm}:${limit}`;
 
       const query = `
-        SELECT * FROM books 
-        WHERE (LOWER(title) LIKE LOWER(?) 
-           OR LOWER(author) LIKE LOWER(?)
-           OR LOWER(genre) LIKE LOWER(?))
+        SELECT * FROM books
+        WHERE (title COLLATE NOCASE LIKE ?
+           OR author COLLATE NOCASE LIKE ?
+           OR genre COLLATE NOCASE LIKE ?)
         AND is_available = 1
         ORDER BY rating DESC
         LIMIT ?
@@ -366,13 +366,13 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
 
       const [data, total] = await Promise.all([
         this.queryOptimizer.executeOptimized<Book>(
-          'SELECT * FROM books WHERE LOWER(author) = LOWER(?) ORDER BY rating DESC LIMIT ? OFFSET ?',
+          'SELECT * FROM books WHERE author COLLATE NOCASE = ? ORDER BY rating DESC LIMIT ? OFFSET ?',
           [author, limit, offset],
           `${cacheKey}:data`,
           300000
         ),
         this.queryOptimizer.getOptimized<{ count: number }>(
-          'SELECT COUNT(*) as count FROM books WHERE LOWER(author) = LOWER(?)',
+          'SELECT COUNT(*) as count FROM books WHERE author COLLATE NOCASE = ?',
           [author],
           `${cacheKey}:count`,
           300000
