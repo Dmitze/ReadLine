@@ -34,10 +34,20 @@ var __importStar = (this && this.__importStar) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getBookIdText = exports.escapeHtml = exports.formatBookCaption = void 0;
+exports.safeParseInt = safeParseInt;
+exports.safeParseFloat = safeParseFloat;
 exports.showLoadingAnimation = showLoadingAnimation;
 exports.updateLoadingMessage = updateLoadingMessage;
 exports.createProgressBar = createProgressBar;
 exports.formatStepProgress = formatStepProgress;
+function safeParseInt(value, defaultValue = 0) {
+    const parsed = parseInt(String(value), 10);
+    return isNaN(parsed) ? defaultValue : parsed;
+}
+function safeParseFloat(value, defaultValue = 0) {
+    const parsed = parseFloat(String(value));
+    return isNaN(parsed) ? defaultValue : parsed;
+}
 const formatBookCaption = async (book, tags) => {
     const escapeHtml = (text) => {
         if (!text)
@@ -95,7 +105,7 @@ const formatBookCaption = async (book, tags) => {
         caption += '\n\n';
     }
     else {
-        caption += `⭐ <b>Рейтинг:</b> Ще не оцінена\n\n`;
+        caption += '⭐ <b>Рейтинг:</b> Ще не оцінена\n\n';
     }
     if (book.id) {
         try {
