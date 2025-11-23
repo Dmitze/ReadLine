@@ -204,7 +204,7 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
       const statusEmoji = getStatusEmoji(request.status);
 
       let message = `📋 <b>ЗАЯВКА №${request.id}</b>\n\n`;
-      message += `━━━━━━━━━━━━━━━━━━━\n\n`;
+      message += '━━━━━━━━━━━━━━━━━━━\n\n';
       message += `👤 <b>Користувач ID:</b> ${request.user_id}\n\n`;
       message += `📖 <b>Книга:</b> ${request.book_title}\n`;
       message += `✍️ <b>Автор:</b> ${request.book_author}\n`;
@@ -388,7 +388,7 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
 
       // Оновлюємо повідомлення
       await ctx.editMessageText(
-        `✅ <b>КНИГУ ВИДАНО</b>\n\n` +
+        '✅ <b>КНИГУ ВИДАНО</b>\n\n' +
           `📅 Термін повернення: ${days} днів\n\n` +
           'Користувач отримав сповіщення.',
         {
