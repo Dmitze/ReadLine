@@ -80,10 +80,31 @@ export class BookRepository extends BaseRepository<Book> {
         return 0;
       }
 
-      const fields = Object.keys(updates)
-        .map((key) => `${key} = ?`)
+      // Валідний список дозволених полів
+      const allowedFields = [
+        'title', 'author', 'genre', 'description', 'photo_file_id',
+        'file_url', 'audio_file_id', 'online_link', 'file_type', 'file_name',
+        'rating', 'reviews_count', 'downloads_count', 'is_available',
+        'is_physically_available'
+      ];
+
+      // Фільтруємо тільки дозволені поля
+      const validUpdates: Record<string, any> = {};
+      for (const [key, value] of Object.entries(updates)) {
+        if (allowedFields.includes(key)) {
+          validUpdates[key] = value;
+        }
+      }
+
+      if (Object.keys(validUpdates).length === 0) {
+        return 0;
+      }
+
+      // Екранюємо назви полів через whitelist
+      const fields = Object.keys(validUpdates)
+        .map((key) => `"${key}" = ?`)  // ✅ Використовуємо whitelist
         .join(', ');
-      const values = Object.values(updates);
+      const values = Object.values(validUpdates);
 
       const query = `UPDATE books SET ${fields} WHERE id = ?`;
       const changes = await this.db.update(query, [...values, bookId]);
@@ -188,10 +209,10 @@ export class BookRepository extends BaseRepository<Book> {
     try {
       const pattern = `%${searchTerm}%`;
       const query = `
-        SELECT * FROM books 
-        WHERE LOWER(title) LIKE LOWER(?) 
-           OR LOWER(author) LIKE LOWER(?)
-           OR LOWER(genre) LIKE LOWER(?)
+        SELECT * FROM books
+        WHERE title LIKE ? COLLATE NOCASE
+           OR author LIKE ? COLLATE NOCASE
+           OR genre LIKE ? COLLATE NOCASE
         ORDER BY rating DESC
         LIMIT ?
       `;
@@ -333,8 +354,8 @@ export class BookRepository extends BaseRepository<Book> {
   async getByAuthor(author: string, limit?: number): Promise<Book[]> {
     try {
       let query = `
-        SELECT * FROM books 
-        WHERE LOWER(author) = LOWER(?)
+        SELECT * FROM books
+        WHERE author = ? COLLATE NOCASE
         ORDER BY rating DESC
       `;
       const params: any[] = [author];
