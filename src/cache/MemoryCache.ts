@@ -44,9 +44,11 @@ export class MemoryCache {
   set<T>(key: string, value: T, ttl?: number): void {
     const actualTTL = ttl || this.defaultTTL;
 
-    // Очистити старий таймер
-    if (this.timers.has(key)) {
-      clearTimeout(this.timers.get(key)!);
+    // ✅ Атомарна операція - завжди очищаємо старий таймер
+    const oldTimer = this.timers.get(key);
+    if (oldTimer) {
+      clearTimeout(oldTimer);
+      this.timers.delete(key);
     }
 
     this.cache.set(key, {
@@ -55,8 +57,14 @@ export class MemoryCache {
       ttl: actualTTL,
     });
 
-    // Встановити новий таймер для автоматичного видалення
-    const timer = setTimeout(() => this.delete(key), actualTTL);
+    // ✅ Створюємо новий таймер тільки після очищення старого
+    const timer = setTimeout(() => {
+      // ✅ Додаткова перевірка що таймер ще актуальний
+      if (this.timers.get(key) === timer) {
+        this.delete(key);
+      }
+    }, actualTTL);
+
     this.timers.set(key, timer);
   }
 
