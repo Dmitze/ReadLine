@@ -1,7 +1,29 @@
 import { Book } from '../database/models';
+import { BotContext } from '../types/telegraf';
 
-// Format book caption for display with beautiful emojis
-// ✅ ОПТИМІЗОВАНО: можна передати теги щоб уникнути додаткового запиту
+/**
+ * Safe parseInt function with NaN validation
+ * Prevents SQL injection and logical errors from malformed input
+ */
+export function safeParseInt(value: string | number, defaultValue: number = 0): number {
+  const parsed = parseInt(String(value), 10);
+  return isNaN(parsed) ? defaultValue : parsed;
+}
+
+/**
+ * Safe parseFloat function with NaN validation
+ */
+export function safeParseFloat(value: string | number, defaultValue: number = 0): number {
+  const parsed = parseFloat(String(value));
+  return isNaN(parsed) ? defaultValue : parsed;
+}
+
+/**
+ * Format book caption for display with beautiful emojis and detailed information
+ * @param book - Book object to format
+ * @param tags - Optional pre-loaded tags to avoid additional database query
+ * @returns Formatted HTML caption string for Telegram message
+ */
 export const formatBookCaption = async (
   book: Book,
   tags?: Array<{ name: string }>
@@ -73,7 +95,7 @@ export const formatBookCaption = async (
     }
     caption += '\n\n';
   } else {
-    caption += `⭐ <b>Рейтинг:</b> Ще не оцінена\n\n`;
+    caption += '⭐ <b>Рейтинг:</b> Ще не оцінена\n\n';
   }
 
   // ✅ НОВЕ: Розширена інформація про книгу (розподіл рейтингів, вікові обмеження, варнінги)
@@ -161,7 +183,7 @@ export const formatBookCaption = async (
   }
 
   // Фізична наявність
-  const physicalAvailable = (book as any).is_physically_available;
+  const physicalAvailable = (book as Book & { is_physically_available?: boolean }).is_physically_available;
   if (physicalAvailable) {
     caption += '📚 <b>ФІЗИЧНА НАЯВНІСТЬ:</b>\n';
     caption += '   ✅ Книга є в бібліотеці Галичини\n';
@@ -193,7 +215,11 @@ export const formatBookCaption = async (
   return caption;
 };
 
-// Емодзі для жанрів
+/**
+ * Get emoji for book genre
+ * @param genre - Book genre name
+ * @returns Emoji string for the genre
+ */
 function getGenreEmoji(genre: string): string {
   const genreMap: { [key: string]: string } = {
     Фантастика: '🚀',
@@ -217,6 +243,11 @@ function getGenreEmoji(genre: string): string {
 }
 
 // ✅ НОВЕ: Отримати мітку вікового обмеження
+/**
+ * Get age restriction label for book
+ * @param age - Minimum age for the book
+ * @returns Formatted age label with emoji
+ */
 function getAgeLabel(age: number): string {
   const ageMap: { [key: number]: string } = {
     0: '✅ Для всіх',
@@ -229,6 +260,11 @@ function getAgeLabel(age: number): string {
 }
 
 // ✅ НОВЕ: Отримати мітку для варнінгу вмісту
+/**
+ * Get content warning label for book
+ * @param warning - Warning type identifier
+ * @returns Human-readable warning label
+ */
 function getWarningLabel(warning: string): string {
   const warningMap: { [key: string]: string } = {
     violence: 'Насильство',
@@ -246,6 +282,11 @@ function getWarningLabel(warning: string): string {
 }
 
 // Правильне відмінювання слова "відгук"
+/**
+ * Get correct Ukrainian plural form for "review"
+ * @param count - Number of reviews
+ * @returns Correctly declined word
+ */
 function getReviewsWord(count: number): string {
   if (count % 10 === 1 && count % 100 !== 11) return 'відгук';
   if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20))
@@ -254,6 +295,11 @@ function getReviewsWord(count: number): string {
 }
 
 // Правильне відмінювання слова "завантаження"
+/**
+ * Get correct Ukrainian plural form for "download"
+ * @param count - Number of downloads
+ * @returns Correctly declined word
+ */
 function getDownloadsWord(count: number): string {
   if (count % 10 === 1 && count % 100 !== 11) return 'завантаження';
   if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20))
@@ -261,6 +307,11 @@ function getDownloadsWord(count: number): string {
   return 'завантажень';
 }
 
+/**
+ * Escape HTML special characters to prevent XSS
+ * @param text - Text to escape
+ * @returns HTML-safe text
+ */
 export const escapeHtml = (text: string): string => {
   return text
     .replace(/&/g, '&amp;')
@@ -270,23 +321,34 @@ export const escapeHtml = (text: string): string => {
     .replace(/'/g, '&#39;');
 };
 
-// ✅ НОВЕ: Отримати ID як текст для вставки в caption
+/**
+ * Get book ID as formatted text for caption insertion
+ * @param bookId - Book ID number
+ * @returns Formatted ID text or empty string if no ID
+ */
 export const getBookIdText = (bookId?: number): string => {
   if (!bookId) return '';
   return `\n🆔 ID: <code>${bookId}</code>`;
 };
 
 /**
- *
- Animated loading messages
+ * Show animated loading message
+ * @param ctx - Bot context
+ * @param message - Loading message text
+ * @returns Message ID for later updates
  */
-import { BotContext } from '../types/telegraf';
-
 export async function showLoadingAnimation(ctx: BotContext, message: string): Promise<number> {
   const loadingMsg = await ctx.reply(`⏳ ${message}...`);
   return loadingMsg.message_id;
 }
 
+/**
+ * Update loading message with new text
+ * @param ctx - Bot context
+ * @param messageId - ID of message to update
+ * @param newText - New message text
+ * @param emoji - Emoji to prepend to message
+ */
 export async function updateLoadingMessage(
   ctx: BotContext,
   messageId: number,
@@ -301,7 +363,10 @@ export async function updateLoadingMessage(
 }
 
 /**
- * Progress indicator
+ * Create visual progress bar string
+ * @param current - Current progress value
+ * @param total - Total progress value
+ * @returns Progress bar string with filled/empty circles
  */
 export function createProgressBar(current: number, total: number): string {
   const filled = Math.round((current / total) * 5);
@@ -309,6 +374,13 @@ export function createProgressBar(current: number, total: number): string {
   return '⬤'.repeat(filled) + '○'.repeat(empty);
 }
 
+/**
+ * Format step progress with progress bar and step name
+ * @param currentStep - Current step number (1-based)
+ * @param totalSteps - Total number of steps
+ * @param stepName - Name/description of current step
+ * @returns Formatted progress string
+ */
 export function formatStepProgress(
   currentStep: number,
   totalSteps: number,
