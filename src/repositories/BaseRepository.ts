@@ -157,9 +157,13 @@ export abstract class BaseRepository<T extends { id?: number }> {
 
   /**
    * Update an entity
+   * ⚠️  WARNING: This base implementation is vulnerable to SQL injection
+   * Child classes should override this method with proper field whitelisting
    */
   async update(id: number, data: Partial<Omit<T, 'id'>>): Promise<number> {
     try {
+      // ⚠️  SECURITY RISK: No field validation in base class
+      // Child classes must override this method with proper whitelisting
       const keys = Object.keys(data);
       const values = Object.values(data) as SQLParameters;
       values.push(id);
