@@ -59,15 +59,15 @@ export const getAdaptiveMainMenuKeyboard = (ctx: Context, withQuickActions: bool
 
   // Всі доступні кнопки
   const allButtons = [
-    '📖 Каталог',
-    '🏆 Топ книги',
+    '📚 Бібліотека',
+    '⭐ Топ книги',
     '🆕 Новинки',
-    '💾 Моя бібліотека',
+    '❤️ Мої улюблені',
     '👤 Профіль',
     '🤖 AI Помічник',
-    '🎁 Отримати промокод',
-    'ℹ️ Допомога',
-    "📞 Зворотній зв'язок",
+    '🎁 Промокод',
+    '❓ Допомога',
+    "💬 Зворотній зв'язок",
   ];
 
   // Розбиваємо кнопки на рядки відповідно до типу пристрою
@@ -94,8 +94,8 @@ export const getMainMenuKeyboard = () => {
     ['📖 Каталог', '🏆 Топ книги'],
     ['🆕 Новинки', '💾 Моя бібліотека'],
     ['👤 Профіль', '🤖 AI Помічник'],
-    ['🎁 Отримати промокод', '📚 Замовити фізичну книгу'],
-    ['ℹ️ Допомога', "📞 Зворотній зв'язок"],
+    ['🎁 Отримати промокод', "📞 Зворотній зв'язок"],
+    ['ℹ️ Допомога'],
   ];
 
   return Markup.keyboard(buttons).resize().oneTime().reply_markup;
@@ -129,9 +129,9 @@ export const getAdaptiveGenreKeyboard = (ctx: Context, genres: string[]) => {
 export const getGenreKeyboard = (genres: string[]) => {
   const keyboard = genres.map((genre, index) => [
     // Використовуємо індекс замість повного тексту для callback_data (обмеження 64 байти)
-    Markup.button.callback(genre, `genre_${index}`)
+    Markup.button.callback(genre, `genre_${index}`),
   ]);
-  
+
   keyboard.push([Markup.button.callback('⬅️ Назад', 'catalog_books')]);
 
   return Markup.inlineKeyboard(keyboard).reply_markup;
@@ -226,9 +226,7 @@ export const getEnhancedBookKeyboard = (book: Book, isSaved: boolean = false) =>
 
   // Кнопка замовлення фізичної книги (якщо доступна)
   if ((book as any).is_physically_available) {
-    keyboard.push([
-      Markup.button.callback('📋 Замовити книгу', `order_book_${book.id}`)
-    ]);
+    keyboard.push([Markup.button.callback('📋 Замовити книгу', `order_book_${book.id}`)]);
   }
 
   // Перший рядок - доступні формати (динамічно)

@@ -378,13 +378,12 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
       reply_markup: Markup.inlineKeyboard([
         [
           Markup.button.callback('📖 Каталог', 'catalog_genres'),
-          Markup.button.callback('🔍 Пошук', 'start_search'),
+          Markup.button.callback('🤖 AI Помічник', 'start_ai'),
         ],
         [
-          Markup.button.callback('🤖 AI Помічник', 'start_ai'),
           Markup.button.callback('👤 Профіль', 'view_profile'),
+          Markup.button.callback('🏠 На головну', 'home'),
         ],
-        [Markup.button.callback('🏠 На головну', 'home')],
       ]).reply_markup,
     });
 
@@ -418,6 +417,37 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
       await ctx.scene.enter('PROFILE_SCENE');
     } catch (error) {
       logger.error('Error viewing profile from help', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  // Обработчик feedback callback
+  bot.action('feedback', async (ctx) => {
+    try {
+      await ctx.answerCbQuery();
+      await ctx.scene.enter('FEEDBACK_SCENE');
+    } catch (error) {
+      logger.error('Error starting feedback from callback', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  // Обработчик catalog callback
+  bot.action('catalog', async (ctx) => {
+    try {
+      await ctx.answerCbQuery();
+      await ctx.reply('📚 <b>КАТАЛОГ</b>\n\n' + 'Оберіть розділ:', {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+          [
+            Markup.button.callback('📖 Книги', 'catalog_books'),
+            Markup.button.callback('🎙️ Підкасти', 'catalog_podcasts'),
+          ],
+        ]).reply_markup,
+      });
+      logger.userAction(ctx.from!.id, 'view_catalog_main_callback');
+    } catch (error) {
+      logger.error('Error showing catalog from callback', error, { userId: ctx.from?.id });
       await ctx.answerCbQuery('❌ Помилка');
     }
   });
