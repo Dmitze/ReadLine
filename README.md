@@ -630,7 +630,8 @@ docker exec readline-redis redis-cli ping
 ### Крок 5: Інітіалізація бази даних
 
 ```bash
-npm run build
+
+
 npm run init-admin
 ```
 
