@@ -44,7 +44,12 @@ settingsScene.action('settings_keyboard', async (ctx) => {
 });
 
 // Вибір типу клавіатури
-settingsScene.action(/^keyboard_(mobile|tablet|desktop)$/, async (ctx) => {
+settingsScene.action(/keyboard_(mobile|tablet|desktop)/, async (ctx) => {
+  if (!ctx.match) {
+    await ctx.answerCbQuery('❌ Помилка');
+    return;
+  }
+
   const deviceType = ctx.match[1] as 'mobile' | 'tablet' | 'desktop';
   const userId = ctx.from?.id;
 
@@ -53,32 +58,39 @@ settingsScene.action(/^keyboard_(mobile|tablet|desktop)$/, async (ctx) => {
     return;
   }
 
-  const success = setUserKeyboardPreference(userId, deviceType);
+  try {
+    const success = setUserKeyboardPreference(userId, deviceType);
 
-  if (success) {
-    const deviceNames = {
-      mobile: '📱 Мобільний',
-      tablet: '📲 Планшет',
-      desktop: '💻 Десктоп',
-    };
+    if (success) {
+      const deviceNames = {
+        mobile: '📱 Мобільний',
+        tablet: '📲 Планшет',
+        desktop: '💻 Десктоп',
+      };
 
-    await ctx.answerCbQuery('✅ Збережено');
-    await ctx.editMessageText(
-      '✅ <b>Тип клавіатури змінено</b>\n\n' +
-        `Обрано: ${deviceNames[deviceType]}\n\n` +
-        'Зміни застосуються при наступному відкритті меню.',
-      {
-        parse_mode: 'HTML',
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: '⬅️ Назад до налаштувань', callback_data: 'settings_back' }],
-            [{ text: '🏠 На головну', callback_data: 'settings_exit' }],
-          ],
-        },
-      }
-    );
-  } else {
-    await ctx.answerCbQuery('❌ Помилка збереження');
+      await ctx.answerCbQuery('✅ Збережено');
+      await ctx.editMessageText(
+        '✅ <b>Тип клавіатури змінено</b>\n\n' +
+          `Обрано: ${deviceNames[deviceType]}\n\n` +
+          'Зміни застосуються при наступному відкритті меню.',
+        {
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '⬅️ Назад до налаштувань', callback_data: 'settings_back' }],
+              [{ text: '🏠 На головну', callback_data: 'settings_exit' }],
+            ],
+          },
+        }
+      );
+
+      logger.userAction(userId, 'change_keyboard_type', { deviceType });
+    } else {
+      await ctx.answerCbQuery('❌ Помилка збереження');
+    }
+  } catch (error) {
+    logger.error('Error changing keyboard type', error as Error, { userId });
+    await ctx.answerCbQuery('❌ Помилка');
   }
 });
 
@@ -209,7 +221,12 @@ settingsScene.action('notif_frequency', async (ctx) => {
 });
 
 // Встановити частоту
-settingsScene.action(/^freq_(daily|every_4_days|weekly|disabled)$/, async (ctx) => {
+settingsScene.action(/freq_(daily|every_4_days|weekly|disabled)/, async (ctx) => {
+  if (!ctx.match) {
+    await ctx.answerCbQuery('❌ Помилка');
+    return;
+  }
+
   const userId = ctx.from?.id;
   if (!userId) {
     await ctx.answerCbQuery('❌ Помилка');
