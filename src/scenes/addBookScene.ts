@@ -688,7 +688,7 @@ addBookScene.action(/^confirm_book_(\d+)$/, async (ctx: BotContext) => {
   };
 
   if (state.bookFile) {
-    bookData.file_url = state.bookFile;
+    bookData.pdf_file_id = state.bookFile;
     bookData.file_name = state.bookFileName;
   }
   if (state.bookAudio) {
@@ -744,7 +744,7 @@ addBookScene.action(/^confirm_book_(\d+)$/, async (ctx: BotContext) => {
       reply_markup: {
         remove_keyboard: true,
         inline_keyboard: [[
-          { text: '🏠 Назад до адмін-панелі', callback_data: `back_to_admin_${ctx.from?.id}` }
+          { text: '🏠 Назад до адмін-панелі', callback_data: 'back_to_admin' }
         ]],
       },
     });
@@ -769,47 +769,7 @@ addBookScene.action(/^cancel_book_(\d+)$/, async (ctx: BotContext) => {
   return ctx.scene.leave();
 });
 
-addBookScene.action(/^back_to_admin_(\d+)$/, async (ctx: BotContext) => {
-  await ctx.answerCbQuery();
 
-  const { isAdmin, getAdminStats, getPendingReviews, getPendingFeedbackMessages } =
-    await import('../database/models');
-  const { getAdminMenuKeyboard } = await import('../keyboards/adminKeyboards');
-
-  const adminCheck = await isAdmin(ctx.from!.id);
-  if (!adminCheck) {
-    await ctx.reply('❌ У вас немає доступу до адмін-панелі.');
-    return ctx.scene!.leave();
-  }
-
-  const stats = await getAdminStats();
-  const pendingReviews = await getPendingReviews();
-  const pendingFeedback = await getPendingFeedbackMessages();
-
-  const reviewsAlert = pendingReviews.length > 0
-    ? `📝 Відгуків на модерацію: <b>${pendingReviews.length}</b> 🔔`
-    : '✅ Всі відгуки оброблені';
-
-  const feedbackAlert = pendingFeedback.length > 0
-    ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
-    : '✅ Всі повідомлення прочитані';
-
-  await ctx.deleteMessage().catch(() => {});
-
-  await ctx.reply(
-    '🛠️ <b>Панель адміністратора</b>\n\n' +
-      '📊 <b>Статистика:</b>\n' +
-      `📚 Книг в каталозі: ${stats.totalBooks}\n` +
-      `${reviewsAlert}\n` +
-      `${feedbackAlert}`,
-    {
-      parse_mode: 'HTML',
-      reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length),
-    }
-  );
-
-  await ctx.scene!.leave();
-});
 
 addBookScene.command('cancel', async (ctx) => {
   await ctx.reply('❌ Додавання книги скасовано', {
