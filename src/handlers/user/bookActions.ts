@@ -246,19 +246,29 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
       await incrementDownloads(bookId);
 
       try {
-        if (book.pdf_file_id) {
-          // Спробуємо відправити файл через Telegram
+        // Спробуємо відправити файл через Telegram (перевіряємо обидва поля на сумісність)
+        const telegramFileId = book.pdf_file_id || book.file_url;
+        
+        logger.info('PDF download attempt', {
+          bookId,
+          hasTelegramFileId: !!telegramFileId,
+          fileIdStart: telegramFileId ? telegramFileId.substring(0, 10) : 'none',
+          isValidTelegramId: telegramFileId ? /^[A-Za-z0-9_-]+$/.test(telegramFileId) : false,
+        });
+        
+        if (telegramFileId && /^[A-Za-z0-9_-]+$/.test(telegramFileId)) {
+          // Це Telegram file_id (всі символи - буквы, цифры, дефіси, підкреслення)
           logger.info('Sending PDF via Telegram file_id', {
             bookId,
-            fileIdLength: book.pdf_file_id.length,
+            fileIdLength: telegramFileId.length,
           });
 
-          await ctx.replyWithDocument(book.pdf_file_id, {
+          await ctx.replyWithDocument(telegramFileId, {
             caption: `📄 ${book.title} - ${book.author}`,
           });
 
           logger.info('PDF sent successfully', { bookId, userId: ctx.from?.id });
-        } else if (book.file_url) {
+        } else if (book.file_url && (book.file_url.startsWith('http://') || book.file_url.startsWith('https://'))) {
           // Якщо є зовнішнє посилання, відправляємо його
           logger.info('Sending PDF via URL', { bookId, urlLength: book.file_url.length });
 
@@ -267,6 +277,12 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
           });
 
           logger.info('PDF URL sent successfully', { bookId, userId: ctx.from?.id });
+        } else {
+          logger.warn('No valid PDF file ID or URL', {
+            bookId,
+            telegramFileId: telegramFileId ? 'present' : 'missing',
+            fileUrl: book.file_url ? 'present' : 'missing',
+          });
         }
       } catch (fileError) {
         logger.error(
@@ -332,24 +348,27 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
        }
 
        if (!book.epub_file_id && !book.epub_url) {
-         await ctx.reply('❌ Портативна версія не готова для цієї легенди');
-         return;
-       }
-
-      await incrementDownloads(bookId);
-
-      try {
-        if (book.epub_file_id) {
-          await ctx.replyWithDocument(book.epub_file_id, {
-            caption: `📱 ${book.title} - ${book.author}`,
-          });
-        } else if (book.epub_url) {
-          await ctx.reply(`📥 Посилання для завантаження EPUB:\n\n${book.epub_url}`, {
-            disable_web_page_preview: false,
-          });
-        } else {
-          throw new Error('EPUB file not available');
+          await ctx.reply('❌ Портативна версія не готова для цієї легенди');
+          return;
         }
+
+       await incrementDownloads(bookId);
+
+       try {
+         const telegramFileId = book.epub_file_id || book.epub_url;
+         
+         if (telegramFileId && telegramFileId.startsWith('BQAc')) {
+           // Це Telegram file_id
+           await ctx.replyWithDocument(telegramFileId, {
+             caption: `📱 ${book.title} - ${book.author}`,
+           });
+         } else if (book.epub_url && (book.epub_url.startsWith('http://') || book.epub_url.startsWith('https://'))) {
+           await ctx.reply(`📥 Посилання для завантаження EPUB:\n\n${book.epub_url}`, {
+             disable_web_page_preview: false,
+           });
+         } else {
+           throw new Error('EPUB file not available');
+         }
       } catch (fileError) {
         logger.error(
           'Error sending EPUB file',
