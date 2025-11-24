@@ -50,6 +50,7 @@ const getAdaptiveMainMenuKeyboard = (ctx, withQuickActions = true) => {
         '👤 Профіль',
         '🤖 AI Помічник',
         '🎁 Промокод',
+        '⚙️ Налаштування',
         '❓ Допомога',
         "💬 Зворотній зв'язок",
     ];

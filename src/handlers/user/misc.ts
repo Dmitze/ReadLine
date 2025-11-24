@@ -319,6 +319,24 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
     );
   });
 
+  // Налаштування
+  bot.hears('⚙️ Налаштування', async (ctx: BotContext) => {
+    await ctx.scene.enter('SETTINGS_SCENE');
+    logger.userAction(ctx.from!.id, 'view_settings');
+  });
+
+  // Action handler для налаштувань (для inline клавіатури)
+  bot.action('settings_scene', async (ctx: BotContext) => {
+    try {
+      await ctx.answerCbQuery();
+      await ctx.scene.enter('SETTINGS_SCENE');
+      logger.userAction(ctx.from!.id, 'view_settings');
+    } catch (error) {
+      logger.error('Error entering settings scene', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
   // Профиль
   bot.hears([BUTTONS.PROFILE_OLD, BUTTONS.PROFILE], async (ctx: BotContext) => {
     await ctx.scene.enter('PROFILE_SCENE');
@@ -448,6 +466,84 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
       logger.userAction(ctx.from!.id, 'view_catalog_main_callback');
     } catch (error) {
       logger.error('Error showing catalog from callback', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  // Обработчик для динамічних меню кнопок (menu_* callbacks з адаптивної клавіатури)
+  bot.action(/^menu_/, async (ctx) => {
+    try {
+      await ctx.answerCbQuery();
+      const match = ctx.match;
+      if (!match || !match[0]) {
+        await ctx.answerCbQuery('❌ Помилка');
+        return;
+      }
+
+      const callbackData = match[0];
+      const buttonName = callbackData.replace('menu_', '').replace(/_/g, ' ');
+
+      // Маппінг для кнопок головного меню
+      const menuMap: { [key: string]: string } = {
+        '📚 Бібліотека': 'catalog_books',
+        '⭐ Топ книги': 'top_books',
+        '🆕 Новинки': 'new_books',
+        '❤️ Мої улюблені': 'saved_books',
+        '👤 Профіль': 'view_profile',
+        '🤖 AI Помічник': 'start_ai',
+        '🎁 Промокод': 'confirm_get_promocode',
+        '⚙️ Налаштування': 'settings_scene',
+        '❓ Допомога': 'help',
+        '💬 Зворотній зв\'язок': 'feedback',
+      };
+
+      // Отримуємо дію з маппінгу
+      const action = menuMap[buttonName];
+
+      if (!action) {
+        logger.warn('Unknown menu button', { buttonName, callbackData });
+        await ctx.answerCbQuery('Невідома дія');
+        return;
+      }
+
+      // Виходимо зі сцени перед входом в нову
+      if (ctx.scene) {
+        await ctx.scene.leave();
+      }
+
+      if (action === 'catalog_books') {
+        await ctx.scene.enter('CATALOG_SCENE');
+      } else if (action === 'top_books') {
+        await ctx.reply(
+          '🏆 <b>ТОП КНИГИ</b>\n\n' +
+            'Завантаження топ книг за рейтингом...',
+          { parse_mode: 'HTML' }
+        );
+      } else if (action === 'new_books') {
+        await ctx.reply(
+          '🆕 <b>НОВИНКИ</b>\n\n' +
+            'Завантаження нових книг...',
+          { parse_mode: 'HTML' }
+        );
+      } else if (action === 'saved_books') {
+        await ctx.reply(
+          '❤️ <b>МОЇ УЛЮБЛЕНІ</b>\n\n' +
+            'Завантаження ваших улюблених книг...',
+          { parse_mode: 'HTML' }
+        );
+      } else if (action === 'settings_scene') {
+        await ctx.scene.enter('SETTINGS_SCENE');
+      } else if (action === 'feedback') {
+        await ctx.scene.enter('FEEDBACK_SCENE');
+      } else if (action === 'start_ai') {
+        await ctx.scene.enter('AI_SCENE');
+      } else if (action === 'view_profile') {
+        await ctx.scene.enter('PROFILE_SCENE');
+      }
+
+      logger.userAction(ctx.from?.id || 0, `menu_action_${action}`);
+    } catch (error) {
+      logger.error('Error handling menu action', error, { userId: ctx.from?.id });
       await ctx.answerCbQuery('❌ Помилка');
     }
   });

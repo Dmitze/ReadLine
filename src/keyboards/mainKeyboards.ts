@@ -66,6 +66,7 @@ export const getAdaptiveMainMenuKeyboard = (ctx: Context, withQuickActions: bool
     '👤 Профіль',
     '🤖 AI Помічник',
     '🎁 Промокод',
+    '⚙️ Налаштування',
     '❓ Допомога',
     "💬 Зворотній зв'язок",
   ];
