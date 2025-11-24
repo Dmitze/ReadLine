@@ -49,15 +49,15 @@ const editBookScene = new Scenes.WizardScene(
     wizardState.book = book;
 
     const bookInfo = `
-📖 *Поточні дані книги:*${getBookIdText(book.id)}
+<b>📖 Поточні дані книги:</b>${getBookIdText(book.id)}
 
-📚 Назва: ${book.title}
-👤 Автор: ${book.author}
-🎭 Жанр: ${book.genre}
-📝 Опис: ${book.description}
-📊 Рейтинг: ${book.rating || 0}/5 (${book.reviews_count || 0} відгуків)
-📥 Завантажень: ${book.downloads_count || 0}
-✅ Доступна: ${book.is_available ? 'Так' : 'Ні'}
+<b>📚 Назва:</b> ${book.title}
+<b>👤 Автор:</b> ${book.author}
+<b>🎭 Жанр:</b> ${book.genre}
+<b>📝 Опис:</b> ${book.description}
+<b>📊 Рейтинг:</b> ${book.rating || 0}/5 (${book.reviews_count || 0} відгуків)
+<b>📥 Завантажень:</b> ${book.downloads_count || 0}
+<b>✅ Доступна:</b> ${book.is_available ? 'Так' : 'Ні'}
       `.trim();
 
     await ctx.reply(bookInfo, {
@@ -522,13 +522,13 @@ const editBookScene = new Scenes.WizardScene(
         }
 
         await ctx.editMessageText(
-          '📝 *Редагування книги*\n\n' +
+          '<b>📝 Редагування книги</b>\n\n' +
             `📖 ${state.book.title}\n` +
             `👤 ${state.book.author}\n\n` +
             `✅ Жанри змінено на: ${state.selectedGenres.join(', ')}\n\n` +
             'Оберіть що хочете змінити або збережіть зміни:',
           {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: Markup.inlineKeyboard([
               [Markup.button.callback('📖 Назва', 'edit_title')],
               [Markup.button.callback('👤 Автор', 'edit_author')],
@@ -564,13 +564,13 @@ const editBookScene = new Scenes.WizardScene(
         }
 
         await ctx.editMessageText(
-          '📝 *Редагування книги*\n\n' +
+          '<b>📝 Редагування книги</b>\n\n' +
             `📖 ${state.book.title}\n` +
             `👤 ${state.book.author}\n\n` +
             `✅ Доступність змінено на: ${isAvailable ? 'Доступна' : 'Недоступна'}\n\n` +
             'Оберіть що хочете змінити або збережіть зміни:',
           {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: Markup.inlineKeyboard([
               [Markup.button.callback('📖 Назва', 'edit_title')],
               [Markup.button.callback('👤 Автор', 'edit_author')],
