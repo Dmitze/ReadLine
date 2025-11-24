@@ -106,6 +106,36 @@ export const getAllPodcasts = (): Promise<Podcast[]> => {
 };
 
 /**
+ * Отримати всі підкасти з пагінацією
+ */
+export const getAllPodcastsWithPagination = (
+  limit: number = 10,
+  offset: number = 0
+): Promise<{ podcasts: Podcast[]; total: number }> => {
+  return new Promise((resolve, reject) => {
+    db.get(
+      'SELECT COUNT(*) as total FROM podcasts WHERE is_available = 1',
+      [],
+      (err, countRow: any) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        db.all(
+          'SELECT * FROM podcasts WHERE is_available = 1 ORDER BY created_at DESC LIMIT ? OFFSET ?',
+          [limit, offset],
+          (err, rows: Podcast[]) => {
+            if (err) reject(err);
+            else resolve({ podcasts: rows || [], total: countRow?.total || 0 });
+          }
+        );
+      }
+    );
+  });
+};
+
+/**
  * Отримати підкаст за ID
  */
 export const getPodcastById = (podcastId: number): Promise<Podcast | undefined> => {
