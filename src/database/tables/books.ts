@@ -20,6 +20,7 @@ export const addBook = (
       genre,
       description,
       photo_file_id,
+      pdf_file_id,
       file_url,
       audio_file_id,
       online_link,
@@ -33,10 +34,10 @@ export const addBook = (
     const query = `
       INSERT INTO books (
         title, author, genre, description, photo_file_id,
-        file_url, audio_file_id, online_link,
+        pdf_file_id, file_url, audio_file_id, online_link,
         file_type, file_name, isbn, language, is_available, is_physically_available
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
     `;
 
     db.run(
@@ -47,6 +48,7 @@ export const addBook = (
         genre,
         description,
         photo_file_id,
+        pdf_file_id || null,
         file_url || null,
         audio_file_id || null,
         online_link || null,
