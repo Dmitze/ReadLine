@@ -142,6 +142,148 @@ export const getHighRatedBooks = (minRating: number = 4, limit: number = 10): Pr
 };
 
 /**
+ * Отримати книги з високим рейтингом з пагінацією
+ * @param minRating - Мінімальний рейтинг (за замовчуванням 4)
+ * @param limit - Максимальна кількість книг (за замовчуванням 10)
+ * @param offset - Зміщення для пагінації (за замовчуванням 0)
+ * @returns Об'єкт з масивом книг та загальною кількістю
+ */
+export const getHighRatedBooksWithPagination = (
+  minRating: number = 4,
+  limit: number = 10,
+  offset: number = 0
+): Promise<{ books: Book[]; total: number }> => {
+  return new Promise((resolve, reject) => {
+    db.get(
+      'SELECT COUNT(*) as total FROM books WHERE rating >= ? AND is_available = 1',
+      [minRating],
+      (err, countRow: CountRow | undefined) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        db.all(
+          'SELECT * FROM books WHERE rating >= ? AND is_available = 1 ORDER BY rating DESC, reviews_count DESC LIMIT ? OFFSET ?',
+          [minRating, limit, offset],
+          (err, rows: Book[]) => {
+            if (err) reject(err);
+            else resolve({ books: rows, total: countRow?.total || 0 });
+          }
+        );
+      }
+    );
+  });
+};
+
+/**
+ * Отримати нові книги з пагінацією
+ * @param limit - Максимальна кількість книг (за замовчуванням 10)
+ * @param offset - Зміщення для пагінації (за замовчуванням 0)
+ * @returns Об'єкт з масивом книг та загальною кількістю
+ */
+export const getNewestBooksWithPagination = (
+  limit: number = 10,
+  offset: number = 0
+): Promise<{ books: Book[]; total: number }> => {
+  return new Promise((resolve, reject) => {
+    db.get(
+      'SELECT COUNT(*) as total FROM books WHERE is_available = 1',
+      [],
+      (err, countRow: CountRow | undefined) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        db.all(
+          'SELECT * FROM books WHERE is_available = 1 ORDER BY created_at DESC LIMIT ? OFFSET ?',
+          [limit, offset],
+          (err, rows: Book[]) => {
+            if (err) reject(err);
+            else resolve({ books: rows, total: countRow?.total || 0 });
+          }
+        );
+      }
+    );
+  });
+};
+
+/**
+ * Отримати книги з аудіо з пагінацією
+ * @param limit - Максимальна кількість книг (за замовчуванням 10)
+ * @param offset - Зміщення для пагінації (за замовчуванням 0)
+ * @returns Об'єкт з масивом книг та загальною кількістю
+ */
+export const getBooksWithAudioWithPagination = (
+  limit: number = 10,
+  offset: number = 0
+): Promise<{ books: Book[]; total: number }> => {
+  return new Promise((resolve, reject) => {
+    db.get(
+      `SELECT COUNT(*) as total FROM books WHERE (
+        audio_file_id IS NOT NULL 
+        OR audio_external_link IS NOT NULL 
+        OR file_type = 'audio'
+      ) AND is_available = 1`,
+      [],
+      (err, countRow: CountRow | undefined) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        db.all(
+          `SELECT * FROM books WHERE (
+            audio_file_id IS NOT NULL 
+            OR audio_external_link IS NOT NULL 
+            OR file_type = 'audio'
+          ) AND is_available = 1 ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+          [limit, offset],
+          (err, rows: Book[]) => {
+            if (err) reject(err);
+            else resolve({ books: rows, total: countRow?.total || 0 });
+          }
+        );
+      }
+    );
+  });
+};
+
+/**
+ * Отримати популярні книги з пагінацією (за завантаженнями)
+ * @param limit - Максимальна кількість книг (за замовчуванням 10)
+ * @param offset - Зміщення для пагінації (за замовчуванням 0)
+ * @returns Об'єкт з масивом книг та загальною кількістю
+ */
+export const getMostDownloadedBooksWithPagination = (
+  limit: number = 10,
+  offset: number = 0
+): Promise<{ books: Book[]; total: number }> => {
+  return new Promise((resolve, reject) => {
+    db.get(
+      'SELECT COUNT(*) as total FROM books WHERE is_available = 1',
+      [],
+      (err, countRow: CountRow | undefined) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        db.all(
+          'SELECT * FROM books WHERE is_available = 1 ORDER BY downloads_count DESC, created_at DESC LIMIT ? OFFSET ?',
+          [limit, offset],
+          (err, rows: Book[]) => {
+            if (err) reject(err);
+            else resolve({ books: rows, total: countRow?.total || 0 });
+          }
+        );
+      }
+    );
+  });
+};
+
+/**
  * Отримати книги за алфавітом
  * @param limit - Максимальна кількість книг (за замовчуванням 10)
  * @param offset - Зміщення для пагінації (за замовчуванням 0)
