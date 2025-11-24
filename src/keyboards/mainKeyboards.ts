@@ -12,9 +12,23 @@ export type DeviceType = 'mobile' | 'tablet' | 'desktop';
 
 // Визначення типу пристрою на основі контексту
 export const detectDeviceType = (ctx: Context): DeviceType => {
+  try {
+    // Динамічний імпорт уникає циклічних залежностей
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getUserKeyboardPreference } = require('../utils/userPreferences');
+    const userId = ctx.from?.id;
+
+    if (userId) {
+      const preference = getUserKeyboardPreference(userId);
+      if (preference && ['mobile', 'tablet', 'desktop'].includes(preference)) {
+        return preference as DeviceType;
+      }
+    }
+  } catch (error) {
+    // Якщо помилка при завантаженні - використовуємо замовчування
+  }
+
   // За замовчуванням - мобільний (найпоширеніший варіант)
-  // Динамічний імпорт уникає циклічних залежностей
-  // Користувачі можуть налаштувати з меню /settings
   return 'mobile';
 };
 
