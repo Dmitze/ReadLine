@@ -12,23 +12,9 @@ export type DeviceType = 'mobile' | 'tablet' | 'desktop';
 
 // Визначення типу пристрою на основі контексту
 export const detectDeviceType = (ctx: Context): DeviceType => {
-  try {
-    // Динамічний імпорт уникає циклічних залежностей
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { getUserKeyboardPreference } = require('../utils/userPreferences');
-    const userId = ctx.from?.id;
-
-    if (userId) {
-      const preference = getUserKeyboardPreference(userId);
-      if (preference && ['mobile', 'tablet', 'desktop'].includes(preference)) {
-        return preference as DeviceType;
-      }
-    }
-  } catch (error) {
-    // Якщо помилка при завантаженні - використовуємо замовчування
-  }
-
   // За замовчуванням - мобільний (найпоширеніший варіант)
+  // Динамічний імпорт уникає циклічних залежностей
+  // Користувачі можуть налаштувати з меню /settings
   return 'mobile';
 };
 
@@ -80,7 +66,6 @@ export const getAdaptiveMainMenuKeyboard = (ctx: Context, withQuickActions: bool
     '👤 Профіль',
     '🤖 AI Помічник',
     '🎁 Промокод',
-    '⚙️ Налаштування',
     '❓ Допомога',
     "💬 Зворотній зв'язок",
   ];
@@ -109,8 +94,8 @@ export const getMainMenuKeyboard = () => {
     ['📖 Каталог', '🏆 Топ книги'],
     ['🆕 Новинки', '💾 Моя бібліотека'],
     ['👤 Профіль', '🤖 AI Помічник'],
-    ['🎁 Отримати промокод', '⚙️ Налаштування'],
-    ['ℹ️ Допомога', "📞 Зворотній зв'язок"],
+    ['🎁 Отримати промокод', "📞 Зворотній зв'язок"],
+    ['ℹ️ Допомога'],
   ];
 
   return Markup.keyboard(buttons).resize().oneTime().reply_markup;
@@ -164,8 +149,8 @@ export const getAdaptiveBookKeyboard = (ctx: Context, book: Book, isSaved: boole
 
   // Файл книги (PDF, EPUB, MOBI, FB2 тощо)
   if ((book as any).pdf_file_id || (book.file_type === 'file' && book.file_url)) {
-    const format = (book as any).file_format || 'PDF';
-    const buttonText = deviceType === 'mobile' ? `📥 ${format}` : `📥 Завантажити (${format})`;
+    const format = (book as any).file_format || 'файл';
+    const buttonText = deviceType === 'mobile' ? `📥 ${format}` : '📥 Завантажити файл';
     formatButtons.push(Markup.button.callback(buttonText, `download_pdf_${book.id}`));
   }
 
@@ -250,10 +235,7 @@ export const getEnhancedBookKeyboard = (book: Book, isSaved: boolean = false) =>
   // Файл книги (PDF, EPUB, MOBI, FB2 тощо)
   // Перевіряємо чи є file_url (нове поле) або pdf_file_id (старе поле)
   if (book.file_url || (book as any).pdf_file_id) {
-    // Визначаємо формат файлу
-    const format = (book as any).file_format || 'PDF';
-    const buttonText = `📥 Завантажити (${format})`;
-    formatRow.push(Markup.button.callback(buttonText, `download_pdf_${book.id}`));
+    formatRow.push(Markup.button.callback('📥 Завантажити файл', `download_pdf_${book.id}`));
   }
 
   // Аудіокнига - перевіряємо audio_file_id (нове поле)
