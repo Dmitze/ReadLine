@@ -11,7 +11,7 @@ import { logger } from '../../utils/logger';
  * Add a new book
  */
 export const addBook = (
-  bookData: Omit<Book, 'id' | 'is_available' | 'created_at'>
+  bookData: Omit<Book, 'id' | 'is_available' | 'created_at'> & { isbn?: string; language?: string; is_physically_available?: boolean }
 ): Promise<number> => {
   return new Promise((resolve, reject) => {
     const {
@@ -25,15 +25,18 @@ export const addBook = (
       online_link,
       file_type = 'physical',
       file_name,
+      isbn,
+      language,
+      is_physically_available = false,
     } = bookData;
 
     const query = `
       INSERT INTO books (
         title, author, genre, description, photo_file_id,
         file_url, audio_file_id, online_link,
-        file_type, file_name, is_available
+        file_type, file_name, isbn, language, is_available, is_physically_available
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
     `;
 
     db.run(
@@ -49,6 +52,9 @@ export const addBook = (
         online_link || null,
         file_type,
         file_name,
+        isbn || null,
+        language || 'Українська',
+        is_physically_available ? 1 : 0,
       ],
       function (err) {
         if (err) {
@@ -393,6 +399,8 @@ export const updateBookInfo = (bookId: number, field: string, value: any): Promi
       'external_link',
       'file_type',
       'file_name',
+      'isbn',
+      'language',
       'recommended_age',
       'content_warnings',
     ];

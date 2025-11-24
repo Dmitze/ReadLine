@@ -117,15 +117,17 @@ const formatBookCaption = async (book, tags) => {
                 caption += `   5⭐ ${percentages.rating_5_percent.toFixed(0)}%  4⭐ ${percentages.rating_4_percent.toFixed(0)}%  3⭐ ${percentages.rating_3_percent.toFixed(0)}%\n`;
                 caption += `   2⭐ ${percentages.rating_2_percent.toFixed(0)}%  1⭐ ${percentages.rating_1_percent.toFixed(0)}%\n\n`;
             }
-            if (stats && stats.recommended_age && stats.recommended_age > 0) {
-                const ageLabel = getAgeLabel(stats.recommended_age);
+            const recommendedAge = stats?.recommended_age || book.recommended_age;
+            if (recommendedAge && recommendedAge > 0) {
+                const ageLabel = getAgeLabel(recommendedAge);
                 caption += `🔞 <b>Вік:</b> ${ageLabel}\n`;
             }
-            if (stats && stats.content_warnings && stats.content_warnings.length > 0) {
-                const warnings = Array.isArray(stats.content_warnings)
-                    ? stats.content_warnings
-                    : typeof stats.content_warnings === 'string'
-                        ? JSON.parse(stats.content_warnings)
+            const contentWarningsData = stats?.content_warnings || book.content_warnings;
+            if (contentWarningsData) {
+                const warnings = Array.isArray(contentWarningsData)
+                    ? contentWarningsData
+                    : typeof contentWarningsData === 'string'
+                        ? JSON.parse(contentWarningsData)
                         : [];
                 if (warnings.length > 0) {
                     caption += `⚠️ <b>Варнінги:</b> ${warnings.map((w) => getWarningLabel(w)).join(', ')}\n`;
@@ -170,13 +172,10 @@ const formatBookCaption = async (book, tags) => {
     }
     const physicalAvailable = book.is_physically_available;
     if (physicalAvailable) {
-        caption += '📚 <b>ФІЗИЧНА НАЯВНІСТЬ:</b>\n';
-        caption += '   ✅ Книга є в бібліотеці Галичини\n';
-        caption += '   📍 Можна замовити для отримання\n\n';
+        caption += '📦 <b>Фізична наявність:</b> ✅ Є в бібліотеці\n\n';
     }
     else {
-        caption += '📚 <b>ФІЗИЧНА НАЯВНІСТЬ:</b>\n';
-        caption += '   ❌ Тільки електронна версія\n\n';
+        caption += '📦 <b>Фізична наявність:</b> ❌ Тільки електронна версія\n\n';
     }
     if (book.narrator) {
         const safeNarrator = escapeHtml(book.narrator);

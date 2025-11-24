@@ -1,6 +1,6 @@
 /**
  * Book Order Functions
- * Functions for managing book orders in the ReadLine library system
+ * Functions for managing book orders in the Warrior's Library system
  *
  * @module bookOrderFunctions
  */

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# ReadLine Database Backup Script
+# Warrior's Library Database Backup Script
 # Automatic daily backup of SQLite database
 
 set -e
 
-echo "📦 ReadLine Database Backup"
+echo "📦 Warrior's Library Database Backup"
 echo "==========================="
 echo ""
 

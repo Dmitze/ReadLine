@@ -56,48 +56,59 @@ searchScene.enter(async (ctx) => {
 searchScene.action('search_by_title', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'title';
-    await ctx.editMessageText('📖 <b>Пошук за назвою</b>\n\n' + 'Введіть назву книги:\n\n' + '💡 <i>Приклад:</i> Кобзар', { parse_mode: 'HTML' });
+    await ctx.editMessageText('📖 <b>ПОШУК ЗА НАЗВОЮ</b>\n\n' +
+        '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+        'Введіть назву легенди яку шукаєш:\n\n' +
+        '💡 Приклад: Кобзар', { parse_mode: 'HTML' });
 });
 searchScene.action('search_by_author', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'author';
-    await ctx.editMessageText('👤 <b>Пошук за автором</b>\n\n' + "Введіть ім'я автора:\n\n" + '💡 <i>Приклад:</i> Шевченко', { parse_mode: 'HTML' });
+    await ctx.editMessageText('👤 <b>ПОШУК ЗА АВТОРОМ</b>\n\n' +
+        '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+        "Введіть ім'я скальда-автора:\n\n" +
+        '💡 Приклад: Шевченко', { parse_mode: 'HTML' });
 });
 searchScene.action('search_by_genre', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'genre';
-    await ctx.editMessageText('📚 <b>Пошук за жанром</b>\n\n' + 'Введіть жанр:\n\n' + '💡 <i>Приклад:</i> Історична', { parse_mode: 'HTML' });
+    await ctx.editMessageText('📚 <b>ПОШУК ЗА ЖАНРОМ (БИТВОЮ)</b>\n\n' +
+        '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+        'Введіть тип битви яку хочеш пережити:\n\n' +
+        '💡 Приклад: Історична', { parse_mode: 'HTML' });
 });
 searchScene.action('search_general', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'general';
-    await ctx.editMessageText('🔍 <b>Розумний пошук</b>\n\n' +
-        'Введіть будь-який запит (назва, автор, жанр):\n\n' +
-        '✨ <b>Можливості:</b>\n' +
-        '• Пошук з помилками: "Кобзарь" → "Кобзар"\n' +
-        '• Синоніми: "Sci-Fi" → "Фантастика"\n' +
-        '• Автодоповнення при введенні\n\n' +
-        '💡 Пошук буде виконано по всіх полях', { parse_mode: 'HTML' });
+    await ctx.editMessageText('🔍 <b>ПОВНИЙ ПОШУК</b>\n\n' +
+        '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+        'Введи будь-яке слово (назву, імя автора, жанр):\n\n' +
+        '✨ <b>СУПЕРСИЛИ РОЗВІДКИ:</b>\n' +
+        '⚔️ Знаходить навіть з помилками: "Кобзарь" → "Кобзар"\n' +
+        '🗡️ Розуміє синоніми: "Sci-Fi" → "Фантастика"\n' +
+        '📚 Автодоповнення при введенні\n\n' +
+        '💡 Розвідка шукає по всіх полях книги', { parse_mode: 'HTML' });
 });
 searchScene.action('search_back', async (ctx) => {
-    await ctx.answerCbQuery();
+    await ctx.answerCbQuery('⚔️ Повернення на базу');
     await ctx.scene?.leave();
     const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
     const { getMainMenuKeyboard } = await Promise.resolve().then(() => __importStar(require('../keyboards/mainKeyboards')));
-    await ctx.reply('👋 Повертаємось до головного меню', {
+    await ctx.reply('🗡️ Повернувся на базу! Обери наступну битву:', {
         reply_markup: getMainMenuKeyboard(),
     });
 });
 searchScene.action('search_ai', async (ctx) => {
     await ctx.answerCbQuery();
     ctx.scene.state.searchType = 'ai';
-    await ctx.editMessageText('🤖 *Розумний пошук (AI)*\n\n' +
-        'Опишіть що шукаєте своїми словами:\n\n' +
-        '💡 *Приклади:*\n' +
-        '• "книги про кохання в Києві"\n' +
-        '• "детективи з несподіваною розв\'язкою"\n' +
-        '• "щось легке для відпочинку"\n' +
-        '• "книги як у Толкіена"', { parse_mode: 'Markdown' });
+    await ctx.editMessageText('🤖 <b>AI РОЗВІДКА</b>\n\n' +
+        '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+        'Розповідь AI Мудреці про яку легенду ти шукаєш:\n\n' +
+        '💡 <b>ПРИКЛАДИ:</b>\n' +
+        '⚔️ "Романтичні битви у древньому Києві"\n' +
+        '🗡️ "Детективи з крутою розв\'язкою"\n' +
+        '📚 "Щось легке для відпочинку увечері"\n' +
+        '📖 "Легенди як у Толкіена"', { parse_mode: 'HTML' });
 });
 exports.default = searchScene;
 //# sourceMappingURL=searchScene.js.map

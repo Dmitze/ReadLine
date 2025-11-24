@@ -99,14 +99,14 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      await ctx.answerCbQuery('Завантаження...');
+      await ctx.answerCbQuery('📚 Розгортаю скиток...');
 
-      const book = await getBookById(bookId);
+       const book = await getBookById(bookId);
 
-      if (!book) {
-        await ctx.reply('❌ Книга не знайдена');
-        return;
-      }
+       if (!book) {
+         await ctx.reply('❌ Легенду не знайдено в архівах');
+         return;
+       }
 
       const caption = await formatBookCaption(book);
       const isSaved = await isBookSaved(userId, bookId);
@@ -157,14 +157,14 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      await ctx.answerCbQuery('Завантаження...');
+      await ctx.answerCbQuery('📖 Викликаю скарб...');
 
-      const book = await getBookById(bookId);
+       const book = await getBookById(bookId);
 
-      if (!book) {
-        await ctx.reply('❌ Книга не знайдена');
-        return;
-      }
+       if (!book) {
+         await ctx.reply('❌ Скарб потеряно в тумані часу...');
+         return;
+       }
 
       const caption = await formatBookCaption(book);
       const isSaved = await isBookSaved(userId, bookId);
@@ -214,15 +214,15 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
         bookId,
       });
 
-      await ctx.answerCbQuery('⏳ Завантаження PDF...');
+      await ctx.answerCbQuery('📜 Скопіюю величезне письмо...');
 
-      const book = await getBookById(bookId);
+       const book = await getBookById(bookId);
 
-      if (!book) {
-        logger.warn('Book not found for download', { bookId });
-        await ctx.reply('❌ Книга не знайдена');
-        return;
-      }
+       if (!book) {
+         logger.warn('Book not found for download', { bookId });
+         await ctx.reply('❌ Письмо загубилось в архівах...');
+         return;
+       }
 
       // Детальне логування доступності файлів
       logger.info('Book file availability', {
@@ -235,13 +235,13 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
       });
 
       if (!book.pdf_file_id && !book.file_url) {
-        logger.warn('No PDF file available', { bookId, title: book.title });
-        await ctx.reply(
-          `❌ PDF файл недоступний для книги "${book.title}".\n\n` +
-            'Зверніться до адміністратора для додавання файлу.'
-        );
-        return;
-      }
+         logger.warn('No PDF file available', { bookId, title: book.title });
+         await ctx.reply(
+           `❌ Рукопис легенди "${book.title}" заховано надійно.\n\n` +
+             '⚔️ Зверни наCommandIra для розкриття таємниці.'
+         );
+         return;
+       }
 
       await incrementDownloads(bookId);
 
@@ -283,19 +283,19 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
         // Якщо файл не знайдено в Telegram, пробуємо надати посилання
         if (book.file_url) {
           await ctx.reply(
-            '📥 Файл тимчасово недоступний через Telegram.\n\n' +
-              `Посилання для завантаження:\n${book.file_url}`,
+            '📥 Письмо затримується магіцею Телеграму.\n\n' +
+              `🗡️ Спробай інший шлях:\n${book.file_url}`,
             {
               disable_web_page_preview: false,
             }
           );
         } else {
           await ctx.reply(
-            '❌ Файл тимчасово недоступний.\n\n' +
-              'Можливі причини:\n' +
-              '• Файл застарів у Telegram\n' +
-              '• Файл ще не додано\n\n' +
-              'Зверніться до адміністратора через /feedback'
+            '❌ Письмо втекло із скарбниці.\n\n' +
+              '⚔️ Причини:\n' +
+              '• Час стер письмо\n' +
+              '• Письмо ще не прибуло\n\n' +
+              '📬 Повідомте Командиру через /feedback'
           );
         }
       }
@@ -321,20 +321,20 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      await ctx.answerCbQuery('Завантаження EPUB...');
+      await ctx.answerCbQuery('📖 Готую портативну версію...');
 
-      const bookId = parseInt(match[1], 10);
-      const book = await getBookById(bookId);
+       const bookId = parseInt(match[1], 10);
+       const book = await getBookById(bookId);
 
-      if (!book) {
-        await ctx.reply('❌ Книга не знайдена');
-        return;
-      }
+       if (!book) {
+         await ctx.reply('❌ Легенду не знайдено');
+         return;
+       }
 
-      if (!book.epub_file_id && !book.epub_url) {
-        await ctx.reply('❌ EPUB файл недоступний для цієї книги');
-        return;
-      }
+       if (!book.epub_file_id && !book.epub_url) {
+         await ctx.reply('❌ Портативна версія не готова для цієї легенди');
+         return;
+       }
 
       await incrementDownloads(bookId);
 
@@ -357,17 +357,17 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
         );
 
         if (book.epub_url) {
-          await ctx.reply(
-            `📥 Файл тимчасово недоступний.\n\nПосилання для завантаження:\n${book.epub_url}`,
-            {
-              disable_web_page_preview: false,
-            }
-          );
-        } else {
-          await ctx.reply(
-            '❌ Файл тимчасово недоступний. Спробуйте пізніше або зверніться до адміністратора.'
-          );
-        }
+           await ctx.reply(
+             `📥 Портативна версія затримується.\n\n🗡️ Альтернативний шлях:\n${book.epub_url}`,
+             {
+               disable_web_page_preview: false,
+             }
+           );
+         } else {
+           await ctx.reply(
+             '❌ Портативна версія втекла. Спробуй пізніше або повідомте Командиру.'
+           );
+         }
       }
 
       logger.userAction(ctx.from!.id, 'download_epub', { bookId });
@@ -391,20 +391,20 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      await ctx.answerCbQuery('Завантаження аудіо...');
+      await ctx.answerCbQuery('🎧 Готую голосну розповідь...');
 
-      const bookId = parseInt(match[1], 10);
-      const book = await getBookById(bookId);
+       const bookId = parseInt(match[1], 10);
+       const book = await getBookById(bookId);
 
-      if (!book) {
-        await ctx.reply('❌ Книга не знайдена');
-        return;
-      }
+       if (!book) {
+         await ctx.reply('❌ Голос автора потерян в просторах');
+         return;
+       }
 
-      if (!book.audio_file_id && !book.audio_external_link) {
-        await ctx.reply('❌ Аудіо недоступне для цієї книги');
-        return;
-      }
+       if (!book.audio_file_id && !book.audio_external_link) {
+         await ctx.reply('🎧 Голос цієї легенди ще мовчить...');
+         return;
+       }
 
       await incrementDownloads(bookId);
 
@@ -415,13 +415,13 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
           title: book.title,
         });
       } else if (book.audio_external_link) {
-        let message = '🎧 <b>Аудіокнига</b>\n\n';
+        let message = '🎧 <b>ГОЛОСНА ЛЕГЕНДА</b>\n\n' + '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
         message += `📖 ${book.title}\n`;
-        message += `✍️ ${book.author}\n`;
+        message += `✍️ Скальд: ${book.author}\n`;
         if (book.narrator) {
-          message += `🎙️ Диктор: ${book.narrator}\n`;
+          message += `🎙️ Розповідач: ${book.narrator}\n`;
         }
-        message += `\n🔗 Посилання: ${book.audio_external_link}`;
+        message += `\n🔗 Слухай твою легенду: ${book.audio_external_link}`;
 
         await ctx.reply(message, {
           parse_mode: 'HTML',
@@ -450,18 +450,18 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      await ctx.answerCbQuery('Завантаження відгуків...');
+      await ctx.answerCbQuery('📊 Читаю думки воїнів...');
 
-      const bookId = parseInt(match[1], 10);
-      const allReviews = await getBookReviews(bookId);
-      const reviews = allReviews.slice(0, 5);
+       const bookId = parseInt(match[1], 10);
+       const allReviews = await getBookReviews(bookId);
+       const reviews = allReviews.slice(0, 5);
 
-      if (reviews.length === 0) {
-        await ctx.reply('📭 Відгуків поки немає. Будьте першим!');
-        return;
-      }
+       if (reviews.length === 0) {
+         await ctx.reply('📭 Про цю легенду ще нікто не розповів. Будь першим реценцентом!');
+         return;
+       }
 
-      let message = '📝 <b>ВІДГУКИ</b>\n\n';
+       let message = '📝 <b>РЕПОРТАЖІ ВОЇНІВ</b>\n\n' + '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
       reviews.forEach((review, index) => {
         message += `${index + 1}. ${review.rating ? '⭐'.repeat(review.rating) : ''}\n`;
         message += `   ${review.comment || 'Без коментаря'}\n`;
@@ -491,26 +491,26 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      await ctx.answerCbQuery('Пошук схожих книг...');
+      await ctx.answerCbQuery('🔮 Розшукую союзників...');
 
-      const bookId = parseInt(match[1], 10);
-      const book = await getBookById(bookId);
+       const bookId = parseInt(match[1], 10);
+       const book = await getBookById(bookId);
 
-      if (!book) {
-        await ctx.reply('❌ Книга не знайдена');
-        return;
-      }
+       if (!book) {
+         await ctx.reply('❌ Легенда потеряна');
+         return;
+       }
 
-      const { getBooksByGenre } = await import('../../database/models');
-      const allSimilarBooks = await getBooksByGenre(book.genre);
-      const filteredBooks = allSimilarBooks.filter((b) => b.id !== bookId).slice(0, 5);
+       const { getBooksByGenre } = await import('../../database/models');
+       const allSimilarBooks = await getBooksByGenre(book.genre);
+       const filteredBooks = allSimilarBooks.filter((b) => b.id !== bookId).slice(0, 5);
 
-      if (filteredBooks.length === 0) {
-        await ctx.reply('📭 Схожих книг не знайдено');
-        return;
-      }
+       if (filteredBooks.length === 0) {
+         await ctx.reply('🏜️ Союзників цього жанру ще не знайдено в архівах');
+         return;
+       }
 
-      let message = `📚 <b>Схожі книги (${book.genre})</b>\n\n`;
+       let message = `📚 <b>⚔️ СОЮЗНИКИ З БИТВИ (${book.genre})</b>\n\n` + '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
       filteredBooks.forEach((b, index) => {
         message += `${index + 1}. <b>${b.title}</b> - ${b.author}\n`;
       });

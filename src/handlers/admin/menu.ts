@@ -41,11 +41,13 @@ export default (bot: Telegraf<BotContext>) => {
             ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
             : '✅ Всі повідомлення прочитані';
 
-        let panelText = '🛠️ <b>Панель адміністратора</b>\n\n';
-        panelText += '📊 <b>Статистика:</b>\n';
-        panelText += `📚 Книг в каталозі: ${stats.totalBooks}\n`;
-        panelText += `👥 Унікальних користувачів: ${stats.totalUsers}\n`;
-        panelText += `⭐ Середня оцінка: ${stats.avgRating}\n`;
+        let panelText = '⚔️ <b>ПАНЕЛЬ КОМАНДИРА</b>\n\n';
+        panelText += '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+        panelText += '📊 <b>ВОЇНСЬКА СТАТИСТИКА:</b>\n';
+        panelText += `📚 Скарбів у колекції: <b>${stats.totalBooks}</b>\n`;
+        panelText += `👥 Воїнів в армії: <b>${stats.totalUsers}</b>\n`;
+        panelText += `⭐ Слава книг: <b>${stats.avgRating}</b>\n\n`;
+        panelText += `━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
         panelText += `${reviewsAlert}\n`;
         panelText += `${feedbackAlert}`;
 
@@ -75,9 +77,11 @@ export default (bot: Telegraf<BotContext>) => {
             : '✅ Всі повідомлення прочитані';
 
         await ctx.reply(
-          '🛠️ <b>Панель адміністратора</b>\n\n' +
-            '📊 <b>Статистика:</b>\n' +
-            `📚 Книг в каталозі: ${basicStats.totalBooks}\n` +
+          '⚔️ <b>ПАНЕЛЬ КОМАНДИРА</b>\n\n' +
+            '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+            '📊 <b>ВОЇНСЬКА СТАТИСТИКА:</b>\n' +
+            `📚 Скарбів у колекції: <b>${basicStats.totalBooks}</b>\n\n` +
+            `━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
             `${reviewsAlert}\n` +
             `${feedbackAlert}`,
           {
@@ -232,9 +236,11 @@ export default (bot: Telegraf<BotContext>) => {
           : '✅ Всі повідомлення прочитані';
 
       await ctx.editMessageText(
-        '🛠️ <b>Панель адміністратора</b>\n\n' +
-          '📊 <b>Статистика:</b>\n' +
-          `📚 Книг в каталозі: ${stats.totalBooks}\n` +
+        '⚔️ <b>ПАНЕЛЬ КОМАНДИРА</b>\n\n' +
+          '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+          '📊 <b>ВОЇНСЬКА СТАТИСТИКА:</b>\n' +
+          `📚 Скарбів у колекції: <b>${stats.totalBooks}</b>\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
           `${reviewsAlert}\n` +
           `${feedbackAlert}`,
         {
@@ -279,9 +285,11 @@ export default (bot: Telegraf<BotContext>) => {
           : '✅ Всі повідомлення прочитані';
 
       await ctx.reply(
-        '🛠️ <b>Панель адміністратора</b>\n\n' +
-          '📊 <b>Статистика:</b>\n' +
-          `📚 Книг в каталозі: ${stats.totalBooks}\n` +
+        '⚔️ <b>ПАНЕЛЬ КОМАНДИРА</b>\n\n' +
+          '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+          '📊 <b>ВОЇНСЬКА СТАТИСТИКА:</b>\n' +
+          `📚 Скарбів у колекції: <b>${stats.totalBooks}</b>\n\n` +
+          `━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
           `${reviewsAlert}\n` +
           `${feedbackAlert}`,
         {

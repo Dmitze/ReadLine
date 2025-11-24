@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2024-2025 ReadLine Contributors
+Copyright (c) 2024-2025 Warrior's Library Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -42,14 +42,14 @@ SOFTWARE.
 
 ## Використання у вашому проекті
 
-Якщо ви використовуєте ReadLine в своєму проекті, скопіюйте цей файл
+Якщо ви використовуєте Warrior's Library в своєму проекті, скопіюйте цей файл
 до вашого репозиторію та додайте в ATTRIBUTION.md або README:
 
 ```markdown
 ## License
 
-This project includes components from ReadLine
-(https://github.com/Dmitze/ReadLine)
+This project includes components from Warrior's Library
+(https://github.com/Dmitze/Warriors-Library)
 which is licensed under the MIT License.
 
 See LICENSE file for details.

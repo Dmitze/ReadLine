@@ -41,46 +41,14 @@ export interface FileValidationResult {
 
 /**
  * Валідація фото
+ * ✅ БЕЗ ВАЛІДАЦІЇ - принимаємо будь-які зображення без обмежень
  */
 export function validatePhoto(
   fileSize?: number,
   mimeType?: string,
   fileName?: string
 ): FileValidationResult {
-  // Перевірка розміру
-  if (fileSize && fileSize > MAX_FILE_SIZES.PHOTO) {
-    const maxSizeMB = (MAX_FILE_SIZES.PHOTO / (1024 * 1024)).toFixed(0);
-    const actualSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
-    logger.warn('Photo file too large', { fileSize, maxSize: MAX_FILE_SIZES.PHOTO });
-    return {
-      isValid: false,
-      error: `Фото занадто велике (${actualSizeMB} MB). Максимум ${maxSizeMB} MB.`,
-      fileSize,
-      fileSizeMB: actualSizeMB,
-    };
-  }
-
-  // Перевірка MIME типу
-  if (mimeType && !(ALLOWED_MIME_TYPES.PHOTO as readonly string[]).includes(mimeType)) {
-    logger.warn('Invalid photo MIME type', { mimeType });
-    return {
-      isValid: false,
-      error: 'Невірний формат фото. Дозволені: JPG, PNG, WEBP.',
-    };
-  }
-
-  // Перевірка розширення
-  if (fileName) {
-    const ext = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
-    if (!(ALLOWED_EXTENSIONS.PHOTO as readonly string[]).includes(ext)) {
-      logger.warn('Invalid photo extension', { fileName, ext });
-      return {
-        isValid: false,
-        error: `Невірне розширення файлу. Дозволені: ${ALLOWED_EXTENSIONS.PHOTO.join(', ')}`,
-      };
-    }
-  }
-
+  // ✅ Приймаємо будь-які фото без перевірки розміру, типу чи розширення
   return {
     isValid: true,
     fileSize,
@@ -90,50 +58,14 @@ export function validatePhoto(
 
 /**
  * Валідація документа (PDF, EPUB, MOBI, FB2)
+ * ✅ БЕЗ ВАЛІДАЦІЇ - принимаємо будь-які файли без обмежень
  */
 export function validateDocument(
   fileSize?: number,
   mimeType?: string,
   fileName?: string
 ): FileValidationResult {
-  // Перевірка розміру
-  if (fileSize && fileSize > MAX_FILE_SIZES.DOCUMENT) {
-    const maxSizeMB = (MAX_FILE_SIZES.DOCUMENT / (1024 * 1024)).toFixed(0);
-    const actualSizeMB = (fileSize / (1024 * 1024)).toFixed(2);
-    logger.warn('Document file too large', { fileSize, maxSize: MAX_FILE_SIZES.DOCUMENT });
-    return {
-      isValid: false,
-      error: `Файл занадто великий (${actualSizeMB} MB). Максимум ${maxSizeMB} MB.`,
-      fileSize,
-      fileSizeMB: actualSizeMB,
-    };
-  }
-
-  // Перевірка розширення (обов'язково для документів)
-  if (fileName) {
-    const ext = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
-    if (!(ALLOWED_EXTENSIONS.DOCUMENT as readonly string[]).includes(ext)) {
-      logger.warn('Invalid document extension', { fileName, ext });
-      return {
-        isValid: false,
-        error: `Невірний формат файлу. Дозволені: ${ALLOWED_EXTENSIONS.DOCUMENT.join(', ')}`,
-      };
-    }
-  } else {
-    return {
-      isValid: false,
-      error: 'Не вдалося визначити тип файлу. Будь ласка, надішліть файл з розширенням.',
-    };
-  }
-
-  // Перевірка MIME типу (опціонально, бо Telegram не завжди правильно визначає)
-  if (mimeType && !(ALLOWED_MIME_TYPES.DOCUMENT as readonly string[]).includes(mimeType)) {
-    logger.debug('Document MIME type not in whitelist, but allowing based on extension', {
-      mimeType,
-      fileName,
-    });
-  }
-
+  // ✅ Приймаємо будь-які файли без перевірки розміру, типу чи розширення
   return {
     isValid: true,
     fileSize,
@@ -143,35 +75,14 @@ export function validateDocument(
 
 /**
  * Валідація аудіо файлу
+ * ✅ БЕЗ ВАЛІДАЦІЇ - принимаємо будь-які аудіо файли без обмежень
  */
 export function validateAudio(
   fileSize?: number,
   mimeType?: string,
   fileName?: string
 ): FileValidationResult {
-  // ✅ Без перевірки розміру - аудіокниги можуть бути дуже великими (до 5GB)
-
-  // Перевірка MIME типу
-  if (mimeType && !(ALLOWED_MIME_TYPES.AUDIO as readonly string[]).includes(mimeType)) {
-    logger.warn('Invalid audio MIME type', { mimeType });
-    return {
-      isValid: false,
-      error: 'Невірний формат аудіо. Дозволені: MP3, M4A, OGG.',
-    };
-  }
-
-  // Перевірка розширення
-  if (fileName) {
-    const ext = fileName.toLowerCase().substring(fileName.lastIndexOf('.'));
-    if (!(ALLOWED_EXTENSIONS.AUDIO as readonly string[]).includes(ext)) {
-      logger.warn('Invalid audio extension', { fileName, ext });
-      return {
-        isValid: false,
-        error: `Невірне розширення файлу. Дозволені: ${ALLOWED_EXTENSIONS.AUDIO.join(', ')}`,
-      };
-    }
-  }
-
+  // ✅ Приймаємо будь-які аудіо файли без перевірки розміру, типу чи розширення
   return {
     isValid: true,
     fileSize,

@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# ReadLine Development Script
+# Warrior's Library Development Script
 # Runs the bot in watch mode with auto-linting and testing
 
 set -e
 
-echo "🚀 ReadLine Development Mode"
+echo "🚀 Warrior's Library Development Mode"
 echo "============================"
 echo ""
 

@@ -45,10 +45,10 @@ describe('User Dialog Flows', () => {
 
     // Bot should reply with greeting
     if (ctx.message === '/start') {
-      await ctx.reply('Welcome to ReadLine Bot');
+      await ctx.reply('Welcome to Warrior\'s Library Bot');
     }
 
-    expect(ctx.reply).toHaveBeenCalledWith('Welcome to ReadLine Bot');
+    expect(ctx.reply).toHaveBeenCalledWith('Welcome to Warrior\'s Library Bot');
   });
 
   it('should handle book search flow', async () => {

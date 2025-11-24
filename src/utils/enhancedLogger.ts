@@ -22,7 +22,7 @@ export const enhancedLogger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: combine(errors({ stack: true }), timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }), json()),
   defaultMeta: {
-    service: 'readline-bot',
+    service: 'warriors-library-bot',
     version: process.env.npm_package_version || '1.0.0',
   },
   transports: [

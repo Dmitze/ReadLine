@@ -1,11 +1,11 @@
 #!/bin/bash
 
-# ReadLine Initialization Script
+# Warrior's Library Initialization Script
 # This script checks requirements, installs dependencies, and initializes the project
 
 set -e  # Exit on error
 
-echo "🚀 ReadLine Initialization Script"
+echo "🚀 Warrior's Library Initialization Script"
 echo "=================================="
 echo ""
 
@@ -123,7 +123,7 @@ if [ ! -f ".env" ]; then
     else
         print_warning ".env.example not found, creating basic .env"
         cat > .env << EOF
-# ReadLine Configuration
+# Warrior's Library Configuration
 BOT_TOKEN=your_bot_token_here
 ADMIN_ID=your_telegram_user_id
 DB_PATH=./database/library.db
@@ -202,4 +202,4 @@ echo "2. Run 'npm run init-admin' to create admin user"
 echo "3. Run 'npm run dev' to start development server"
 echo "4. Run 'npm start' to start production server"
 echo ""
-print_success "ReadLine is ready! 🚀"
+print_success "Warrior's Library is ready! 🚀"

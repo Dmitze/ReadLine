@@ -130,31 +130,7 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
       return;
     }
 
-    // Крок 2: Встановлення вікового обмеження
-    if (state.step === 'waiting_for_age') {
-      const age = parseInt(message);
-      const validAges = [0, 6, 12, 16, 18];
 
-      if (!validAges.includes(age)) {
-        await ctx.reply(
-          '❌ Невірне значення. Виберіть один з варіантів:\n' +
-            '• 0 - Для всіх\n' +
-            '• 6 - 6+\n' +
-            '• 12 - 12+\n' +
-            '• 16 - 16+\n' +
-            '• 18 - 18+\n\n' +
-            'Спробуйте ще раз:'
-        );
-        return;
-      }
-
-      state.recommendedAge = age;
-      state.step = 'selecting_warnings';
-      state.selectedWarnings = [];
-
-      await showWarningsKeyboard(ctx, state);
-      return;
-    }
 
     // Крок 3: Встановлення варнінгів
     if (state.step === 'waiting_for_warnings') {
@@ -253,42 +229,35 @@ editExtendedBookInfoScene.action('edit_age', async (ctx) => {
   await ctx.answerCbQuery();
   const state = (ctx.scene as any).state;
 
-  if (state.book?.recommended_age) {
-    const ageLabels: { [key: number]: string } = {
-      0: 'Для всіх',
-      6: '6+',
-      12: '12+',
-      16: '16+',
-      18: '18+',
-    };
-    await ctx.editMessageText(
-      `📖 <b>${state.book.title}</b>${getBookIdText(state.book.id)}\n` +
-        `Поточний вік: <b>${ageLabels[state.book.recommended_age] || 'Не встановлено'}</b>\n\n` +
-        '🔞 <b>ВСТАНОВЛЕННЯ ВІКОВОГО ОБМЕЖЕННЯ</b>\n\n' +
-        'Введіть один з варіантів:\n' +
-        '• 0 - Для всіх\n' +
-        '• 6 - 6+\n' +
-        '• 12 - 12+\n' +
-        '• 16 - 16+\n' +
-        '• 18 - 18+',
-      { parse_mode: 'HTML' }
-    );
-  } else {
-    await ctx.editMessageText(
-      `📖 <b>${state.book.title}</b>${getBookIdText(state.book.id)}\n` +
-        'Поточний вік: Не встановлено\n\n' +
-        '🔞 <b>ВСТАНОВЛЕННЯ ВІКОВОГО ОБМЕЖЕННЯ</b>\n\n' +
-        'Введіть один з варіантів:\n' +
-        '• 0 - Для всіх\n' +
-        '• 6 - 6+\n' +
-        '• 12 - 12+\n' +
-        '• 16 - 16+\n' +
-        '• 18 - 18+',
-      { parse_mode: 'HTML' }
-    );
-  }
+  const ageLabels: { [key: number]: string } = {
+    0: 'Для всіх',
+    6: '6+',
+    12: '12+',
+    16: '16+',
+    18: '18+',
+  };
 
-  state.step = 'waiting_for_age';
+  const currentAge = state.book?.recommended_age || 0;
+
+  await ctx.editMessageText(
+    `📖 <b>${state.book.title}</b>${getBookIdText(state.book.id)}\n` +
+      `Поточний вік: <b>${ageLabels[currentAge]}</b>\n\n` +
+      '🔞 <b>ВСТАНОВЛЕННЯ ВІКОВОГО ОБМЕЖЕННЯ</b>\n\n' +
+      'Виберіть один з варіантів:',
+    {
+      parse_mode: 'HTML',
+      reply_markup: Markup.inlineKeyboard([
+        [Markup.button.callback('✅ 0 - Для всіх', 'set_age_0')],
+        [Markup.button.callback('🟢 6 - 6+', 'set_age_6')],
+        [Markup.button.callback('🟡 12 - 12+', 'set_age_12')],
+        [Markup.button.callback('🟠 16 - 16+', 'set_age_16')],
+        [Markup.button.callback('🔴 18 - 18+', 'set_age_18')],
+        [Markup.button.callback('⬅️ Назад', 'back_to_selection')],
+      ]).reply_markup,
+    }
+  );
+
+  state.step = 'selecting_age';
 });
 
 // Кнопка: Редагувати варнінги
@@ -350,88 +319,96 @@ CONTENT_WARNINGS.forEach((warning) => {
 
 // Кнопка: Зберегти варнінги
 editExtendedBookInfoScene.action('save_warnings', async (ctx) => {
-  await ctx.answerCbQuery('Збереження...');
-  const state = (ctx.scene as any).state;
+  try {
+    await ctx.answerCbQuery('Збереження...');
+    const state = (ctx.scene as any).state;
 
-  const warnings = state.selectedWarnings || [];
+    const warnings = state.selectedWarnings || [];
 
-  // Якщо ми вже встановили вік раніше - зберігаємо все
-  if (state.recommendedAge !== undefined) {
-    await updateBookInfo(
-      state.bookId,
-      state.recommendedAge,
-      warnings.length > 0 ? warnings : undefined
-    );
+    // Якщо ми вже встановили вік раніше - зберігаємо все
+    if (state.recommendedAge !== undefined) {
+      // Зберігаємо рекомендований вік
+      await updateBookInfo(state.bookId, 'recommended_age', state.recommendedAge);
+      
+      // Зберігаємо варнінги
+      await updateBookInfo(
+        state.bookId,
+        'content_warnings',
+        warnings.length > 0 ? JSON.stringify(warnings) : null
+      );
 
-    const ageLabels: { [key: number]: string } = {
-      0: '✅ Для всіх',
-      6: '🟢 6+',
-      12: '🟡 12+',
-      16: '🟠 16+',
-      18: '🔴 18+',
-    };
+      const ageLabels: { [key: number]: string } = {
+        0: '✅ Для всіх',
+        6: '🟢 6+',
+        12: '🟡 12+',
+        16: '🟠 16+',
+        18: '🔴 18+',
+      };
 
-    const warningLabels: { [key: string]: string } = {
-      violence: 'Насильство',
-      explicit_content: 'Експліцитний контент',
-      sexual_scenes: 'Сексуальні сцени',
-      mature_themes: 'Дорослі теми',
-      strong_language: 'Грубе мовлення',
-      psychological_horror: 'Психологічний жах',
-      substance_abuse: 'Зловживання',
-      child_abuse: 'Насильство над дітьми',
-      discrimination: 'Дискримінація',
-      self_harm: 'Самопошкодження',
-    };
+      const warningLabels: { [key: string]: string } = {
+        violence: 'Насильство',
+        explicit_content: 'Експліцитний контент',
+        sexual_scenes: 'Сексуальні сцени',
+        mature_themes: 'Дорослі теми',
+        strong_language: 'Грубе мовлення',
+        psychological_horror: 'Психологічний жах',
+        substance_abuse: 'Зловживання',
+        child_abuse: 'Насильство над дітьми',
+        discrimination: 'Дискримінація',
+        self_harm: 'Самопошкодження',
+      };
 
-    let successMsg = '✅ <b>Успішно оновлено!</b>\n\n';
-    successMsg += `📖 <b>${state.book.title}</b>${getBookIdText(state.book.id)}\n`;
-    successMsg += `🔞 <b>Вік:</b> ${ageLabels[state.recommendedAge]}\n`;
+      let successMsg = '✅ <b>Успішно оновлено!</b>\n\n';
+      successMsg += `📖 <b>${state.book.title}</b>${getBookIdText(state.book.id)}\n`;
+      successMsg += `🔞 <b>Вік:</b> ${ageLabels[state.recommendedAge]}\n`;
 
-    if (warnings.length > 0) {
-      successMsg += `⚠️ <b>Варнінги:</b> ${warnings.map((w: string) => warningLabels[w]).join(', ')}\n`;
+      if (warnings.length > 0) {
+        successMsg += `⚠️ <b>Варнінги:</b> ${warnings.map((w: string) => warningLabels[w]).join(', ')}\n`;
+      } else {
+        successMsg += '⚠️ <b>Варнінги:</b> Немає\n';
+      }
+
+      try {
+        await ctx.deleteMessage();
+      } catch (e) {
+        // Ігноруємо
+      }
+
+      await ctx.reply(successMsg, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback('📖 Редагувати іншу книгу', 'edit_another')],
+          [Markup.button.callback('⬅️ Назад до меню', 'back_to_menu')],
+        ]).reply_markup,
+      });
+
+      state.step = 'done';
     } else {
-      successMsg += '⚠️ <b>Варнінги:</b> Немає\n';
+      // Якщо тільки варнінги - просто зберігаємо їх
+      await updateBookInfo(
+        state.bookId,
+        'content_warnings',
+        warnings.length > 0 ? JSON.stringify(warnings) : null
+      );
+
+      try {
+        await ctx.deleteMessage();
+      } catch (e) {
+        // Ігноруємо
+      }
+
+      await ctx.reply('✅ Варнінги успішно оновлено!', {
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback('📖 Редагувати іншу книгу', 'edit_another')],
+          [Markup.button.callback('⬅️ Назад до меню', 'back_to_menu')],
+        ]).reply_markup,
+      });
+
+      state.step = 'done';
     }
-
-    try {
-      await ctx.deleteMessage();
-    } catch (e) {
-      // Ігноруємо
-    }
-
-    await ctx.reply(successMsg, {
-      parse_mode: 'HTML',
-      reply_markup: Markup.inlineKeyboard([
-        [Markup.button.callback('📖 Редагувати іншу книгу', 'edit_another')],
-        [Markup.button.callback('⬅️ Назад до меню', 'back_to_menu')],
-      ]).reply_markup,
-    });
-
-    state.step = 'done';
-  } else {
-    // Якщо тільки варнінги - просто зберігаємо їх
-    const book = await getBookById(state.bookId);
-    await updateBookInfo(
-      state.bookId,
-      'content_warnings',
-      warnings.length > 0 ? JSON.stringify(warnings) : null
-    );
-
-    try {
-      await ctx.deleteMessage();
-    } catch (e) {
-      // Ігноруємо
-    }
-
-    await ctx.reply('✅ Варнінги успішно оновлено!', {
-      reply_markup: Markup.inlineKeyboard([
-        [Markup.button.callback('📖 Редагувати іншу книгу', 'edit_another')],
-        [Markup.button.callback('⬅️ Назад до меню', 'back_to_menu')],
-      ]).reply_markup,
-    });
-
-    state.step = 'done';
+  } catch (error) {
+    logger.error('Error saving warnings', error);
+    await ctx.reply('❌ Помилка при збереженні. Спробуйте ще раз.');
   }
 });
 
@@ -568,6 +545,34 @@ editExtendedBookInfoScene.action('back_to_selection', async (ctx) => {
       ]).reply_markup,
     }
   );
+});
+
+// Обработчики выбора возраста
+const ageOptions = [
+  { id: 'set_age_0', age: 0, label: 'Для всіх' },
+  { id: 'set_age_6', age: 6, label: '6+' },
+  { id: 'set_age_12', age: 12, label: '12+' },
+  { id: 'set_age_16', age: 16, label: '16+' },
+  { id: 'set_age_18', age: 18, label: '18+' },
+];
+
+ageOptions.forEach((option) => {
+  editExtendedBookInfoScene.action(option.id, async (ctx) => {
+    await ctx.answerCbQuery(`Вибрано: ${option.label}`);
+    const state = (ctx.scene as any).state;
+
+    state.recommendedAge = option.age;
+    state.step = 'selecting_warnings';
+    state.selectedWarnings = [];
+
+    try {
+      await ctx.deleteMessage();
+    } catch (e) {
+      // Ігноруємо
+    }
+
+    await showWarningsKeyboard(ctx, state);
+  });
 });
 
 export default editExtendedBookInfoScene;

@@ -112,18 +112,20 @@ export const formatBookCaption = async (
         caption += `   2⭐ ${percentages.rating_2_percent.toFixed(0)}%  1⭐ ${percentages.rating_1_percent.toFixed(0)}%\n\n`;
       }
 
-      // Вікове обмеження
-      if (stats && stats.recommended_age && stats.recommended_age > 0) {
-        const ageLabel = getAgeLabel(stats.recommended_age);
+      // Вікове обмеження - спочатку перевіряємо stats, потім саму книгу
+      const recommendedAge = stats?.recommended_age || (book as any).recommended_age;
+      if (recommendedAge && recommendedAge > 0) {
+        const ageLabel = getAgeLabel(recommendedAge);
         caption += `🔞 <b>Вік:</b> ${ageLabel}\n`;
       }
 
-      // Тригери вмісту (варнінги)
-      if (stats && stats.content_warnings && stats.content_warnings.length > 0) {
-        const warnings = Array.isArray(stats.content_warnings)
-          ? stats.content_warnings
-          : typeof stats.content_warnings === 'string'
-            ? JSON.parse(stats.content_warnings)
+      // Тригери вмісту (варнінги) - спочатку перевіряємо stats, потім саму книгу
+      const contentWarningsData = stats?.content_warnings || (book as any).content_warnings;
+      if (contentWarningsData) {
+        const warnings = Array.isArray(contentWarningsData)
+          ? contentWarningsData
+          : typeof contentWarningsData === 'string'
+            ? JSON.parse(contentWarningsData)
             : [];
         if (warnings.length > 0) {
           caption += `⚠️ <b>Варнінги:</b> ${warnings.map((w: string) => getWarningLabel(w)).join(', ')}\n`;
@@ -185,12 +187,9 @@ export const formatBookCaption = async (
   // Фізична наявність
   const physicalAvailable = (book as Book & { is_physically_available?: boolean }).is_physically_available;
   if (physicalAvailable) {
-    caption += '📚 <b>ФІЗИЧНА НАЯВНІСТЬ:</b>\n';
-    caption += '   ✅ Книга є в бібліотеці Галичини\n';
-    caption += '   📍 Можна замовити для отримання\n\n';
+    caption += '📦 <b>Фізична наявність:</b> ✅ Є в бібліотеці\n\n';
   } else {
-    caption += '📚 <b>ФІЗИЧНА НАЯВНІСТЬ:</b>\n';
-    caption += '   ❌ Тільки електронна версія\n\n';
+    caption += '📦 <b>Фізична наявність:</b> ❌ Тільки електронна версія\n\n';
   }
 
   // Диктор для аудіокниг

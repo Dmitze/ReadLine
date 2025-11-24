@@ -1,6 +1,6 @@
-# 🤝 Гід контрибʼюторам ReadLine
+# 🤝 Гід контрибʼюторам Warrior's Library
 
-Дякуємо за інтерес до ReadLine! Цей документ описує як внести свій вклад у проєкт.
+Дякуємо за інтерес до Warrior's Library! Цей документ описує як внести свій вклад у проєкт.
 
 ---
 
@@ -22,7 +22,7 @@
 
 Цей проєкт та всі його учасники керуються [Кодексом поведінки](./CODE_OF_CONDUCT.md). Беручи участь, ви повинні дотримуватись цього кодексу.
 
-Будь-яке неприйнятне поведінку повинна бути повідомлена на [conduct@readline-bot.dev](mailto:conduct@readline-bot.dev).
+Будь-яке неприйнятне поведінку повинна бути повідомлена на [conduct@warriorslibrary-bot.dev](mailto:conduct@warriorslibrary-bot.dev).
 
 ---
 
@@ -34,11 +34,11 @@
 # Форк репозиторію на GitHub
 
 # Клонуйте ваш форк
-git clone https://github.com/YOUR_USERNAME/ReadLine.git
-cd ReadLine
+git clone https://github.com/YOUR_USERNAME/Warriors-Library.git
+cd Warriors-Library
 
 # Додайте upstream
-git remote add upstream https://github.com/Dmitze/ReadLine.git
+git remote add upstream https://github.com/Dmitze/Warriors-Library.git
 ```
 
 ### 2. Налаштування розробки
@@ -54,7 +54,7 @@ cp .env.example .env
 # Мінімум: BOT_TOKEN, ADMIN_ID
 
 # Запустіть Redis (Docker)
-docker run -d -p 6379:6379 --name readline-redis redis:latest
+docker run -d -p 6379:6379 --name warriors-library-redis redis:latest
 
 # Запустіть в режимі розробки
 npm run dev:watch
@@ -83,8 +83,8 @@ git checkout -b fix/bug-name
 
 Знайшли баг? Перевірте спочатку:
 
-1. ✅ [Issues](https://github.com/Dmitze/ReadLine/issues) - чи вже зареєстрована?
-2. ✅ [Discussions](https://github.com/Dmitze/ReadLine/discussions) - чи вже обговорювалась?
+1. ✅ [Issues](https://github.com/Dmitze/Warriors-Library/issues) - чи вже зареєстрована?
+2. ✅ [Discussions](https://github.com/Dmitze/Warriors-Library/discussions) - чи вже обговорювалась?
 3. ✅ [SECURITY.md](./SECURITY.md) - чи это security issue?
 
 Якщо не знайшли - створіть нову issue:
@@ -119,7 +119,7 @@ git checkout -b fix/bug-name
 Хочете додати щось нове? Спочатку:
 
 1. 📖 Прочитайте [дорожну карту](./README.md#дорожна-карта)
-2. 💬 Обговоріть у [Discussions](https://github.com/Dmitze/ReadLine/discussions/new)
+2. 💬 Обговоріть у [Discussions](https://github.com/Dmitze/Warriors-Library/discussions/new)
 3. 📝 Створіть issue з міткою `enhancement`
 
 **Шаблон пропозиції:**
@@ -558,8 +558,8 @@ A: Всі контрибʼюції - частина проєкту. Якщо у 
 Якщо у вас є питання:
 
 - Email: [dmitze.dev@gmail.com](mailto:dmitze.dev@gmail.com)
-- Discussions: [GitHub Discussions](https://github.com/Dmitze/ReadLine/discussions)
-- Issues: [GitHub Issues](https://github.com/Dmitze/ReadLine/issues)
+- Discussions: [GitHub Discussions](https://github.com/Dmitze/Warriors-Library/discussions)
+- Issues: [GitHub Issues](https://github.com/Dmitze/Warriors-Library/issues)
 
 ---
 

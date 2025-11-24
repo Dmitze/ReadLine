@@ -7,7 +7,7 @@ import { z } from 'zod';
 export const envSchema = z.object({
   // Required - Bot Configuration
   BOT_TOKEN: z.string().min(20, 'BOT_TOKEN must be at least 20 characters'),
-  ADMIN_ID: z.string().regex(/^\d+$/, 'ADMIN_ID must be a numeric string'),
+  ADMIN_ID: z.string().regex(/^\d+(\s*,\s*\d+)*$/, 'ADMIN_ID must be numeric IDs separated by commas (e.g., "123456789" or "123456789, 987654321"'),
 
   // Database
   DB_PATH: z.string().default('./database/library.db'),

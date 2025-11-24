@@ -117,12 +117,17 @@ const migration001_CreateCoreTables: IMigration = {
         description TEXT,
         promo_type TEXT DEFAULT 'yakaboo_unlimited',
         is_active INTEGER DEFAULT 1,
-        user_id INTEGER,
-        is_used INTEGER DEFAULT 0,
         created_by INTEGER,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        used_at TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+
+      CREATE TABLE IF NOT EXISTS used_promo_codes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        promo_code_id INTEGER NOT NULL,
+        used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (promo_code_id) REFERENCES promo_codes(id) ON DELETE CASCADE,
+        UNIQUE(user_id, promo_code_id)
       );
 
       -- Feedback table

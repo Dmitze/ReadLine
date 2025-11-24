@@ -39,7 +39,7 @@ const types_js_1 = require("@modelcontextprotocol/sdk/types.js");
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const server = new index_js_1.Server({
-    name: 'readline-project-server',
+    name: 'warriors-library-project-server',
     version: '1.0.0',
 }, {
     capabilities: {
@@ -50,7 +50,7 @@ server.setRequestHandler(types_js_1.ListToolsRequestSchema, async () => ({
     tools: [
         {
             name: 'analyze_project_structure',
-            description: 'Анализирует структуру проекта ReadLine и взаимосвязи компонентов',
+            description: 'Анализирует структуру проекта Warrior\'s Library и взаимосвязи компонентов',
             inputSchema: {
                 type: 'object',
                 properties: {
@@ -181,7 +181,7 @@ server.setRequestHandler(types_js_1.CallToolRequestSchema, async (request) => {
 async function main() {
     const transport = new stdio_js_1.StdioServerTransport();
     await server.connect(transport);
-    console.error('ReadLine MCP Server running on stdio');
+    console.error('Warrior\'s Library MCP Server running on stdio');
 }
 main().catch(console.error);
 //# sourceMappingURL=mcp-server.js.map

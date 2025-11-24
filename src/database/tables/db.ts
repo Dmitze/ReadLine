@@ -221,11 +221,19 @@ export const initDatabase = (): Promise<void> => {
           description TEXT,
           promo_type TEXT DEFAULT 'yakaboo_unlimited',
           is_active INTEGER DEFAULT 1,
-          user_id INTEGER,
-          is_used BOOLEAN DEFAULT 0,
           created_by INTEGER,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          used_at DATETIME
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    const createUsedPromoCodesTable = `
+      CREATE TABLE IF NOT EXISTS used_promo_codes (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          promo_code_id INTEGER NOT NULL,
+          used_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (promo_code_id) REFERENCES promo_codes(id) ON DELETE CASCADE,
+          UNIQUE(user_id, promo_code_id)
       );
     `;
 
@@ -347,6 +355,8 @@ export const initDatabase = (): Promise<void> => {
       'ALTER TABLE promo_codes ADD COLUMN promo_type TEXT DEFAULT \'yakaboo_unlimited\';',
       'ALTER TABLE promo_codes ADD COLUMN is_active INTEGER DEFAULT 1;',
       'ALTER TABLE promo_codes ADD COLUMN created_by INTEGER;',
+      // Удаляем старые колонки которые больше не используются
+      // (DROP COLUMN не поддерживается в некоторых версиях SQLite, поэтому оставляем как есть)
     ];
 
     db.serialize(() => {
@@ -357,6 +367,7 @@ export const initDatabase = (): Promise<void> => {
       db.run(createFeedbackTable);
       db.run(createUserStatsTable);
       db.run(createPromoCodesTable);
+      db.run(createUsedPromoCodesTable);
       db.run(createBookRatingStatsTable);
       db.run(createAudioProgressTable);
       db.run(createPodcastsTable);

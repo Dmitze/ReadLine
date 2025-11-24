@@ -59,6 +59,10 @@ export interface WizardState {
 
   // Physical availability
   is_physically_available?: boolean; // Чи є книга фізично в наявності
+  
+  // ISBN and Language
+  isbn?: string; // ISBN книги (опціонально)
+  language?: string; // Мова книги
 
   // AI Assistant (Завдання 29)
   useAI?: boolean; // Чи використовувати AI для розпізнавання

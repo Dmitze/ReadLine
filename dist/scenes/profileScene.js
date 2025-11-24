@@ -50,7 +50,7 @@ profileScene.enter(async (ctx) => {
     const profileResult = await userService.getUserProfile(userId);
     if (profileResult.isErr()) {
         logger_1.logger.error('Failed to get user profile', profileResult.error);
-        await ctx.reply('❌ Помилка при завантаженні профілю.');
+        await ctx.reply('❌ Не вдалося ідентифікувати користувача.');
         return ctx.scene?.leave();
     }
     const profile = profileResult.unwrap();
@@ -64,6 +64,7 @@ profileScene.enter(async (ctx) => {
         reply_markup: Markup.inlineKeyboard([
             [{ text: '🤖 Персональні рекомендації', callback_data: 'show_personal_collection' }],
             [{ text: '🎯 AI Підбір книги', callback_data: 'start_ai_assistant' }],
+            [{ text: '📋 Мої замовлення', callback_data: 'show_my_orders' }],
             [{ text: '📊 Моя статистика', callback_data: 'show_stats' }],
             [{ text: '⬅️ Назад', callback_data: 'profile_back' }],
         ]).reply_markup,
@@ -94,6 +95,68 @@ profileScene.action('start_ai_assistant', async (ctx) => {
     }
     await ctx.scene?.leave();
     return ctx.scene?.enter('AI_ASSISTANT_SCENE');
+});
+profileScene.action('show_my_orders', async (ctx) => {
+    await ctx.answerCbQuery();
+    const userId = ctx.from?.id;
+    if (!userId) {
+        await ctx.reply('❌ Не вдалося ідентифікувати користувача');
+        return;
+    }
+    try {
+        const { getUserBookOrders } = await Promise.resolve().then(() => __importStar(require('../database/bookOrderFunctions')));
+        const orders = await getUserBookOrders(userId);
+        if (!orders || orders.length === 0) {
+            await ctx.reply('📋 У вас поки немає замовлень книг.');
+            return;
+        }
+        let ordersText = '📋 <b>МОЇ ЗАМОВЛЕННЯ</b>\n\n';
+        orders.forEach((order, index) => {
+            ordersText += `<b>#${index + 1} Замовлення ${order.id}</b>\n`;
+            ordersText += `📖 Книга: ${(0, helpers_1.escapeHtml)(order.book_title || 'Невідома')}\n`;
+            ordersText += `👤 Автор: ${(0, helpers_1.escapeHtml)(order.book_author || 'Невідомий')}\n`;
+            ordersText += `📅 Дата: ${new Date(order.created_at || '').toLocaleDateString('uk-UA')}\n\n`;
+        });
+        await ctx.reply(ordersText, {
+            parse_mode: 'HTML',
+            reply_markup: {
+                inline_keyboard: [[{ text: '⬅️ Назад до профілю', callback_data: 'back_to_profile_from_orders' }]],
+            },
+        });
+        logger_1.logger.userAction(userId, 'view_my_orders', { ordersCount: orders.length });
+    }
+    catch (error) {
+        logger_1.logger.error('Error fetching user orders', error);
+        await ctx.reply('❌ Помилка при завантаженні замовлень.');
+    }
+});
+profileScene.action('back_to_profile_from_orders', async (ctx) => {
+    await ctx.answerCbQuery();
+    const userId = ctx.from?.id;
+    if (!userId)
+        return;
+    const userService = (0, UserManagementService_1.createUserManagementService)(models_1.db);
+    const profileResult = await userService.getUserProfile(userId);
+    if (profileResult.isErr()) {
+        await ctx.reply('❌ Помилка при завантаженні профілю.');
+        return;
+    }
+    const profile = profileResult.unwrap();
+    profile.firstName = (0, helpers_1.escapeHtml)(ctx.from.first_name || '');
+    profile.lastName = (0, helpers_1.escapeHtml)(ctx.from.last_name || '');
+    profile.username = ctx.from.username ? `@${(0, helpers_1.escapeHtml)(ctx.from.username)}` : 'не встановлено';
+    const profileText = userService.formatProfileText(profile);
+    const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
+    await ctx.editMessageText(profileText, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+            [{ text: '🤖 Персональні рекомендації', callback_data: 'show_personal_collection' }],
+            [{ text: '🎯 AI Підбір книги', callback_data: 'start_ai_assistant' }],
+            [{ text: '📋 Мої замовлення', callback_data: 'show_my_orders' }],
+            [{ text: '📊 Моя статистика', callback_data: 'show_stats' }],
+            [{ text: '⬅️ Назад', callback_data: 'profile_back' }],
+        ]).reply_markup,
+    });
 });
 profileScene.action('profile_back', async (ctx) => {
     await ctx.answerCbQuery();

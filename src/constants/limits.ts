@@ -20,7 +20,7 @@ export const LIMITS = {
   TAGS_LIMIT: 10,
 
   // Wizard steps
-  ADD_BOOK_STEPS_TOTAL: 8,
+  ADD_BOOK_STEPS_TOTAL: 12, // Нові кроки: ISBN, Language, Physical availability (без кількості), File formats (до 3)
 
   // User limits
   SAVED_BOOKS_MAX: 20,

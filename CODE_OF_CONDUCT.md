@@ -1,4 +1,4 @@
-# 📋 Кодекс поведінки спільноти ReadLine
+# 📋 Кодекс поведінки спільноти Warrior's Library
 
 ## Наша обіцянка
 
@@ -49,7 +49,7 @@
 
 1. **Миттєво припинити взаємодію** з особою, яка демонструє неприпустиму поведінку
 2. **Документувати** інцидент (скріншоти, посилання, часи)
-3. **Повідомити** на [conduct@readline-bot.dev](mailto:conduct@readline-bot.dev)
+3. **Повідомити** на [conduct@warriorslibrary-bot.dev](mailto:conduct@warriorslibrary-bot.dev)
 
 #### Що включити у скаргу
 
@@ -110,7 +110,7 @@
 
 ## Областю застосування
 
-Цей Кодекс поведінки застосовується у всіх просторах спільноти ReadLine:
+Цей Кодекс поведінки застосовується у всіх просторах спільноти Warrior's Library:
 
 - GitHub Issues та Discussions
 - Pull Requests та code reviews
@@ -126,7 +126,7 @@
 
 Якщо у вас є запитання щодо цього Кодексу поведінки:
 
-- Email: [conduct@readline-bot.dev](mailto:conduct@readline-bot.dev)
+- Email: [conduct@warriorslibrary-bot.dev](mailto:conduct@warriorslibrary-bot.dev)
 - GitHub: Відкрийте обговорення у розділі Discussions
 - Створіть issue з міткою `code-of-conduct`
 
@@ -142,4 +142,4 @@
 
 **Останнє оновлення: 15 листопада 2025**
 
-*ReadLine спільнота прагне бути доброю, поважною та інклюзивною для всіх.*
+*Warrior's Library спільнота прагне бути доброю, поважною та інклюзивною для всіх.*

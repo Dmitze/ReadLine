@@ -17,14 +17,17 @@ onboardingScene.enter(async (ctx: BotContext) => {
   const userName = ctx.from?.first_name || 'Друже';
 
   await ctx.reply(
-    `👋 *Вітаємо, ${userName}!*\n\n` +
-      "Я Warrior's Library - твій особистий бібліотечний помічник! 📚\n\n" +
-      'Давай швидко познайомимося та налаштуємо бота під тебе.\n\n' +
-      'Це займе лише 1 хвилину! ⏱️',
+    `🗡️ *Вітаємо, ${userName}!*\n\n` +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+      "Я *Warrior's Library* ⚔️\n" +
+      "Твій легендарний гід через світ книг! 📚\n\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+      'Давай швидко познайомимося та налаштуємо бота під тебе.\n' +
+      'Це займе всього 1 хвилину! ⏱️',
     {
       parse_mode: 'Markdown',
       reply_markup: Markup.inlineKeyboard([
-        [Markup.button.callback('🚀 Почати знайомство', 'onboarding_start')],
+        [Markup.button.callback('⚔️ Почати пригоду', 'onboarding_start')],
         [Markup.button.callback('⏭️ Пропустити', 'onboarding_skip')],
       ]).reply_markup,
     }
@@ -33,20 +36,20 @@ onboardingScene.enter(async (ctx: BotContext) => {
 
 // Початок онбордингу
 onboardingScene.action('onboarding_start', async (ctx: BotContext) => {
-  await ctx.answerCbQuery();
+  await ctx.answerCbQuery('⚔️ Готуєш арсенал...');
 
   await ctx.reply(
-    '📚 *ЩО Я ВМІЮ:*\n\n' +
-      '🔍 *Пошук книг*\n' +
-      'Швидко знайду будь-яку книгу за назвою, автором або жанром\n\n' +
-      '⭐ *Збережені книги*\n' +
-      'Зберігай улюблені книги у свою особисту бібліотеку\n\n' +
-      '🎧 *Аудіокниги*\n' +
-      'Слухай книги в дорозі або перед сном\n\n' +
-      '🤖 *AI-помічник*\n' +
+    '⚔️ *МОЇ СУПЕРСИЛИ:*\n\n' +
+      '🔍 *Безстрашний Пошук*\n' +
+      'Знайду будь-яку книгу за назвою, автором або жанром\n\n' +
+      '❤️ *Бібліотека Воїна*\n' +
+      'Збирай свою колекцію улюблених книг\n\n' +
+      '🎧 *Голосні Легенди*\n' +
+      'Слухай аудіокниги в бою або на відпочинку\n\n' +
+      '🤖 *AI Мудрець*\n' +
       'Отримуй персональні рекомендації від штучного інтелекту\n\n' +
-      '🏷️ *Теги та фільтри*\n' +
-      'Знаходь книги за настроєм, темою або жанром',
+      '📊 *Воїнська Статистика*\n' +
+      'Стежи за своєю бібліотечною славою',
     {
       parse_mode: 'Markdown',
       reply_markup: Markup.inlineKeyboard([
@@ -99,10 +102,10 @@ onboardingScene.action('onboarding_genres', async (ctx: BotContext) => {
   ]);
 
   await ctx.reply(
-    '🎯 *ОБЕРИ УЛЮБЛЕНІ ЖАНРИ*\n\n' +
-      'Вибери 3-5 жанрів які тобі подобаються.\n' +
-      'Це допоможе мені підбирати книги саме для тебе! 📖\n\n' +
-      'Обрано: 0',
+    '⚔️ *ОБЕРИ БИТВИ (ЖАНРИ)*\n\n' +
+      'Вибери 3-5 жанрів, де ти хочеш мандрувати.\n' +
+      'Це допоможе мені підібрати книги саме для тебе! 📖\n\n' +
+      '📚 Обрано: 0',
     {
       parse_mode: 'Markdown',
       reply_markup: Markup.inlineKeyboard(genreButtons).reply_markup,
@@ -164,10 +167,10 @@ onboardingScene.action(/onboarding_genre_(.+)/, async (ctx: BotContext) => {
 
   await ctx
     .editMessageText(
-      '🎯 *ОБЕРИ УЛЮБЛЕНІ ЖАНРИ*\n\n' +
-        'Вибери 3-5 жанрів які тобі подобаються.\n' +
-        'Це допоможе мені підбирати книги саме для тебе! 📖\n\n' +
-        `Обрано: ${state.selectedGenres.length}`,
+      '⚔️ *ОБЕРИ БИТВИ (ЖАНРИ)*\n\n' +
+        'Вибери 3-5 жанрів, де ти хочеш мандрувати.\n' +
+        'Це допоможе мені підібрати книги саме для тебе! 📖\n\n' +
+        `📚 Обрано: ${state.selectedGenres.length}`,
       {
         parse_mode: 'Markdown',
         reply_markup: Markup.inlineKeyboard(genreButtons).reply_markup,
@@ -215,16 +218,17 @@ onboardingScene.action('onboarding_genres_done', async (ctx: BotContext) => {
     }
   }
 
-  let message = '🎉 *ЧУДОВО!*\n\n';
+  let message = '⚔️ *ВОЇН ГОТОВИЙ!*\n\n';
 
   if (state.selectedGenres && state.selectedGenres.length > 0) {
     message += `Ти обрав ${state.selectedGenres.length} ${state.selectedGenres.length === 1 ? 'жанр' : 'жанри'}:\n`;
-    message += state.selectedGenres.map((g) => `• ${g}`).join('\n');
-    message += '\n\nТепер я буду рекомендувати тобі книги з цих жанрів! 📚\n\n';
+    message += state.selectedGenres.map((g) => `🗡️ ${g}`).join('\n');
+    message += '\n\nТепер я буду рекомендувати тобі книги з цих битв! 📚\n\n';
   }
 
-  message += '✅ Онбординг завершено!\n\n';
-  message += 'Натисни кнопку нижче щоб почати користуватися ботом 👇';
+  message += '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+  message += '✅ Підготовка завершена!\n\n';
+  message += 'Натисни кнопку нижче щоб розпочати свою легенду 👇';
 
   await ctx.reply(message, {
     parse_mode: 'Markdown',
@@ -255,14 +259,17 @@ onboardingScene.action(['onboarding_skip', 'onboarding_finish'], async (ctx: Bot
   }
 
   await ctx.reply(
-    "🎉 *Ласкаво просимо до Warrior's Library!*\n\n" +
+    "⚔️ *ЛАСКАВО ПРОСИМО У Warrior's Library!*\n\n" +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
       'Тепер ти можеш:\n' +
-      '📖 Шукати книги через каталог\n' +
-      '🔍 Використовувати швидкий пошук\n' +
-      '⭐ Зберігати улюблені книги\n' +
-      '🎧 Слухати аудіокниги\n' +
-      '🤖 Отримувати AI-рекомендації\n\n' +
-      'Приємного читання! 📚',
+      '📚 Дослідити величезну бібліотеку\n' +
+      '🔍 Знайти книги за будь-якими критеріями\n' +
+      '❤️ Зберігати свої сокровища\n' +
+      '🎧 Слухати легенди в аудіоформаті\n' +
+      '🤖 Отримати поради від AI Мудреця\n' +
+      '📊 Розраховувати свій бібліотечний рівень\n\n' +
+      "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+      '🗡️ Твоя легенда розпочалась! Приємного читання! 📖',
     {
       parse_mode: 'Markdown',
       reply_markup: getMainMenuKeyboard(),

@@ -9,7 +9,7 @@ import * as path from 'path';
 
 const server = new Server(
     {
-        name: 'readline-project-server',
+        name: 'warriors-library-project-server',
         version: '1.0.0',
     },
     {
@@ -24,7 +24,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [
         {
             name: 'analyze_project_structure',
-            description: 'Анализирует структуру проекта ReadLine и взаимосвязи компонентов',
+            description: 'Анализирует структуру проекта Warrior\'s Library и взаимосвязи компонентов',
             inputSchema: {
                 type: 'object',
                 properties: {
@@ -174,7 +174,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);
-    console.error('ReadLine MCP Server running on stdio');
+    console.error('Warrior\'s Library MCP Server running on stdio');
 }
 
 main().catch(console.error);

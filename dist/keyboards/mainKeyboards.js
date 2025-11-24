@@ -43,15 +43,15 @@ const getAdaptiveMainMenuKeyboard = (ctx, withQuickActions = true) => {
     const deviceType = (0, exports.detectDeviceType)(ctx);
     const config = (0, exports.getKeyboardConfig)(deviceType);
     const allButtons = [
-        '📖 Каталог',
-        '🏆 Топ книги',
+        '📚 Бібліотека',
+        '⭐ Топ книги',
         '🆕 Новинки',
-        '💾 Моя бібліотека',
+        '❤️ Мої улюблені',
         '👤 Профіль',
         '🤖 AI Помічник',
-        '🎁 Отримати промокод',
-        'ℹ️ Допомога',
-        "📞 Зворотній зв'язок",
+        '🎁 Промокод',
+        '❓ Допомога',
+        "💬 Зворотній зв'язок",
     ];
     const buttons = [];
     for (let i = 0; i < allButtons.length; i += config.buttonsPerRow) {
@@ -69,8 +69,8 @@ const getMainMenuKeyboard = () => {
         ['📖 Каталог', '🏆 Топ книги'],
         ['🆕 Новинки', '💾 Моя бібліотека'],
         ['👤 Профіль', '🤖 AI Помічник'],
-        ['🎁 Отримати промокод', '📚 Замовити фізичну книгу'],
-        ['ℹ️ Допомога', "📞 Зворотній зв'язок"],
+        ['🎁 Отримати промокод', "📞 Зворотній зв'язок"],
+        ['ℹ️ Допомога'],
     ];
     return telegraf_1.Markup.keyboard(buttons).resize().oneTime().reply_markup;
 };
@@ -91,7 +91,7 @@ const getAdaptiveGenreKeyboard = (ctx, genres) => {
 exports.getAdaptiveGenreKeyboard = getAdaptiveGenreKeyboard;
 const getGenreKeyboard = (genres) => {
     const keyboard = genres.map((genre, index) => [
-        telegraf_1.Markup.button.callback(genre, `genre_${index}`)
+        telegraf_1.Markup.button.callback(genre, `genre_${index}`),
     ]);
     keyboard.push([telegraf_1.Markup.button.callback('⬅️ Назад', 'catalog_books')]);
     return telegraf_1.Markup.inlineKeyboard(keyboard).reply_markup;
@@ -162,9 +162,7 @@ exports.getAdaptiveBookKeyboard = getAdaptiveBookKeyboard;
 const getEnhancedBookKeyboard = (book, isSaved = false) => {
     const keyboard = [];
     if (book.is_physically_available) {
-        keyboard.push([
-            telegraf_1.Markup.button.callback('📋 Замовити книгу', `order_book_${book.id}`)
-        ]);
+        keyboard.push([telegraf_1.Markup.button.callback('📋 Замовити книгу', `order_book_${book.id}`)]);
     }
     const formatRow = [];
     if (book.file_url || book.pdf_file_id) {

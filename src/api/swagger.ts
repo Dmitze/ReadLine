@@ -6,12 +6,12 @@ const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'ReadLine Library Bot API',
+      title: 'Warrior\'s Library Bot API',
       description: 'Telegram bot API for military library management',
       version: '1.0.0',
       contact: {
-        name: 'ReadLine Support',
-        email: 'support@readline.local',
+        name: 'Warrior\'s Library Support',
+        email: 'support@warriorslibrary.local',
       },
     },
     servers: [
@@ -20,7 +20,7 @@ const swaggerOptions = {
         description: 'Development Server',
       },
       {
-        url: 'http://api.readline.local',
+        url: 'http://api.warriorslibrary.local',
         description: 'Production Server',
       },
     ],

@@ -1,5 +1,5 @@
 {
-  "name": "readline-library-bot",
+  "name": "warriors-library-bot",
   "version": "1.0.0",
   "description": "Telegram bot for military library management",
   "main": "dist/index.js",

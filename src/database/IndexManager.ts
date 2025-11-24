@@ -17,7 +17,7 @@ export interface IndexSpec {
 }
 
 /**
- * Index definitions for ReadLine database
+ * Index definitions for Warrior's Library database
  */
 export const INDEX_SPECS: IndexSpec[] = [
   // Books table indexes

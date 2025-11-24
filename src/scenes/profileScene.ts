@@ -23,10 +23,10 @@ profileScene.enter(async (ctx: BotContext) => {
    const profileResult = await userService.getUserProfile(userId);
 
    if (profileResult.isErr()) {
-     logger.error('Failed to get user profile', profileResult.error);
-     await ctx.reply('❌ Помилка при завантаженні профілю.');
-     return ctx.scene?.leave();
-   }
+       logger.error('Failed to get user profile', profileResult.error);
+       await ctx.reply('❌ Не вдалося ідентифікувати користувача.');
+       return ctx.scene?.leave();
+     }
 
    const profile = profileResult.unwrap();
 
@@ -41,13 +41,14 @@ profileScene.enter(async (ctx: BotContext) => {
    const { Markup } = await import('telegraf');
 
    await ctx.reply(profileText, {
-     parse_mode: 'HTML',
-     reply_markup: Markup.inlineKeyboard([
-       [{ text: '🤖 Персональні рекомендації', callback_data: 'show_personal_collection' }],
-       [{ text: '🎯 AI Підбір книги', callback_data: 'start_ai_assistant' }],
-       [{ text: '📊 Моя статистика', callback_data: 'show_stats' }],
-       [{ text: '⬅️ Назад', callback_data: 'profile_back' }],
-     ]).reply_markup,
+   parse_mode: 'HTML',
+   reply_markup: Markup.inlineKeyboard([
+     [{ text: '🤖 Персональні рекомендації', callback_data: 'show_personal_collection' }],
+     [{ text: '🎯 AI Підбір книги', callback_data: 'start_ai_assistant' }],
+     [{ text: '📋 Мої замовлення', callback_data: 'show_my_orders' }],
+     [{ text: '📊 Моя статистика', callback_data: 'show_stats' }],
+     [{ text: '⬅️ Назад', callback_data: 'profile_back' }],
+   ]).reply_markup,
    });
 
    logger.userAction(userId, 'view_profile');
@@ -86,6 +87,80 @@ profileScene.action('start_ai_assistant', async (ctx: BotContext) => {
   return ctx.scene?.enter('AI_ASSISTANT_SCENE');
 });
 
+// Показати мої замовлення
+profileScene.action('show_my_orders', async (ctx: BotContext) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from?.id;
+  if (!userId) {
+    await ctx.reply('❌ Не вдалося ідентифікувати користувача');
+    return;
+  }
+
+  try {
+    const { getUserBookOrders } = await import('../database/bookOrderFunctions');
+    const orders = await getUserBookOrders(userId);
+
+    if (!orders || orders.length === 0) {
+       await ctx.reply('📋 У вас поки немає замовлень книг.');
+       return;
+     }
+
+     let ordersText = '📋 <b>МОЇ ЗАМОВЛЕННЯ</b>\n\n';
+     orders.forEach((order, index) => {
+       ordersText += `<b>#${index + 1} Замовлення ${order.id}</b>\n`;
+       ordersText += `📖 Книга: ${escapeHtml(order.book_title || 'Невідома')}\n`;
+       ordersText += `👤 Автор: ${escapeHtml(order.book_author || 'Невідомий')}\n`;
+       ordersText += `📅 Дата: ${new Date(order.created_at || '').toLocaleDateString('uk-UA')}\n\n`;
+     });
+
+    await ctx.reply(ordersText, {
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [[{ text: '⬅️ Назад до профілю', callback_data: 'back_to_profile_from_orders' }]],
+      },
+    });
+
+    logger.userAction(userId, 'view_my_orders', { ordersCount: orders.length });
+    } catch (error) {
+     logger.error('Error fetching user orders', error as Error);
+     await ctx.reply('❌ Помилка при завантаженні замовлень.');
+  }
+});
+
+// Назад до профілю з замовлень
+profileScene.action('back_to_profile_from_orders', async (ctx: BotContext) => {
+  await ctx.answerCbQuery();
+  const userId = ctx.from?.id;
+  if (!userId) return;
+
+  const userService = createUserManagementService(db);
+  const profileResult = await userService.getUserProfile(userId);
+
+  if (profileResult.isErr()) {
+     await ctx.reply('❌ Помилка при завантаженні профілю.');
+     return;
+   }
+
+   const profile = profileResult.unwrap();
+   profile.firstName = escapeHtml(ctx.from.first_name || '');
+   profile.lastName = escapeHtml(ctx.from.last_name || '');
+   profile.username = ctx.from.username ? `@${escapeHtml(ctx.from.username)}` : 'не встановлено';
+
+   const profileText = userService.formatProfileText(profile);
+   const { Markup } = await import('telegraf');
+
+   await ctx.editMessageText(profileText, {
+     parse_mode: 'HTML',
+     reply_markup: Markup.inlineKeyboard([
+       [{ text: '🤖 Персональні рекомендації', callback_data: 'show_personal_collection' }],
+       [{ text: '🎯 AI Підбір книги', callback_data: 'start_ai_assistant' }],
+       [{ text: '📋 Мої замовлення', callback_data: 'show_my_orders' }],
+       [{ text: '📊 Моя статистика', callback_data: 'show_stats' }],
+       [{ text: '⬅️ Назад', callback_data: 'profile_back' }],
+     ]).reply_markup,
+   });
+  });
+
 // Назад
 profileScene.action('profile_back', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
@@ -113,20 +188,20 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
   const collectionResult = await userService.getPersonalCollection(userId, 5);
 
   if (collectionResult.isErr()) {
-    logger.error('Failed to get personal collection', collectionResult.error);
-    await ctx.reply('❌ Помилка при створенні персональної підбірки.');
-    return;
-  }
+     logger.error('Failed to get personal collection', collectionResult.error);
+     await ctx.reply('❌ Помилка при створенні персональної підбірки.');
+     return;
+   }
 
-  const collectionData = collectionResult.unwrap();
+   const collectionData = collectionResult.unwrap();
 
-  if (collectionData.books.length === 0) {
-    await ctx.reply('😔 Не вдалося створити персональну підбірку. В каталозі поки немає книг.');
-    return;
-  }
+   if (collectionData.books.length === 0) {
+     await ctx.reply('😔 Не вдалося створити персональну підбірку. В каталозі поки немає книг.');
+     return;
+   }
 
-  // Show appropriate message based on collection source
-  let messageText = '📚 <b>Персональна підбірка для вас</b>\n\n';
+   // Show appropriate message based on collection source
+   let messageText = '📚 <b>Персональна підбірка для вас</b>\n\n';
   switch (collectionData.source) {
     case 'smart_recommendations':
       messageText += '🤖 Створено на основі ваших вподобань, тегів та рейтингів\n';
