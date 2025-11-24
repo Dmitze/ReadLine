@@ -389,13 +389,13 @@ export const getExtendedPromoStats = (): Promise<{
       const avgUsage =
         basicStats.used > 0 ? Math.round(basicStats.used / basicStats.usedByUsers) : 0;
 
-      // За типами знижок
+      // За типами промокодів
       const byDiscountType = await new Promise<any[]>((res, rej) => {
         db.all(
-          `SELECT discount_type as type, COUNT(*) as count, SUM(discount_value) as totalValue 
+          `SELECT promo_type as type, COUNT(*) as count, COUNT(*) as totalValue 
            FROM promo_codes 
            WHERE is_active = 1
-           GROUP BY discount_type`,
+           GROUP BY promo_type`,
           [],
           (err, rows) => {
             if (err) rej(err);
@@ -510,26 +510,21 @@ export const deletePromoCode = (promoCodeId: number): Promise<void> => {
 };
 
 /**
- * Gets human-readable text description for a discount type
+ * Gets human-readable text description for a promo type
  *
- * @param discountType - The discount type identifier
- * @returns Human-readable description of the discount type
+ * @param promoType - The promo type identifier
+ * @returns Human-readable description of the promo type
  *
  * @example
  * ```typescript
- * console.log(getDiscountTypeText('percentage')); // "Відсоткова знижка"
- * console.log(getDiscountTypeText('shipping')); // "Безкоштовна доставка"
+ * console.log(getDiscountTypeText('yakaboo_unlimited')); // "Якабу Unlimited"
  * ```
  */
-export const getDiscountTypeText = (discountType: string): string => {
-  switch (discountType) {
-    case 'percentage':
-      return 'Відсоткова знижка';
-    case 'fixed':
-      return 'Фіксована знижка';
-    case 'shipping':
-      return 'Безкоштовна доставка';
+export const getDiscountTypeText = (promoType: string): string => {
+  switch (promoType) {
+    case 'yakaboo_unlimited':
+      return '📚 Якабу Unlimited';
     default:
-      return 'Знижка';
+      return '📚 Промокод';
   }
 };

@@ -106,9 +106,9 @@ export const TagUpdateSchema = {
 
 export const PromoCodeCreateSchema = {
   code: ['required', 'string', 'pattern:[A-Z0-9]{4,12}', 'max:12'],
-  discount_percent: ['required', 'number', 'between:1:100'],
-  max_uses: ['number', 'min:1'],
-  expires_at: ['string'],
+  description: ['string', 'max:500'],
+  promo_type: ['in:yakaboo_unlimited'],
+  is_active: ['boolean'],
 };
 
 // ==================== SAVED BOOK SCHEMAS ====================
