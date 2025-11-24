@@ -192,14 +192,18 @@ manageBooksScene.action('back_to_admin', async (ctx: BotContext) => {
 manageBooksScene.action(/edit_book_(\d+)/, async (ctx: BotContext) => {
   const match = ctx.match;
   if (!match || !match[1]) {
+    logger.error('Edit book: no bookId in match', { match, userId: ctx.from?.id });
     await ctx.answerCbQuery('❌ Помилка: не вдалося отримати ID книги');
     return;
   }
 
   const bookId = parseInt(match[1]);
+  logger.info('Edit book action triggered', { bookId, userId: ctx.from?.id });
+  
   await ctx.answerCbQuery('Відкриваємо редагування...');
 
   // Переходимо до сцени редагування
+  logger.info('Entering EDIT_BOOK_SCENE', { bookId, userId: ctx.from?.id });
   await ctx.scene.enter('EDIT_BOOK_SCENE', { bookId });
 });
 

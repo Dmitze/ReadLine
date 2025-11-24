@@ -18,7 +18,17 @@ const editBookScene = new Scenes.WizardScene(
   async (ctx: BotContext) => {
     const state = ctx.scene.state as EditBookState;
 
+    logger.info('EditBookScene step 1 entered', { 
+      bookId: state.bookId,
+      hasSceneState: !!ctx.scene.state,
+      userId: ctx.from?.id 
+    });
+
     if (!state.bookId) {
+      logger.error('EditBookScene: bookId not found in state', {
+        state,
+        userId: ctx.from?.id,
+      });
       await ctx.reply('❌ Помилка: ID книги не знайдено');
       return ctx.scene.leave();
     }
@@ -26,6 +36,10 @@ const editBookScene = new Scenes.WizardScene(
     const book = await getBookById(state.bookId);
 
     if (!book) {
+      logger.error('EditBookScene: book not found', {
+        bookId: state.bookId,
+        userId: ctx.from?.id,
+      });
       await ctx.reply('❌ Книга не знайдена');
       return ctx.scene.leave();
     }
