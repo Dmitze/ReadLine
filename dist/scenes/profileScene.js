@@ -36,7 +36,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const telegraf_1 = require("telegraf");
 const logger_1 = require("../utils/logger");
 const helpers_1 = require("../utils/helpers");
-const mainKeyboards_1 = require("../keyboards/mainKeyboards");
 const UserManagementService_1 = require("../services/UserManagementService");
 const models_1 = require("../database/models");
 const profileScene = new telegraf_1.Scenes.BaseScene('PROFILE_SCENE');
@@ -158,6 +157,72 @@ profileScene.action('back_to_profile_from_orders', async (ctx) => {
         ]).reply_markup,
     });
 });
+profileScene.action(/personal_page_(\d+)/, async (ctx) => {
+    await ctx.answerCbQuery();
+    const page = parseInt(ctx.match?.[1] || '0', 10);
+    const sceneState = ctx.scene.state;
+    const allBooks = sceneState.personalCollectionBooks || [];
+    if (!allBooks || allBooks.length === 0) {
+        await ctx.answerCbQuery('❌ Помилка при завантаженні даних', { show_alert: true });
+        return;
+    }
+    const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
+    const booksPerPage = 5;
+    const paginatedBooks = allBooks.slice(page * booksPerPage, (page + 1) * booksPerPage);
+    const totalPages = Math.ceil(allBooks.length / booksPerPage);
+    let messageText = '📚 <b>Персональна підбірка для вас</b>\n\n';
+    messageText += `Сторінка ${page + 1} з ${totalPages}\n\n`;
+    paginatedBooks.forEach((book, index) => {
+        const rating = book.rating ? `⭐${book.rating.toFixed(1)}` : '';
+        messageText += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}${rating ? ` ${rating}` : ''}\n`;
+    });
+    const keyboard = paginatedBooks.map((book) => [
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+    ]);
+    const navButtons = [];
+    if (page > 0) {
+        navButtons.push(Markup.button.callback('⬅️ Назад', `personal_page_${page - 1}`));
+    }
+    if (page + 1 < totalPages) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `personal_page_${page + 1}`));
+    }
+    if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+    }
+    keyboard.push([Markup.button.callback('⬅️ До профілю', 'back_to_profile_from_personal')]);
+    await ctx.editMessageText(messageText, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+    });
+});
+profileScene.action('back_to_profile_from_personal', async (ctx) => {
+    await ctx.answerCbQuery();
+    const userId = ctx.from?.id;
+    if (!userId)
+        return;
+    const userService = (0, UserManagementService_1.createUserManagementService)(models_1.db);
+    const profileResult = await userService.getUserProfile(userId);
+    if (profileResult.isErr()) {
+        await ctx.reply('❌ Помилка при завантаженні профілю.');
+        return;
+    }
+    const profile = profileResult.unwrap();
+    profile.firstName = (0, helpers_1.escapeHtml)(ctx.from.first_name || '');
+    profile.lastName = (0, helpers_1.escapeHtml)(ctx.from.last_name || '');
+    profile.username = ctx.from.username ? `@${(0, helpers_1.escapeHtml)(ctx.from.username)}` : 'не встановлено';
+    const profileText = userService.formatProfileText(profile);
+    const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
+    await ctx.editMessageText(profileText, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+            [{ text: '🤖 Персональні рекомендації', callback_data: 'show_personal_collection' }],
+            [{ text: '🎯 AI Підбір книги', callback_data: 'start_ai_assistant' }],
+            [{ text: '📋 Мої замовлення', callback_data: 'show_my_orders' }],
+            [{ text: '📊 Моя статистика', callback_data: 'show_stats' }],
+            [{ text: '⬅️ Назад', callback_data: 'profile_back' }],
+        ]).reply_markup,
+    });
+});
 profileScene.action('profile_back', async (ctx) => {
     await ctx.answerCbQuery();
     await ctx.scene?.leave();
@@ -173,9 +238,8 @@ profileScene.action('show_personal_collection', async (ctx) => {
         await ctx.reply('❌ Помилка ідентифікації користувача');
         return;
     }
-    await ctx.reply('🤖 Аналізую ваші вподобання та створюю персональну підбірку...');
     const userService = (0, UserManagementService_1.createUserManagementService)(models_1.db);
-    const collectionResult = await userService.getPersonalCollection(userId, 5);
+    const collectionResult = await userService.getPersonalCollection(userId, 10);
     if (collectionResult.isErr()) {
         logger_1.logger.error('Failed to get personal collection', collectionResult.error);
         await ctx.reply('❌ Помилка при створенні персональної підбірки.');
@@ -189,48 +253,42 @@ profileScene.action('show_personal_collection', async (ctx) => {
     let messageText = '📚 <b>Персональна підбірка для вас</b>\n\n';
     switch (collectionData.source) {
         case 'smart_recommendations':
-            messageText += '🤖 Створено на основі ваших вподобань, тегів та рейтингів\n';
+            messageText += '🤖 Створено на основі ваших вподобань, тегів та рейтингів\n\n';
             break;
         case 'top_books':
-            messageText += '🤖 На основі найкращих книг каталогу\n';
+            messageText += '🤖 На основі найкращих книг каталогу\n\n';
             break;
         case 'new_books':
-            messageText += '🤖 Найновіші книги каталогу\n';
+            messageText += '🤖 Найновіші книги каталогу\n\n';
             break;
     }
-    messageText += `📖 Знайдено ${collectionData.count} ${collectionData.count === 1 ? 'книгу' : 'книг'}`;
-    await ctx.reply(messageText, { parse_mode: 'HTML' });
-    const { formatBookCaption } = await Promise.resolve().then(() => __importStar(require('../utils/helpers')));
-    const { isBookSaved } = await Promise.resolve().then(() => __importStar(require('../database/models')));
-    for (const book of collectionData.books) {
-        const caption = await formatBookCaption(book);
-        const isSaved = await isBookSaved(userId, book.id);
-        const keyboard = (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved);
-        if (book.photo_file_id &&
-            book.photo_file_id !== 'default_book_cover' &&
-            book.photo_file_id.length > 20) {
-            await ctx
-                .replyWithPhoto(book.photo_file_id, {
-                caption,
-                parse_mode: 'HTML',
-                reply_markup: keyboard,
-            })
-                .catch((photoError) => {
-                logger_1.logger.debug('Photo error, sending as text');
-                ctx.reply(caption, {
-                    parse_mode: 'HTML',
-                    reply_markup: keyboard,
-                });
-            });
-        }
-        else {
-            await ctx.reply(caption, {
-                parse_mode: 'HTML',
-                reply_markup: keyboard,
-            });
-        }
-        await new Promise((resolve) => setTimeout(resolve, 500));
+    const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
+    const booksPerPage = 5;
+    const page = 0;
+    const paginatedBooks = collectionData.books.slice(page * booksPerPage, (page + 1) * booksPerPage);
+    const totalPages = Math.ceil(collectionData.books.length / booksPerPage);
+    messageText += `Сторінка 1 з ${totalPages}\n\n`;
+    paginatedBooks.forEach((book, index) => {
+        const rating = book.rating ? `⭐${book.rating.toFixed(1)}` : '';
+        messageText += `${index + 1}. <b>${book.title}</b> - ${book.author}${rating ? ` ${rating}` : ''}\n`;
+    });
+    const keyboard = paginatedBooks.map((book) => [
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+    ]);
+    const navButtons = [];
+    if (totalPages > 1) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `personal_page_1`));
     }
+    if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+    }
+    keyboard.push([Markup.button.callback('⬅️ До профілю', 'back_to_profile_from_personal')]);
+    await ctx.reply(messageText, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+    });
+    const sceneState = ctx.scene.state;
+    sceneState.personalCollectionBooks = collectionData.books;
     logger_1.logger.userAction(userId, 'ai_personal_collection', { booksFound: collectionData.count });
 });
 profileScene.leave((ctx) => {
