@@ -138,6 +138,7 @@ settingsScene.action('notif_toggle', async (ctx) => {
     '../utils/notifications'
   );
   const settings = await getUserNotificationSettings(userId);
+  const previousState = settings.enabled;
   settings.enabled = !settings.enabled;
 
   await setUserNotificationSettings(settings);
@@ -152,29 +153,39 @@ settingsScene.action('notif_toggle', async (ctx) => {
     disabled: 'Вимкнено',
   };
 
-  await ctx.editMessageText(
-    '🔔 <b>Налаштування сповіщень</b>\n\n' +
-      `Статус: ${settings.enabled ? '✅ Увімкнено' : '❌ Вимкнено'}\n` +
-      `Частота: ${frequencyNames[settings.frequency]}\n` +
-      `Час: ${settings.preferredTime || '10:00'}\n\n` +
-      'Оберіть що хочете змінити:',
-    {
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [
-          [
-            {
-              text: settings.enabled ? '🔕 Вимкнути сповіщення' : '🔔 Увімкнути сповіщення',
-              callback_data: 'notif_toggle',
-            },
+  try {
+    await ctx.editMessageText(
+      '🔔 <b>Налаштування сповіщень</b>\n\n' +
+        `Статус: ${settings.enabled ? '✅ Увімкнено' : '❌ Вимкнено'}\n` +
+        `Частота: ${frequencyNames[settings.frequency]}\n` +
+        `Час: ${settings.preferredTime || '10:00'}\n\n` +
+        'Оберіть що хочете змінити:',
+      {
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [
+              {
+                text: settings.enabled ? '🔕 Вимкнути сповіщення' : '🔔 Увімкнути сповіщення',
+                callback_data: 'notif_toggle',
+              },
+            ],
+            [{ text: '⏰ Змінити частоту', callback_data: 'notif_frequency' }],
+            [{ text: '🕐 Змінити час', callback_data: 'notif_time' }],
+            [{ text: '⬅️ Назад', callback_data: 'settings_back' }],
           ],
-          [{ text: '⏰ Змінити частоту', callback_data: 'notif_frequency' }],
-          [{ text: '🕐 Змінити час', callback_data: 'notif_time' }],
-          [{ text: '⬅️ Назад', callback_data: 'settings_back' }],
-        ],
-      },
+        },
+      }
+    );
+  } catch (error) {
+    // Handle "message is not modified" error - occurs when state doesn't actually change
+    if (error instanceof Error && error.message.includes('message is not modified')) {
+      logger.warn('Notification toggle: message content unchanged', { userId });
+    } else {
+      logger.error('Error updating notification settings message', error);
+      throw error;
     }
-  );
+  }
 });
 
 // Змінити частоту сповіщень
@@ -226,18 +237,26 @@ settingsScene.action(/^freq_(daily|every_4_days|weekly|disabled)$/, async (ctx) 
   };
 
   await ctx.answerCbQuery('✅ Збережено');
-  await ctx.editMessageText(
-    '✅ <b>Частота змінена</b>\n\n' + `Нова частота: ${frequencyNames[frequency]}`,
-    {
-      parse_mode: 'HTML',
-      reply_markup: {
-        inline_keyboard: [
-          [{ text: '⬅️ Назад до сповіщень', callback_data: 'settings_notifications' }],
-          [{ text: '🏠 На головну', callback_data: 'settings_exit' }],
-        ],
-      },
+  try {
+    await ctx.editMessageText(
+      '✅ <b>Частота змінена</b>\n\n' + `Нова частота: ${frequencyNames[frequency]}`,
+      {
+        parse_mode: 'HTML',
+        reply_markup: {
+          inline_keyboard: [
+            [{ text: '⬅️ Назад до сповіщень', callback_data: 'settings_notifications' }],
+            [{ text: '🏠 На головну', callback_data: 'settings_exit' }],
+          ],
+        },
+      }
+    );
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('message is not modified')) {
+      logger.warn('Frequency change: message content unchanged', { userId, frequency });
+    } else {
+      logger.error('Error updating frequency message', error);
     }
-  );
+  }
 });
 
 // Змінити час сповіщень (заглушка)
@@ -259,16 +278,24 @@ settingsScene.action('notif_time', async (ctx) => {
 // Повернення до меню налаштувань
 settingsScene.action('settings_back', async (ctx) => {
   await ctx.answerCbQuery();
-  await ctx.editMessageText('⚙️ <b>Налаштування</b>\n\n' + 'Оберіть що хочете налаштувати:', {
-    parse_mode: 'HTML',
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: '📱 Тип клавіатури', callback_data: 'settings_keyboard' }],
-        [{ text: '🔔 Сповіщення', callback_data: 'settings_notifications' }],
-        [{ text: '🏠 На головну', callback_data: 'settings_exit' }],
-      ],
-    },
-  });
+  try {
+    await ctx.editMessageText('⚙️ <b>Налаштування</b>\n\n' + 'Оберіть що хочете налаштувати:', {
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '📱 Тип клавіатури', callback_data: 'settings_keyboard' }],
+          [{ text: '🔔 Сповіщення', callback_data: 'settings_notifications' }],
+          [{ text: '🏠 На головну', callback_data: 'settings_exit' }],
+        ],
+      },
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('message is not modified')) {
+      logger.warn('Settings back: message already current');
+    } else {
+      logger.error('Error navigating back to settings', error);
+    }
+  }
 });
 
 // Вихід з налаштувань
