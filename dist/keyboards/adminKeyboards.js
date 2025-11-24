@@ -17,6 +17,7 @@ const getAdminMenuKeyboard = (pendingReviews = 0, pendingFeedback = 0) => {
         [telegraf_1.Markup.button.callback(reviewsButtonText, 'moderate_reviews')],
         [telegraf_1.Markup.button.callback(feedbackButtonText, 'view_feedback')],
         [telegraf_1.Markup.button.callback('📊 Статистика', 'admin_stats')],
+        [telegraf_1.Markup.button.callback('📖 Інструкції', 'admin_help')],
     ]).reply_markup;
 };
 exports.getAdminMenuKeyboard = getAdminMenuKeyboard;
