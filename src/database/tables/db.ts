@@ -218,8 +218,12 @@ export const initDatabase = (): Promise<void> => {
       CREATE TABLE IF NOT EXISTS promo_codes (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           code TEXT UNIQUE NOT NULL,
+          description TEXT,
+          promo_type TEXT DEFAULT 'yakaboo_unlimited',
+          is_active INTEGER DEFAULT 1,
           user_id INTEGER,
           is_used BOOLEAN DEFAULT 0,
+          created_by INTEGER,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           used_at DATETIME
       );
@@ -334,6 +338,15 @@ export const initDatabase = (): Promise<void> => {
       'ALTER TABLE books ADD COLUMN external_link TEXT;',
       'ALTER TABLE books ADD COLUMN recommended_age INTEGER;',
       'ALTER TABLE books ADD COLUMN content_warnings TEXT;',
+      'ALTER TABLE books ADD COLUMN isbn TEXT;',
+      'ALTER TABLE books ADD COLUMN language TEXT DEFAULT \'Українська\';',
+    ];
+
+    const alterPromoCodesTableQueries = [
+      'ALTER TABLE promo_codes ADD COLUMN description TEXT;',
+      'ALTER TABLE promo_codes ADD COLUMN promo_type TEXT DEFAULT \'yakaboo_unlimited\';',
+      'ALTER TABLE promo_codes ADD COLUMN is_active INTEGER DEFAULT 1;',
+      'ALTER TABLE promo_codes ADD COLUMN created_by INTEGER;',
     ];
 
     db.serialize(() => {
@@ -362,6 +375,14 @@ export const initDatabase = (): Promise<void> => {
         db.run(query, (err) => {
           if (err && !err.message.includes('duplicate column name')) {
             logger.warn('ALTER TABLE warning', { error: err.message });
+          }
+        });
+      });
+
+      alterPromoCodesTableQueries.forEach((query) => {
+        db.run(query, (err) => {
+          if (err && !err.message.includes('duplicate column name')) {
+            logger.warn('ALTER TABLE promo_codes warning', { error: err.message });
           }
         });
       });

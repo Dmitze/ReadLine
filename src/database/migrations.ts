@@ -115,13 +115,13 @@ const migration001_CreateCoreTables: IMigration = {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         code TEXT UNIQUE NOT NULL,
         description TEXT,
-        discount_percent INTEGER,
-        discount_amount INTEGER,
-        max_uses INTEGER,
-        uses_count INTEGER DEFAULT 0,
+        promo_type TEXT DEFAULT 'yakaboo_unlimited',
         is_active INTEGER DEFAULT 1,
-        expires_at TIMESTAMP,
+        user_id INTEGER,
+        is_used INTEGER DEFAULT 0,
+        created_by INTEGER,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        used_at TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
