@@ -155,36 +155,43 @@ const aiAssistantScene = new Scenes.WizardScene(
       return ctx.scene.leave();
     }
 
-    await ctx.reply(
-      `<b>✨ Знайшов ${books.length} ідеальних ${books.length === 1 ? 'варіант' : 'варіанти'}!</b>\n\n` +
-        '<b>Ось чому саме ці книги вам будуть цікаві:</b>',
-      { parse_mode: 'HTML' }
-    );
+    // Компактний список книг
+    const booksPerPage = 5;
+    const page = 0;
+    const paginatedBooks = books.slice(page * booksPerPage, (page + 1) * booksPerPage);
+    const totalPages = Math.ceil(books.length / booksPerPage);
 
-    // Показуємо книги з поясненнями
-    for (const book of books) {
-      const caption =
-        `<b>📖 ${book.title}</b>${getBookIdText(book.id)}\n` +
-        `<b>Автор:</b> ${book.author}\n` +
-        `<b>Жанр:</b> ${book.genre}\n\n` +
-        '🤖 <i>Рекомендовано на основі ваших вподобань та настрою</i>';
+    let messageText = `<b>✨ Знайшов ${books.length} ідеальних ${books.length === 1 ? 'варіант' : 'варіанти'}!</b>\n\n`;
+    messageText += '<b>Рекомендовано на основі ваших вподобань та настрою:</b>\n\n';
+    messageText += `Сторінка 1 з ${totalPages}\n\n`;
 
-      if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
-        await ctx.replyWithPhoto(book.photo_file_id, {
-          caption,
-          parse_mode: 'HTML',
-          reply_markup: getEnhancedBookKeyboard(book),
-        });
-      } else {
-        await ctx.reply(caption, {
-          parse_mode: 'HTML',
-          reply_markup: getEnhancedBookKeyboard(book),
-        });
-      }
+    paginatedBooks.forEach((book, index) => {
+      const rating = book.rating ? `⭐${book.rating.toFixed(1)}` : '';
+      messageText += `${index + 1}. <b>${book.title}</b> - ${book.author}${rating ? ` ${rating}` : ''}\n`;
+    });
 
-      // Затримка між повідомленнями
-      await new Promise((resolve) => setTimeout(resolve, 500));
+    const keyboard = paginatedBooks.map((book) => [
+      Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+    ]);
+
+    const navButtons = [];
+    if (totalPages > 1) {
+      navButtons.push(Markup.button.callback('Вперед ➡️', `ai_result_page_1`));
     }
+    if (navButtons.length > 0) {
+      keyboard.push(navButtons);
+    }
+
+    keyboard.push([Markup.button.callback('⬅️ До меню', 'leave_ai_assistant')]);
+
+    await ctx.reply(messageText, {
+      parse_mode: 'HTML',
+      reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+    });
+
+    // Зберігаємо дані для пагінації
+    const wizardState = ctx.wizard.state as any;
+    wizardState.aiResultBooks = books;
 
     logger.userAction(ctx.from?.id || 0, 'ai_assistant_selection', {
       interest: state.aiInterest,
@@ -197,6 +204,61 @@ const aiAssistantScene = new Scenes.WizardScene(
   }
 );
 
+// Пагінація результатів AI підбору
+aiAssistantScene.action(/ai_result_page_(\d+)/, async (ctx: BotContext) => {
+  await ctx.answerCbQuery();
+  const page = parseInt(ctx.match?.[1] || '0', 10);
+  const wizardState = ctx.wizard?.state as any;
+  const allBooks = wizardState?.aiResultBooks || [];
+
+  if (!allBooks || allBooks.length === 0) {
+    await ctx.answerCbQuery('❌ Помилка при завантаженні даних', { show_alert: true });
+    return;
+  }
+
+  const booksPerPage = 5;
+  const paginatedBooks = allBooks.slice(page * booksPerPage, (page + 1) * booksPerPage);
+  const totalPages = Math.ceil(allBooks.length / booksPerPage);
+
+  let messageText = '<b>✨ Результати пошуку</b>\n\n';
+  messageText += '<b>Рекомендовано на основі ваших вподобань та настрою:</b>\n\n';
+  messageText += `Сторінка ${page + 1} з ${totalPages}\n\n`;
+
+  paginatedBooks.forEach((book, index) => {
+    const rating = book.rating ? `⭐${book.rating.toFixed(1)}` : '';
+    messageText += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}${rating ? ` ${rating}` : ''}\n`;
+  });
+
+  const keyboard = paginatedBooks.map((book) => [
+    Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+  ]);
+
+  const navButtons = [];
+  if (page > 0) {
+    navButtons.push(Markup.button.callback('⬅️ Назад', `ai_result_page_${page - 1}`));
+  }
+  if (page + 1 < totalPages) {
+    navButtons.push(Markup.button.callback('Вперед ➡️', `ai_result_page_${page + 1}`));
+  }
+
+  if (navButtons.length > 0) {
+    keyboard.push(navButtons);
+  }
+
+  keyboard.push([Markup.button.callback('⬅️ До меню', 'leave_ai_assistant')]);
+
+  await ctx.editMessageText(messageText, {
+    parse_mode: 'HTML',
+    reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+  });
+});
+
+// Вихід з AI помічника
+aiAssistantScene.action('leave_ai_assistant', async (ctx: BotContext) => {
+  await ctx.answerCbQuery();
+  await ctx.scene.leave();
+});
+
 // Cleanup при виході зі сцени
 aiAssistantScene.leave((ctx) => {
   const state = ctx.wizard?.state as WizardState;
@@ -204,6 +266,7 @@ aiAssistantScene.leave((ctx) => {
     delete state.aiInterest;
     delete state.aiFormat;
     delete state.aiMood;
+    delete (state as any).aiResultBooks;
   }
   logger.debug('AIAssistantScene cleanup completed', { userId: ctx.from?.id });
 });
