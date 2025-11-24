@@ -3,18 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getBackKeyboard = exports.getEnhancedBookKeyboard = exports.getAdaptiveBookKeyboard = exports.getGenreKeyboard = exports.getAdaptiveGenreKeyboard = exports.getMainMenuKeyboard = exports.getAdaptiveMainMenuKeyboard = exports.getKeyboardConfig = exports.detectDeviceType = void 0;
 const telegraf_1 = require("telegraf");
 const detectDeviceType = (ctx) => {
-    try {
-        const { getUserKeyboardPreference } = require('../utils/userPreferences');
-        const userId = ctx.from?.id;
-        if (userId) {
-            const preference = getUserKeyboardPreference(userId);
-            if (preference && ['mobile', 'tablet', 'desktop'].includes(preference)) {
-                return preference;
-            }
-        }
-    }
-    catch (error) {
-    }
     return 'mobile';
 };
 exports.detectDeviceType = detectDeviceType;
@@ -62,7 +50,6 @@ const getAdaptiveMainMenuKeyboard = (ctx, withQuickActions = true) => {
         '👤 Профіль',
         '🤖 AI Помічник',
         '🎁 Промокод',
-        '⚙️ Налаштування',
         '❓ Допомога',
         "💬 Зворотній зв'язок",
     ];
@@ -82,8 +69,8 @@ const getMainMenuKeyboard = () => {
         ['📖 Каталог', '🏆 Топ книги'],
         ['🆕 Новинки', '💾 Моя бібліотека'],
         ['👤 Профіль', '🤖 AI Помічник'],
-        ['🎁 Отримати промокод', '⚙️ Налаштування'],
-        ['ℹ️ Допомога', "📞 Зворотній зв'язок"],
+        ['🎁 Отримати промокод', "📞 Зворотній зв'язок"],
+        ['ℹ️ Допомога'],
     ];
     return telegraf_1.Markup.keyboard(buttons).resize().oneTime().reply_markup;
 };
@@ -116,8 +103,8 @@ const getAdaptiveBookKeyboard = (ctx, book, isSaved = false) => {
     const keyboard = [];
     const formatButtons = [];
     if (book.pdf_file_id || (book.file_type === 'file' && book.file_url)) {
-        const format = book.file_format || 'PDF';
-        const buttonText = deviceType === 'mobile' ? `📥 ${format}` : `📥 Завантажити (${format})`;
+        const format = book.file_format || 'файл';
+        const buttonText = deviceType === 'mobile' ? `📥 ${format}` : '📥 Завантажити файл';
         formatButtons.push(telegraf_1.Markup.button.callback(buttonText, `download_pdf_${book.id}`));
     }
     if (book.external_link) {
@@ -179,9 +166,7 @@ const getEnhancedBookKeyboard = (book, isSaved = false) => {
     }
     const formatRow = [];
     if (book.file_url || book.pdf_file_id) {
-        const format = book.file_format || 'PDF';
-        const buttonText = `📥 Завантажити (${format})`;
-        formatRow.push(telegraf_1.Markup.button.callback(buttonText, `download_pdf_${book.id}`));
+        formatRow.push(telegraf_1.Markup.button.callback('📥 Завантажити файл', `download_pdf_${book.id}`));
     }
     if (book.audio_file_id) {
         formatRow.push(telegraf_1.Markup.button.callback('🎧 Слухати', `download_audio_${book.id}`));
