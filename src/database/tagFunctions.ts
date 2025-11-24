@@ -146,6 +146,48 @@ export const searchBooksByTag = (tagName: string, limit: number = 10): Promise<a
   });
 };
 
+// Пошук книг за тегом з пагінацією
+export const searchBooksByTagWithPagination = (
+  tagName: string,
+  limit: number = 10,
+  offset: number = 0
+): Promise<{ books: any[]; total: number }> => {
+  return new Promise(async (resolve, reject) => {
+    const { sanitizeTag } = await import('../utils/sanitization');
+    const sanitizedTagName = sanitizeTag(tagName);
+
+    if (!sanitizedTagName || sanitizedTagName.length < 2) {
+      resolve({ books: [], total: 0 });
+      return;
+    }
+
+    const countQuery = `SELECT COUNT(DISTINCT b.id) as total FROM books b
+      INNER JOIN book_tags bt ON b.id = bt.book_id
+      INNER JOIN tags t ON bt.tag_id = t.id
+      WHERE t.name LIKE ? AND b.is_available = 1`;
+
+    const dataQuery = `SELECT DISTINCT b.* FROM books b
+      INNER JOIN book_tags bt ON b.id = bt.book_id
+      INNER JOIN tags t ON bt.tag_id = t.id
+      WHERE t.name LIKE ? AND b.is_available = 1
+      ORDER BY b.rating DESC, b.downloads_count DESC LIMIT ? OFFSET ?`;
+
+    const sanitizedParam = `%${sanitizedTagName}%`;
+
+    db.get(countQuery, [sanitizedParam], (err, countRow: any) => {
+      if (err) {
+        reject(err);
+        return;
+      }
+
+      db.all(dataQuery, [sanitizedParam, limit, offset], (err, rows: any[]) => {
+        if (err) reject(err);
+        else resolve({ books: rows || [], total: countRow?.total || 0 });
+      });
+    });
+  });
+};
+
 // Отримати популярні теги
 export const getPopularTags = (limit: number = 10): Promise<Array<Tag & { count: number }>> => {
   return new Promise((resolve, reject) => {
