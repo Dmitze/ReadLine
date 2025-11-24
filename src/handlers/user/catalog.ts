@@ -21,8 +21,12 @@ import {
   getBooksWithAudio,
   getHighRatedBooks,
   getBooksSortedByTitle,
+  getHighRatedBooksWithPagination,
+  getNewestBooksWithPagination,
+  getBooksWithAudioWithPagination,
+  getMostDownloadedBooksWithPagination,
 } from '../../database/catalogFunctions';
-import { getAllTags, searchBooksByTag } from '../../database/tagFunctions';
+import { getAllTags, searchBooksByTag, searchBooksByTagWithPagination } from '../../database/tagFunctions';
 import { getGenreKeyboard } from '../../keyboards/mainKeyboards';
 import { formatBookCaption, getBookIdText } from '../../utils/helpers';
 
@@ -185,27 +189,40 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     try {
       await ctx.answerCbQuery();
 
-      const books = await getHighRatedBooks(4, 10);
+      const booksPerPage = 5;
+      const { books, total } = await getHighRatedBooksWithPagination(4, booksPerPage, 0);
 
       if (books.length === 0) {
         await ctx.editMessageText('📭 Немає високорейтингових книг.');
         return;
       }
 
+      const totalPages = Math.ceil(total / booksPerPage);
+
       let message = '⭐ <b>ВИСОКОРЕЙТИНГОВІ КНИГИ</b>\n\n';
+      message += `Сторінка 1 з ${totalPages}\n\n`;
       books.forEach((book, index) => {
         const rating = book.rating ? `⭐ ${book.rating.toFixed(1)}` : '⭐ Немає оцінок';
         message += `${index + 1}. <b>${book.title}</b> - ${book.author}\n   ${rating}\n\n`;
       });
 
+      const keyboard = books.map((book) => [
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+      ]);
+
+      const navButtons = [];
+      if (totalPages > 1) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `rating_page_1`));
+      }
+      if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+      }
+
+      keyboard.push([Markup.button.callback('⬅️ Назад до каталогу', 'catalog_back')]);
+
       await ctx.editMessageText(message, {
         parse_mode: 'HTML',
-        reply_markup: Markup.inlineKeyboard([
-          ...books
-            .slice(0, 10)
-            .map((book) => [Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)]),
-          [Markup.button.callback('⬅️ Назад до каталогу', 'catalog_back')],
-        ]).reply_markup,
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
       });
 
       logger.userAction(ctx.from!.id, 'view_catalog_rating');
@@ -220,32 +237,107 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     try {
       await ctx.answerCbQuery();
 
-      const { getNewestBooks } = await import('../../database/models');
-      const books = await cache.getOrSet('catalog_new', () => getNewestBooks(10), CACHE_TTL.SHORT);
+      const booksPerPage = 5;
+      const { books, total } = await cache.getOrSet(
+        'catalog_new_page_0',
+        () => getNewestBooksWithPagination(booksPerPage, 0),
+        CACHE_TTL.SHORT
+      );
 
       if (books.length === 0) {
         await ctx.editMessageText('📭 Немає нових книг.');
         return;
       }
 
+      const totalPages = Math.ceil(total / booksPerPage);
+
       let message = '🆕 <b>НОВИНКИ</b>\n\n';
+      message += `Сторінка 1 з ${totalPages}\n\n`;
       books.forEach((book, index) => {
         message += `${index + 1}. <b>${book.title}</b> - ${book.author}\n`;
       });
 
+      const keyboard = books.map((book) => [
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+      ]);
+
+      const navButtons = [];
+      if (totalPages > 1) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `new_page_1`));
+      }
+      if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+      }
+
+      keyboard.push([Markup.button.callback('⬅️ Назад до каталогу', 'catalog_back')]);
+
       await ctx.editMessageText(message, {
         parse_mode: 'HTML',
-        reply_markup: Markup.inlineKeyboard([
-          ...books
-            .slice(0, 10)
-            .map((book) => [Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)]),
-          [Markup.button.callback('⬅️ Назад до каталогу', 'catalog_back')],
-        ]).reply_markup,
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
       });
 
       logger.userAction(ctx.from!.id, 'view_catalog_new');
     } catch (error) {
       logger.error('Error showing new books catalog', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  // Пагінація по завантаженням
+  bot.action(/downloads_page_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match) return;
+
+      await ctx.answerCbQuery();
+
+      const page = parseInt(match[1], 10);
+      const booksPerPage = 5;
+      const offset = page * booksPerPage;
+
+      const { books, total } = await getMostDownloadedBooksWithPagination(booksPerPage, offset);
+
+      if (books.length === 0) {
+        await ctx.answerCbQuery('❌ Книг не знайдено', { show_alert: true });
+        return;
+      }
+
+      const totalPages = Math.ceil(total / booksPerPage);
+
+      let message = '📥 <b>НАЙПОПУЛЯРНІШІ КНИГИ</b>\n\n';
+      message += `Сторінка ${page + 1} з ${totalPages}\n\n`;
+
+      books.forEach((book, index) => {
+        const downloads = book.downloads_count || 0;
+        message += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}\n   📥 ${downloads} завантажень\n\n`;
+      });
+
+      const keyboard = books.map((book) => [
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+      ]);
+
+      const navButtons = [];
+      if (page > 0) {
+        navButtons.push(Markup.button.callback('⬅️ Назад', `downloads_page_${page - 1}`));
+      }
+      if (page + 1 < totalPages) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `downloads_page_${page + 1}`));
+      }
+
+      if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+      }
+
+      keyboard.push([Markup.button.callback('⬅️ До каталогу', 'catalog_back')]);
+
+      await ctx.editMessageText(message, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+      });
+
+      logger.userAction(ctx.from!.id, 'view_downloads_page', { page });
+    } catch (error) {
+      logger.error('Error showing downloads catalog page', error, { userId: ctx.from?.id });
       await ctx.answerCbQuery('❌ Помилка');
     }
   });
@@ -287,30 +379,39 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     try {
       await ctx.answerCbQuery();
 
-      const { books, total } = await getBooksSortedByTitle(10, 0);
+      const booksPerPage = 5;
+      const { books, total } = await getBooksSortedByTitle(booksPerPage, 0);
 
       if (books.length === 0) {
         await ctx.editMessageText('📭 Немає книг.');
         return;
       }
 
+      const totalPages = Math.ceil(total / booksPerPage);
+
       let message = '🔤 <b>КНИГИ ЗА АЛФАВІТОМ</b>\n\n';
+      message += `Сторінка 1 з ${totalPages}\n\n`;
       books.forEach((book, index) => {
         message += `${index + 1}. <b>${book.title}</b> - ${book.author}\n`;
       });
 
-      if (total > 10) {
-        message += `\nℹ️ Показано 10 з ${total} книг. Використовуйте пошук для інших книг.`;
+      const keyboard = books.map((book) => [
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+      ]);
+
+      const navButtons = [];
+      if (totalPages > 1) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `alpha_page_1`));
       }
+      if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+      }
+
+      keyboard.push([Markup.button.callback('⬅️ Назад до каталогу', 'catalog_back')]);
 
       await ctx.editMessageText(message, {
         parse_mode: 'HTML',
-        reply_markup: Markup.inlineKeyboard([
-          ...books
-            .slice(0, 10)
-            .map((book) => [Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)]),
-          [Markup.button.callback('⬅️ Назад до каталогу', 'catalog_back')],
-        ]).reply_markup,
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
       });
 
       logger.userAction(ctx.from!.id, 'view_catalog_alpha');
@@ -325,26 +426,39 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     try {
       await ctx.answerCbQuery();
 
-      const books = await getBooksWithAudio(10);
+      const booksPerPage = 5;
+      const { books, total } = await getBooksWithAudioWithPagination(booksPerPage, 0);
 
       if (books.length === 0) {
         await ctx.editMessageText('🎧 Немає аудіокниг.');
         return;
       }
 
+      const totalPages = Math.ceil(total / booksPerPage);
+
       let message = '🎧 <b>КНИГИ З АУДІО</b>\n\n';
+      message += `Сторінка 1 з ${totalPages}\n\n`;
       books.forEach((book, index) => {
         message += `${index + 1}. <b>${book.title}</b> - ${book.author}\n`;
       });
 
+      const keyboard = books.map((book) => [
+        Markup.button.callback(`🎧 ${book.title}`, `view_book_${book.id}`)
+      ]);
+
+      const navButtons = [];
+      if (totalPages > 1) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `audio_page_1`));
+      }
+      if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+      }
+
+      keyboard.push([Markup.button.callback('⬅️ Назад до каталогу', 'catalog_back')]);
+
       await ctx.editMessageText(message, {
         parse_mode: 'HTML',
-        reply_markup: Markup.inlineKeyboard([
-          ...books
-            .slice(0, 10)
-            .map((book) => [Markup.button.callback(`🎧 ${book.title}`, `view_book_${book.id}`)]),
-          [Markup.button.callback('⬅️ Назад до каталогу', 'catalog_back')],
-        ]).reply_markup,
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
       });
 
       logger.userAction(ctx.from!.id, 'view_catalog_audio');
@@ -359,27 +473,40 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     try {
       await ctx.answerCbQuery();
 
-      const books = await getMostDownloadedBooks(10);
+      const booksPerPage = 5;
+      const { books, total } = await getMostDownloadedBooksWithPagination(booksPerPage, 0);
 
       if (books.length === 0) {
         await ctx.editMessageText('📭 Немає популярних книг.');
         return;
       }
 
+      const totalPages = Math.ceil(total / booksPerPage);
+
       let message = '📥 <b>НАЙПОПУЛЯРНІШІ КНИГИ</b>\n\n';
+      message += `Сторінка 1 з ${totalPages}\n\n`;
       books.forEach((book, index) => {
         const downloads = book.downloads_count || 0;
         message += `${index + 1}. <b>${book.title}</b> - ${book.author}\n   📥 ${downloads} завантажень\n\n`;
       });
 
+      const keyboard = books.map((book) => [
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+      ]);
+
+      const navButtons = [];
+      if (totalPages > 1) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `downloads_page_1`));
+      }
+      if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+      }
+
+      keyboard.push([Markup.button.callback('⬅️ Назад до каталогу', 'catalog_back')]);
+
       await ctx.editMessageText(message, {
         parse_mode: 'HTML',
-        reply_markup: Markup.inlineKeyboard([
-          ...books
-            .slice(0, 10)
-            .map((book) => [Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)]),
-          [Markup.button.callback('⬅️ Назад до каталогу', 'catalog_back')],
-        ]).reply_markup,
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
       });
 
       logger.userAction(ctx.from!.id, 'view_catalog_downloads');
@@ -413,6 +540,243 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       });
     } catch (error) {
       logger.error('Error going back to catalog', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  // Пагінація по новинкам
+  bot.action(/new_page_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match) return;
+
+      await ctx.answerCbQuery();
+
+      const page = parseInt(match[1], 10);
+      const booksPerPage = 5;
+      const offset = page * booksPerPage;
+
+      const { books, total } = await cache.getOrSet(
+        `catalog_new_page_${page}`,
+        () => getNewestBooksWithPagination(booksPerPage, offset),
+        CACHE_TTL.SHORT
+      );
+
+      if (books.length === 0) {
+        await ctx.answerCbQuery('❌ Книг не знайдено', { show_alert: true });
+        return;
+      }
+
+      const totalPages = Math.ceil(total / booksPerPage);
+
+      let message = '🆕 <b>НОВИНКИ</b>\n\n';
+      message += `Сторінка ${page + 1} з ${totalPages}\n\n`;
+
+      books.forEach((book, index) => {
+        message += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}\n`;
+      });
+
+      const keyboard = books.map((book) => [
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+      ]);
+
+      const navButtons = [];
+      if (page > 0) {
+        navButtons.push(Markup.button.callback('⬅️ Назад', `new_page_${page - 1}`));
+      }
+      if (page + 1 < totalPages) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `new_page_${page + 1}`));
+      }
+
+      if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+      }
+
+      keyboard.push([Markup.button.callback('⬅️ До каталогу', 'catalog_back')]);
+
+      await ctx.editMessageText(message, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+      });
+
+      logger.userAction(ctx.from!.id, 'view_new_page', { page });
+    } catch (error) {
+      logger.error('Error showing new books page', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  // Пагінація по алфавіту
+  bot.action(/alpha_page_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match) return;
+
+      await ctx.answerCbQuery();
+
+      const page = parseInt(match[1], 10);
+      const booksPerPage = 5;
+      const offset = page * booksPerPage;
+
+      const { books, total } = await getBooksSortedByTitle(booksPerPage, offset);
+
+      if (books.length === 0) {
+        await ctx.answerCbQuery('❌ Книг не знайдено', { show_alert: true });
+        return;
+      }
+
+      const totalPages = Math.ceil(total / booksPerPage);
+
+      let message = '🔤 <b>КНИГИ ЗА АЛФАВІТОМ</b>\n\n';
+      message += `Сторінка ${page + 1} з ${totalPages}\n\n`;
+
+      books.forEach((book, index) => {
+        message += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}\n`;
+      });
+
+      const keyboard = books.map((book) => [
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+      ]);
+
+      const navButtons = [];
+      if (page > 0) {
+        navButtons.push(Markup.button.callback('⬅️ Назад', `alpha_page_${page - 1}`));
+      }
+      if (page + 1 < totalPages) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `alpha_page_${page + 1}`));
+      }
+
+      if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+      }
+
+      keyboard.push([Markup.button.callback('⬅️ До каталогу', 'catalog_back')]);
+
+      await ctx.editMessageText(message, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+      });
+
+      logger.userAction(ctx.from!.id, 'view_alpha_page', { page });
+    } catch (error) {
+      logger.error('Error showing alphabetical catalog page', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  // Пагінація по рейтингу
+  bot.action(/rating_page_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match) return;
+
+      await ctx.answerCbQuery();
+
+      const page = parseInt(match[1], 10);
+      const booksPerPage = 5;
+      const offset = page * booksPerPage;
+
+      const { books, total } = await getHighRatedBooksWithPagination(4, booksPerPage, offset);
+
+      if (books.length === 0) {
+        await ctx.answerCbQuery('❌ Книг не знайдено', { show_alert: true });
+        return;
+      }
+
+      const totalPages = Math.ceil(total / booksPerPage);
+
+      let message = '⭐ <b>ВИСОКОРЕЙТИНГОВІ КНИГИ</b>\n\n';
+      message += `Сторінка ${page + 1} з ${totalPages}\n\n`;
+
+      books.forEach((book, index) => {
+        const rating = book.rating ? `⭐ ${book.rating.toFixed(1)}` : '⭐ Немає оцінок';
+        message += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}\n   ${rating}\n\n`;
+      });
+
+      const keyboard = books.map((book) => [
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+      ]);
+
+      const navButtons = [];
+      if (page > 0) {
+        navButtons.push(Markup.button.callback('⬅️ Назад', `rating_page_${page - 1}`));
+      }
+      if (page + 1 < totalPages) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `rating_page_${page + 1}`));
+      }
+
+      if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+      }
+
+      keyboard.push([Markup.button.callback('⬅️ До каталогу', 'catalog_back')]);
+
+      await ctx.editMessageText(message, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+      });
+
+      logger.userAction(ctx.from!.id, 'view_rating_page', { page });
+    } catch (error) {
+      logger.error('Error showing rating page', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  // Пагінація по аудіокнигам
+  bot.action(/audio_page_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match) return;
+
+      await ctx.answerCbQuery();
+
+      const page = parseInt(match[1], 10);
+      const booksPerPage = 5;
+      const offset = page * booksPerPage;
+
+      const { books, total } = await getBooksWithAudioWithPagination(booksPerPage, offset);
+
+      if (books.length === 0) {
+        await ctx.answerCbQuery('❌ Книг не знайдено', { show_alert: true });
+        return;
+      }
+
+      const totalPages = Math.ceil(total / booksPerPage);
+
+      let message = '🎧 <b>КНИГИ З АУДІО</b>\n\n';
+      message += `Сторінка ${page + 1} з ${totalPages}\n\n`;
+
+      books.forEach((book, index) => {
+        message += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}\n`;
+      });
+
+      const keyboard = books.map((book) => [
+        Markup.button.callback(`🎧 ${book.title}`, `view_book_${book.id}`)
+      ]);
+
+      const navButtons = [];
+      if (page > 0) {
+        navButtons.push(Markup.button.callback('⬅️ Назад', `audio_page_${page - 1}`));
+      }
+      if (page + 1 < totalPages) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `audio_page_${page + 1}`));
+      }
+
+      if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+      }
+
+      keyboard.push([Markup.button.callback('⬅️ До каталогу', 'catalog_back')]);
+
+      await ctx.editMessageText(message, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+      });
+
+      logger.userAction(ctx.from!.id, 'view_audio_page', { page });
+    } catch (error) {
+      logger.error('Error showing audio catalog page', error, { userId: ctx.from?.id });
       await ctx.answerCbQuery('❌ Помилка');
     }
   });
@@ -503,7 +867,8 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      const books = await searchBooksByTag(tag.name, 10);
+      const booksPerPage = 5;
+      const { books, total } = await searchBooksByTagWithPagination(tag.name, booksPerPage, 0);
 
       if (books.length === 0) {
         await ctx.editMessageText(`🏷️ За тегом #${tag.name} книг не знайдено.`, {
@@ -515,19 +880,31 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
+      const totalPages = Math.ceil(total / booksPerPage);
+
       let message = `🏷️ <b>Книги з тегом #${tag.name}</b>\n\n`;
+      message += `Сторінка 1 з ${totalPages}\n\n`;
       books.forEach((book, index) => {
         message += `${index + 1}. <b>${book.title}</b> - ${book.author}\n`;
       });
 
+      const keyboard = books.map((book) => [
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+      ]);
+
+      const navButtons = [];
+      if (totalPages > 1) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `tag_page_${tagId}_1`));
+      }
+      if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+      }
+
+      keyboard.push([Markup.button.callback('⬅️ Назад до тегів', 'catalog_tags')]);
+
       await ctx.editMessageText(message, {
         parse_mode: 'HTML',
-        reply_markup: Markup.inlineKeyboard([
-          ...books
-            .slice(0, 10)
-            .map((book) => [Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)]),
-          [Markup.button.callback('⬅️ Назад до тегів', 'catalog_tags')],
-        ]).reply_markup,
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
       });
 
       logger.userAction(ctx.from!.id, 'view_tag_books', { tagId, tagName: tag.name });
@@ -536,6 +913,73 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
         userId: ctx.from?.id,
         match: ctx.match,
       });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  // Пагінація по тегам
+  bot.action(/tag_page_(\d+)_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match) return;
+
+      await ctx.answerCbQuery();
+
+      const tagId = parseInt(match[1], 10);
+      const page = parseInt(match[2], 10);
+      const booksPerPage = 5;
+      const offset = page * booksPerPage;
+
+      const tags = await getAllTags();
+      const tag = tags.find((t) => t.id === tagId);
+
+      if (!tag) {
+        await ctx.answerCbQuery('❌ Тег не знайдено', { show_alert: true });
+        return;
+      }
+
+      const { books, total } = await searchBooksByTagWithPagination(tag.name, booksPerPage, offset);
+
+      if (books.length === 0) {
+        await ctx.answerCbQuery('❌ Книг не знайдено', { show_alert: true });
+        return;
+      }
+
+      const totalPages = Math.ceil(total / booksPerPage);
+
+      let message = `🏷️ <b>Книги з тегом #${tag.name}</b>\n\n`;
+      message += `Сторінка ${page + 1} з ${totalPages}\n\n`;
+
+      books.forEach((book, index) => {
+        message += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}\n`;
+      });
+
+      const keyboard = books.map((book) => [
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+      ]);
+
+      const navButtons = [];
+      if (page > 0) {
+        navButtons.push(Markup.button.callback('⬅️ Назад', `tag_page_${tagId}_${page - 1}`));
+      }
+      if (page + 1 < totalPages) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `tag_page_${tagId}_${page + 1}`));
+      }
+
+      if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+      }
+
+      keyboard.push([Markup.button.callback('⬅️ До тегів', 'catalog_tags')]);
+
+      await ctx.editMessageText(message, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+      });
+
+      logger.userAction(ctx.from!.id, 'view_tag_page', { tagId, page });
+    } catch (error) {
+      logger.error('Error showing tag page', error, { userId: ctx.from?.id });
       await ctx.answerCbQuery('❌ Помилка');
     }
   });
