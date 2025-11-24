@@ -9,6 +9,7 @@ import { logger } from '../../utils/logger';
 import { ERRORS } from '../../constants';
 import {
   getAllPodcasts,
+  getAllPodcastsWithPagination,
   getPodcastById,
   getPodcastReviews,
   incrementPodcastListens,
@@ -23,7 +24,8 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
     try {
       await ctx.answerCbQuery();
 
-      const podcasts = await getAllPodcasts();
+      const podcastsPerPage = 5;
+      const { podcasts, total } = await getAllPodcastsWithPagination(podcastsPerPage, 0);
 
       if (podcasts.length === 0) {
         await ctx.editMessageText(
@@ -38,8 +40,10 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
+      const totalPages = Math.ceil(total / podcastsPerPage);
+
       let message = '🎙️ <b>ПІДКАСТИ</b>\n\n';
-      message += `Знайдено ${podcasts.length} підкастів:\n\n`;
+      message += `Сторінка 1 з ${totalPages}\n\n`;
 
       const keyboard = [];
 
@@ -51,6 +55,14 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
           ),
         ]);
       });
+
+      const navButtons = [];
+      if (totalPages > 1) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `podcast_page_1`));
+      }
+      if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+      }
 
       keyboard.push([Markup.button.callback('⬅️ Назад до каталогу', 'catalog_back_main')]);
 
@@ -240,6 +252,67 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
       logger.userAction(ctx.from!.id, 'view_podcast_reviews', { podcastId });
     } catch (error) {
       logger.error('Error showing podcast reviews', error, { userId: ctx.from?.id });
+      await ctx.answerCbQuery('❌ Помилка');
+    }
+  });
+
+  // Пагінація по подкастам
+  bot.action(/podcast_page_(\d+)/, async (ctx: BotContext) => {
+    try {
+      const match = ctx.match;
+      if (!match) return;
+
+      await ctx.answerCbQuery();
+
+      const page = parseInt(match[1], 10);
+      const podcastsPerPage = 5;
+      const offset = page * podcastsPerPage;
+
+      const { podcasts, total } = await getAllPodcastsWithPagination(podcastsPerPage, offset);
+
+      if (podcasts.length === 0) {
+        await ctx.answerCbQuery('❌ Подкастів не знайдено', { show_alert: true });
+        return;
+      }
+
+      const totalPages = Math.ceil(total / podcastsPerPage);
+
+      let message = '🎙️ <b>ПІДКАСТИ</b>\n\n';
+      message += `Сторінка ${page + 1} з ${totalPages}\n\n`;
+
+      const keyboard = [];
+
+      podcasts.forEach((podcast, index) => {
+        keyboard.push([
+          Markup.button.callback(
+            `${page * podcastsPerPage + index + 1}. ${podcast.theme} ${podcast.rating ? '⭐' + podcast.rating.toFixed(1) : ''}`,
+            `view_podcast_${podcast.id}`
+          ),
+        ]);
+      });
+
+      const navButtons = [];
+      if (page > 0) {
+        navButtons.push(Markup.button.callback('⬅️ Назад', `podcast_page_${page - 1}`));
+      }
+      if (page + 1 < totalPages) {
+        navButtons.push(Markup.button.callback('Вперед ➡️', `podcast_page_${page + 1}`));
+      }
+
+      if (navButtons.length > 0) {
+        keyboard.push(navButtons);
+      }
+
+      keyboard.push([Markup.button.callback('⬅️ До каталогу', 'catalog_back_main')]);
+
+      await ctx.editMessageText(message, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+      });
+
+      logger.userAction(ctx.from!.id, 'view_podcast_page', { page });
+    } catch (error) {
+      logger.error('Error showing podcast page', error, { userId: ctx.from?.id });
       await ctx.answerCbQuery('❌ Помилка');
     }
   });
