@@ -254,7 +254,7 @@ export const getPersonalizedNotification = async (userId: number): Promise<strin
       );
     }
 
-    // Загальне нагадування
+    // Загальне нагадування про неактивність
     const DAYS_INACTIVE_THRESHOLD = 7;
     const MS_PER_DAY = 1000 * 60 * 60 * 24;
     const daysSinceLastActive = lastActive
@@ -266,6 +266,58 @@ export const getPersonalizedNotification = async (userId: number): Promise<strin
         `👋 Давно не бачилися, ${firstName}!\n\n` +
         '📚 У нас є багато цікавих книг.\n' +
         'Може час знайти щось нове для читання? 📖'
+      );
+    }
+
+    // ✅ ВИПРАВЛЕНО #4: Топ рейтингові книги цього місяця
+    const topBooks = await new Promise<{ count: number } | undefined>((resolve, reject) => {
+      db.get(
+        `
+        SELECT COUNT(*) as count
+        FROM books
+        WHERE is_available = 1
+        AND created_at > datetime('now', '-30 days')
+        ORDER BY rating DESC
+        LIMIT 1
+      `,
+        [],
+        (err, row: { count: number } | undefined) => {
+          if (err) reject(err);
+          else resolve(row);
+        }
+      );
+    });
+
+    if (topBooks && topBooks.count > 0) {
+      return (
+        `⭐ ${firstName}, погляньте на це!\n\n` +
+        `🏆 У нас з'явилися найкраще оцінені книги цього місяця.\n\n` +
+        'Вже читаєш щось круте? 🔥'
+      );
+    }
+
+    // ✅ ВИПРАВЛЕНО #5: Мотиваційне сповіщення про читання
+    const booksReadThisWeek = await new Promise<{ count: number } | undefined>((resolve, reject) => {
+      db.get(
+        `
+        SELECT COUNT(*) as count
+        FROM saved_books
+        WHERE user_id = ?
+        AND created_at > datetime('now', '-7 days')
+      `,
+        [userId],
+        (err, row: { count: number } | undefined) => {
+          if (err) reject(err);
+          else resolve(row);
+        }
+      );
+    });
+
+    if (booksReadThisWeek && booksReadThisWeek.count === 0) {
+      return (
+        `💪 Привіт, ${firstName}!\n\n` +
+        `📖 Ти не читав цього тижня.\n\n` +
+        'Кожна сторінка - це нова історія. Почнемо? ✨'
       );
     }
 
