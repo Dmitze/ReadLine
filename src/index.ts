@@ -576,8 +576,9 @@ bot.action('back_to_admin', async (ctx) => {
     // Видаляємо попереднє повідомлення
     try {
       await ctx.deleteMessage();
-    } catch (error) {
-      // Ігноруємо помилку
+    } catch (_error) {
+      // ✅ ВИПРАВЛЕНО #12: Префіксу '_' для невикористаної змінної
+      // Ігноруємо помилку видалення повідомлення
     }
 
     // Спочатку прибираємо reply клавіатуру
@@ -661,6 +662,15 @@ logger.info('Starting bot launch');
     const { initDatabase } = await import('./database/models');
     await initDatabase();
     logger.info('Database initialized successfully');
+    
+    // ✅ Запускаємо міграції для створення всіх таблиць
+    logger.info('Running database migrations...');
+    const { MigrationManager } = await import('./database/MigrationManager');
+    const { db } = await import('./database/models');
+    const migrationManager = new MigrationManager(db);
+    await migrationManager.init();
+    const migrationResult = await migrationManager.migrate();
+    logger.info('Database migrations completed', { count: migrationResult.count });
 
     logger.info('Launching bot...');
     await bot.launch({
