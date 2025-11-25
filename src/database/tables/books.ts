@@ -123,6 +123,36 @@ export const getAllAvailableBooks = (): Promise<Book[]> => {
 };
 
 /**
+ * Get multiple books by IDs (batch operation to prevent N+1 queries)
+ */
+export const getBooksByIds = (ids: number[]): Promise<Map<number, Book>> => {
+  return new Promise((resolve, reject) => {
+    if (ids.length === 0) {
+      resolve(new Map());
+      return;
+    }
+
+    const placeholders = ids.map(() => '?').join(',');
+    const query = `SELECT * FROM books WHERE id IN (${placeholders})`;
+    db.all(query, ids, (err, rows: Book[]) => {
+      if (err) {
+        logger.error('Error getting books by IDs', err, { count: ids.length });
+        reject(err);
+      } else {
+        const bookMap = new Map<number, Book>();
+        for (const book of rows) {
+          // ✅ ВИПРАВЛЕНО #11: Додано непорожню перевірку
+          if (book.id !== undefined) {
+            bookMap.set(book.id, book);
+          }
+        }
+        resolve(bookMap);
+      }
+    });
+  });
+};
+
+/**
  * Get book by ID
  */
 export const getBookById = (id: number): Promise<Book | undefined> => {
