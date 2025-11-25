@@ -29,6 +29,9 @@ const migration001_CreateCoreTables: IMigration = {
         is_admin INTEGER DEFAULT 0,
         is_blocked INTEGER DEFAULT 0,
         preferences TEXT,
+        favorite_genres TEXT,
+        content_types TEXT,
+        is_completed_onboarding INTEGER DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -535,7 +538,7 @@ const migration011_AddPerformanceIndexes: IMigration = {
 
       -- Індекси для користувачів
       CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at);
-      CREATE INDEX IF NOT EXISTS idx_users_last_seen ON users(last_seen);
+      CREATE INDEX IF NOT EXISTS idx_users_updated_at ON users(updated_at);
 
       -- Індекси для відгуків
       CREATE INDEX IF NOT EXISTS idx_reviews_rating ON reviews(rating);
@@ -568,7 +571,7 @@ const migration011_AddPerformanceIndexes: IMigration = {
       DROP INDEX IF EXISTS idx_books_downloads_count;
       DROP INDEX IF EXISTS idx_books_views_count;
       DROP INDEX IF EXISTS idx_users_created_at;
-      DROP INDEX IF EXISTS idx_users_last_seen;
+      DROP INDEX IF EXISTS idx_users_updated_at;
       DROP INDEX IF EXISTS idx_reviews_rating;
       DROP INDEX IF EXISTS idx_reviews_created_at;
       DROP INDEX IF EXISTS idx_reviews_is_published;
@@ -587,6 +590,78 @@ const migration011_AddPerformanceIndexes: IMigration = {
   },
 };
 
+/**
+ * MIGRATION 012 - Add user_id, last_active_at, and has_completed_onboarding columns
+ */
+const migration012_AddUserColumns: IMigration = {
+  version: '012_20251124_add_user_columns',
+  name: 'Add user_id, last_active_at, and has_completed_onboarding columns to users table',
+
+  up: async (db: Database | DatabaseWrapper) => {
+    const wrapper = db instanceof DatabaseWrapper ? db : new DatabaseWrapper(db);
+    
+    // Check existing columns using PRAGMA
+    const tableInfo = await wrapper.all<{ name: string; type: string }>(
+      "PRAGMA table_info(users)"
+    );
+    const columnNames = tableInfo.map(col => col.name.toLowerCase());
+
+    // Helper function to run SQL
+    const runSQL = async (sql: string): Promise<void> => {
+      if (db instanceof DatabaseWrapper) {
+        await db.run(sql);
+      } else {
+        await new Promise<void>((resolve, reject) => {
+          (db as any).run(sql, (err: Error | null) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+      }
+    };
+
+    // Add user_id column if it doesn't exist
+    // If telegram_id exists, copy its values to user_id
+    if (!columnNames.includes('user_id')) {
+      if (columnNames.includes('telegram_id')) {
+        // Copy telegram_id to user_id
+        await runSQL(`ALTER TABLE users ADD COLUMN user_id INTEGER;`);
+        await runSQL(`UPDATE users SET user_id = telegram_id WHERE user_id IS NULL;`);
+        // Make user_id unique and not null
+        await runSQL(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_user_id_temp ON users(user_id);`);
+      } else {
+        // Just add the column
+        await runSQL(`ALTER TABLE users ADD COLUMN user_id INTEGER UNIQUE;`);
+      }
+      // Create index
+      await runSQL(`CREATE INDEX IF NOT EXISTS idx_users_user_id ON users(user_id);`);
+    }
+
+    // Add last_active_at column if it doesn't exist
+    if (!columnNames.includes('last_active_at')) {
+      await runSQL(`ALTER TABLE users ADD COLUMN last_active_at DATETIME DEFAULT CURRENT_TIMESTAMP;`);
+    }
+
+    // Add has_completed_onboarding column if it doesn't exist
+    // If is_completed_onboarding exists, copy its values
+    if (!columnNames.includes('has_completed_onboarding')) {
+      if (columnNames.includes('is_completed_onboarding')) {
+        // Copy is_completed_onboarding to has_completed_onboarding
+        await runSQL(`ALTER TABLE users ADD COLUMN has_completed_onboarding BOOLEAN DEFAULT 0;`);
+        await runSQL(`UPDATE users SET has_completed_onboarding = is_completed_onboarding WHERE has_completed_onboarding IS NULL;`);
+      } else {
+        // Just add the column
+        await runSQL(`ALTER TABLE users ADD COLUMN has_completed_onboarding BOOLEAN DEFAULT 0;`);
+      }
+    }
+  },
+
+  down: async (db: Database | DatabaseWrapper) => {
+    // SQLite doesn't support DROP COLUMN easily, so we skip rollback
+    console.warn('Rollback not supported for user columns migration');
+  },
+};
+
 // Export all migrations
 export const allMigrations: IMigration[] = [
   migration001_CreateCoreTables,
@@ -599,7 +674,9 @@ export const allMigrations: IMigration[] = [
   migration008_AddEpubSupport,
   // Added in this session: FTS5 support and optional demo seed
   migration009_AddFTS5Search,
-  migration010_20251119_seed_demo_books,
+  // migration010_20251119_seed_demo_books, // DISABLED - clean presentation
   // Added performance indexes
   migration011_AddPerformanceIndexes,
+  // Add user_id, last_active_at, and has_completed_onboarding columns
+  migration012_AddUserColumns,
 ];
