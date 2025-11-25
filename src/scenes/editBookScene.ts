@@ -160,7 +160,8 @@ const editBookScene = new Scenes.WizardScene(
       availability: 'доступність',
     };
 
-    const fieldName = fieldNames[state.editingField] || 'значення';
+    // ✅ ВИПРАВЛЕНО #11: Перевірка що editingField існує перед використанням як ключ
+    const fieldName = (state.editingField && fieldNames[state.editingField as keyof typeof fieldNames]) || 'значення';
 
     if (state.editingField === 'availability') {
       await ctx.editMessageReplyMarkup({
@@ -216,19 +217,22 @@ const editBookScene = new Scenes.WizardScene(
         'Сатира',
       ];
 
+      // ✅ ВИПРАВЛЕНО #11: Ініціалізувати selectedGenres якщо undefined
+      const selectedGenres = state.selectedGenres || [];
+
       // Популярні жанри
       const popularKeyboard = [];
       for (let i = 0; i < popularGenres.length; i += 2) {
         const row = [
           Markup.button.callback(
-            `${state.selectedGenres.includes(popularGenres[i]) ? '✅' : ''} ${popularGenres[i]}`,
+            `${selectedGenres.includes(popularGenres[i]) ? '✅' : ''} ${popularGenres[i]}`,
             `genre_${popularGenres[i]}`
           ),
         ];
         if (i + 1 < popularGenres.length) {
           row.push(
             Markup.button.callback(
-              `${state.selectedGenres.includes(popularGenres[i + 1]) ? '✅' : ''} ${popularGenres[i + 1]}`,
+              `${selectedGenres.includes(popularGenres[i + 1]) ? '✅' : ''} ${popularGenres[i + 1]}`,
               `genre_${popularGenres[i + 1]}`
             )
           );
@@ -241,14 +245,14 @@ const editBookScene = new Scenes.WizardScene(
       for (let i = 0; i < otherGenres.length; i += 2) {
         const row = [
           Markup.button.callback(
-            `${state.selectedGenres.includes(otherGenres[i]) ? '✅' : ''} ${otherGenres[i]}`,
+            `${selectedGenres.includes(otherGenres[i]) ? '✅' : ''} ${otherGenres[i]}`,
             `genre_${otherGenres[i]}`
           ),
         ];
         if (i + 1 < otherGenres.length) {
           row.push(
             Markup.button.callback(
-              `${state.selectedGenres.includes(otherGenres[i + 1]) ? '✅' : ''} ${otherGenres[i + 1]}`,
+              `${selectedGenres.includes(otherGenres[i + 1]) ? '✅' : ''} ${otherGenres[i + 1]}`,
               `genre_${otherGenres[i + 1]}`
             )
           );
@@ -264,7 +268,7 @@ const editBookScene = new Scenes.WizardScene(
       ];
 
       const selectedText =
-        state.selectedGenres.length > 0 ? `\n\n✅ Вибрано: ${state.selectedGenres.join(', ')}` : '';
+        selectedGenres.length > 0 ? `\n\n✅ Вибрано: ${selectedGenres.join(', ')}` : '';
 
       await ctx.reply(`🎭 Оберіть жанри (до 5):${selectedText}\n\n📚 *Популярні жанри:*`, {
         parse_mode: 'Markdown',
@@ -650,7 +654,10 @@ const editBookScene = new Scenes.WizardScene(
 
     // Зберігаємо зміну
     state.updates = state.updates || {};
-    state.updates[state.editingField] = newValue;
+    // ✅ ВИПРАВЛЕНО #11: Перевірка що editingField існує перед використанням як ключ
+    if (state.editingField) {
+      state.updates[state.editingField] = newValue;
+    }
 
     await ctx.reply(
       `✅ Поле "${state.editingField}" оновлено. Використайте меню вище для продовження.`
