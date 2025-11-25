@@ -584,7 +584,7 @@ const addBookScene = new Scenes.WizardScene(
 
         await ctx.editMessageText(
           `${getProgress(10)}\n\n🏷️ <b>ВИБЕРІТЬ ТЕГИ</b>\n\n` +
-          `Додайте теги до книги (опціонально):`,
+          'Додайте теги до книги (опціонально):',
           {
             parse_mode: 'HTML',
             reply_markup: { inline_keyboard: keyboard },
