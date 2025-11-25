@@ -53,8 +53,9 @@ export const getKeyboardConfig = (deviceType: DeviceType) => {
 };
 
 // Адаптивне головне меню (Завдання 30)
-export const getAdaptiveMainMenuKeyboard = (ctx: Context, withQuickActions: boolean = true) => {
-  const deviceType = detectDeviceType(ctx);
+// ✅ ВИПРАВЛЕНО #11: Префіксу '_' для невикористаних параметрів
+export const getAdaptiveMainMenuKeyboard = (_ctx: Context, _withQuickActions: boolean = true) => {
+  const deviceType = detectDeviceType(_ctx);
   const config = getKeyboardConfig(deviceType);
 
   // Всі доступні кнопки
