@@ -499,7 +499,7 @@ bot.action('back_to_admin', async (ctx) => {
         try {
             await ctx.deleteMessage();
         }
-        catch (error) {
+        catch (_error) {
         }
         await ctx.reply('🔄 Повертаємось до адмін-панелі...', {
             reply_markup: { remove_keyboard: true },
@@ -556,6 +556,13 @@ logger_1.logger.info('Starting bot launch');
         const { initDatabase } = await Promise.resolve().then(() => __importStar(require('./database/models')));
         await initDatabase();
         logger_1.logger.info('Database initialized successfully');
+        logger_1.logger.info('Running database migrations...');
+        const { MigrationManager } = await Promise.resolve().then(() => __importStar(require('./database/MigrationManager')));
+        const { db } = await Promise.resolve().then(() => __importStar(require('./database/models')));
+        const migrationManager = new MigrationManager(db);
+        await migrationManager.init();
+        const migrationResult = await migrationManager.migrate();
+        logger_1.logger.info('Database migrations completed', { count: migrationResult.count });
         logger_1.logger.info('Launching bot...');
         await bot.launch({
             dropPendingUpdates: true,
