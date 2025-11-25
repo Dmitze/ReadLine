@@ -81,7 +81,7 @@ export async function showFileFormatMenu(ctx: BotContext, state: WizardState): P
 
   const text = `${getProgress(6)}\n\n📎 <b>ЗАВАНТАЖЕННЯ ФОРМАТІВ КНИГИ</b>\n\n` +
     `Оберіть формати для завантаження (можете обрати до 3):${loadedText}\n\n` +
-    `Натисніть "Готово", коли закінчите.`;
+    'Натисніть "Готово", коли закінчите.';
 
   await ctx.reply(text, {
     parse_mode: 'HTML',
@@ -190,7 +190,7 @@ export function getLoadedFormatsText(state: WizardState): string {
   const formats = [];
   if (state.bookFile) formats.push(`📥 ${state.bookFileName || 'Файл'}`);
   if (state.bookAudio) formats.push(`🎧 ${state.bookAudioName || 'Аудіо'}`);
-  if (state.bookLink) formats.push(`🔗 Посилання`);
+  if (state.bookLink) formats.push('🔗 Посилання');
 
   if (formats.length === 0) {
     return '❌ Немає завантажених форматів';
