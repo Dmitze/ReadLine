@@ -57,7 +57,12 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
   // Каталог книг
   bot.action('catalog_books', async (ctx: BotContext) => {
     try {
-      await ctx.answerCbQuery();
+      // ✅ ВИПРАВЛЕНО #8: Додано try-catch для callback query
+      try {
+        await ctx.answerCbQuery();
+      } catch (cbError) {
+        logger.debug('Failed to answer callback query', { error: cbError instanceof Error ? cbError.message : String(cbError) });
+      }
       await ctx.editMessageText('📚 <b>КАТАЛОГ КНИГ</b>\n\n' + 'Оберіть спосіб перегляду:', {
         parse_mode: 'HTML',
         reply_markup: Markup.inlineKeyboard([
@@ -212,7 +217,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
 
       const navButtons = [];
       if (totalPages > 1) {
-        navButtons.push(Markup.button.callback('Вперед ➡️', `rating_page_1`));
+        navButtons.push(Markup.button.callback('Вперед ➡️', 'rating_page_1'));
       }
       if (navButtons.length > 0) {
         keyboard.push(navButtons);
@@ -263,7 +268,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
 
       const navButtons = [];
       if (totalPages > 1) {
-        navButtons.push(Markup.button.callback('Вперед ➡️', `new_page_1`));
+        navButtons.push(Markup.button.callback('Вперед ➡️', 'new_page_1'));
       }
       if (navButtons.length > 0) {
         keyboard.push(navButtons);
@@ -401,7 +406,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
 
       const navButtons = [];
       if (totalPages > 1) {
-        navButtons.push(Markup.button.callback('Вперед ➡️', `alpha_page_1`));
+        navButtons.push(Markup.button.callback('Вперед ➡️', 'alpha_page_1'));
       }
       if (navButtons.length > 0) {
         keyboard.push(navButtons);
@@ -448,7 +453,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
 
       const navButtons = [];
       if (totalPages > 1) {
-        navButtons.push(Markup.button.callback('Вперед ➡️', `audio_page_1`));
+        navButtons.push(Markup.button.callback('Вперед ➡️', 'audio_page_1'));
       }
       if (navButtons.length > 0) {
         keyboard.push(navButtons);
@@ -496,7 +501,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
 
       const navButtons = [];
       if (totalPages > 1) {
-        navButtons.push(Markup.button.callback('Вперед ➡️', `downloads_page_1`));
+        navButtons.push(Markup.button.callback('Вперед ➡️', 'downloads_page_1'));
       }
       if (navButtons.length > 0) {
         keyboard.push(navButtons);
