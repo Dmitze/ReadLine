@@ -22,7 +22,12 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
   // Каталог підкастів
   bot.action('catalog_podcasts', async (ctx: BotContext) => {
     try {
-      await ctx.answerCbQuery();
+      // ✅ ВИПРАВЛЕНО #8: Додано try-catch для callback query
+      try {
+        await ctx.answerCbQuery();
+      } catch (cbError) {
+        logger.debug('Failed to answer callback query', { error: cbError instanceof Error ? cbError.message : String(cbError) });
+      }
 
       const podcastsPerPage = 5;
       const { podcasts, total } = await getAllPodcastsWithPagination(podcastsPerPage, 0);
@@ -58,7 +63,7 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
 
       const navButtons = [];
       if (totalPages > 1) {
-        navButtons.push(Markup.button.callback('Вперед ➡️', `podcast_page_1`));
+        navButtons.push(Markup.button.callback('Вперед ➡️', 'podcast_page_1'));
       }
       if (navButtons.length > 0) {
         keyboard.push(navButtons);
@@ -119,7 +124,13 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
 
       // Якщо є обкладинка
       if (podcast.cover_photo_id) {
-        await ctx.deleteMessage().catch(() => {});
+        // ✅ ВИПРАВЛЕНО #7: Додано логування для помилок при видаленні
+        await ctx.deleteMessage().catch((error: unknown) => {
+          logger.debug('Failed to delete message', {
+            error: error instanceof Error ? error.message : String(error),
+            chatId: ctx.chat?.id,
+          });
+        });
         await ctx.replyWithPhoto(podcast.cover_photo_id, {
           caption: message,
           parse_mode: 'HTML',
