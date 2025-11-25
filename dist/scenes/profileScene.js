@@ -277,7 +277,7 @@ profileScene.action('show_personal_collection', async (ctx) => {
     ]);
     const navButtons = [];
     if (totalPages > 1) {
-        navButtons.push(Markup.button.callback('Вперед ➡️', `personal_page_1`));
+        navButtons.push(Markup.button.callback('Вперед ➡️', 'personal_page_1'));
     }
     if (navButtons.length > 0) {
         keyboard.push(navButtons);
