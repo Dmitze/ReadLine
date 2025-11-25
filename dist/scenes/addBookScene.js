@@ -445,7 +445,7 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
             ]);
             keyboard.push([{ text: '✅ Далі', callback_data: `tags_done_${userId}` }]);
             await ctx.editMessageText(`${(0, utils_1.getProgress)(10)}\n\n🏷️ <b>ВИБЕРІТЬ ТЕГИ</b>\n\n` +
-                `Додайте теги до книги (опціонально):`, {
+                'Додайте теги до книги (опціонально):', {
                 parse_mode: 'HTML',
                 reply_markup: { inline_keyboard: keyboard },
             });
