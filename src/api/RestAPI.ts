@@ -5,6 +5,7 @@
 
 import express, { Express, Request, Response, NextFunction } from 'express';
 import swaggerUi from 'swagger-ui-express';
+// @ts-ignore - swagger-jsdoc doesn't have TypeScript definitions
 import swaggerJsdoc from 'swagger-jsdoc';
 import { ServiceContainer } from '../core/ServiceContainer';
 import swaggerOptions from './swagger';
