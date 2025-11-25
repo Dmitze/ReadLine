@@ -190,6 +190,50 @@ export const INDEX_SPECS: IndexSpec[] = [
     columns: ['is_active'],
     description: 'Fast filtering by active status',
   },
+
+  // ✅ ВИПРАВЛЕНО #16: Додані недостатні індекси для оптимізації
+  // Book tags table indexes
+  {
+    tableName: 'book_tags',
+    indexName: 'idx_book_tags_tag_id',
+    columns: ['tag_id'],
+    description: 'Fast lookup of books by tag',
+  },
+  {
+    tableName: 'book_tags',
+    indexName: 'idx_book_tags_book_id',
+    columns: ['book_id'],
+    description: 'Fast lookup of tags for a book',
+  },
+
+  // Listening progress table indexes
+  {
+    tableName: 'listening_progress',
+    indexName: 'idx_listening_progress_user_id_book_id',
+    columns: ['user_id', 'book_id'],
+    unique: true,
+    description: 'Fast lookup of user listening progress',
+  },
+  {
+    tableName: 'listening_progress',
+    indexName: 'idx_listening_progress_last_listened',
+    columns: ['last_listened_at'],
+    description: 'Fast cleanup of old listening records',
+  },
+
+  // Book requests table indexes (if exists)
+  {
+    tableName: 'book_requests',
+    indexName: 'idx_book_requests_user_id_status',
+    columns: ['user_id', 'status'],
+    description: 'Fast filtering of user book requests by status',
+  },
+  {
+    tableName: 'book_requests',
+    indexName: 'idx_book_requests_status',
+    columns: ['status'],
+    description: 'Fast filtering by request status',
+  },
 ];
 
 /**
