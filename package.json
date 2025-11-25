@@ -30,7 +30,8 @@
     "db:optimize": "ts-node scripts/optimize-db.ts",
     "db:clear": "ts-node src/database/clear-data.ts",
     "db:reset": "ts-node src/database/reset-db.ts",
-    "reset-onboarding": "ts-node src/database/reset-onboarding.ts"
+    "reset-onboarding": "ts-node src/database/reset-onboarding.ts",
+    "migrate": "ts-node scripts/migrate.ts"
   },
   "dependencies": {
     "@types/swagger-ui-express": "^4.1.8",

@@ -32,6 +32,7 @@ const migration001_CreateCoreTables: IMigration = {
         favorite_genres TEXT,
         content_types TEXT,
         is_completed_onboarding INTEGER DEFAULT 0,
+        last_active_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -513,7 +514,7 @@ const migration008_AddEpubSupport: IMigration = {
   },
 
   down: async (db: Database | DatabaseWrapper) => {
-    // SQLite doesn't support DROP COLUMN easily
+    // SQLite doesn't support DROP COLUMN легко
     console.warn('Rollback not supported for EPUB support migration');
   },
 };
