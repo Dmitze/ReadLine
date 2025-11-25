@@ -274,6 +274,12 @@ async function updateLoadingMessage(ctx, messageId, newText, emoji = '✅') {
         await ctx.telegram.editMessageText(ctx.chat.id, messageId, undefined, `${emoji} ${newText}`);
     }
     catch (error) {
+        const logger = require('./logger').logger;
+        logger.debug('Failed to edit loading message', {
+            error: error instanceof Error ? error.message : String(error),
+            messageId,
+            chatId: ctx.chat?.id,
+        });
     }
 }
 function createProgressBar(current, total) {
