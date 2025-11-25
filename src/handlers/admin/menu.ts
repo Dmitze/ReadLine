@@ -47,7 +47,7 @@ export default (bot: Telegraf<BotContext>) => {
         panelText += `📚 Скарбів у колекції: <b>${stats.totalBooks}</b>\n`;
         panelText += `👥 Воїнів в армії: <b>${stats.totalUsers}</b>\n`;
         panelText += `⭐ Слава книг: <b>${stats.avgRating}</b>\n\n`;
-        panelText += `━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+        panelText += '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
         panelText += `${reviewsAlert}\n`;
         panelText += `${feedbackAlert}`;
 
@@ -81,7 +81,7 @@ export default (bot: Telegraf<BotContext>) => {
             '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
             '📊 <b>ВОЇНСЬКА СТАТИСТИКА:</b>\n' +
             `📚 Скарбів у колекції: <b>${basicStats.totalBooks}</b>\n\n` +
-            `━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+            '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
             `${reviewsAlert}\n` +
             `${feedbackAlert}`,
           {
@@ -240,7 +240,7 @@ export default (bot: Telegraf<BotContext>) => {
           '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
           '📊 <b>ВОЇНСЬКА СТАТИСТИКА:</b>\n' +
           `📚 Скарбів у колекції: <b>${stats.totalBooks}</b>\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+          '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
           `${reviewsAlert}\n` +
           `${feedbackAlert}`,
         {
@@ -289,7 +289,7 @@ export default (bot: Telegraf<BotContext>) => {
           '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
           '📊 <b>ВОЇНСЬКА СТАТИСТИКА:</b>\n' +
           `📚 Скарбів у колекції: <b>${stats.totalBooks}</b>\n\n` +
-          `━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+          '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
           `${reviewsAlert}\n` +
           `${feedbackAlert}`,
         {
@@ -297,7 +297,7 @@ export default (bot: Telegraf<BotContext>) => {
           reply_markup: getAdminMenuKeyboard(pendingReviews.length, pendingFeedback.length),
         }
       );
-    })().catch((error) => {
+    })().catch((error: unknown) => {
       logger.error(
         'Error returning to admin panel from promo',
         error instanceof Error ? error : new Error(String(error)),
