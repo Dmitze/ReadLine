@@ -291,7 +291,7 @@ export const getPersonalizedNotification = async (userId: number): Promise<strin
     if (topBooks && topBooks.count > 0) {
       return (
         `⭐ ${firstName}, погляньте на це!\n\n` +
-        `🏆 У нас з'явилися найкраще оцінені книги цього місяця.\n\n` +
+        '🏆 У нас з\'явилися найкраще оцінені книги цього місяця.\n\n' +
         'Вже читаєш щось круте? 🔥'
       );
     }
@@ -316,7 +316,7 @@ export const getPersonalizedNotification = async (userId: number): Promise<strin
     if (booksReadThisWeek && booksReadThisWeek.count === 0) {
       return (
         `💪 Привіт, ${firstName}!\n\n` +
-        `📖 Ти не читав цього тижня.\n\n` +
+        '📖 Ти не читав цього тижня.\n\n' +
         'Кожна сторінка - це нова історія. Почнемо? ✨'
       );
     }
