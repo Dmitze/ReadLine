@@ -1,5 +1,5 @@
 import { Telegraf } from 'telegraf';
-import { isAdmin, getBookById, getPendingReviews } from '../../database/models';
+import { isAdmin, getBooksByIds, getPendingReviews } from '../../database/models';
 import { getReviewModerationKeyboard } from '../../keyboards/adminKeyboards';
 import { logger } from '../../utils/logger';
 import { BotContext } from '../../types/telegraf';
@@ -33,9 +33,13 @@ export default (bot: Telegraf<BotContext>) => {
 
       await ctx.reply(`📝 Відгуків на модерацію: ${reviews.length}`);
 
+      // ✅ ВИПРАВЛЕНО #4: Батч-завантажити всі книги в один запит (запобіжити N+1)
+      const bookIds = reviews.map((r) => r.book_id);
+      const booksMap = await getBooksByIds(bookIds);
+
       for (const review of reviews) {
         try {
-          const book = await getBookById(review.book_id);
+          const book = booksMap.get(review.book_id);
 
           const safeTitle = escapeHtml(book?.title || 'Невідома');
           const safeName = escapeHtml(review.user_name || 'Анонім');
