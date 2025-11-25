@@ -1,6 +1,12 @@
+/**
+ * Enhanced Onboarding Scene with Podcasts Support
+ * - Better UX/IX with progress indicators
+ * - Genre selection linked to real recommendations
+ * - Podcast preferences
+ * - Content type preferences (books, audiobooks, podcasts)
+ */
+
 import { Scenes, Markup } from 'telegraf';
-import { getGenres } from '../database/models';
-import { markOnboardingComplete } from '../database/userFunctions';
 import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
 import { getMainMenuKeyboard } from '../keyboards/mainKeyboards';
@@ -8,112 +14,173 @@ import { getMainMenuKeyboard } from '../keyboards/mainKeyboards';
 interface OnboardingState {
   step?: number;
   selectedGenres?: string[];
+  selectedContentTypes?: string[];
+  userName?: string;
 }
 
 const onboardingScene = new Scenes.BaseScene<BotContext>('ONBOARDING_SCENE');
 
-// Крок 1: Привітання
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// STEP 1: Ласкаво просимо (Привітання)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 onboardingScene.enter(async (ctx: BotContext) => {
-  const userName = ctx.from?.first_name || 'Друже';
+  const userName = ctx.from?.first_name || 'Воїне';
+  const state = ctx.scene.state as OnboardingState;
+  state.userName = userName;
 
   await ctx.reply(
-    `🗡️ *Вітаємо, ${userName}!*\n\n` +
-      "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
-      "Я *Warrior's Library* ⚔️\n" +
-      "Твій легендарний гід через світ книг! 📚\n\n" +
-      "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
-      'Давай швидко познайомимося та налаштуємо бота під тебе.\n' +
-      'Це займе всього 1 хвилину! ⏱️',
+    `⚔️ *ВІТАЄМО, ${userName.toUpperCase()}!*\n\n` +
+      '═══════════════════════════════════════\n\n' +
+      "🏰 Це *Warrior's Library* ⚔️\n" +
+      '_Твоя легендарна фортеця з книг, подкастів і мудрості_\n\n' +
+      '═══════════════════════════════════════\n\n' +
+      '📚 *Що тебе чекає:*\n' +
+      '• 75,000+ книг всіх жанрів\n' +
+      '• Подкасти про саморозвиток та історію\n' +
+      '• AI рекомендації саме для тебе\n' +
+      '• Персональна статистика читання\n' +
+      '• Синхронізація прогресу\n\n' +
+      '⏱️ _Настройка займе 2 хвилини..._',
     {
       parse_mode: 'Markdown',
       reply_markup: Markup.inlineKeyboard([
-        [Markup.button.callback('⚔️ Почати пригоду', 'onboarding_start')],
+        [Markup.button.callback('🚀 РОЗПОЧАТИ ПРИГОДУ', 'onboarding_step1_start')],
+        [Markup.button.callback('⏭️ Пропустити налаштування', 'onboarding_skip')],
+      ]).reply_markup,
+    }
+  );
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// STEP 1: Вибір типів контенту (BOOKS, AUDIOBOOKS, PODCASTS)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+onboardingScene.action('onboarding_step1_start', async (ctx: BotContext) => {
+  await ctx.answerCbQuery('🛡️準備 арсенал...');
+  const state = ctx.scene.state as OnboardingState;
+  state.selectedContentTypes = [];
+
+  await ctx.reply(
+    '📖 *КРОК 1: ВИБІР ФОРМАТІВ КОНТЕНТУ*\n\n' +
+      '_(Прогрес: 1/3)_\n\n' +
+      'Які формати тебе цікавлять? Можна вибрати кілька! 👇\n\n' +
+      '📕 *Читання* - традиційні книги\n' +
+      '🎧 *Аудіокниги* - слухай на ходу\n' +
+      '🎙️ *Подкасти* - інтерв\'ю, лекції, історії\n\n' +
+      '_Ти завжди зможеш змінити це в налаштуваннях_ ⚙️',
+    {
+      parse_mode: 'Markdown',
+      reply_markup: Markup.inlineKeyboard([
+        [
+          Markup.button.callback('📕 Книги', 'onboarding_content_books'),
+          Markup.button.callback('🎧 Аудіо', 'onboarding_content_audio'),
+        ],
+        [
+          Markup.button.callback('🎙️ Подкасти', 'onboarding_content_podcasts'),
+          Markup.button.callback('📌 Все разом', 'onboarding_content_all'),
+        ],
+        [Markup.button.callback('➡️ Далі', 'onboarding_step2_genres')],
         [Markup.button.callback('⏭️ Пропустити', 'onboarding_skip')],
       ]).reply_markup,
     }
   );
 });
 
-// Початок онбордингу
-onboardingScene.action('onboarding_start', async (ctx: BotContext) => {
-  await ctx.answerCbQuery('⚔️ Готуєш арсенал...');
+// Обробка вибору типів контенту
+onboardingScene.action(/onboarding_content_(.+)/, async (ctx: BotContext) => {
+  const state = ctx.scene.state as OnboardingState;
+  const contentType = ctx.match[1];
 
-  await ctx.reply(
-    '⚔️ *МОЇ СУПЕРСИЛИ:*\n\n' +
-      '🔍 *Безстрашний Пошук*\n' +
-      'Знайду будь-яку книгу за назвою, автором або жанром\n\n' +
-      '❤️ *Бібліотека Воїна*\n' +
-      'Збирай свою колекцію улюблених книг\n\n' +
-      '🎧 *Голосні Легенди*\n' +
-      'Слухай аудіокниги в бою або на відпочинку\n\n' +
-      '🤖 *AI Мудрець*\n' +
-      'Отримуй персональні рекомендації від штучного інтелекту\n\n' +
-      '📊 *Воїнська Статистика*\n' +
-      'Стежи за своєю бібліотечною славою',
-    {
-      parse_mode: 'Markdown',
-      reply_markup: Markup.inlineKeyboard([
-        [Markup.button.callback('➡️ Далі', 'onboarding_genres')],
-      ]).reply_markup,
+  if (!state.selectedContentTypes) {
+    state.selectedContentTypes = [];
+  }
+
+  const contentMap: { [key: string]: string } = {
+    books: '📕 Книги',
+    audio: '🎧 Аудіокниги',
+    podcasts: '🎙️ Подкасти',
+    all: '📚 Все разом',
+  };
+
+  if (contentType === 'all') {
+    state.selectedContentTypes = ['books', 'audio', 'podcasts'];
+    await ctx.answerCbQuery('✅ Все формати увімкнені!');
+  } else {
+    const index = state.selectedContentTypes.indexOf(contentType);
+    if (index > -1) {
+      state.selectedContentTypes.splice(index, 1);
+      await ctx.answerCbQuery(`❌ ${contentMap[contentType]} видалено`);
+    } else {
+      state.selectedContentTypes.push(contentType);
+      await ctx.answerCbQuery(`✅ ${contentMap[contentType]} додано`);
     }
-  );
+  }
 });
 
-// Вибір жанрів
-onboardingScene.action('onboarding_genres', async (ctx: BotContext) => {
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// STEP 2: Вибір улюблених жанрів
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+onboardingScene.action('onboarding_step2_genres', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
 
   const state = ctx.scene.state as OnboardingState;
   state.selectedGenres = [];
 
-  // ✅ ВИПРАВЛЕНО #27: кешування жанрів
   const { cache, CACHE_KEYS, CACHE_TTL } = await import('../utils/cache');
-  const genres = await cache.getOrSet(CACHE_KEYS.GENRES, getGenres, CACHE_TTL.LONG);
+  const { getGenres } = await import('../database/models');
 
-  if (genres.length === 0) {
-    // Якщо жанрів немає, пропускаємо цей крок
+  try {
+    const genres = await cache.getOrSet(CACHE_KEYS.GENRES, getGenres, CACHE_TTL.LONG);
+
+    if (!genres || genres.length === 0) {
+      // Якщо жанрів немає, переходимо до фіналізації
+      await ctx.reply(
+        '✅ *Усе готово!*\n\n' +
+          '_БД поки порожня, але ми допоможемо тобі знайти щось цікаве пізніше!_\n\n' +
+          'Натисни кнопку нижче 👇',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: Markup.inlineKeyboard([
+            [Markup.button.callback('🎉 ПОЧАТИ', 'onboarding_finish')],
+          ]).reply_markup,
+        }
+      );
+      return;
+    }
+
+    // Показуємо жанри (по 2 в рядок)
+    const genreButtons = [];
+    for (let i = 0; i < genres.length; i += 2) {
+      const row = [Markup.button.callback(genres[i], `onboarding_genre_${genres[i]}`)];
+      if (i + 1 < genres.length) {
+        row.push(Markup.button.callback(genres[i + 1], `onboarding_genre_${genres[i + 1]}`));
+      }
+      genreButtons.push(row);
+    }
+
+    genreButtons.push([
+      Markup.button.callback('✅ ГОТОВО', 'onboarding_step3_finish'),
+      Markup.button.callback('⏭️ Пропустити', 'onboarding_skip'),
+    ]);
+
     await ctx.reply(
-      '✅ *Все готово!*\n\n' +
-        'Тепер ти можеш користуватися всіма функціями бота.\n\n' +
-        'Натисни кнопку нижче щоб почати! 👇',
+      '⚔️ *КРОК 2: ОБЕРИ БИТВИ (ЖАНРИ)*\n\n' +
+        '_(Прогрес: 2/3)_\n\n' +
+        'Вибери 3-5 жанрів, щоб я міг рекомендувати книги саме для тебе! 🎯\n\n' +
+        '✨ *Обрано:* 0 жанрів\n\n' +
+        '💡 _Змінювати можна завжди в налаштуваннях!_',
       {
         parse_mode: 'Markdown',
-        reply_markup: Markup.inlineKeyboard([
-          [Markup.button.callback('🎉 Почати користуватися', 'onboarding_finish')],
-        ]).reply_markup,
+        reply_markup: Markup.inlineKeyboard(genreButtons).reply_markup,
       }
     );
-    return;
+  } catch (error) {
+    logger.error('Error fetching genres in onboarding', error instanceof Error ? error : new Error(String(error)));
+    await ctx.reply('⚠️ Помилка при завантаженні жанрів. Спробуйте пізніше.');
+    await ctx.scene.leave();
   }
-
-  // Створюємо кнопки з жанрами (по 2 в рядок)
-  const genreButtons = [];
-  for (let i = 0; i < genres.length; i += 2) {
-    const row = [Markup.button.callback(genres[i], `onboarding_genre_${genres[i]}`)];
-    if (i + 1 < genres.length) {
-      row.push(Markup.button.callback(genres[i + 1], `onboarding_genre_${genres[i + 1]}`));
-    }
-    genreButtons.push(row);
-  }
-
-  genreButtons.push([
-    Markup.button.callback('✅ Готово', 'onboarding_genres_done'),
-    Markup.button.callback('⏭️ Пропустити', 'onboarding_finish'),
-  ]);
-
-  await ctx.reply(
-    '⚔️ *ОБЕРИ БИТВИ (ЖАНРИ)*\n\n' +
-      'Вибери 3-5 жанрів, де ти хочеш мандрувати.\n' +
-      'Це допоможе мені підібрати книги саме для тебе! 📖\n\n' +
-      '📚 Обрано: 0',
-    {
-      parse_mode: 'Markdown',
-      reply_markup: Markup.inlineKeyboard(genreButtons).reply_markup,
-    }
-  );
 });
 
-// Вибір конкретного жанру
+// Обробка вибору жанру (toggle)
 onboardingScene.action(/onboarding_genre_(.+)/, async (ctx: BotContext) => {
   const state = ctx.scene.state as OnboardingState;
   const genre = ctx.match[1];
@@ -122,154 +189,192 @@ onboardingScene.action(/onboarding_genre_(.+)/, async (ctx: BotContext) => {
     state.selectedGenres = [];
   }
 
-  // Перевіряємо чи жанр вже вибраний
   const index = state.selectedGenres.indexOf(genre);
   if (index > -1) {
-    // Видаляємо жанр
     state.selectedGenres.splice(index, 1);
     await ctx.answerCbQuery(`❌ ${genre} видалено`);
   } else {
-    // Додаємо жанр
     if (state.selectedGenres.length >= 5) {
-      await ctx.answerCbQuery('⚠️ Максимум 5 жанрів');
+      await ctx.answerCbQuery('⚠️ Максимум 5 жанрів', { show_alert: false });
       return;
     }
     state.selectedGenres.push(genre);
     await ctx.answerCbQuery(`✅ ${genre} додано`);
   }
 
-  // Оновлюємо повідомлення
-  // ✅ ВИПРАВЛЕНО #27: кешування жанрів
+  // Оновлюємо меню з галочками
   const { cache, CACHE_KEYS, CACHE_TTL } = await import('../utils/cache');
-  const genres = await cache.getOrSet(CACHE_KEYS.GENRES, getGenres, CACHE_TTL.LONG);
-  const genreButtons = [];
+  const { getGenres } = await import('../database/models');
 
-  for (let i = 0; i < genres.length; i += 2) {
-    const genre1 = genres[i];
-    const isSelected1 = state.selectedGenres.includes(genre1);
-    const row = [
-      Markup.button.callback(`${isSelected1 ? '✅ ' : ''}${genre1}`, `onboarding_genre_${genre1}`),
-    ];
-    if (i + 1 < genres.length) {
-      const genre2 = genres[i + 1];
-      const isSelected2 = state.selectedGenres.includes(genre2);
-      row.push(
-        Markup.button.callback(`${isSelected2 ? '✅ ' : ''}${genre2}`, `onboarding_genre_${genre2}`)
-      );
-    }
-    genreButtons.push(row);
-  }
+  try {
+    const genres = await cache.getOrSet(CACHE_KEYS.GENRES, getGenres, CACHE_TTL.LONG);
+    const genreButtons = [];
 
-  genreButtons.push([
-    Markup.button.callback('✅ Готово', 'onboarding_genres_done'),
-    Markup.button.callback('⏭️ Пропустити', 'onboarding_finish'),
-  ]);
-
-  await ctx
-    .editMessageText(
-      '⚔️ *ОБЕРИ БИТВИ (ЖАНРИ)*\n\n' +
-        'Вибери 3-5 жанрів, де ти хочеш мандрувати.\n' +
-        'Це допоможе мені підібрати книги саме для тебе! 📖\n\n' +
-        `📚 Обрано: ${state.selectedGenres.length}`,
-      {
-        parse_mode: 'Markdown',
-        reply_markup: Markup.inlineKeyboard(genreButtons).reply_markup,
+    for (let i = 0; i < genres.length; i += 2) {
+      const genre1 = genres[i];
+      const isSelected1 = state.selectedGenres?.includes(genre1) || false;
+      const row = [
+        Markup.button.callback(
+          `${isSelected1 ? '✅ ' : ''}${genre1}`,
+          `onboarding_genre_${genre1}`
+        ),
+      ];
+      if (i + 1 < genres.length) {
+        const genre2 = genres[i + 1];
+        const isSelected2 = state.selectedGenres?.includes(genre2) || false;
+        row.push(
+          Markup.button.callback(
+            `${isSelected2 ? '✅ ' : ''}${genre2}`,
+            `onboarding_genre_${genre2}`
+          )
+        );
       }
-    )
-    .catch((error) => {
-      logger.debug('Failed to edit message', {
-        error: error instanceof Error ? error.message : String(error),
+      genreButtons.push(row);
+    }
+
+    genreButtons.push([
+      Markup.button.callback('✅ ГОТОВО', 'onboarding_step3_finish'),
+      Markup.button.callback('⏭️ Пропустити', 'onboarding_skip'),
+    ]);
+
+    await ctx
+      .editMessageText(
+        '⚔️ *КРОК 2: ОБЕРИ БИТВИ (ЖАНРИ)*\n\n' +
+          '_(Прогрес: 2/3)_\n\n' +
+          'Вибери 3-5 жанрів, щоб я міг рекомендувати книги саме для тебе! 🎯\n\n' +
+          `✨ *Обрано:* ${state.selectedGenres?.length || 0} жанрів\n\n` +
+          '💡 _Змінювати можна завжди в налаштуваннях!_',
+        {
+          parse_mode: 'Markdown',
+          reply_markup: Markup.inlineKeyboard(genreButtons).reply_markup,
+        }
+      )
+      .catch((error: unknown) => {
+        logger.debug('Failed to edit message', {
+          error: error instanceof Error ? error.message : String(error),
+        });
       });
-    });
+  } catch (error) {
+    logger.error('Error updating genres display', error instanceof Error ? error : new Error(String(error)));
+  }
 });
 
-// Завершення вибору жанрів
-onboardingScene.action('onboarding_genres_done', async (ctx: BotContext) => {
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// STEP 3: Фінальне привітання та збереження дані
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+onboardingScene.action('onboarding_step3_finish', async (ctx: BotContext) => {
   const state = ctx.scene.state as OnboardingState;
   const userId = ctx.from?.id;
 
-  await ctx.answerCbQuery('✅ Жанри збережено!');
+  await ctx.answerCbQuery('🛡️ Збереження налаштувань...');
 
-  // Зберігаємо улюблені жанри в БД та профіль
+  // Зберігаємо дані в БД
   if (userId) {
-    await markOnboardingComplete(userId, state.selectedGenres || [])
-      .then(() => {
-        logger.info('User completed onboarding with genres', {
-          userId,
-          selectedGenres: state.selectedGenres,
-        });
-      })
-      .catch((error) => {
-        logger.error(
-          'Error saving onboarding data',
-          error instanceof Error ? error : new Error(String(error))
-        );
-      });
-
-    // Додатково оновлюємо улюблені жанри в профілі
-    if (state.selectedGenres && state.selectedGenres.length > 0) {
+    try {
+      const { markOnboardingComplete } = await import('../database/userFunctions');
       const { updateUserFavoriteGenres } = await import('../database/userFunctions');
-      await updateUserFavoriteGenres(userId, state.selectedGenres).catch((error) => {
-        logger.error(
-          'Error updating favorite genres',
-          error instanceof Error ? error : new Error(String(error))
-        );
+
+      // Позначаємо онбординг як завершений
+      await markOnboardingComplete(userId, state.selectedGenres || []);
+
+      // Оновлюємо улюблені жанри
+      if (state.selectedGenres && state.selectedGenres.length > 0) {
+        await updateUserFavoriteGenres(userId, state.selectedGenres);
+      }
+
+      logger.info('User completed onboarding', {
+        userId,
+        selectedGenres: state.selectedGenres,
+        selectedContentTypes: state.selectedContentTypes,
       });
+    } catch (error) {
+      logger.error(
+        'Error saving onboarding data',
+        error instanceof Error ? error : new Error(String(error))
+      );
+      // Продовжуємо навіть якщо помилка збереження
     }
   }
 
-  let message = '⚔️ *ВОЇН ГОТОВИЙ!*\n\n';
+  // Показуємо фіналізацію
+  let message = '🏰 *ВОЇН ГОТОВИЙ ДО БИТВИ!*\n\n';
+  message += '═══════════════════════════════════════\n\n';
 
   if (state.selectedGenres && state.selectedGenres.length > 0) {
-    message += `Ти обрав ${state.selectedGenres.length} ${state.selectedGenres.length === 1 ? 'жанр' : 'жанри'}:\n`;
-    message += state.selectedGenres.map((g) => `🗡️ ${g}`).join('\n');
-    message += '\n\nТепер я буду рекомендувати тобі книги з цих битв! 📚\n\n';
+    message += `📚 *Твої улюблені жанри (${state.selectedGenres.length}):*\n`;
+    message += state.selectedGenres.map((g) => `⚔️ ${g}`).join('\n');
+    message += '\n\n';
   }
 
-  message += '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
-  message += '✅ Підготовка завершена!\n\n';
-  message += 'Натисни кнопку нижче щоб розпочати свою легенду 👇';
+  if (state.selectedContentTypes && state.selectedContentTypes.length > 0) {
+    message += `*Обрані формати:*\n`;
+    if (state.selectedContentTypes.includes('books')) message += '📕 Книги\n';
+    if (state.selectedContentTypes.includes('audio')) message += '🎧 Аудіокниги\n';
+    if (state.selectedContentTypes.includes('podcasts')) message += '🎙️ Подкасти\n';
+    message += '\n';
+  }
+
+  message +=
+    '═══════════════════════════════════════\n\n' +
+    '✨ *Твої суперсили:*\n' +
+    '🔍 Безстрашний пошук (75K+ творів)\n' +
+    '💾 Персональна бібліотека (до 20 книг)\n' +
+    '⭐ Оцінювання та рецензії\n' +
+    '🤖 AI рекомендації на основі смаку\n' +
+    '📊 Статистика читання та досягнення\n' +
+    '🎁 Промокоди для розширення доступу\n\n' +
+    '═══════════════════════════════════════\n\n' +
+    '🚀 *Твоя легенда розпочалась!*\n' +
+    '_Приємного читання! Сподіваємось, ти знайдеш свою улюблену книгу 📖_';
 
   await ctx.reply(message, {
     parse_mode: 'Markdown',
     reply_markup: Markup.inlineKeyboard([
-      [Markup.button.callback('🚀 Почати користуватися', 'onboarding_finish')],
+      [Markup.button.callback('🚀 ПЕРЕЙТИ В БІБЛІОТЕКУ', 'onboarding_finish')],
     ]).reply_markup,
   });
 });
 
-// Пропуск або завершення
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SKIP або FINISH: Завершення онбордингу
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 onboardingScene.action(['onboarding_skip', 'onboarding_finish'], async (ctx: BotContext) => {
   const userId = ctx.from?.id;
 
   await ctx.answerCbQuery("👋 Вітаємо в Warrior's Library!");
 
-  // Позначаємо онбординг як завершений навіть якщо пропустили
+  // Позначаємо онбординг як завершений
   if (userId) {
-    await markOnboardingComplete(userId)
-      .then(() => {
-        logger.info('User finished onboarding', { userId });
-      })
-      .catch((error) => {
-        logger.error(
-          'Error marking onboarding complete',
-          error instanceof Error ? error : new Error(String(error))
-        );
-      });
+    try {
+      const { markOnboardingComplete } = await import('../database/userFunctions');
+      await markOnboardingComplete(userId);
+      logger.info('User finished onboarding', { userId });
+    } catch (error) {
+      logger.error(
+        'Error marking onboarding complete',
+        error instanceof Error ? error : new Error(String(error))
+      );
+    }
   }
 
+  // Фіналізація
   await ctx.reply(
-    "⚔️ *ЛАСКАВО ПРОСИМО У Warrior's Library!*\n\n" +
-      "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
-      'Тепер ти можеш:\n' +
-      '📚 Дослідити величезну бібліотеку\n' +
-      '🔍 Знайти книги за будь-якими критеріями\n' +
-      '❤️ Зберігати свої сокровища\n' +
-      '🎧 Слухати легенди в аудіоформаті\n' +
-      '🤖 Отримати поради від AI Мудреця\n' +
-      '📊 Розраховувати свій бібліотечний рівень\n\n' +
-      "━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
-      '🗡️ Твоя легенда розпочалась! Приємного читання! 📖',
+    "⚔️ *ЛАСКАВО ПРОСИМО У WARRIOR'S LIBRARY!*\n\n" +
+      '═══════════════════════════════════════\n\n' +
+      '🗡️ *Що ти можеш робити:*\n\n' +
+      '📚 *Каталог* - 75K+ книг, подкастів, аудіо\n' +
+      '🔍 *Пошук* - по назві, автору, жанру, AI\n' +
+      '📥 *Завантажити* - PDF, EPUB, FB2, MOBI\n' +
+      '🎧 *Слухати* - аудіокниги та подкасти\n' +
+      '❤️ *Зберігати* - булівайня 20 улюблених\n' +
+      '⭐ *Оцінювати* - рецензії та рейтинги\n' +
+      '🤖 *AI Допомога* - розумні рекомендації\n' +
+      '🏆 *Рейтинги* - топ книг та авторів\n' +
+      '🎁 *Промокоди* - розширення доступу\n' +
+      '📊 *Профіль* - твоя статистика та досягнення\n' +
+      '🎙️ *Подкасти* - спеціальні аудіопрограми\n\n' +
+      '═══════════════════════════════════════\n\n' +
+      '💡 _Натисни кнопку нижче для старту!_',
     {
       parse_mode: 'Markdown',
       reply_markup: getMainMenuKeyboard(),
