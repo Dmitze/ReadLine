@@ -176,7 +176,7 @@ const aiAssistantScene = new Scenes.WizardScene(
 
     const navButtons = [];
     if (totalPages > 1) {
-      navButtons.push(Markup.button.callback('Вперед ➡️', `ai_result_page_1`));
+      navButtons.push(Markup.button.callback('Вперед ➡️', 'ai_result_page_1'));
     }
     if (navButtons.length > 0) {
       keyboard.push(navButtons);
@@ -224,12 +224,13 @@ aiAssistantScene.action(/ai_result_page_(\d+)/, async (ctx: BotContext) => {
   messageText += '<b>Рекомендовано на основі ваших вподобань та настрою:</b>\n\n';
   messageText += `Сторінка ${page + 1} з ${totalPages}\n\n`;
 
-  paginatedBooks.forEach((book, index) => {
+  // ✅ ВИПРАВЛЕНО #11: Додано типи для параметрів forEach
+  paginatedBooks.forEach((book: typeof allBooks[0], index: number) => {
     const rating = book.rating ? `⭐${book.rating.toFixed(1)}` : '';
     messageText += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}${rating ? ` ${rating}` : ''}\n`;
   });
 
-  const keyboard = paginatedBooks.map((book) => [
+  const keyboard = paginatedBooks.map((book: typeof allBooks[0]) => [
     Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
   ]);
 
