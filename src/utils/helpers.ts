@@ -357,7 +357,13 @@ export async function updateLoadingMessage(
   try {
     await ctx.telegram.editMessageText(ctx.chat.id, messageId, undefined, `${emoji} ${newText}`);
   } catch (error) {
-    // Ignore edit errors
+    // ✅ ВИПРАВЛЕНО #10: Додано логування замість мовчазного ігнорування
+    const logger = require('./logger').logger;
+    logger.debug('Failed to edit loading message', {
+      error: error instanceof Error ? error.message : String(error),
+      messageId,
+      chatId: ctx.chat?.id,
+    });
   }
 }
 
