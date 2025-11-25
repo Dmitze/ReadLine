@@ -104,8 +104,8 @@ export async function showAllLanguages(ctx: BotContext): Promise<void> {
 export async function showISBNInput(ctx: BotContext): Promise<void> {
   await ctx.reply(
     `${getProgress(6)}\n\n📚 <b>ISBN (опціонально)</b>\n\n` +
-    `ISBN - унікальний ідентифікатор книги. Якщо не знаєте, напишіть "Пропустити".\n\n` +
-    `Приклад: 978-3-16-148410-0`,
+    'ISBN - унікальний ідентифікатор книги. Якщо не знаєте, напишіть "Пропустити".\n\n' +
+    'Приклад: 978-3-16-148410-0',
     {
       parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard([
