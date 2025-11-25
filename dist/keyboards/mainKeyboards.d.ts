@@ -8,7 +8,7 @@ export declare const getKeyboardConfig: (deviceType: DeviceType) => {
     showQuickActions: boolean;
     buttonSize: string;
 };
-export declare const getAdaptiveMainMenuKeyboard: (ctx: Context, withQuickActions?: boolean) => import("@telegraf/types").InlineKeyboardMarkup | import("@telegraf/types").ReplyKeyboardMarkup;
+export declare const getAdaptiveMainMenuKeyboard: (_ctx: Context, _withQuickActions?: boolean) => import("@telegraf/types").InlineKeyboardMarkup | import("@telegraf/types").ReplyKeyboardMarkup;
 export declare const getMainMenuKeyboard: () => import("@telegraf/types").ReplyKeyboardMarkup;
 export declare const getAdaptiveGenreKeyboard: (ctx: Context, genres: string[]) => import("@telegraf/types").InlineKeyboardMarkup | import("@telegraf/types").ReplyKeyboardMarkup;
 export declare const getGenreKeyboard: (genres: string[]) => import("@telegraf/types").InlineKeyboardMarkup;
