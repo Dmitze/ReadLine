@@ -39,8 +39,8 @@ const getKeyboardConfig = (deviceType) => {
     }
 };
 exports.getKeyboardConfig = getKeyboardConfig;
-const getAdaptiveMainMenuKeyboard = (ctx, withQuickActions = true) => {
-    const deviceType = (0, exports.detectDeviceType)(ctx);
+const getAdaptiveMainMenuKeyboard = (_ctx, _withQuickActions = true) => {
+    const deviceType = (0, exports.detectDeviceType)(_ctx);
     const config = (0, exports.getKeyboardConfig)(deviceType);
     const allButtons = [
         '📚 Бібліотека',
