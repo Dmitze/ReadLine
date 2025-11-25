@@ -1,5 +1,9 @@
 # 📚 ReadLine - Сучасна Telegram Бібліотека
 
+<p align="center">
+  <img src="https://github.com/Dmitze/ReadLine/blob/main/docs/img/1.jpg?raw=true" alt="ReadLine Telegram capabilities" width="1200"/>
+</p>
+
 ![Telegram Bot](https://img.shields.io/badge/Telegram-Bot-blue?style=flat-square&logo=telegram)
 ![Node.js](https://img.shields.io/badge/Node.js-18+-green?style=flat-square&logo=node.js)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.3+-blue?style=flat-square&logo=typescript)
@@ -14,7 +18,7 @@
 > ReadLine — це не просто бот. Це повнофункціональна екосистема для читачів, бібліотечників та дослідників, розроблена з акцентом на масштабованість, безпеку та максимальну користувацьку цінність.
 
 <p align="center">
-  <img src="https://github.com/Dmitze/ReadLine/blob/main/docs/img/1.jpg?raw=true" alt="ReadLine Telegram capabilities" width="900"/>
+  <img src="https://github.com/Dmitze/ReadLine/blob/main/docs/img/2.jpg?raw=true" alt="ReadLine Telegram capabilities" width="1200"/>
 </p>
 
 ---
@@ -34,10 +38,6 @@ ReadLine — це **enterprise-grade Telegram-бот** для автоматиз
 - ✅ **Адаптивність** — оптимізація для мобільних, планшетів та десктопів
 
 ---
-
-<p align="center">
-  <img src="https://github.com/Dmitze/ReadLine/blob/main/docs/img/2.jpg?raw=true" alt="ReadLine Features" width="900"/>
-</p>
 
 ## 🚀 Ключові можливості
 
@@ -361,8 +361,9 @@ ReadLine — це **enterprise-grade Telegram-бот** для автоматиз
 └─────────────────────────────────────────────┘
 ```
 <p align="center">
-  <img src="https://github.com/Dmitze/ReadLine/blob/main/docs/img/3.jpg?raw=true" alt="ReadLine Features" width="700"/>
+  <img src="https://github.com/Dmitze/ReadLine/blob/main/docs/img/3.jpg?raw=true" alt="ReadLine Features" width="1200"/>
 </p>
+
 ### Технологічний стек
 
 | Компонент | Технологія | Версія | Призначення |
