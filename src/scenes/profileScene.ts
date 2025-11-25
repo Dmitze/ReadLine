@@ -181,12 +181,12 @@ profileScene.action(/personal_page_(\d+)/, async (ctx: BotContext) => {
   let messageText = '📚 <b>Персональна підбірка для вас</b>\n\n';
   messageText += `Сторінка ${page + 1} з ${totalPages}\n\n`;
 
-  paginatedBooks.forEach((book, index) => {
+  paginatedBooks.forEach((book: typeof allBooks[0], index: number) => {
     const rating = book.rating ? `⭐${book.rating.toFixed(1)}` : '';
     messageText += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}${rating ? ` ${rating}` : ''}\n`;
   });
 
-  const keyboard = paginatedBooks.map((book) => [
+  const keyboard = paginatedBooks.map((book: typeof allBooks[0]) => [
     Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
   ]);
 
@@ -315,7 +315,7 @@ profileScene.action('show_personal_collection', async (ctx: BotContext) => {
 
   const navButtons = [];
   if (totalPages > 1) {
-    navButtons.push(Markup.button.callback('Вперед ➡️', `personal_page_1`));
+    navButtons.push(Markup.button.callback('Вперед ➡️', 'personal_page_1'));
   }
   if (navButtons.length > 0) {
     keyboard.push(navButtons);
