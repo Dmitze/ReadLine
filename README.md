@@ -12,7 +12,9 @@
 **ReadLine** — це сучасна, масштабована платформа управління цифровою бібліотекою, інтегрована безпосередньо в Telegram. Забезпечує 24/7 доступ до тисяч книг з вбудованим AI-помічником, розширеним пошуком, мультиформатною підтримкою та enterprise-grade безпекою.
 
 > ReadLine — це не просто бот. Це повнофункціональна екосистема для читачів, бібліотечників та дослідників, розроблена з акцентом на масштабованість, безпеку та максимальну користувацьку цінність.
-
+<p align="center">
+  <img src="https://github.com/Dmitze/ReadLine/blob/main/docs/img/1.jpg?raw=true" alt="ReadLine Telegram capabilities" width="700"/>
+</p>
 ---
 
 ## 🎯 Про ReadLine
@@ -30,7 +32,9 @@ ReadLine — це **enterprise-grade Telegram-бот** для автоматиз
 - ✅ **Адаптивність** — оптимізація для мобільних, планшетів та десктопів
 
 ---
-
+<p align="center">
+  <img src="https://github.com/Dmitze/ReadLine/blob/main/docs/img/2.jpg?raw=true" alt="ReadLine Features" width="700"/>
+</p>
 ## 🚀 Ключові можливості
 
 ### 📖 Для користувачів
@@ -352,7 +356,9 @@ ReadLine — це **enterprise-grade Telegram-бот** для автоматиз
 │  Security: Rate limiting, encryption        │
 └─────────────────────────────────────────────┘
 ```
-
+<p align="center">
+  <img src="https://github.com/Dmitze/ReadLine/blob/main/docs/img/3.jpg?raw=true" alt="ReadLine Features" width="700"/>
+</p>
 ### Технологічний стек
 
 | Компонент | Технологія | Версія | Призначення |
