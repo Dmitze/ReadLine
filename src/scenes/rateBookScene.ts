@@ -5,6 +5,7 @@ import { BotContext } from '../types/telegraf';
 import { validateReviewData } from '../utils/validation';
 import { handleResult } from '../utils/resultHandler';
 import { getBookIdText, safeParseInt } from '../utils/helpers';
+import { getMainMenuKeyboard } from '../keyboards/mainKeyboards';
 
 const rateBookScene = new Scenes.WizardScene(
   'RATE_BOOK_SCENE',
@@ -68,6 +69,9 @@ const rateBookScene = new Scenes.WizardScene(
 
     if (action === 'rating_cancel') {
       await ctx.editMessageText('❌ Оцінювання скасовано.');
+      await ctx.reply('Виберіть дію:', {
+        reply_markup: getMainMenuKeyboard(),
+      });
       return ctx.scene?.leave();
     }
 
@@ -154,6 +158,10 @@ const rateBookScene = new Scenes.WizardScene(
         '📝 Відгук буде опублікований після модерації адміністратором.',
       { parse_mode: 'Markdown' }
     );
+
+    await ctx.reply('Виберіть дію:', {
+      reply_markup: getMainMenuKeyboard(),
+    });
 
     return ctx.scene?.leave();
   }
