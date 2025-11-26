@@ -7,6 +7,7 @@ import { Scenes, Markup } from 'telegraf';
 import { BotContext } from '../types/telegraf';
 import { logger } from '../utils/logger';
 import { addPodcast, Podcast } from '../database/tables/podcasts';
+import { getMainMenuKeyboard } from '../keyboards/mainKeyboards';
 
 interface AddPodcastState {
   theme?: string;
@@ -49,7 +50,7 @@ addPodcastScene.on('text', async (ctx: BotContext) => {
 
   if (text === '❌ Скасувати') {
     await ctx.reply('❌ Додавання підкасту скасовано.', {
-      reply_markup: { remove_keyboard: true },
+      reply_markup: getMainMenuKeyboard(),
     });
     return ctx.scene.leave();
   }
@@ -175,11 +176,17 @@ addPodcastScene.action('podcast_publish', async (ctx: BotContext) => {
 
     await ctx.editMessageText(
       '✅ <b>ПІДКАСТ ОПУБЛІКОВАНО!</b>\n\n' + `🎙️ ${podcast.theme}\n` + `🆔 ID: ${podcastId}`,
-      { parse_mode: 'HTML' }
+      { 
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback('🔙 Повернутись в адмін-панель', 'back_to_admin')]
+        ]).reply_markup
+      }
     );
 
     logger.adminAction(ctx.from?.id || 0, 'add_podcast', { podcastId });
-    await ctx.reply('✅ Готово!', { reply_markup: { remove_keyboard: true } });
+    
+    // Return to main menu
     return ctx.scene.leave();
   } catch (error) {
     logger.error('Error adding podcast', error);
@@ -191,7 +198,15 @@ addPodcastScene.action('podcast_publish', async (ctx: BotContext) => {
 addPodcastScene.action('podcast_cancel', async (ctx: BotContext) => {
   await ctx.answerCbQuery('❌ Скасовано');
   await ctx.editMessageText('❌ Скасовано.');
-  await ctx.reply('Повернулись до адмінки.', { reply_markup: { remove_keyboard: true } });
+  await ctx.reply('Виберіть дію:', { reply_markup: getMainMenuKeyboard() });
+  return ctx.scene.leave();
+});
+
+addPodcastScene.action('back_to_admin', async (ctx: BotContext) => {
+  await ctx.answerCbQuery('🔙 Повертаємось...');
+  await ctx.reply('Виберіть дію:', { 
+    reply_markup: getMainMenuKeyboard()
+  });
   return ctx.scene.leave();
 });
 
