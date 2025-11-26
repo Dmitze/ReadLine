@@ -150,6 +150,22 @@ const migration001_CreateCoreTables: IMigration = {
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       );
 
+      -- Listening progress table for audio books
+      CREATE TABLE IF NOT EXISTS listening_progress (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        book_id INTEGER,
+        chapter_id INTEGER,
+        position INTEGER DEFAULT 0,
+        total_listened INTEGER DEFAULT 0,
+        last_listened_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
+        UNIQUE(user_id, book_id, chapter_id)
+      );
+
       -- Create indexes for performance
       CREATE INDEX IF NOT EXISTS idx_users_telegram_id ON users(telegram_id);
       CREATE INDEX IF NOT EXISTS idx_users_is_admin ON users(is_admin);
@@ -164,6 +180,10 @@ const migration001_CreateCoreTables: IMigration = {
       CREATE INDEX IF NOT EXISTS idx_book_tags_tag_id ON book_tags(tag_id);
       CREATE INDEX IF NOT EXISTS idx_feedback_user_id ON feedback(user_id);
       CREATE INDEX IF NOT EXISTS idx_feedback_created_at ON feedback(created_at);
+      CREATE INDEX IF NOT EXISTS idx_listening_progress_user_id ON listening_progress(user_id);
+      CREATE INDEX IF NOT EXISTS idx_listening_progress_book_id ON listening_progress(book_id);
+      CREATE INDEX IF NOT EXISTS idx_listening_progress_user_id_book_id ON listening_progress(user_id, book_id);
+      CREATE INDEX IF NOT EXISTS idx_listening_progress_last_listened ON listening_progress(last_listened_at DESC);
     `;
 
     await (db as any).run(sql);
@@ -171,6 +191,7 @@ const migration001_CreateCoreTables: IMigration = {
 
   down: async (db: Database | DatabaseWrapper) => {
     const sql = `
+      DROP TABLE IF EXISTS listening_progress;
       DROP TABLE IF EXISTS book_tags;
       DROP TABLE IF EXISTS tags;
       DROP TABLE IF EXISTS audio_books;
