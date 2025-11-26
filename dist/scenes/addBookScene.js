@@ -39,6 +39,7 @@ const helpers_1 = require("../utils/helpers");
 const logger_1 = require("../utils/logger");
 const validation_1 = require("../utils/validation");
 const RateLimiter_1 = require("../middleware/RateLimiter");
+const mainKeyboards_1 = require("../keyboards/mainKeyboards");
 const utils_1 = require("./addBook/utils");
 const fileUploadStep_1 = require("./addBook/fileUploadStep");
 const languageStep_1 = require("./addBook/languageStep");
@@ -55,6 +56,16 @@ function isMessageWithText(ctx) {
     return ctx.message && 'text' in ctx.message && typeof ctx.message.text === 'string';
 }
 const fileUploadLimiter = new RateLimiter_1.RateLimiter({ maxRequests: 5, windowMs: 60000 });
+function buildTagsKeyboard(tags, selectedTagIds) {
+    const keyboard = tags.map((tag) => [
+        {
+            text: selectedTagIds.includes(tag.id) ? `✅ ${tag.name}` : tag.name,
+            callback_data: `tag_${tag.id}`,
+        },
+    ]);
+    keyboard.push([{ text: '✅ Далі', callback_data: 'tags_done_' }]);
+    return { inline_keyboard: keyboard };
+}
 async function showFinalPreview(ctx, state) {
     const { getAllTags } = await Promise.resolve().then(() => __importStar(require('../database/tagFunctions')));
     let tagsText = '';
@@ -201,9 +212,9 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
                 await ctx.answerCbQuery('❌ Оберіть хоча б один жанр');
                 return;
             }
-            state.genre = state.selectedGenres.join(', ');
+            state.genre = state.selectedGenres.join('\n');
             await ctx.answerCbQuery('✅ Жанри обрано');
-            await ctx.editMessageText(`📚 Жанри обрано: ${state.genre}`);
+            await ctx.editMessageText(`📚 Жанри обрано:\n${state.selectedGenres.join('\n')}`);
             (0, utils_1.autoSaveState)(state);
             (0, utils_1.logUserAction)(ctx, 'selected_genres', { genres: state.selectedGenres });
             await ctx.reply(`${(0, utils_1.getProgress)(4)}\n📝 Введіть короткий опис книги (макс. 1000 символів):\n\n` +
@@ -437,17 +448,18 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
         if (action.startsWith('file_upload_done_')) {
             await ctx.answerCbQuery('✅ Переходимо до тегів');
             const tags = await (0, utils_1.getCachedTags)();
-            const keyboard = tags.map((tag) => [
-                {
-                    text: tag.name,
-                    callback_data: `tag_${tag.id}_${userId}`,
-                },
-            ]);
-            keyboard.push([{ text: '✅ Далі', callback_data: `tags_done_${userId}` }]);
-            await ctx.editMessageText(`${(0, utils_1.getProgress)(10)}\n\n🏷️ <b>ВИБЕРІТЬ ТЕГИ</b>\n\n` +
-                'Додайте теги до книги (опціонально):', {
+            const keyboard = buildTagsKeyboard(tags, state.selectedTags || []);
+            await ctx.editMessageText(`${(0, utils_1.getProgress)(10)}\n🏷️ <b>Додайте теги до книги (опціонально):</b>\n\n` +
+                'Оберіть один або кілька тегів...' +
+                (state.selectedTags && state.selectedTags.length > 0
+                    ? `\n\n✅ <b>Вибрані теги:</b> ${tags
+                        .filter((t) => state.selectedTags?.includes(t.id))
+                        .map((t) => t.name)
+                        .join(', ')}`
+                    : '') +
+                '\n\nНатисніть "Далі" коли закінчите...', {
                 parse_mode: 'HTML',
-                reply_markup: { inline_keyboard: keyboard },
+                reply_markup: keyboard,
             });
             return ctx.wizard.next();
         }
@@ -496,6 +508,25 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
             await ctx.answerCbQuery('✅ Тег додано');
         }
         (0, utils_1.autoSaveState)(state);
+        try {
+            const tags = await (0, utils_1.getCachedTags)();
+            const selectedText = state.selectedTags && state.selectedTags.length > 0
+                ? `\n\n✅ <b>Вибрані теги:</b> ${tags
+                    .filter((t) => state.selectedTags?.includes(t.id))
+                    .map((t) => t.name)
+                    .join(', ')}`
+                : '';
+            const keyboard = buildTagsKeyboard(tags, state.selectedTags || []);
+            await ctx.editMessageText(`${(0, utils_1.getProgress)(10)}\n🏷️ <b>Додайте теги до книги (опціонально):</b>\n\n` +
+                `Оберіть один або кілька тегів...${selectedText}\n\n` +
+                'Натисніть "Далі" коли закінчите...', {
+                parse_mode: 'HTML',
+                reply_markup: keyboard,
+            });
+        }
+        catch (err) {
+            logger_1.logger.warn('Error updating tags display', { error: String(err) });
+        }
     }
 }, async (_ctx) => {
     return;
@@ -569,12 +600,7 @@ addBookScene.action(/^confirm_book_(\d+)$/, async (ctx) => {
             tagsCount: state.selectedTags?.length || 0,
         });
         await ctx.reply('✅ Книга успішно опублікована!', {
-            reply_markup: {
-                remove_keyboard: true,
-                inline_keyboard: [[
-                        { text: '🏠 Назад до адмін-панелі', callback_data: 'back_to_admin' }
-                    ]],
-            },
+            reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)(),
         });
         cleanupWizardState(ctx);
         return ctx.scene.leave();
@@ -590,14 +616,14 @@ addBookScene.action(/^confirm_book_(\d+)$/, async (ctx) => {
 addBookScene.action(/^cancel_book_(\d+)$/, async (ctx) => {
     await ctx.answerCbQuery('❌ Скасовано');
     await ctx.reply('❌ Додавання книги скасовано', {
-        reply_markup: { remove_keyboard: true },
+        reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)(),
     });
     cleanupWizardState(ctx);
     return ctx.scene.leave();
 });
 addBookScene.command('cancel', async (ctx) => {
     await ctx.reply('❌ Додавання книги скасовано', {
-        reply_markup: { remove_keyboard: true },
+        reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)(),
     });
     cleanupWizardState(ctx);
     return ctx.scene.leave();
