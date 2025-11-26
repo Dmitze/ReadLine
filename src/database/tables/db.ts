@@ -336,6 +336,42 @@ export const initDatabase = (): Promise<void> => {
       );
     `;
 
+    const createTagsTable = `
+      CREATE TABLE IF NOT EXISTS tags (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        description TEXT,
+        color TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `;
+
+    const createBookTagsTable = `
+      CREATE TABLE IF NOT EXISTS book_tags (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        book_id INTEGER NOT NULL,
+        tag_id INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE,
+        FOREIGN KEY (tag_id) REFERENCES tags (id) ON DELETE CASCADE,
+        UNIQUE(book_id, tag_id)
+      );
+    `;
+
+    const createBookOrdersTable = `
+      CREATE TABLE IF NOT EXISTS book_orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        book_id INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        full_name TEXT NOT NULL,
+        callsign TEXT NOT NULL,
+        unit TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
+      );
+    `;
+
     const alterBooksTableQueries = [
       'ALTER TABLE books ADD COLUMN pdf_file_id TEXT;',
       'ALTER TABLE books ADD COLUMN audio_file_id TEXT;',
@@ -348,6 +384,9 @@ export const initDatabase = (): Promise<void> => {
       'ALTER TABLE books ADD COLUMN content_warnings TEXT;',
       'ALTER TABLE books ADD COLUMN isbn TEXT;',
       'ALTER TABLE books ADD COLUMN language TEXT DEFAULT \'Українська\';',
+      'ALTER TABLE books ADD COLUMN is_physically_available INTEGER DEFAULT 0;',
+      'ALTER TABLE books ADD COLUMN epub_file_id TEXT;',
+      'ALTER TABLE books ADD COLUMN epub_url TEXT;',
     ];
 
     const alterPromoCodesTableQueries = [
@@ -374,6 +413,9 @@ export const initDatabase = (): Promise<void> => {
       db.run(createPodcastReviewsTable);
       db.run(createPodcastListensTable);
       db.run(createBookRequestsTable);
+      db.run(createTagsTable);
+      db.run(createBookTagsTable);
+      db.run(createBookOrdersTable);
 
       // Ініціалізуємо систему фізичних книг
       import('./physicalBooks').then(({ initPhysicalBooksSystem }) => {
@@ -422,12 +464,19 @@ export const initDatabase = (): Promise<void> => {
       db.run('CREATE INDEX IF NOT EXISTS idx_book_requests_due_date ON book_requests(due_date)');
       db.run('CREATE INDEX IF NOT EXISTS idx_book_requests_created_at ON book_requests(created_at)');
 
-      db.get('SELECT COUNT(*) as count FROM books', (err, row: any) => {
+      db.get('SELECT COUNT(*) as count FROM books', async (err, row: any) => {
         if (err) {
           logger.error('Error checking books count', err);
           reject(err);
         } else {
-          logger.info('Database initialized successfully', { booksCount: row.count });
+          const booksCount = row?.count || 0;
+          let seededBooksCount = 0;
+          
+          // ✅ ВИДАЛЕНО: Seed demo data отключен для чистой презентации
+          // Если нужны демо-данные, используйте: npm run seed:demo
+          // if (booksCount === 0) { ... }
+          
+          logger.info('Database initialized successfully', { booksCount: booksCount + seededBooksCount });
           resolve();
         }
       });
