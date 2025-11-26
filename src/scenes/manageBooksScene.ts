@@ -6,6 +6,7 @@ import { handleResult } from '../utils/resultHandler';
 import { getBookIdText } from '../utils/helpers';
 import { createBookManagementService } from '../services/BookManagementService';
 import { db } from '../database/models';
+import { getMainMenuKeyboard } from '../keyboards/mainKeyboards';
 
 /**
  * Інтерфейс для стану сцени управління книгами
@@ -185,7 +186,9 @@ manageBooksScene.action('back_to_manage', async (ctx: BotContext) => {
 manageBooksScene.action('back_to_admin', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
   await ctx.scene.leave();
-  await ctx.reply('⬅️ Повертаємось до адмін-панелі');
+  await ctx.reply('Виберіть дію:', {
+    reply_markup: getMainMenuKeyboard(),
+  });
 });
 
 // Обробка редагування книги
