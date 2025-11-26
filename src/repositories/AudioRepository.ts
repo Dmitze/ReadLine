@@ -109,7 +109,7 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
    */
   async saveListeningProgress(progress: ListeningProgress): Promise<void> {
     const query = `
-      INSERT INTO listening_progress (user_id, book_id, chapter_id, position, total_listened, last_listened_at)
+      INSERT INTO audio_progress (user_id, book_id, chapter_id, position, total_listened, last_listened_at)
       VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       ON CONFLICT(user_id, book_id) DO UPDATE SET
         chapter_id = excluded.chapter_id,
@@ -135,7 +135,7 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
    */
   async getListeningProgress(userId: number, bookId: number): Promise<ListeningProgress | null> {
     const results = await this.db.all<ListeningProgress>(
-      'SELECT * FROM listening_progress WHERE user_id = ? AND book_id = ?',
+      'SELECT * FROM audio_progress WHERE user_id = ? AND book_id = ?',
       [userId, bookId]
     );
     return results[0] || null;
@@ -148,7 +148,7 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
    */
   async getUserListeningProgress(userId: number): Promise<ListeningProgress[]> {
     return this.db.all<ListeningProgress>(
-      'SELECT * FROM listening_progress WHERE user_id = ? ORDER BY last_listened_at DESC',
+      'SELECT * FROM audio_progress WHERE user_id = ? ORDER BY last_listened_at DESC',
       [userId]
     );
   }
@@ -160,7 +160,7 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
    */
   async getUserTotalListeningTime(userId: number): Promise<number> {
     const results = await this.db.all<{ total: number | null }>(
-      'SELECT SUM(total_listened) as total FROM listening_progress WHERE user_id = ?',
+      'SELECT SUM(total_listened) as total FROM audio_progress WHERE user_id = ?',
       [userId]
     );
     return results[0]?.total || 0;
@@ -177,7 +177,7 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
              SUM(lp.total_listened) as total_time, 
              COUNT(DISTINCT lp.user_id) as listeners_count
       FROM books b
-      INNER JOIN listening_progress lp ON b.id = lp.book_id
+      INNER JOIN audio_progress lp ON b.id = lp.book_id
       WHERE b.audio_file_id IS NOT NULL
       GROUP BY b.id
       ORDER BY total_time DESC
@@ -199,7 +199,7 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
     const totalTime = await this.getUserTotalListeningTime(userId);
 
     const results = await this.db.all<{ count: number }>(
-      'SELECT COUNT(DISTINCT book_id) as count FROM listening_progress WHERE user_id = ?',
+      'SELECT COUNT(DISTINCT book_id) as count FROM audio_progress WHERE user_id = ?',
       [userId]
     );
     const booksListened = results[0]?.count || 0;
@@ -218,7 +218,7 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
    * @returns Promise<void>
    */
   async deleteListeningProgress(userId: number, bookId: number): Promise<void> {
-    await this.db.run('DELETE FROM listening_progress WHERE user_id = ? AND book_id = ?', [
+    await this.db.run('DELETE FROM audio_progress WHERE user_id = ? AND book_id = ?', [
       userId,
       bookId,
     ]);
@@ -266,7 +266,7 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
     position: number;
   } | null> {
     const results = await this.db.all<ListeningProgress>(
-      'SELECT chapter_id, position FROM listening_progress WHERE user_id = ? AND book_id = ?',
+      'SELECT chapter_id, position FROM audio_progress WHERE user_id = ? AND book_id = ?',
       [userId, bookId]
     );
 
@@ -284,7 +284,7 @@ export class AudioRepository extends BaseRepository<AudioChapter> {
    * @returns Promise<void>
    */
   async clearUserListeningProgress(userId: number): Promise<void> {
-    await this.db.run('DELETE FROM listening_progress WHERE user_id = ?', [userId]);
+    await this.db.run('DELETE FROM audio_progress WHERE user_id = ?', [userId]);
   }
 
   /**
