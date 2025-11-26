@@ -8,6 +8,7 @@ import { BotContext } from '../types/telegraf';
 import { logger } from '../utils/logger';
 import { createRequest, PhysicalBookRequest } from '../database/tables/physicalBooks';
 import { ERRORS } from '../constants';
+import { getMainMenuKeyboard } from '../keyboards/mainKeyboards';
 
 interface RequestState {
   step?: string;
@@ -54,7 +55,7 @@ requestPhysicalBookScene.on('text', async (ctx: BotContext) => {
   // Скасування
   if (text === '❌ Скасувати') {
     await ctx.reply('❌ Заявку скасовано.', {
-      reply_markup: { remove_keyboard: true },
+      reply_markup: getMainMenuKeyboard(),
     });
     return ctx.scene.leave();
   }
@@ -220,9 +221,9 @@ requestPhysicalBookScene.action('confirm_request', async (ctx: BotContext) => {
       author: request.book_author,
     });
 
-    // Прибираємо клавіатуру
-    await ctx.telegram.sendMessage(userId, '✅ Готово!', {
-      reply_markup: { remove_keyboard: true },
+    // Показуємо головне меню
+    await ctx.reply('Виберіть дію:', {
+      reply_markup: getMainMenuKeyboard(),
     });
 
     return ctx.scene.leave();
@@ -236,8 +237,8 @@ requestPhysicalBookScene.action('confirm_request', async (ctx: BotContext) => {
 requestPhysicalBookScene.action('cancel_request', async (ctx: BotContext) => {
   await ctx.answerCbQuery('❌ Скасовано');
   await ctx.editMessageText('❌ Заявку скасовано.');
-  await ctx.reply('Ви повернулись до головного меню.', {
-    reply_markup: { remove_keyboard: true },
+  await ctx.reply('Виберіть дію:', {
+    reply_markup: getMainMenuKeyboard(),
   });
   return ctx.scene.leave();
 });
