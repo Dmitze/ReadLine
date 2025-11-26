@@ -3,6 +3,7 @@ import { getBookById, updateBook } from '../database/models';
 import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
 import { getBookIdText } from '../utils/helpers';
+import { POPULAR_GENRES, OTHER_GENRES } from '../constants/genres';
 
 interface EditBookState {
   bookId: number;
@@ -142,7 +143,15 @@ const editBookScene = new Scenes.WizardScene(
         logger.adminAction(ctx.from.id, 'edit_book', { bookId: state.book.id, updates });
       }
 
-      return ctx.scene.leave();
+      // ✅ ВИПРАВЛЕНО: Гарантуємо що сцена коректно завершується
+      // Невелика затримка перед виходом щоб Telegram встиг отримати всі повідомлення
+      setTimeout(() => {
+        ctx.scene.leave().catch((err) => {
+          logger.error('Error leaving edit scene', { error: err });
+        });
+      }, 500);
+
+      return;
     }
 
     // Зберігаємо яке поле редагуємо
@@ -174,51 +183,15 @@ const editBookScene = new Scenes.WizardScene(
     } else if (state.editingField === 'photo') {
       await ctx.reply('🖼️ Надішліть нове фото обкладинки або натисніть /skip щоб пропустити');
     } else if (state.editingField === 'genre') {
-      // Ініціалізуємо масив обраних жанрів з поточних жанрів книги
-      state.selectedGenres = state.book?.genre ? state.book.genre.split(', ').filter(Boolean) : [];
-
-      // Показуємо кнопки з жанрами (багатовибір)
-      const popularGenres = [
-        'Фантастика',
-        'Sci-Fi',
-        'Кіберпанк',
-        'Фентезі',
-        'Антиутопія',
-        'Детектив',
-        'Трилер',
-        'Нуар',
-        'Шпигунський роман',
-        'Пригоди',
-        'Історичні пригоди',
-        'Бойовик',
-      ];
-
-      const otherGenres = [
-        'Романтика',
-        'Любовний роман',
-        'Мелодрама',
-        'Жахи',
-        'Містика',
-        'Хорор',
-        'Дитячі',
-        'Казки',
-        'Young Adult',
-        'Біографія',
-        'Мемуари',
-        'Есеї',
-        'Документальні',
-        'Військова',
-        'Історична',
-        'Технічна',
-        'Психологія',
-        'Художня',
-        'Поезія',
-        'Драма',
-        'Сатира',
-      ];
+      // Ініціалізуємо масив обраних жанрів з поточних жанрів книги (розділені новим рядком)
+      state.selectedGenres = state.book?.genre 
+        ? state.book.genre.split('\n').filter(Boolean) 
+        : [];
 
       // ✅ ВИПРАВЛЕНО #11: Ініціалізувати selectedGenres якщо undefined
       const selectedGenres = state.selectedGenres || [];
+      const popularGenres = POPULAR_GENRES;
+      const otherGenres = OTHER_GENRES;
 
       // Популярні жанри
       const popularKeyboard = [];
@@ -320,20 +293,7 @@ const editBookScene = new Scenes.WizardScene(
         }
 
         // Оновлюємо клавіатуру з новими галочками
-        const popularGenres = [
-          'Фантастика',
-          'Sci-Fi',
-          'Кіберпанк',
-          'Фентезі',
-          'Антиутопія',
-          'Детектив',
-          'Трилер',
-          'Нуар',
-          'Шпигунський роман',
-          'Пригоди',
-          'Історичні пригоди',
-          'Бойовик',
-        ];
+        const popularGenres = POPULAR_GENRES;
 
         const popularKeyboard = [];
         for (let i = 0; i < popularGenres.length; i += 2) {
@@ -379,29 +339,7 @@ const editBookScene = new Scenes.WizardScene(
 
       // Показати більше жанрів
       if (action === 'show_more_genres') {
-        const otherGenres = [
-          'Романтика',
-          'Любовний роман',
-          'Мелодрама',
-          'Жахи',
-          'Містика',
-          'Хорор',
-          'Дитячі',
-          'Казки',
-          'Young Adult',
-          'Біографія',
-          'Мемуари',
-          'Есеї',
-          'Документальні',
-          'Військова',
-          'Історична',
-          'Технічна',
-          'Психологія',
-          'Художня',
-          'Поезія',
-          'Драма',
-          'Сатира',
-        ];
+        const otherGenres = OTHER_GENRES;
 
         const otherKeyboard = [];
         for (let i = 0; i < otherGenres.length; i += 2) {
@@ -444,20 +382,7 @@ const editBookScene = new Scenes.WizardScene(
 
       // Повернення до популярних жанрів
       if (action === 'back_to_popular_genres') {
-        const popularGenres = [
-          'Фантастика',
-          'Sci-Fi',
-          'Кіберпанк',
-          'Фентезі',
-          'Антиутопія',
-          'Детектив',
-          'Трилер',
-          'Нуар',
-          'Шпигунський роман',
-          'Пригоди',
-          'Історичні пригоди',
-          'Бойовик',
-        ];
+        const popularGenres = POPULAR_GENRES;
 
         const popularKeyboard = [];
         for (let i = 0; i < popularGenres.length; i += 2) {
@@ -510,16 +435,14 @@ const editBookScene = new Scenes.WizardScene(
         }
 
         state.updates = state.updates || {};
-        state.updates.genre = state.selectedGenres.join(', ');
+        state.updates.genre = state.selectedGenres.join('\n'); // Зберігаємо всі жанри, розділені новим рядком
 
-        await ctx.answerCbQuery('✅ Жанри обрано');
+        await ctx.answerCbQuery(`✅ Жанри змінено (${state.selectedGenres.length} обрано)`);
 
         // Повертаємося на крок 0 (меню редагування)
         ctx.wizard.selectStep(0);
 
         // Показуємо меню редагування з оновленою інформацією
-        const { Markup } = await import('telegraf');
-
         if (!state.book) {
           await ctx.reply('❌ Помилка: дані книги відсутні');
           return ctx.scene.leave();
@@ -617,10 +540,35 @@ const editBookScene = new Scenes.WizardScene(
         state.updates = state.updates || {};
         state.updates.photo_file_id = photo.file_id;
 
-        // Показуємо превью
+        // ✅ ВИПРАВЛЕНО: Повертаємось до меню редагування замість простого превью
+        // Повертаємося на крок 0 (меню редагування)
+        ctx.wizard.selectStep(0);
+
+        // Показуємо меню редагування з оновленою інформацією
+        if (!state.book) {
+          await ctx.reply('❌ Помилка: дані книги відсутні');
+          return ctx.scene.leave();
+        }
+
         await ctx.replyWithPhoto(photo.file_id, {
           caption:
-            '✅ Нове фото обкладинки збережено!\n\n⚠️ Зверніть увагу: Telegram file_id може застаріти через 24-48 годин.\n\nВикористайте меню вище для продовження редагування або збереження змін.',
+            '<b>📝 Редагування книги</b>\n\n' +
+            `📖 ${state.book.title}\n` +
+            `👤 ${state.book.author}\n\n` +
+            '✅ Нове фото обкладинки збережено!\n\n' +
+            'Оберіть що хочете змінити або збережіть зміни:',
+          parse_mode: 'HTML',
+          reply_markup: Markup.inlineKeyboard([
+            [Markup.button.callback('✏️ Назва', 'edit_title')],
+            [Markup.button.callback('✏️ Автор', 'edit_author')],
+            [Markup.button.callback('✏️ Жанр', 'edit_genre')],
+            [Markup.button.callback('✏️ Опис', 'edit_description')],
+            [Markup.button.callback('🖼️ Обкладинка', 'edit_photo')],
+            [Markup.button.callback('✅ Доступність', 'edit_availability')],
+            [Markup.button.callback('💾 Зберегти', 'save_changes')],
+            [Markup.button.callback('⬅️ Назад до списку', 'back_to_list')],
+            [Markup.button.callback('❌ Скасувати', 'cancel_edit')],
+          ]).reply_markup,
         });
         return;
       } else if (ctx.message && 'text' in ctx.message) {
@@ -647,10 +595,8 @@ const editBookScene = new Scenes.WizardScene(
       return;
     }
 
-    if (state.editingField === 'description' && newValue.length > 500) {
-      await ctx.reply('❌ Опис занадто довгий (максимум 500 символів). Спробуйте ще раз:');
-      return;
-    }
+    // ✅ ВИДАЛЕНО: Ограничение на описание больше не применяется (было 500 символов)
+    // Опис тепер може бути довільної довжини
 
     // Зберігаємо зміну
     state.updates = state.updates || {};
@@ -659,8 +605,38 @@ const editBookScene = new Scenes.WizardScene(
       state.updates[state.editingField] = newValue;
     }
 
+    // ✅ ВИПРАВЛЕНО: Повертаємось до меню редагування замість простого повідомлення
+    await ctx.answerCbQuery?.();
+    
+    // Повертаємося на крок 0 (меню редагування)
+    ctx.wizard.selectStep(0);
+
+    // Показуємо меню редагування з оновленою інформацією
+    if (!state.book) {
+      await ctx.reply('❌ Помилка: дані книги відсутні');
+      return ctx.scene.leave();
+    }
+
     await ctx.reply(
-      `✅ Поле "${state.editingField}" оновлено. Використайте меню вище для продовження.`
+      '<b>📝 Редагування книги</b>\n\n' +
+        `📖 ${state.book.title}\n` +
+        `👤 ${state.book.author}\n\n` +
+        `✅ Поле "${state.editingField}" оновлено\n\n` +
+        'Оберіть що хочете змінити або збережіть зміни:',
+      {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback('✏️ Назва', 'edit_title')],
+          [Markup.button.callback('✏️ Автор', 'edit_author')],
+          [Markup.button.callback('✏️ Жанр', 'edit_genre')],
+          [Markup.button.callback('✏️ Опис', 'edit_description')],
+          [Markup.button.callback('🖼️ Обкладинка', 'edit_photo')],
+          [Markup.button.callback('✅ Доступність', 'edit_availability')],
+          [Markup.button.callback('💾 Зберегти', 'save_changes')],
+          [Markup.button.callback('⬅️ Назад до списку', 'back_to_list')],
+          [Markup.button.callback('❌ Скасувати', 'cancel_edit')],
+        ]).reply_markup,
+      }
     );
     return;
   }
