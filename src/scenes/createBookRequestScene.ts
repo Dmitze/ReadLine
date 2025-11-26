@@ -11,6 +11,7 @@ import {
   BookRequestStatus,
   BookRequestPriority,
 } from '../database/tables/bookRequests';
+import { getMainMenuKeyboard } from '../keyboards/mainKeyboards';
 
 interface CreateRequestState {
   book_title?: string;
@@ -50,7 +51,7 @@ createBookRequestScene.on('text', async (ctx: BotContext) => {
   // Скасування
   if (text === '❌ Скасувати') {
     await ctx.reply('❌ Створення заявки скасовано.', {
-      reply_markup: { remove_keyboard: true },
+      reply_markup: getMainMenuKeyboard(),
     });
     return ctx.scene.leave();
   }
@@ -217,9 +218,9 @@ createBookRequestScene.action('confirm_create_request', async (ctx: BotContext) 
 
     logger.userAction(userId, 'create_request', { requestId, title: state.book_title });
 
-    // Прибираємо клавіатуру
-    await ctx.reply('✅ Готово!', {
-      reply_markup: { remove_keyboard: true },
+    // Показуємо головне меню
+    await ctx.reply('Виберіть дію:', {
+      reply_markup: getMainMenuKeyboard(),
     });
 
     return ctx.scene.leave();
@@ -234,8 +235,8 @@ createBookRequestScene.action('confirm_create_request', async (ctx: BotContext) 
 createBookRequestScene.action('cancel_create_request', async (ctx: BotContext) => {
   await ctx.answerCbQuery('❌ Скасовано');
   await ctx.editMessageText('❌ Створення заявки скасовано.');
-  await ctx.reply('Ви повернулись до головного меню.', {
-    reply_markup: { remove_keyboard: true },
+  await ctx.reply('Виберіть дію:', {
+    reply_markup: getMainMenuKeyboard(),
   });
   return ctx.scene.leave();
 });
