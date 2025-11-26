@@ -2,9 +2,8 @@
 import { Scenes, Markup } from 'telegraf';
 import { BotContext, WizardState } from '../types/telegraf';
 import { interactiveBookSelection } from '../utils/aiHelper';
-import { getEnhancedBookKeyboard } from '../keyboards/mainKeyboards';
 import { logger } from '../utils/logger';
-import { getBookIdText } from '../utils/helpers';
+import { getMainMenuKeyboard } from '../keyboards/mainKeyboards';
 
 const aiAssistantScene = new Scenes.WizardScene(
   'AI_ASSISTANT_SCENE',
@@ -44,7 +43,9 @@ const aiAssistantScene = new Scenes.WizardScene(
 
     if (data === 'cancel') {
       await ctx.answerCbQuery('❌ Скасовано');
-      await ctx.reply('❌ Підбір скасовано');
+      await ctx.reply('❌ Підбір скасовано', {
+        reply_markup: getMainMenuKeyboard(),
+      });
       return ctx.scene.leave();
     }
 
@@ -134,7 +135,9 @@ const aiAssistantScene = new Scenes.WizardScene(
     const allBooks = await getAllAvailableBooks();
 
     if (allBooks.length === 0) {
-      await ctx.reply('📭 На жаль, в бібліотеці поки немає книг');
+      await ctx.reply('📭 На жаль, в бібліотеці поки немає книг', {
+        reply_markup: getMainMenuKeyboard(),
+      });
       return ctx.scene.leave();
     }
 
@@ -150,7 +153,10 @@ const aiAssistantScene = new Scenes.WizardScene(
 
     if (books.length === 0) {
       await ctx.reply(
-        '😔 Не вдалося підібрати книги за вашими критеріями. Спробуйте інші параметри.'
+        '😔 Не вдалося підібрати книги за вашими критеріями. Спробуйте інші параметри.',
+        {
+          reply_markup: getMainMenuKeyboard(),
+        }
       );
       return ctx.scene.leave();
     }
@@ -171,7 +177,7 @@ const aiAssistantScene = new Scenes.WizardScene(
     });
 
     const keyboard = paginatedBooks.map((book) => [
-      Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+      Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
     ]);
 
     const navButtons = [];
@@ -189,9 +195,14 @@ const aiAssistantScene = new Scenes.WizardScene(
       reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
     });
 
-    // Зберігаємо дані для пагінації
-    const wizardState = ctx.wizard.state as any;
-    wizardState.aiResultBooks = books;
+    // Зберігаємо дані для пагінації в session (а не в wizard state) щоб дані залишилися після виходу зі сцени
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (!(ctx as any).session) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (ctx as any).session = {};
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (ctx as any).session.aiResultBooks = books;
 
     logger.userAction(ctx.from?.id || 0, 'ai_assistant_selection', {
       interest: state.aiInterest,
@@ -204,61 +215,71 @@ const aiAssistantScene = new Scenes.WizardScene(
   }
 );
 
-// Пагінація результатів AI підбору
-aiAssistantScene.action(/ai_result_page_(\d+)/, async (ctx: BotContext) => {
-  await ctx.answerCbQuery();
-  const page = parseInt(ctx.match?.[1] || '0', 10);
-  const wizardState = ctx.wizard?.state as any;
-  const allBooks = wizardState?.aiResultBooks || [];
+/**
+ * Export handlers to be registered at bot level (outside the scene)
+ * This ensures they work even after the scene is exited
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function registerAIAssistantHandlers(bot: any): void {
+  // Пагінація результатів AI підбору
+  bot.action(/ai_result_page_(\d+)/, async (ctx: BotContext) => {
+    await ctx.answerCbQuery();
+    const page = parseInt(ctx.match?.[1] || '0', 10);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const allBooks = (ctx as any).session?.aiResultBooks || [];
 
-  if (!allBooks || allBooks.length === 0) {
-    await ctx.answerCbQuery('❌ Помилка при завантаженні даних', { show_alert: true });
-    return;
-  }
+    if (!allBooks || allBooks.length === 0) {
+      await ctx.answerCbQuery('❌ Помилка при завантаженні даних', { show_alert: true });
+      return;
+    }
 
-  const booksPerPage = 5;
-  const paginatedBooks = allBooks.slice(page * booksPerPage, (page + 1) * booksPerPage);
-  const totalPages = Math.ceil(allBooks.length / booksPerPage);
+    const booksPerPage = 5;
+    const paginatedBooks = allBooks.slice(page * booksPerPage, (page + 1) * booksPerPage);
+    const totalPages = Math.ceil(allBooks.length / booksPerPage);
 
-  let messageText = '<b>✨ Результати пошуку</b>\n\n';
-  messageText += '<b>Рекомендовано на основі ваших вподобань та настрою:</b>\n\n';
-  messageText += `Сторінка ${page + 1} з ${totalPages}\n\n`;
+    let messageText = '<b>✨ Результати пошуку</b>\n\n';
+    messageText += '<b>Рекомендовано на основі ваших вподобань та настрою:</b>\n\n';
+    messageText += `Сторінка ${page + 1} з ${totalPages}\n\n`;
 
-  // ✅ ВИПРАВЛЕНО #11: Додано типи для параметрів forEach
-  paginatedBooks.forEach((book: typeof allBooks[0], index: number) => {
-    const rating = book.rating ? `⭐${book.rating.toFixed(1)}` : '';
-    messageText += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}${rating ? ` ${rating}` : ''}\n`;
+    // ✅ ВИПРАВЛЕНО #11: Додано типи для параметрів forEach
+    paginatedBooks.forEach((book: (typeof allBooks)[0], index: number) => {
+      const rating = book.rating ? `⭐${book.rating.toFixed(1)}` : '';
+      messageText += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}${rating ? ` ${rating}` : ''}\n`;
+    });
+
+    const keyboard = paginatedBooks.map((book: (typeof allBooks)[0]) => [
+      Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
+    ]);
+
+    const navButtons = [];
+    if (page > 0) {
+      navButtons.push(Markup.button.callback('⬅️ Назад', `ai_result_page_${page - 1}`));
+    }
+    if (page + 1 < totalPages) {
+      navButtons.push(Markup.button.callback('Вперед ➡️', `ai_result_page_${page + 1}`));
+    }
+
+    if (navButtons.length > 0) {
+      keyboard.push(navButtons);
+    }
+
+    keyboard.push([Markup.button.callback('⬅️ До меню', 'leave_ai_assistant')]);
+
+    await ctx.editMessageText(messageText, {
+      parse_mode: 'HTML',
+      reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+    });
   });
 
-  const keyboard = paginatedBooks.map((book: typeof allBooks[0]) => [
-    Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
-  ]);
-
-  const navButtons = [];
-  if (page > 0) {
-    navButtons.push(Markup.button.callback('⬅️ Назад', `ai_result_page_${page - 1}`));
-  }
-  if (page + 1 < totalPages) {
-    navButtons.push(Markup.button.callback('Вперед ➡️', `ai_result_page_${page + 1}`));
-  }
-
-  if (navButtons.length > 0) {
-    keyboard.push(navButtons);
-  }
-
-  keyboard.push([Markup.button.callback('⬅️ До меню', 'leave_ai_assistant')]);
-
-  await ctx.editMessageText(messageText, {
-    parse_mode: 'HTML',
-    reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
+  // Вихід з AI помічника
+  bot.action('leave_ai_assistant', async (ctx: BotContext) => {
+    await ctx.answerCbQuery();
+    await ctx.reply('Виберіть дію:', {
+      reply_markup: getMainMenuKeyboard(),
+    });
+    await ctx.scene.leave();
   });
-});
-
-// Вихід з AI помічника
-aiAssistantScene.action('leave_ai_assistant', async (ctx: BotContext) => {
-  await ctx.answerCbQuery();
-  await ctx.scene.leave();
-});
+}
 
 // Cleanup при виході зі сцени
 aiAssistantScene.leave((ctx) => {
@@ -267,8 +288,8 @@ aiAssistantScene.leave((ctx) => {
     delete state.aiInterest;
     delete state.aiFormat;
     delete state.aiMood;
-    delete (state as any).aiResultBooks;
   }
+  // ❌ НЕ видаляємо aiResultBooks з session - вона потрібна для пагінації
   logger.debug('AIAssistantScene cleanup completed', { userId: ctx.from?.id });
 });
 
