@@ -10,6 +10,7 @@ import { Scenes, Markup } from 'telegraf';
 import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
 import { getMainMenuKeyboard } from '../keyboards/mainKeyboards';
+import { ALL_GENRES } from '../constants/genres';
 
 interface OnboardingState {
   step?: number;
@@ -87,32 +88,68 @@ onboardingScene.action('onboarding_step1_start', async (ctx: BotContext) => {
 
 // Обробка вибору типів контенту
 onboardingScene.action(/onboarding_content_(.+)/, async (ctx: BotContext) => {
-  const state = ctx.scene.state as OnboardingState;
-  const contentType = ctx.match[1];
+  try {
+    const state = ctx.scene.state as OnboardingState;
+    const contentType = ctx.match[1];
 
-  if (!state.selectedContentTypes) {
-    state.selectedContentTypes = [];
-  }
-
-  const contentMap: { [key: string]: string } = {
-    books: '📕 Книги',
-    audio: '🎧 Аудіокниги',
-    podcasts: '🎙️ Подкасти',
-    all: '📚 Все разом',
-  };
-
-  if (contentType === 'all') {
-    state.selectedContentTypes = ['books', 'audio', 'podcasts'];
-    await ctx.answerCbQuery('✅ Все формати увімкнені!');
-  } else {
-    const index = state.selectedContentTypes.indexOf(contentType);
-    if (index > -1) {
-      state.selectedContentTypes.splice(index, 1);
-      await ctx.answerCbQuery(`❌ ${contentMap[contentType]} видалено`);
-    } else {
-      state.selectedContentTypes.push(contentType);
-      await ctx.answerCbQuery(`✅ ${contentMap[contentType]} додано`);
+    if (!state.selectedContentTypes) {
+      state.selectedContentTypes = [];
     }
+
+    const contentMap: { [key: string]: string } = {
+      books: '📕 Книги',
+      audio: '🎧 Аудіокниги',
+      podcasts: '🎙️ Подкасти',
+      all: '📚 Все разом',
+    };
+
+    if (contentType === 'all') {
+      state.selectedContentTypes = ['books', 'audio', 'podcasts'];
+      await ctx.answerCbQuery('✅ Все формати увімкнені!');
+    } else {
+      const index = state.selectedContentTypes.indexOf(contentType);
+      if (index > -1) {
+        state.selectedContentTypes.splice(index, 1);
+        await ctx.answerCbQuery(`❌ ${contentMap[contentType]} видалено`);
+      } else {
+        state.selectedContentTypes.push(contentType);
+        await ctx.answerCbQuery(`✅ ${contentMap[contentType]} додано`);
+      }
+    }
+
+    // Оновлюємо сообщение з вибраними форматами
+    const selectedText = state.selectedContentTypes.length > 0 
+      ? '\n\n✅ ' + state.selectedContentTypes.map(t => contentMap[t]).join(' + ')
+      : '';
+
+    await ctx.editMessageText(
+      '📖 *КРОК 1: ВИБІР ФОРМАТІВ КОНТЕНТУ*\n\n' +
+        '_(Прогрес: 1/3)_\n\n' +
+        'Які формати тебе цікавлять? Можна вибрати кілька! 👇\n\n' +
+        '📕 *Читання* - традиційні книги\n' +
+        '🎧 *Аудіокниги* - слухай на ходу\n' +
+        '🎙️ *Подкасти* - інтерв\'ю, лекції, історії\n\n' +
+        '_Ти завжди зможеш змінити це в налаштуваннях_ ⚙️' +
+        selectedText,
+      {
+        parse_mode: 'Markdown',
+        reply_markup: Markup.inlineKeyboard([
+          [
+            Markup.button.callback('📕 Книги', 'onboarding_content_books'),
+            Markup.button.callback('🎧 Аудіо', 'onboarding_content_audio'),
+          ],
+          [
+            Markup.button.callback('🎙️ Подкасти', 'onboarding_content_podcasts'),
+            Markup.button.callback('📌 Все разом', 'onboarding_content_all'),
+          ],
+          [Markup.button.callback('➡️ Далі', 'onboarding_step2_genres')],
+          [Markup.button.callback('⏭️ Пропустити', 'onboarding_skip')],
+        ]).reply_markup,
+      }
+    );
+  } catch (error) {
+    logger.error('Error in onboarding content selection', error);
+    await ctx.answerCbQuery('❌ Помилка при виборі формату');
   }
 });
 
@@ -125,27 +162,9 @@ onboardingScene.action('onboarding_step2_genres', async (ctx: BotContext) => {
   const state = ctx.scene.state as OnboardingState;
   state.selectedGenres = [];
 
-  const { cache, CACHE_KEYS, CACHE_TTL } = await import('../utils/cache');
-  const { getGenres } = await import('../database/models');
-
   try {
-    const genres = await cache.getOrSet(CACHE_KEYS.GENRES, getGenres, CACHE_TTL.LONG);
-
-    if (!genres || genres.length === 0) {
-      // Якщо жанрів немає, переходимо до фіналізації
-      await ctx.reply(
-        '✅ *Усе готово!*\n\n' +
-          '_БД поки порожня, але ми допоможемо тобі знайти щось цікаве пізніше!_\n\n' +
-          'Натисни кнопку нижче 👇',
-        {
-          parse_mode: 'Markdown',
-          reply_markup: Markup.inlineKeyboard([
-            [Markup.button.callback('🎉 ПОЧАТИ', 'onboarding_finish')],
-          ]).reply_markup,
-        }
-      );
-      return;
-    }
+    // Використовуємо статичний список жанрів замість запиту до БД
+    const genres = ALL_GENRES;
 
     // Показуємо жанри (по 2 в рядок)
     const genreButtons = [];
@@ -165,7 +184,8 @@ onboardingScene.action('onboarding_step2_genres', async (ctx: BotContext) => {
     await ctx.reply(
       '⚔️ *КРОК 2: ОБЕРИ БИТВИ (ЖАНРИ)*\n\n' +
         '_(Прогрес: 2/3)_\n\n' +
-        'Вибери 3-5 жанрів, щоб я міг рекомендувати книги саме для тебе! 🎯\n\n' +
+        `Вибери 3-5 жанрів, щоб я міг рекомендувати книги саме для тебе! 🎯\n\n` +
+        `Всього доступно: ${genres.length} жанрів\n\n` +
         '✨ *Обрано:* 0 жанрів\n\n' +
         '💡 _Змінювати можна завжди в налаштуваннях!_',
       {
@@ -174,7 +194,7 @@ onboardingScene.action('onboarding_step2_genres', async (ctx: BotContext) => {
       }
     );
   } catch (error) {
-    logger.error('Error fetching genres in onboarding', error instanceof Error ? error : new Error(String(error)));
+    logger.error('Error in onboarding genre selection', error instanceof Error ? error : new Error(String(error)));
     await ctx.reply('⚠️ Помилка при завантаженні жанрів. Спробуйте пізніше.');
     await ctx.scene.leave();
   }
@@ -203,11 +223,8 @@ onboardingScene.action(/onboarding_genre_(.+)/, async (ctx: BotContext) => {
   }
 
   // Оновлюємо меню з галочками
-  const { cache, CACHE_KEYS, CACHE_TTL } = await import('../utils/cache');
-  const { getGenres } = await import('../database/models');
-
   try {
-    const genres = await cache.getOrSet(CACHE_KEYS.GENRES, getGenres, CACHE_TTL.LONG);
+    const genres = ALL_GENRES;
     const genreButtons = [];
 
     for (let i = 0; i < genres.length; i += 2) {
