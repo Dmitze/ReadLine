@@ -573,6 +573,8 @@ ReadLine DB (SQLite)
 ## 💻 Установка та запуск
 
 > 🚀 **Хочете швидко розпочати?** Дивіться [QUICK_START.md](./QUICK_START.md) для налаштування за 5 хвилин!
+> 
+> 🔧 **Для production?** Див. [PM2_SETUP.md](./PM2_SETUP.md) для налаштування автоматичної перезавантаження та моніторингу бота.
 
 ### Вимоги
 
@@ -655,11 +657,14 @@ npm run init-admin
 npm run dev:watch
 ```
 
-**Production режим**:
+**Production режим (рекомендовано з PM2)**:
 ```bash
 npm run build
-npm start
+pm2 start ecosystem.config.js
+pm2 save
 ```
+
+> 💡 **Чому PM2?** PM2 автоматично перезавантажує бота при крахах і дозволяє кнопці "Перезавантажити бота" в адмін-панелі працювати коректно. Дивіться [PM2_SETUP.md](./PM2_SETUP.md) для деталей.
 
 ---
 
@@ -671,6 +676,15 @@ npm run build              # Компіляція TypeScript → JavaScript (dis
 npm start                  # Production режим з dist/
 npm run dev                # Development з ts-node
 npm run dev:watch          # Development з auto-reload (Nodemon)
+
+# PM2 управління (Production)
+pm2 start ecosystem.config.js  # Запуск бота через PM2
+pm2 list                       # Список активних процесів
+pm2 logs ReadLine              # Переглянути логи бота
+pm2 restart ReadLine           # Перезавантажити бота
+pm2 stop ReadLine              # Зупинити бота
+pm2 save                       # Зберегти конфіг PM2
+pm2 startup                    # Налаштувати автозавдання при перезагрузці сервера
 
 # Адміністрування
 npm run init-admin         # Інітіалізація першого адміністратора
@@ -687,6 +701,8 @@ npm run lint:fix           # Auto-fix лінтінг помилок
 npm run format             # Prettier форматування
 npm run format:check       # Перевірка форматування
 ```
+
+> 📌 **PM2 рекомендовано для production.** Див. [PM2_SETUP.md](./PM2_SETUP.md) для детального керівництва.
 
 ---
 
