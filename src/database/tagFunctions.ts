@@ -40,8 +40,12 @@ export const addTag = async (name: string): Promise<number> => {
       if (err) reject(err);
       else {
         // ✅ Інвалідація кеша тегів після додавання нового тегу
-        const { invalidateTagsCache } = require('../scenes/addBook/utils');
-        invalidateTagsCache();
+        try {
+          const { invalidateTagsCache } = require('../scenes/addBook/utils');
+          invalidateTagsCache();
+        } catch (err) {
+          // Ignore cache invalidation errors
+        }
         resolve(this.lastID);
       }
     });
