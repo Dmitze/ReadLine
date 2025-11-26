@@ -3,6 +3,7 @@ import { BotContext } from '../types/telegraf';
 import { getBookById } from '../database/models';
 import { createBookOrder, hasUserOrderedBook } from '../database/bookOrderFunctions';
 import { logger } from '../utils/logger';
+import { getMainMenuKeyboard } from '../keyboards/mainKeyboards';
 
 interface BookOrderState {
   bookId: number;
@@ -47,10 +48,7 @@ const bookOrderScene = new Scenes.WizardScene<BotContext>(
         'Перегляньте свої замовлення в профілі або зв\'яжіться з адміністратором.',
         {
           parse_mode: 'HTML',
-          reply_markup: Markup.inlineKeyboard([
-            [Markup.button.callback('📋 Мої замовлення', 'my_orders')],
-            [Markup.button.callback('⬅️ Назад', 'back_to_book')]
-          ]).reply_markup
+          reply_markup: getMainMenuKeyboard()
         }
       );
       return ctx.scene.leave();
@@ -93,7 +91,7 @@ const bookOrderScene = new Scenes.WizardScene<BotContext>(
     // Скасування
     if (text === '❌ Скасувати') {
       await ctx.reply('❌ Замовлення скасовано.', {
-        reply_markup: { remove_keyboard: true }
+        reply_markup: getMainMenuKeyboard()
       });
       return ctx.scene.leave();
     }
@@ -244,13 +242,14 @@ const bookOrderScene = new Scenes.WizardScene<BotContext>(
           'для узгодження деталей отримання книги.\n\n' +
           '💡 Ви можете переглянути свої замовлення в профілі.',
           {
-            parse_mode: 'HTML',
-            reply_markup: Markup.inlineKeyboard([
-              [Markup.button.callback('📋 Мої замовлення', 'my_orders')],
-              [Markup.button.callback('🏠 Головне меню', 'main_menu')]
-            ]).reply_markup
+            parse_mode: 'HTML'
           }
         );
+        
+        // Показуємо головне меню окремо
+        await ctx.reply('Виберіть дію:', {
+          reply_markup: getMainMenuKeyboard()
+        });
         
         // Сповіщення адміну (знайти всіх адмінів)
         try {
@@ -294,7 +293,10 @@ const bookOrderScene = new Scenes.WizardScene<BotContext>(
         logger.error('Error creating book order:', error as Error);
         await ctx.reply(
           '❌ Помилка при створенні замовлення.\n' +
-          'Спробуйте пізніше або зв\'яжіться з адміністратором.'
+          'Спробуйте пізніше або зв\'яжіться з адміністратором.',
+          {
+            reply_markup: getMainMenuKeyboard()
+          }
         );
         return ctx.scene.leave();
       }
@@ -302,13 +304,11 @@ const bookOrderScene = new Scenes.WizardScene<BotContext>(
     
     if (action === 'cancel_order') {
       await ctx.answerCbQuery('❌ Замовлення скасовано');
-      await ctx.editMessageText(
+      await ctx.reply(
         '❌ Замовлення скасовано.\n\n' +
         'Ви можете замовити книгу пізніше.',
         {
-          reply_markup: Markup.inlineKeyboard([
-            [Markup.button.callback('🏠 Головне меню', 'main_menu')]
-          ]).reply_markup
+          reply_markup: getMainMenuKeyboard()
         }
       );
       return ctx.scene.leave();
