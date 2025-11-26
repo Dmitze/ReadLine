@@ -26,6 +26,7 @@ import { BotContext, WizardState } from '../types/telegraf';
 import { validateBookData } from '../utils/validation';
 import { validateDocument, MAX_FILE_SIZES } from '../utils/fileValidation';
 import { RateLimiter } from '../middleware/RateLimiter';
+import { getMainMenuKeyboard } from '../keyboards/mainKeyboards';
 import {
   getCachedTags,
   getProgress,
@@ -75,6 +76,22 @@ function isMessageWithText(ctx: BotContext): ctx is BotContext & {
 }
 
 const fileUploadLimiter = new RateLimiter({ maxRequests: 5, windowMs: 60000 });
+
+/**
+ * Побудувати клавіатуру для вибору тегів
+ */
+function buildTagsKeyboard(tags: any[], selectedTagIds: number[]) {
+  const keyboard = tags.map((tag) => [
+    {
+      text: selectedTagIds.includes(tag.id) ? `✅ ${tag.name}` : tag.name,
+      callback_data: `tag_${tag.id}`,
+    },
+  ]);
+
+  keyboard.push([{ text: '✅ Далі', callback_data: 'tags_done_' }]);
+
+  return { inline_keyboard: keyboard };
+}
 
 /**
  * Попередній перегляд перед публікацією
@@ -265,9 +282,9 @@ const addBookScene = new Scenes.WizardScene(
           return;
         }
 
-        state.genre = state.selectedGenres.join(', ');
+        state.genre = state.selectedGenres.join('\n'); // Зберігаємо всі жанри, розділені новим рядком
         await ctx.answerCbQuery('✅ Жанри обрано');
-        await ctx.editMessageText(`📚 Жанри обрано: ${state.genre}`);
+        await ctx.editMessageText(`📚 Жанри обрано:\n${state.selectedGenres.join('\n')}`);
         autoSaveState(state);
         logUserAction(ctx, 'selected_genres', { genres: state.selectedGenres });
 
@@ -573,21 +590,21 @@ const addBookScene = new Scenes.WizardScene(
         
         // Показуємо теги
         const tags = await getCachedTags();
-        const keyboard = tags.map((tag) => [
-          {
-            text: tag.name,
-            callback_data: `tag_${tag.id}_${userId}`,
-          },
-        ]);
-
-        keyboard.push([{ text: '✅ Далі', callback_data: `tags_done_${userId}` }]);
+        const keyboard = buildTagsKeyboard(tags, state.selectedTags || []);
 
         await ctx.editMessageText(
-          `${getProgress(10)}\n\n🏷️ <b>ВИБЕРІТЬ ТЕГИ</b>\n\n` +
-          'Додайте теги до книги (опціонально):',
+          `${getProgress(10)}\n🏷️ <b>Додайте теги до книги (опціонально):</b>\n\n` +
+          'Оберіть один або кілька тегів...' +
+          (state.selectedTags && state.selectedTags.length > 0
+            ? `\n\n✅ <b>Вибрані теги:</b> ${tags
+                .filter((t: any) => state.selectedTags?.includes(t.id))
+                .map((t: any) => t.name)
+                .join(', ')}`
+            : '') +
+          '\n\nНатисніть "Далі" коли закінчите...',
           {
             parse_mode: 'HTML',
-            reply_markup: { inline_keyboard: keyboard },
+            reply_markup: keyboard,
           }
         );
         return ctx.wizard.next();
@@ -654,6 +671,32 @@ const addBookScene = new Scenes.WizardScene(
       }
 
       autoSaveState(state);
+
+      // Оновлюємо повідомлення з відгуком про вибір тегів
+      try {
+        const tags = await getCachedTags();
+        
+        const selectedText = state.selectedTags && state.selectedTags.length > 0
+          ? `\n\n✅ <b>Вибрані теги:</b> ${tags
+              .filter((t: any) => state.selectedTags?.includes(t.id))
+              .map((t: any) => t.name)
+              .join(', ')}`
+          : '';
+
+        const keyboard = buildTagsKeyboard(tags, state.selectedTags || []);
+
+        await ctx.editMessageText(
+          `${getProgress(10)}\n🏷️ <b>Додайте теги до книги (опціонально):</b>\n\n` +
+          `Оберіть один або кілька тегів...${selectedText}\n\n` +
+          'Натисніть "Далі" коли закінчите...',
+          {
+            parse_mode: 'HTML',
+            reply_markup: keyboard,
+          }
+        );
+      } catch (err) {
+        logger.warn('Error updating tags display', { error: String(err) });
+      }
     }
   },
 
@@ -741,12 +784,7 @@ addBookScene.action(/^confirm_book_(\d+)$/, async (ctx: BotContext) => {
     });
 
     await ctx.reply('✅ Книга успішно опублікована!', {
-      reply_markup: {
-        remove_keyboard: true,
-        inline_keyboard: [[
-          { text: '🏠 Назад до адмін-панелі', callback_data: 'back_to_admin' }
-        ]],
-      },
+      reply_markup: getMainMenuKeyboard(),
     });
 
     cleanupWizardState(ctx);
@@ -763,7 +801,7 @@ addBookScene.action(/^confirm_book_(\d+)$/, async (ctx: BotContext) => {
 addBookScene.action(/^cancel_book_(\d+)$/, async (ctx: BotContext) => {
   await ctx.answerCbQuery('❌ Скасовано');
   await ctx.reply('❌ Додавання книги скасовано', {
-    reply_markup: { remove_keyboard: true },
+    reply_markup: getMainMenuKeyboard(),
   });
   cleanupWizardState(ctx);
   return ctx.scene.leave();
@@ -773,7 +811,7 @@ addBookScene.action(/^cancel_book_(\d+)$/, async (ctx: BotContext) => {
 
 addBookScene.command('cancel', async (ctx) => {
   await ctx.reply('❌ Додавання книги скасовано', {
-    reply_markup: { remove_keyboard: true },
+    reply_markup: getMainMenuKeyboard(),
   });
   cleanupWizardState(ctx);
   return ctx.scene.leave();
