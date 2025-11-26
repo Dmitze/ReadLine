@@ -18,6 +18,8 @@ import { registerMiscHandlers } from './misc';
 import { registerPodcastHandlers } from './podcasts';
 import { registerPhysicalBooksHandlers } from './physicalBooks';
 import { registerBookRequestHandlers } from './bookRequests';
+import { registerAIAssistantHandlers } from '../../scenes/aiAssistantScene';
+import { registerProfileHandlers } from './profileHandlers';
 
 // Флаг для предотвращения повторной регистрации
 let handlersRegistered = false;
@@ -44,6 +46,8 @@ export function registerUserHandlers(bot: Telegraf<BotContext>): void {
     registerPodcastHandlers(bot);
     registerPhysicalBooksHandlers(bot);
     registerBookRequestHandlers(bot);
+    registerAIAssistantHandlers(bot);
+    registerProfileHandlers(bot);
 
     handlersRegistered = true;
     logger.info('✅ All user handlers registered successfully');
