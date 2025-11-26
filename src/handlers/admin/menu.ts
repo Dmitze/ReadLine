@@ -337,6 +337,7 @@ export default (bot: Telegraf<BotContext>) => {
         [Markup.button.callback('📊 Модерація', 'admin_help_moderation')],
         [Markup.button.callback('📈 Статистика', 'admin_help_stats')],
         [Markup.button.callback('💡 Поради', 'admin_help_tips')],
+        [Markup.button.callback('⚙️ Система', 'admin_help_system')],
         [Markup.button.callback('← Назад в меню', 'admin_back')],
       ]);
 
@@ -513,6 +514,54 @@ export default (bot: Telegraf<BotContext>) => {
     return ctx.editMessageText(message, { ...backButton, parse_mode: 'HTML' });
   });
 
+  // Розділ: Система
+  bot.action('admin_help_system', async (ctx: BotContext) => {
+    const message =
+      '<b>⚙️ СИСТЕМА ТА НАЛАШТУВАННЯ</b>\n\n' +
+      '<b>🔄 ПЕРЕЗАВАНТАЖЕННЯ БОТА</b>\n' +
+      '  Що це?\n' +
+      '    • Повна перезагрузка процесу бота\n' +
+      '    • Очистка всіх активних сцен\n' +
+      '    • Перезавантаження конфігурації\n\n' +
+      '  Коли використовувати:\n' +
+      '    ✓ Якщо бот залис (не реагує на команди)\n' +
+      '    ✓ Після оновлення коду\n' +
+      '    ✓ При дивних помилках\n' +
+      '    ✓ Для оптимізації пам\'яті\n\n' +
+      '  Як використовувати:\n' +
+      '    1. Натисни "🔄 Перезавантажити бота"\n' +
+      '    2. Підтверди дію\n' +
+      '    3. Чекай 5-10 секунд\n' +
+      '    4. Бот повертається до роботи\n\n' +
+      '  ⚠️ ВАЖЛИВО:\n' +
+      '    • Всі користувачи вийдуть зі сцен\n' +
+      '    • Дані в базі збережуться\n' +
+      '    • Не перезавантажуй часто!\n' +
+      '    • Потрібен PM2 для автоперезагрузки!\n' +
+      '    • Без PM2 бот просто вимкнеться\n\n' +
+      '<b>🚀 КАК ЗАПУСТИТИ З PM2:</b>\n' +
+      '    npm install -g pm2\n' +
+      '    pm2 start npm --name "ReadLine" -- start\n' +
+      '    pm2 save\n' +
+      '    pm2 startup\n\n' +
+      '<b>💾 ДАНІ БОТА</b>\n' +
+      '  • База даних: PostgreSQL\n' +
+      '  • Зберігаються: Книги, користувачі, промокоди\n' +
+      '  • Дані залишаються при перезавантаженні\n\n' +
+      '<b>📊 ЛОГИ</b>\n' +
+      '  • Всі дії логуються автоматично\n' +
+      '  • Перезавантаження записується в логи\n' +
+      '  • Помилки отримують деталізацію\n\n' +
+      '<i>← Назад в меню інструкцій</i>';
+
+    const backButton = Markup.inlineKeyboard([
+      Markup.button.callback('← Назад в меню', 'admin_help'),
+      Markup.button.callback('В головне меню', 'admin_back'),
+    ]);
+
+    return ctx.editMessageText(message, { ...backButton, parse_mode: 'HTML' });
+  });
+
   // Розділ: Поради для адміністраторів
   bot.action('admin_help_tips', async (ctx: BotContext) => {
     const message =
@@ -572,5 +621,85 @@ export default (bot: Telegraf<BotContext>) => {
     ]);
 
     return ctx.editMessageText(message, { ...backButton, parse_mode: 'HTML' });
-  });
-};
+    });
+
+    // Перезавантаження бота
+    bot.action('restart_bot', async (ctx: BotContext) => {
+    (async () => {
+      await ctx.answerCbQuery();
+
+      const adminCheck = await isAdmin(ctx.from.id);
+      if (!adminCheck) {
+        await ctx.reply('❌ У вас немає доступу до цієї функції.');
+        return;
+      }
+
+      // Запитуємо підтвердження
+      await ctx.editMessageText(
+        '⚠️ <b>ПЕРЕЗАВАНТАЖЕННЯ БОТА</b>\n\n' +
+          'Це діяння перезагрузить бота повністю.\n\n' +
+          '⏱️ Процес займе кілька секунд.\n' +
+          'Всі активні сцени будуть скасовані.\n\n' +
+          '<b>Ви впевнені?</b>',
+        {
+          parse_mode: 'HTML',
+          reply_markup: Markup.inlineKeyboard([
+            [
+              Markup.button.callback('✅ Так, перезавантажити', 'confirm_restart'),
+              Markup.button.callback('❌ Скасувати', 'admin_back'),
+            ],
+          ]).reply_markup,
+        }
+      );
+    })().catch((error) => {
+      logger.error(
+        'Error in restart bot action',
+        error instanceof Error ? error : new Error(String(error)),
+        { userId: ctx.from?.id }
+      );
+      ctx.answerCbQuery('❌ Помилка');
+    });
+    return;
+    });
+
+    // Підтвердження перезавантаження
+    bot.action('confirm_restart', async (ctx: BotContext) => {
+    (async () => {
+      await ctx.answerCbQuery('🔄 Перезавантажуємо бота...');
+
+      const adminCheck = await isAdmin(ctx.from.id);
+      if (!adminCheck) {
+        await ctx.reply('❌ У вас немає доступу до цієї функції.');
+        return;
+      }
+
+      logger.info('Bot restart initiated by admin', { userId: ctx.from?.id });
+
+      await ctx.editMessageText(
+        '🔄 <b>БОТ ПЕРЕЗАВАНТАЖУЄТЬСЯ...</b>\n\n' +
+          'Зачекайте будь ласка...\n' +
+          'Процес займає близько 5-10 секунд.\n\n' +
+          '✅ Бот повернеться до роботи незабаром.',
+        { parse_mode: 'HTML' }
+      );
+
+      // Затримка 2 сек перед перезавантаженням
+      // щоб повідомлення встигло надіслатися
+      setTimeout(() => {
+        logger.info('Executing bot restart...');
+        // Exit з кодом 1 - сигнал для перезагрузки
+        // Якщо використовується PM2, він автоматично перезагрузить процес
+        // Якщо ні - потрібно вручну перезагрузити або використовувати npm scripts
+        process.exit(1);
+      }, 2000);
+    })().catch((error) => {
+      logger.error(
+        'Error in confirm restart action',
+        error instanceof Error ? error : new Error(String(error)),
+        { userId: ctx.from?.id }
+      );
+      ctx.answerCbQuery('❌ Помилка при перезавантаженні');
+    });
+    return;
+    });
+    };
