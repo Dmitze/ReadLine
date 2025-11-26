@@ -40,7 +40,10 @@ feedbackScene.on('text', async (ctx: BotContext) => {
   }
 
   if (!userId) {
-    await ctx.reply('❌ Не вдалося ідентифікувати користувача.');
+    const { getMainMenuKeyboard } = await import('../keyboards/mainKeyboards');
+    await ctx.reply('❌ Не вдалося ідентифікувати користувача.', {
+      reply_markup: getMainMenuKeyboard(),
+    });
     return ctx.scene?.leave();
   }
 
@@ -68,12 +71,13 @@ feedbackScene.on('text', async (ctx: BotContext) => {
   const admins = await getAllAdmins();
 
   if (admins.length === 0) {
+    const { getMainMenuKeyboard } = await import('../keyboards/mainKeyboards');
     await ctx.reply(
       '✅ *Повідомлення збережено!*\n\n' +
         'Ваше повідомлення збережено в системі.\n' +
         "Адміністратор переглянеце його найближчим часом і зв'яжеться з вами.\n\n" +
         '📱 Очікуйте відповіді в приватних повідомленнях.',
-      { parse_mode: 'Markdown' }
+      { parse_mode: 'Markdown', reply_markup: getMainMenuKeyboard() }
     );
     return ctx.scene?.leave();
   }
@@ -155,9 +159,9 @@ feedbackScene.on('text', async (ctx: BotContext) => {
 
 // Обробка скасування
 feedbackScene.command('cancel', async (ctx: BotContext) => {
-  const { Markup } = await import('telegraf');
+  const { getMainMenuKeyboard } = await import('../keyboards/mainKeyboards');
   await ctx.reply('❌ Відправка повідомлення скасована.', {
-    reply_markup: Markup.removeKeyboard().reply_markup,
+    reply_markup: getMainMenuKeyboard(),
   });
   return ctx.scene?.leave();
 });
