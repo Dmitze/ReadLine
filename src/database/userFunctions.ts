@@ -189,7 +189,7 @@ export async function getUserDetailedStats(userId: number): Promise<{
 
   // Отримуємо час прослуховування
   const listeningResult = await dbWrapper.get<{ total: number }>(
-    'SELECT COALESCE(SUM(total_listened), 0) as total FROM listening_progress WHERE user_id = ?',
+    'SELECT COALESCE(SUM(total_listened), 0) as total FROM audio_progress WHERE user_id = ?',
     [userId]
   );
 
