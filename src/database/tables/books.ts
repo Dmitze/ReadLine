@@ -76,8 +76,9 @@ export const addBook = (
  */
 export const getBooksByGenre = (genre: string): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
-    const query = 'SELECT * FROM books WHERE genre = ?';
-    db.all(query, [genre], (err, rows: Book[]) => {
+    // Шукаємо книги де жанр містить вибраний жанр (оскільки може бути кілька жанрів розділених новим рядком)
+    const query = 'SELECT * FROM books WHERE genre LIKE ?';
+    db.all(query, [`%${genre}%`], (err, rows: Book[]) => {
       if (err) {
         logger.error('Error getting books by genre', err, { genre });
         reject(err);
@@ -198,20 +199,20 @@ export const getBooksByGenreWithPagination = (
     const offset = (page - 1) * limit;
     const booksQuery = `
       SELECT * FROM books 
-      WHERE genre = ? 
+      WHERE genre LIKE ? 
       ORDER BY created_at DESC 
       LIMIT ? OFFSET ?
     `;
-    const countQuery = 'SELECT COUNT(*) as total FROM books WHERE genre = ?';
+    const countQuery = 'SELECT COUNT(*) as total FROM books WHERE genre LIKE ?';
 
-    db.get(countQuery, [genre], (err, countRow: { total: number }) => {
+    db.get(countQuery, [`%${genre}%`], (err, countRow: { total: number }) => {
       if (err) {
         logger.error('Error counting books by genre', err, { genre });
         reject(err);
         return;
       }
 
-      db.all(booksQuery, [genre, limit, offset], (err, rows: Book[]) => {
+      db.all(booksQuery, [`%${genre}%`, limit, offset], (err, rows: Book[]) => {
         if (err) {
           logger.error('Error getting books by genre with pagination', err, { genre, page, limit });
           reject(err);
