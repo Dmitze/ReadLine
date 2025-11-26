@@ -1,0 +1,122 @@
+{
+  "version": "2.0",
+  "name": "ReadLine Multi-Stage Pipeline",
+  "description": "Automated CI/CD pipeline for ReadLine Telegram Bot",
+  "stages": [
+    {
+      "name": "install",
+      "description": "Install dependencies",
+      "command": "npm install",
+      "timeout": 180,
+      "continueOnError": false,
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
+    {
+      "name": "lint",
+      "description": "Run ESLint and Prettier checks",
+      "command": "npm run lint && npm run format:check",
+      "timeout": 60,
+      "continueOnError": false,
+      "dependsOn": ["install"]
+    },
+    {
+      "name": "test",
+      "description": "Run all tests with coverage",
+      "command": "npm run test:coverage",
+      "timeout": 300,
+      "continueOnError": false,
+      "dependsOn": ["lint"],
+      "artifacts": ["coverage/"],
+      "env": {
+        "NODE_ENV": "test"
+      }
+    },
+    {
+      "name": "build",
+      "description": "Compile TypeScript to JavaScript",
+      "command": "npm run build",
+      "timeout": 120,
+      "continueOnError": false,
+      "dependsOn": ["test"],
+      "artifacts": ["dist/"]
+    },
+    {
+      "name": "init",
+      "description": "Initialize database and admin user",
+      "command": "npm run init-admin",
+      "timeout": 60,
+      "continueOnError": true,
+      "dependsOn": ["build"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    },
+    {
+      "name": "start",
+      "description": "Start production server",
+      "command": "npm start",
+      "timeout": 0,
+      "continueOnError": false,
+      "dependsOn": ["init"],
+      "env": {
+        "NODE_ENV": "production"
+      }
+    }
+  ],
+  "pipelines": {
+    "development": {
+      "stages": ["install", "lint", "test"],
+      "parallel": false
+    },
+    "ci": {
+      "stages": ["install", "lint", "test", "build"],
+      "parallel": false
+    },
+    "production": {
+      "stages": ["install", "lint", "test", "build", "init", "start"],
+      "parallel": false
+    },
+    "quick": {
+      "stages": ["lint", "test"],
+      "parallel": true
+    }
+  },
+  "hooks": {
+    "pre-install": "echo 'Starting ReadLine build pipeline...'",
+    "post-test": "echo 'Tests completed. Coverage report available in coverage/'",
+    "post-build": "echo 'Build successful. Output in dist/'",
+    "pre-start": "echo 'Starting ReadLine bot in production mode...'",
+    "on-error": "echo 'Pipeline failed. Check logs for details.'"
+  },
+  "notifications": {
+    "email": {
+      "enabled": false,
+      "recipients": []
+    },
+    "slack": {
+      "enabled": false,
+      "webhook": ""
+    },
+    "telegram": {
+      "enabled": false,
+      "chatId": "",
+      "botToken": ""
+    }
+  },
+  "retryPolicy": {
+    "maxRetries": 3,
+    "retryDelay": 5000,
+    "retryableStages": ["install", "test"]
+  },
+  "caching": {
+    "enabled": true,
+    "paths": [
+      "node_modules/",
+      "dist/",
+      ".npm/",
+      "coverage/"
+    ]
+  }
+}
