@@ -28,6 +28,9 @@ export const getAdminMenuKeyboard = (pendingReviews: number = 0, pendingFeedback
     // ============ АНАЛІТИКА ============
     [Markup.button.callback('📊 Статистика', 'admin_stats')],
     [Markup.button.callback('📖 Інструкції', 'admin_help')],
+    
+    // ============ СИСТЕМА ============
+    [Markup.button.callback('🔄 Перезавантажити бота', 'restart_bot')],
   ]).reply_markup;
 };
 
