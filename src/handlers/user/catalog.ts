@@ -114,7 +114,18 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     try {
       await ctx.answerCbQuery();
 
-      const genres = await cache.getOrSet(CACHE_KEYS.GENRES, () => getGenres(), CACHE_TTL.LONG);
+      let genres = await cache.getOrSet(CACHE_KEYS.GENRES, () => getGenres(), CACHE_TTL.LONG);
+
+      if (!genres || genres.length === 0) {
+        await ctx.editMessageText('❌ Виникла помилка при отриманні жанрів.');
+        return;
+      }
+
+      // Розділяємо жанри які зберігаються зі символом \n на окремі жанри
+      genres = genres
+        .flatMap((genre: string) => genre.split('\n').map((g: string) => g.trim()))
+        .filter((genre: string) => genre.length > 0)
+        .filter((genre: string, index: number, self: string[]) => self.indexOf(genre) === index); // Видаляємо дублікати
 
       if (!genres || genres.length === 0) {
         await ctx.editMessageText('❌ Виникла помилка при отриманні жанрів.');
@@ -145,7 +156,13 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       const genreIndex = parseInt(match[1], 10);
       
       // Отримуємо список жанрів з кешу
-      const genres = await cache.getOrSet(CACHE_KEYS.GENRES, () => getGenres(), CACHE_TTL.LONG);
+      let genres = await cache.getOrSet(CACHE_KEYS.GENRES, () => getGenres(), CACHE_TTL.LONG);
+      
+      // Розділяємо жанри які зберігаються зі символом \n на окремі жанри
+      genres = genres
+        .flatMap((genre: string) => genre.split('\n').map((g: string) => g.trim()))
+        .filter((genre: string) => genre.length > 0)
+        .filter((genre: string, index: number, self: string[]) => self.indexOf(genre) === index); // Видаляємо дублікати
       
       if (!genres || genreIndex >= genres.length) {
         await ctx.answerCbQuery('❌ Жанр не знайдено', { show_alert: true });

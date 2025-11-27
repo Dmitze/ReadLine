@@ -12,9 +12,17 @@ export type DeviceType = 'mobile' | 'tablet' | 'desktop';
 
 // Визначення типу пристрою на основі контексту
 export const detectDeviceType = (ctx: Context): DeviceType => {
+  // Отримуємо збережений тип пристрою з session/db
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const botCtx = ctx as any;
+  const savedDeviceType = botCtx?.session?.deviceType || botCtx?.state?.deviceType;
+  
+  if (savedDeviceType && ['mobile', 'tablet', 'desktop'].includes(savedDeviceType)) {
+    return savedDeviceType as DeviceType;
+  }
+  
   // За замовчуванням - мобільний (найпоширеніший варіант)
-  // Динамічний імпорт уникає циклічних залежностей
-  // Користувачі можуть налаштувати з меню /settings
+  // Користувачи можуть налаштувати з меню ⚙️ Налаштування
   return 'mobile';
 };
 
