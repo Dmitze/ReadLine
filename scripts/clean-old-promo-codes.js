@@ -40,8 +40,7 @@ async function deleteExpiredCodes() {
   return new Promise((resolve, reject) => {
     const sql = `
       DELETE FROM promo_codes 
-      WHERE expires_at < datetime('now')
-      OR (used_count > 0 AND max_uses IS NOT NULL AND used_count >= max_uses)
+      WHERE is_active = 0
     `;
     
     db.run(sql, function(err) {
@@ -55,7 +54,7 @@ async function deleteOldUnusedCodes(days = 30) {
   return new Promise((resolve, reject) => {
     const sql = `
       DELETE FROM promo_codes 
-      WHERE used_count = 0 
+      WHERE is_active = 0
       AND created_at < datetime('now', '-${days} days')
     `;
     
