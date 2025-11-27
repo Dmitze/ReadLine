@@ -1,0 +1,217 @@
+# Гайд по Управлению Ботом на Облаке
+
+## 1. Подключение к Серверу
+```bash
+ssh root@69.169.108.180
+```
+Введите пароль от сервера.
+
+---
+
+## 2. Статус Бота
+```bash
+pm2 status
+```
+Должно показать `online` - бот работает.
+
+---
+
+## 3. Логи Бота (Последние 50 строк)
+```bash
+pm2 logs telegram-bot --lines 50
+```
+
+Для выхода: **Ctrl+C**
+
+---
+
+## 4. Перезагрузить Бота
+```bash
+pm2 restart telegram-bot
+```
+
+---
+
+## 5. Остановить Бота
+```bash
+pm2 stop telegram-bot
+```
+
+---
+
+## 6. Запустить Бота (После Остановки)
+```bash
+pm2 start telegram-bot
+```
+
+---
+
+## 7. Обновить Код (Новая Версия)
+
+### Вариант A: Через Git
+```bash
+cd /opt/ReadLine
+git pull origin main
+npm install
+npm run build
+pm2 restart telegram-bot
+```
+
+### Вариант B: Через SCP (Если Репо Приватный)
+На **вашем ноутбуке**:
+```bash
+scp -r "C:\Users\dmitz\Documents\GitHub\ReadLine\src" root@69.169.108.180:/opt/ReadLine/
+scp "C:\Users\dmitz\Documents\GitHub\ReadLine\package.json" root@69.169.108.180:/opt/ReadLine/
+```
+
+На **сервере**:
+```bash
+cd /opt/ReadLine
+npm install
+npm run build
+pm2 restart telegram-bot
+```
+
+---
+
+## 8. Обновить .env Файл
+
+На **сервере**:
+```bash
+cd /opt/ReadLine
+nano .env
+```
+
+Отредактируйте нужные переменные, сохраните (**Ctrl+X** → **Y** → **Enter**).
+
+Перезагрузите бота:
+```bash
+pm2 restart telegram-bot
+```
+
+---
+
+## 9. Проверить Место на Диске
+```bash
+df -h
+```
+
+---
+
+## 10. Размер Проекта
+```bash
+du -sh /opt/ReadLine
+```
+
+---
+
+## 11. Очистить Логи PM2
+```bash
+pm2 flush
+```
+
+---
+
+## 12. Перезагрузить Сервер (Если Зависает)
+```bash
+reboot
+```
+
+Бот автоматически запустится после перезагрузки.
+
+---
+
+## 13. Удалить Бота из PM2
+```bash
+pm2 delete telegram-bot
+pm2 save
+```
+
+---
+
+## 14. Запустить Бота Заново
+```bash
+cd /opt/ReadLine
+pm2 start dist/index.js --name "telegram-bot"
+pm2 save
+```
+
+---
+
+## 15. Сделать Резервную Копию БД
+```bash
+cp /opt/ReadLine/database.db /opt/ReadLine/database.db.backup
+```
+
+---
+
+## 16. Просмотреть Файл .env
+```bash
+cat /opt/ReadLine/.env
+```
+
+---
+
+## 17. Если Бот Не Отвечает
+
+1. Проверьте статус:
+```bash
+pm2 status
+```
+
+2. Посмотрите ошибки:
+```bash
+pm2 logs telegram-bot
+```
+
+3. Перезагрузите:
+```bash
+pm2 restart telegram-bot
+```
+
+4. Если не помогло:
+```bash
+pm2 kill
+pm2 start dist/index.js --name "telegram-bot"
+```
+
+---
+
+## 18. Быстрые Команды
+
+| Команда | Действие |
+|---------|----------|
+| `pm2 status` | Статус бота |
+| `pm2 logs telegram-bot` | Логи бота |
+| `pm2 restart telegram-bot` | Перезагрузить |
+| `pm2 stop telegram-bot` | Остановить |
+| `pm2 start telegram-bot` | Запустить |
+| `pm2 delete telegram-bot` | Удалить |
+| `cd /opt/ReadLine` | Перейти в проект |
+| `nano .env` | Отредактировать .env |
+| `npm run build` | Собрать проект |
+
+---
+
+## 19. Когда Нужно Перезагружать Бота?
+
+✅ После обновления кода
+✅ После изменения .env
+✅ После переподключения сервера
+✅ Если не отвечает на команды
+
+❌ Не нужно: перезагружать ноутбук
+
+---
+
+## 20. IP и Данные Сервера
+
+- **IP:** 69.169.108.180
+- **Пользователь:** root
+- **Проект:** /opt/ReadLine
+- **DB:** /opt/ReadLine/database.db
+- **Логи:** /root/.pm2/logs/
+
+---
+
+Сохраните этот файл и используйте как шпаргалку!
