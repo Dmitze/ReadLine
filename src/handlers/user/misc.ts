@@ -384,7 +384,7 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
 
 <b>Команди:</b>
 /start - перезапустити бота
-/setting - налаштування
+/settings - налаштування
 /help - ця довідка
 /admin - панель адміністратора (тільки для адмінів)
 
