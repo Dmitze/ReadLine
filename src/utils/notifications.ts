@@ -123,9 +123,15 @@ export const updateLastNotificationTime = (userId: number): Promise<void> => {
 // ПЕРЕВІРКА ЧИ ПОТРІБНО НАДІСЛАТИ СПОВІЩЕННЯ
 // ============================================
 
+// Перевірити чи поточна година збігається з preferredTime користувача
+const isPreferredHour = (preferredTime: string): boolean => {
+  const [preferredHour] = preferredTime.split(':').map(Number);
+  const currentHour = new Date().getHours();
+  return currentHour === preferredHour;
+};
+
 // Перевірити чи потрібно надіслати сповіщення користувачу
 export const shouldSendNotification = async (userId: number): Promise<boolean> => {
-  // ✅ ВИПРАВЛЕНО: async функція
   const settings = await getUserNotificationSettings(userId);
 
   // Якщо сповіщення вимкнені
@@ -133,7 +139,13 @@ export const shouldSendNotification = async (userId: number): Promise<boolean> =
     return false;
   }
 
-  // Якщо ще не було сповіщень
+  // Перевіряємо чи зараз потрібний час (з допуском ±0 — точна година)
+  const preferredTime = settings.preferredTime || '10:00';
+  if (!isPreferredHour(preferredTime)) {
+    return false;
+  }
+
+  // Якщо ще не було сповіщень — надсилаємо
   if (!settings.lastNotificationAt) {
     return true;
   }
