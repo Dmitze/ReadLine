@@ -18,10 +18,12 @@ bootstrapContainer(container).catch((error) => {
 
 const bot = new Telegraf<BotContext>(env.BOT_TOKEN);
 
-// Встановлюємо персистентне головне меню
+// Встановлюємо Menu Button - відкриває сайт Yakaboo
 bot.telegram.setChatMenuButton({
   menuButton: {
-    type: 'commands',
+    type: 'web_app',
+    text: '🌐 Yakaboo',
+    web_app: { url: 'https://www.yakaboo.ua/' },
   },
 });
 
@@ -467,11 +469,97 @@ bot.action('back_to_help', async (ctx) => {
   return ctx.editMessageText(helpMessage, { ...keyboard, parse_mode: 'HTML' });
 });
 
-// Команда /settings - налаштування бота (Завдання 30)
+// Команда /settings
 bot.command('settings', async (ctx) => {
   logger.userAction(ctx.from.id, 'settings_command');
   return ctx.scene.enter('SETTINGS_SCENE');
 });
+
+// Команда /catalog
+bot.command('catalog', async (ctx) => {
+  logger.userAction(ctx.from.id, 'catalog_command');
+  return ctx.scene.enter('CATALOG_SCENE');
+});
+
+// Команда /library
+bot.command('library', async (ctx) => {
+  logger.userAction(ctx.from.id, 'library_command');
+  const { getSavedBooks } = await import('./database/models');
+  const { displaySavedBooks } = await import('./utils/bookDisplay');
+  const userId = ctx.from.id;
+  const savedBooks = await getSavedBooks(userId);
+  if (savedBooks.length === 0) {
+    await ctx.reply("💾 Ваша бібліотека порожня. Збережіть книги, щоб вони з'явились тут.");
+    return;
+  }
+  return displaySavedBooks(ctx, savedBooks);
+});
+
+// Команда /profile
+bot.command('profile', async (ctx) => {
+  logger.userAction(ctx.from.id, 'profile_command');
+  return ctx.scene.enter('PROFILE_SCENE');
+});
+
+// Команда /ai
+bot.command('ai', async (ctx) => {
+  logger.userAction(ctx.from.id, 'ai_command');
+  return ctx.scene.enter('AI_SCENE');
+});
+
+// Команда /top
+bot.command('top', async (ctx) => {
+  logger.userAction(ctx.from.id, 'top_command');
+  const { getTopBooks } = await import('./database/models');
+  const { displayTopBooks } = await import('./utils/bookDisplay');
+  const topBooks = await getTopBooks(10);
+  return displayTopBooks(ctx, topBooks);
+});
+
+// Команда /new
+bot.command('new', async (ctx) => {
+  logger.userAction(ctx.from.id, 'new_command');
+  const { getNewestBooks } = await import('./database/models');
+  const { displayNewBooks } = await import('./utils/bookDisplay');
+  const newBooks = await getNewestBooks(5);
+  if (newBooks.length === 0) {
+    await ctx.reply('📭 В бібліотеці поки що немає книг.');
+    return;
+  }
+  return displayNewBooks(ctx, newBooks);
+});
+
+// Команда /feedback
+bot.command('feedback', async (ctx) => {
+  logger.userAction(ctx.from.id, 'feedback_command');
+  return ctx.scene.enter('FEEDBACK_SCENE');
+});
+
+// Команда /website
+bot.command('website', async (ctx) => {
+  logger.userAction(ctx.from.id, 'website_command');
+  return ctx.reply('🌐 Сайт Yakaboo — найбільший книжковий магазин України:', {
+    reply_markup: {
+      inline_keyboard: [[{ text: '📚 Відкрити Yakaboo', url: 'https://www.yakaboo.ua/' }]],
+    },
+  });
+});
+
+// Реєстрація команд у меню Telegram (бокове меню "/")
+bot.telegram.setMyCommands([
+  { command: 'start',    description: '🏠 Головне меню' },
+  { command: 'catalog',  description: '📖 Каталог книг' },
+  { command: 'library',  description: '💾 Моя бібліотека' },
+  { command: 'top',      description: '🏆 Топ книги' },
+  { command: 'new',      description: '🆕 Новинки' },
+  { command: 'ai',       description: '🤖 AI Помічник' },
+  { command: 'profile',  description: '👤 Мій профіль' },
+  { command: 'settings', description: '⚙️ Налаштування' },
+  { command: 'feedback', description: "📞 Зворотній зв'язок" },
+  { command: 'website',  description: '🌐 Сайт Yakaboo' },
+  { command: 'help',     description: 'ℹ️ Допомога' },
+  { command: 'admin',    description: '🛠️ Адмін панель' },
+]);
 
 // Імпорт та реєстрація обробників
 import userHandlers from './handlers/userHandlers';
