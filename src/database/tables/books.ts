@@ -458,6 +458,36 @@ export const updateBookInfo = (bookId: number, field: string, value: any): Promi
 };
 
 /**
+ * Search books by a specific field (title or author) with partial match
+ */
+export const searchBooksByField = (
+  field: 'title' | 'author',
+  query: string,
+  limit: number = 20
+): Promise<Book[]> => {
+  return new Promise((resolve, reject) => {
+    const sql = `
+      SELECT * FROM books
+      WHERE ${field} COLLATE NOCASE LIKE ?
+      ORDER BY
+        CASE WHEN ${field} COLLATE NOCASE LIKE ? THEN 0 ELSE 1 END,
+        rating DESC
+      LIMIT ?
+    `;
+    const exact = `${query.toLowerCase()}`;
+    const partial = `%${exact}%`;
+    db.all(sql, [partial, exact, limit], (err, rows: Book[]) => {
+      if (err) {
+        logger.error(`Error searching books by ${field}`, err, { query, limit });
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    });
+  });
+};
+
+/**
  * Search books with case-insensitive and partial match support
  */
 export const searchBooks = (query: string, limit: number = 20): Promise<Book[]> => {
