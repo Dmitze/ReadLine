@@ -482,9 +482,13 @@ export function registerBookActionHandlers(bot: Telegraf<BotContext>): void {
 
        let message = '📝 <b>РЕПОРТАЖІ ВОЇНІВ</b>\n\n' + '━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
       reviews.forEach((review, index) => {
-        message += `${index + 1}. ${review.rating ? '⭐'.repeat(review.rating) : ''}\n`;
+        const stars = review.rating ? '⭐'.repeat(review.rating) : '';
+        const userName = (review as any).user_username
+          ? `@${(review as any).user_username}`
+          : (review as any).user_first_name || 'Читач';
+        message += `${index + 1}. ${stars}\n`;
         message += `   ${review.comment || 'Без коментаря'}\n`;
-        message += `   — від користувача ${review.user_id}\n\n`;
+        message += `   — ${userName}\n\n`;
       });
 
       await ctx.reply(message, { parse_mode: 'HTML' });
