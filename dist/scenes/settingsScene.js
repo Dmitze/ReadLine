@@ -81,6 +81,7 @@ settingsScene.action(/keyboard_(mobile|tablet|desktop)/, async (ctx) => {
     try {
         const success = (0, userPreferences_1.setUserKeyboardPreference)(userId, deviceType);
         if (success) {
+            ctx.session.deviceType = deviceType;
             const deviceNames = {
                 mobile: '📱 Мобільний',
                 tablet: '📲 Планшет',

@@ -528,7 +528,7 @@ const migration012_AddUserColumns = {
     name: 'Add user_id, last_active_at, and has_completed_onboarding columns to users table',
     up: async (db) => {
         const wrapper = db instanceof dbWrapper_1.DatabaseWrapper ? db : new dbWrapper_1.DatabaseWrapper(db);
-        const tableInfo = await wrapper.all("PRAGMA table_info(users)");
+        const tableInfo = await wrapper.all('PRAGMA table_info(users)');
         const columnNames = tableInfo.map(col => col.name.toLowerCase());
         const runSQL = async (sql) => {
             if (db instanceof dbWrapper_1.DatabaseWrapper) {
@@ -547,25 +547,25 @@ const migration012_AddUserColumns = {
         };
         if (!columnNames.includes('user_id')) {
             if (columnNames.includes('telegram_id')) {
-                await runSQL(`ALTER TABLE users ADD COLUMN user_id INTEGER;`);
-                await runSQL(`UPDATE users SET user_id = telegram_id WHERE user_id IS NULL;`);
-                await runSQL(`CREATE UNIQUE INDEX IF NOT EXISTS idx_users_user_id_temp ON users(user_id);`);
+                await runSQL('ALTER TABLE users ADD COLUMN user_id INTEGER;');
+                await runSQL('UPDATE users SET user_id = telegram_id WHERE user_id IS NULL;');
+                await runSQL('CREATE UNIQUE INDEX IF NOT EXISTS idx_users_user_id_temp ON users(user_id);');
             }
             else {
-                await runSQL(`ALTER TABLE users ADD COLUMN user_id INTEGER UNIQUE;`);
+                await runSQL('ALTER TABLE users ADD COLUMN user_id INTEGER UNIQUE;');
             }
-            await runSQL(`CREATE INDEX IF NOT EXISTS idx_users_user_id ON users(user_id);`);
+            await runSQL('CREATE INDEX IF NOT EXISTS idx_users_user_id ON users(user_id);');
         }
         if (!columnNames.includes('last_active_at')) {
-            await runSQL(`ALTER TABLE users ADD COLUMN last_active_at DATETIME DEFAULT CURRENT_TIMESTAMP;`);
+            await runSQL('ALTER TABLE users ADD COLUMN last_active_at DATETIME DEFAULT CURRENT_TIMESTAMP;');
         }
         if (!columnNames.includes('has_completed_onboarding')) {
             if (columnNames.includes('is_completed_onboarding')) {
-                await runSQL(`ALTER TABLE users ADD COLUMN has_completed_onboarding BOOLEAN DEFAULT 0;`);
-                await runSQL(`UPDATE users SET has_completed_onboarding = is_completed_onboarding WHERE has_completed_onboarding IS NULL;`);
+                await runSQL('ALTER TABLE users ADD COLUMN has_completed_onboarding BOOLEAN DEFAULT 0;');
+                await runSQL('UPDATE users SET has_completed_onboarding = is_completed_onboarding WHERE has_completed_onboarding IS NULL;');
             }
             else {
-                await runSQL(`ALTER TABLE users ADD COLUMN has_completed_onboarding BOOLEAN DEFAULT 0;`);
+                await runSQL('ALTER TABLE users ADD COLUMN has_completed_onboarding BOOLEAN DEFAULT 0;');
             }
         }
     },

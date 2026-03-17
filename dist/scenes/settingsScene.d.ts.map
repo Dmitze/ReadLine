@@ -1,1 +1,1 @@
-{"version":3,"file":"settingsScene.d.ts","sourceRoot":"","sources":["../../src/scenes/settingsScene.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,MAAM,EAAU,MAAM,UAAU,CAAC;AAK1C,QAAA,MAAM,aAAa,uBAAqD,CAAC;AAuUzE,eAAe,aAAa,CAAC"}
+{"version":3,"file":"settingsScene.d.ts","sourceRoot":"","sources":["../../src/scenes/settingsScene.ts"],"names":[],"mappings":"AACA,OAAO,EAAE,MAAM,EAAU,MAAM,UAAU,CAAC;AAK1C,QAAA,MAAM,aAAa,uBAAqD,CAAC;AA0UzE,eAAe,aAAa,CAAC"}

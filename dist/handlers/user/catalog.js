@@ -83,7 +83,15 @@ function registerCatalogHandlers(bot) {
     bot.action('catalog_genres', async (ctx) => {
         try {
             await ctx.answerCbQuery();
-            const genres = await cache_1.cache.getOrSet(cache_1.CACHE_KEYS.GENRES, () => (0, models_1.getGenres)(), cache_1.CACHE_TTL.LONG);
+            let genres = await cache_1.cache.getOrSet(cache_1.CACHE_KEYS.GENRES, () => (0, models_1.getGenres)(), cache_1.CACHE_TTL.LONG);
+            if (!genres || genres.length === 0) {
+                await ctx.editMessageText('❌ Виникла помилка при отриманні жанрів.');
+                return;
+            }
+            genres = genres
+                .flatMap((genre) => genre.split('\n').map((g) => g.trim()))
+                .filter((genre) => genre.length > 0)
+                .filter((genre, index, self) => self.indexOf(genre) === index);
             if (!genres || genres.length === 0) {
                 await ctx.editMessageText('❌ Виникла помилка при отриманні жанрів.');
                 return;
@@ -106,7 +114,11 @@ function registerCatalogHandlers(bot) {
                 return;
             await ctx.answerCbQuery();
             const genreIndex = parseInt(match[1], 10);
-            const genres = await cache_1.cache.getOrSet(cache_1.CACHE_KEYS.GENRES, () => (0, models_1.getGenres)(), cache_1.CACHE_TTL.LONG);
+            let genres = await cache_1.cache.getOrSet(cache_1.CACHE_KEYS.GENRES, () => (0, models_1.getGenres)(), cache_1.CACHE_TTL.LONG);
+            genres = genres
+                .flatMap((genre) => genre.split('\n').map((g) => g.trim()))
+                .filter((genre) => genre.length > 0)
+                .filter((genre, index, self) => self.indexOf(genre) === index);
             if (!genres || genreIndex >= genres.length) {
                 await ctx.answerCbQuery('❌ Жанр не знайдено', { show_alert: true });
                 return;

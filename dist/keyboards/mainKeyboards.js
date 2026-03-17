@@ -3,6 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getBackKeyboard = exports.getEnhancedBookKeyboard = exports.getAdaptiveBookKeyboard = exports.getGenreKeyboard = exports.getAdaptiveGenreKeyboard = exports.getMainMenuKeyboard = exports.getAdaptiveMainMenuKeyboard = exports.getKeyboardConfig = exports.detectDeviceType = void 0;
 const telegraf_1 = require("telegraf");
 const detectDeviceType = (ctx) => {
+    const botCtx = ctx;
+    const savedDeviceType = botCtx?.session?.deviceType || botCtx?.state?.deviceType;
+    if (savedDeviceType && ['mobile', 'tablet', 'desktop'].includes(savedDeviceType)) {
+        return savedDeviceType;
+    }
     return 'mobile';
 };
 exports.detectDeviceType = detectDeviceType;
@@ -50,6 +55,7 @@ const getAdaptiveMainMenuKeyboard = (_ctx, _withQuickActions = true) => {
         '👤 Профіль',
         '🤖 AI Помічник',
         '🎁 Промокод',
+        '⚙️ Налаштування',
         '❓ Допомога',
         "💬 Зворотній зв'язок",
     ];
@@ -69,8 +75,8 @@ const getMainMenuKeyboard = () => {
         ['📖 Каталог', '🏆 Топ книги'],
         ['🆕 Новинки', '💾 Моя бібліотека'],
         ['👤 Профіль', '🤖 AI Помічник'],
-        ['🎁 Отримати промокод', "📞 Зворотній зв'язок"],
-        ['ℹ️ Допомога'],
+        ['🎁 Отримати промокод', '⚙️ Налаштування'],
+        ["📞 Зворотній зв'язок", 'ℹ️ Допомога'],
     ];
     return telegraf_1.Markup.keyboard(buttons).resize().oneTime().reply_markup;
 };
