@@ -110,18 +110,23 @@ searchScene.on('text', async (ctx: BotContext) => {
 
       const prompt =
         `У нас є бібліотека книг. Користувач шукає: "${query}".\n` +
-        `Визнач 3-5 ключових слів (назви, автори, жанри) для пошуку в базі даних. ` +
-        `Відповідай ТІЛЬКИ списком ключових слів через кому, без пояснень. Українською.`;
+        `Визнач 3-5 коротких ключових слів (тільки назви книг або імена авторів або один жанр) для пошуку в базі даних SQLite. ` +
+        `Відповідай ТІЛЬКИ списком через кому, без пояснень, без лапок. Наприклад: Козачка, Марко Вовчок, Фантастика`;
       const keywords = await askAI(prompt, ctx.from?.id);
 
       await ctx.telegram.deleteMessage(ctx.chat.id, thinkingMsg.message_id).catch(() => {});
 
-      // Шукаємо книги за кожним ключовим словом
-      const keywordList = keywords.split(',').map((k: string) => k.trim()).filter(Boolean).slice(0, 3);
+      // Збираємо всі терміни для пошуку: оригінальний запит + ключові слова від AI
+      const keywordList = [
+        query, // завжди шукаємо сам запит користувача
+        ...keywords.split(',').map((k: string) => k.trim()).filter(Boolean),
+      ].slice(0, 5);
+
       const seenIds = new Set<number>();
       const foundBooks: any[] = [];
 
       for (const kw of keywordList) {
+        if (kw.length < 2) continue;
         const results = await searchBooks(kw, 5);
         for (const b of results) {
           if (!seenIds.has(b.id!)) {
@@ -129,6 +134,7 @@ searchScene.on('text', async (ctx: BotContext) => {
             foundBooks.push(b);
           }
         }
+        if (foundBooks.length >= 5) break;
       }
 
       if (foundBooks.length === 0) {
@@ -146,7 +152,7 @@ searchScene.on('text', async (ctx: BotContext) => {
       }
 
       await ctx.reply(
-        `🤖 AI знайшов <b>${foundBooks.length}</b> книг за запитом "<i>${query}</i>":`,
+        `🤖 AI знайшов <b>${foundBooks.length}</b> ${foundBooks.length === 1 ? 'книгу' : 'книги'} за запитом "<i>${query}</i>":`,
         { parse_mode: 'HTML' }
       );
 
