@@ -466,17 +466,18 @@ export const searchBooksByField = (
   limit: number = 20
 ): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
+    // SQLite COLLATE NOCASE не працює для кирилиці — використовуємо lower() тільки для ASCII
+    // Для кирилиці шукаємо і оригінал і lowercase варіант
     const sql = `
       SELECT * FROM books
-      WHERE ${field} COLLATE NOCASE LIKE ?
+      WHERE ${field} LIKE ? OR lower(${field}) LIKE lower(?)
       ORDER BY
-        CASE WHEN ${field} COLLATE NOCASE LIKE ? THEN 0 ELSE 1 END,
+        CASE WHEN ${field} LIKE ? THEN 0 ELSE 1 END,
         rating DESC
       LIMIT ?
     `;
-    const exact = `${query.toLowerCase()}`;
-    const partial = `%${exact}%`;
-    db.all(sql, [partial, exact, limit], (err, rows: Book[]) => {
+    const partial = `%${query}%`;
+    db.all(sql, [partial, partial, partial, limit], (err, rows: Book[]) => {
       if (err) {
         logger.error(`Error searching books by ${field}`, err, { query, limit });
         reject(err);
@@ -492,17 +493,20 @@ export const searchBooksByField = (
  */
 export const searchBooks = (query: string, limit: number = 20): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
-    const searchPattern = `%${query.toLowerCase()}%`;
+    // Не робимо toLowerCase() — SQLite COLLATE NOCASE не працює для кирилиці
+    // Використовуємо lower() для ASCII і оригінал для кирилиці через OR
+    const pattern = `%${query}%`;
+    const patternLower = `%${query.toLowerCase()}%`;
     const sql = `
       SELECT * FROM books
-      WHERE title COLLATE NOCASE LIKE ?
-         OR author COLLATE NOCASE LIKE ?
-         OR description COLLATE NOCASE LIKE ?
-         OR genre COLLATE NOCASE LIKE ?
+      WHERE title LIKE ? OR lower(title) LIKE ?
+         OR author LIKE ? OR lower(author) LIKE ?
+         OR description LIKE ? OR lower(description) LIKE ?
+         OR genre LIKE ? OR lower(genre) LIKE ?
       ORDER BY
         CASE
-          WHEN title COLLATE NOCASE LIKE ? THEN 1
-          WHEN author COLLATE NOCASE LIKE ? THEN 2
+          WHEN title LIKE ? THEN 1
+          WHEN author LIKE ? THEN 2
           ELSE 3
         END,
         rating DESC
@@ -512,12 +516,11 @@ export const searchBooks = (query: string, limit: number = 20): Promise<Book[]> 
     db.all(
       sql,
       [
-        searchPattern,
-        searchPattern,
-        searchPattern,
-        searchPattern,
-        searchPattern,
-        searchPattern,
+        pattern, patternLower,
+        pattern, patternLower,
+        pattern, patternLower,
+        pattern, patternLower,
+        pattern, pattern,
         limit,
       ],
       (err, rows: Book[]) => {
