@@ -5,7 +5,8 @@
   },
   "include": [
     "src/**/*.ts",
-    "scripts/**/*.ts"
+    "scripts/**/*.ts",
+    "jest.setup.ts"
   ],
   "exclude": [
     "node_modules",
