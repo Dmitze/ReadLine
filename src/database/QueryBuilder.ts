@@ -153,6 +153,17 @@ export class QueryBuilder {
    * Додати WHERE IN умову
    */
   whereIn(column: string, values: any[]): this {
+    if (values.length === 0) {
+      // Empty IN () is invalid SQL — add a condition that always returns false
+      this.whereConditions.push({
+        column: '1',
+        operator: '=',
+        value: 0,
+      });
+      this.parameters.push(0);
+      return this;
+    }
+
     this.whereConditions.push({
       column: this.escapeIdentifier(column),
       operator: 'IN',
@@ -279,6 +290,10 @@ export class QueryBuilder {
         switch (condition.operator) {
           case 'IN':
             const placeholders = (condition.value as any[]).map(() => '?').join(', ');
+            if (!placeholders) {
+              // Empty array — condition always false
+              return `${prefix}1 = 0`;
+            }
             return `${prefix}${condition.column} IN (${placeholders})`;
 
           case 'BETWEEN':
