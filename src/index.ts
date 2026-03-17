@@ -85,6 +85,7 @@ bot.use(async (ctx, next) => {
     const text = ctx.message.text;
     const menuButtons = [
       '📖 Каталог',
+      '🔍 Пошук',
       '🏆 Топ книги',
       '🆕 Новинки',
       '💾 Моя бібліотека',
@@ -531,6 +532,7 @@ bot.command('website', async (ctx) => {
 bot.telegram.setMyCommands([
   { command: 'start',    description: '🏠 Головне меню' },
   { command: 'catalog',  description: '📖 Каталог книг' },
+  { command: 'search',   description: '🔍 Пошук книг' },
   { command: 'library',  description: '💾 Моя бібліотека' },
   { command: 'top',      description: '🏆 Топ книги' },
   { command: 'new',      description: '🆕 Новинки' },
