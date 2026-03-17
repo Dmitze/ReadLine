@@ -319,6 +319,12 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
     );
   });
 
+  // Пошук
+  bot.hears('🔍 Пошук', async (ctx: BotContext) => {
+    await ctx.scene.enter('SEARCH_SCENE');
+    logger.userAction(ctx.from!.id, 'search_from_menu');
+  });
+
   // Налаштування
   bot.hears('⚙️ Налаштування', async (ctx: BotContext) => {
     await ctx.scene.enter('SETTINGS_SCENE');
