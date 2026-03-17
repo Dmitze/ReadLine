@@ -1,4 +1,4 @@
-import { Scenes } from 'telegraf';
+import { Scenes, Markup } from 'telegraf';
 import { askAI } from '../utils/aiHelper';
 import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
@@ -26,6 +26,11 @@ aiScene.enter(async (ctx: BotContext) => {
       '💡 Або використовуйте /cancel для виходу',
     {
       parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '⬅️ Назад до меню', callback_data: 'ai_back' }],
+        ],
+      },
     }
   );
 });
@@ -40,7 +45,19 @@ aiScene.command('cancel', async (ctx: BotContext) => {
   return;
 });
 
-// Removed obsolete keyboard handler - use /cancel command instead
+aiScene.action('ai_ask_more', async (ctx: BotContext) => {
+  await ctx.answerCbQuery();
+  await ctx.reply('✍️ Напишіть наступне питання:');
+});
+
+aiScene.action('ai_back', async (ctx: BotContext) => {
+  await ctx.answerCbQuery();
+  await ctx.scene?.leave();
+  const { getMainMenuKeyboard } = await import('../keyboards/mainKeyboards');
+  await ctx.reply('🏠 Повернувся до головного меню', {
+    reply_markup: getMainMenuKeyboard(),
+  });
+});
 
 aiScene.on('text', async (ctx: BotContext) => {
   const { withTimeout, retryOperation } = await import('../utils/errorHandler');
@@ -73,7 +90,13 @@ aiScene.on('text', async (ctx: BotContext) => {
 
   // Відправляємо відповідь без форматування (щоб уникнути помилок парсингу)
   await ctx.reply(
-    `🤖 AI-ПОМІЧНИК:\n\n${answer}\n\n` + '❓ Задайте ще питання або натисніть /cancel для виходу'
+    `🤖 AI-ПОМІЧНИК:\n\n${answer}`,
+    {
+      reply_markup: Markup.inlineKeyboard([
+        [{ text: '💬 Запитати ще', callback_data: 'ai_ask_more' }],
+        [{ text: '⬅️ Назад до меню', callback_data: 'ai_back' }],
+      ]).reply_markup,
+    }
   );
 });
 
