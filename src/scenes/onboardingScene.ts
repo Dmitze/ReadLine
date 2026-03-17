@@ -163,10 +163,8 @@ onboardingScene.action('onboarding_step2_genres', async (ctx: BotContext) => {
   state.selectedGenres = [];
 
   try {
-    // Використовуємо статичний список жанрів замість запиту до БД
     const genres = ALL_GENRES;
 
-    // Показуємо жанри (по 2 в рядок)
     const genreButtons = [];
     for (let i = 0; i < genres.length; i += 2) {
       const row = [Markup.button.callback(genres[i], `onboarding_genre_${genres[i]}`)];
@@ -181,18 +179,18 @@ onboardingScene.action('onboarding_step2_genres', async (ctx: BotContext) => {
       Markup.button.callback('⏭️ Пропустити', 'onboarding_skip'),
     ]);
 
-    await ctx.reply(
+    const text =
       '⚔️ *КРОК 2: ОБЕРИ БИТВИ (ЖАНРИ)*\n\n' +
-        '_(Прогрес: 2/3)_\n\n' +
-        'Вибери 3-5 жанрів, щоб я міг рекомендувати книги саме для тебе! 🎯\n\n' +
-        `Всього доступно: ${genres.length} жанрів\n\n` +
-        '✨ *Обрано:* 0 жанрів\n\n' +
-        '💡 _Змінювати можна завжди в налаштуваннях!_',
-      {
-        parse_mode: 'Markdown',
-        reply_markup: Markup.inlineKeyboard(genreButtons).reply_markup,
-      }
-    );
+      '_(Прогрес: 2/3)_\n\n' +
+      'Вибери 3-5 жанрів, щоб я міг рекомендувати книги саме для тебе! 🎯\n\n' +
+      `Всього доступно: ${genres.length} жанрів\n\n` +
+      '✨ *Обрано:* 0 жанрів\n\n' +
+      '💡 _Змінювати можна завжди в налаштуваннях!_';
+
+    await ctx.editMessageText(text, {
+      parse_mode: 'Markdown',
+      reply_markup: Markup.inlineKeyboard(genreButtons).reply_markup,
+    });
   } catch (error) {
     logger.error('Error in onboarding genre selection', error instanceof Error ? error : new Error(String(error)));
     await ctx.reply('⚠️ Помилка при завантаженні жанрів. Спробуйте пізніше.');
