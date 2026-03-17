@@ -146,7 +146,7 @@ const editBookScene = new Scenes.WizardScene(
       // ✅ ВИПРАВЛЕНО: Гарантуємо що сцена коректно завершується
       // Невелика затримка перед виходом щоб Telegram встиг отримати всі повідомлення
       setTimeout(() => {
-        ctx.scene.leave().catch((err) => {
+        ctx.scene.leave().catch((err: unknown) => {
           logger.error('Error leaving edit scene', { error: err });
         });
       }, 500);
