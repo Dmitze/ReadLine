@@ -128,7 +128,7 @@ export class RestAPI {
 
     this.app.get(`${prefix}/books/:id`, async (req: Request, res: Response) => {
       try {
-        const bookId = parseInt(req.params.id);
+        const bookId = parseInt(req.params.id as string);
 
         res.json({
           success: true,
@@ -153,7 +153,7 @@ export class RestAPI {
      */
     this.app.get(`${prefix}/books/:id/details`, async (req: Request, res: Response) => {
       try {
-        const bookId = parseInt(req.params.id);
+        const bookId = parseInt(req.params.id as string);
         const bookService = await this.serviceContainer.getBookService();
 
         const result = await bookService.getDetailedBookInfo(bookId);
@@ -188,7 +188,7 @@ export class RestAPI {
      */
     this.app.put(`${prefix}/books/:id/extended-info`, async (req: Request, res: Response) => {
       try {
-        const bookId = parseInt(req.params.id);
+        const bookId = parseInt(req.params.id as string);
         const { recommended_age, content_warnings } = req.body;
         const bookService = await this.serviceContainer.getBookService();
 
@@ -222,7 +222,7 @@ export class RestAPI {
      */
     this.app.get(`${prefix}/books/:id/reviews`, async (req: Request, res: Response) => {
       try {
-        const bookId = parseInt(req.params.id);
+        const bookId = parseInt(req.params.id as string);
 
         res.json({
           success: true,
