@@ -95,6 +95,7 @@ bot.use(async (ctx, next) => {
       '⚙️ Налаштування',
       'ℹ️ Допомога',
       "📞 Зворотній зв'язок",
+      '🌐 Yakaboo',
       '🏠 На головну',
     ];
 
@@ -200,6 +201,21 @@ bot.help((ctx) => {
   ]);
 
   return ctx.reply(helpMessage, { ...keyboard, parse_mode: 'HTML' });
+});
+
+// Обробник кнопки Yakaboo
+bot.hears('🌐 Yakaboo', async (ctx) => {
+  const message =
+    '<b>📚 НАЦІОНАЛЬНА КНИЖКОВА ПЛАТФОРМА YAKABOO</b>\n\n' +
+    'Yakaboo — це найбільший книжковий інтернет-магазин в Україні.\n\n' +
+    'Тут ви можете знайти понад 75,000 електронних та паперових книг на будь-який смак!\n\n' +
+    '👇 Перейдіть за посиланням нижче:';
+
+  const keyboard = Markup.inlineKeyboard([
+    [Markup.button.url('🌐 Перейти на Yakaboo.ua', 'https://www.yakaboo.ua/')],
+  ]);
+
+  return ctx.reply(message, { ...keyboard, parse_mode: 'HTML' });
 });
 
 // ООбробники розділів довідки
