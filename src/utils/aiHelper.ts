@@ -476,6 +476,23 @@ export async function askAI(question: string, userId?: number): Promise<string> 
       return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[2];
     }
 
+    if (error.message?.includes('503')) {
+      return `Зараз на серверах Google Gemini велика кількість запитів. Спробуйте, будь ласка, ще раз через кілька хвилин.`;
+    }
+
+    // Check for common personalities to avoid generic fallback if API fails
+    const commonPersonalities = [
+      'шевченко',
+      'франко',
+      'українка',
+      'грушевський',
+      'сковорода',
+      'котляревський',
+    ];
+    if (commonPersonalities.some((p) => lowerQuestion.includes(p))) {
+      return `Це видатна постать української культури. На жаль, зараз у мене тимчасові технічні труднощі з доступом до бази знань AI, але ви можете знайти книги про цю особу в нашому каталозі за допомогою пошуку.`;
+    }
+
     return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[3];
   }
 }

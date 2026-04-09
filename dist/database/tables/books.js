@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchBooks = exports.updateBookInfo = exports.incrementDownloads = exports.getNewestBooks = exports.getMostDownloadedBooks = exports.getTopBooks = exports.deleteBook = exports.updateBook = exports.getBooksWithPagination = exports.getBooksByGenreWithPagination = exports.getGenres = exports.getBookById = exports.getBooksByIds = exports.getAllAvailableBooks = exports.getAllBooks = exports.getBooksByGenre = exports.addBook = void 0;
+exports.searchBooks = exports.searchBooksByField = exports.updateBookInfo = exports.incrementDownloads = exports.getNewestBooks = exports.getMostDownloadedBooks = exports.getTopBooks = exports.deleteBook = exports.updateBook = exports.getBooksWithPagination = exports.getBooksByGenreWithPagination = exports.getGenres = exports.getBookById = exports.getBooksByIds = exports.getAllAvailableBooks = exports.getAllBooks = exports.getBooksByGenre = exports.addBook = void 0;
 const db_1 = require("./db");
 const logger_1 = require("../../utils/logger");
 const addBook = (bookData) => {
@@ -370,31 +370,54 @@ const updateBookInfo = (bookId, field, value) => {
     });
 };
 exports.updateBookInfo = updateBookInfo;
-const searchBooks = (query, limit = 20) => {
+const searchBooksByField = (field, query, limit = 20) => {
     return new Promise((resolve, reject) => {
-        const searchPattern = `%${query.toLowerCase()}%`;
         const sql = `
       SELECT * FROM books
-      WHERE title COLLATE NOCASE LIKE ?
-         OR author COLLATE NOCASE LIKE ?
-         OR description COLLATE NOCASE LIKE ?
-         OR genre COLLATE NOCASE LIKE ?
+      WHERE ${field} LIKE ? OR lower(${field}) LIKE lower(?)
+      ORDER BY
+        CASE WHEN ${field} LIKE ? THEN 0 ELSE 1 END,
+        rating DESC
+      LIMIT ?
+    `;
+        const partial = `%${query}%`;
+        db_1.db.all(sql, [partial, partial, partial, limit], (err, rows) => {
+            if (err) {
+                logger_1.logger.error(`Error searching books by ${field}`, err, { query, limit });
+                reject(err);
+            }
+            else {
+                resolve(rows);
+            }
+        });
+    });
+};
+exports.searchBooksByField = searchBooksByField;
+const searchBooks = (query, limit = 20) => {
+    return new Promise((resolve, reject) => {
+        const pattern = `%${query}%`;
+        const patternLower = `%${query.toLowerCase()}%`;
+        const sql = `
+      SELECT * FROM books
+      WHERE title LIKE ? OR lower(title) LIKE ?
+         OR author LIKE ? OR lower(author) LIKE ?
+         OR description LIKE ? OR lower(description) LIKE ?
+         OR genre LIKE ? OR lower(genre) LIKE ?
       ORDER BY
         CASE
-          WHEN title COLLATE NOCASE LIKE ? THEN 1
-          WHEN author COLLATE NOCASE LIKE ? THEN 2
+          WHEN title LIKE ? THEN 1
+          WHEN author LIKE ? THEN 2
           ELSE 3
         END,
         rating DESC
       LIMIT ?
     `;
         db_1.db.all(sql, [
-            searchPattern,
-            searchPattern,
-            searchPattern,
-            searchPattern,
-            searchPattern,
-            searchPattern,
+            pattern, patternLower,
+            pattern, patternLower,
+            pattern, patternLower,
+            pattern, patternLower,
+            pattern, pattern,
             limit,
         ], (err, rows) => {
             if (err) {

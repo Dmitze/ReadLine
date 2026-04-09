@@ -87,9 +87,18 @@ const updateLastNotificationTime = (userId) => {
     });
 };
 exports.updateLastNotificationTime = updateLastNotificationTime;
+const isPreferredHour = (preferredTime) => {
+    const [preferredHour] = preferredTime.split(':').map(Number);
+    const currentHour = new Date().getHours();
+    return currentHour === preferredHour;
+};
 const shouldSendNotification = async (userId) => {
     const settings = await (0, exports.getUserNotificationSettings)(userId);
     if (!settings.enabled || settings.frequency === 'disabled') {
+        return false;
+    }
+    const preferredTime = settings.preferredTime || '10:00';
+    if (!isPreferredHour(preferredTime)) {
         return false;
     }
     if (!settings.lastNotificationAt) {

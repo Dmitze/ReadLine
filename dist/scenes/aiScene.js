@@ -56,6 +56,11 @@ aiScene.enter(async (ctx) => {
         '• "Дай топ 5 класичних романів"\n\n' +
         '💡 Або використовуйте /cancel для виходу', {
         parse_mode: 'HTML',
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: '⬅️ Назад до меню', callback_data: 'ai_back' }],
+            ],
+        },
     });
 });
 aiScene.command('cancel', async (ctx) => {
@@ -65,6 +70,18 @@ aiScene.command('cancel', async (ctx) => {
         reply_markup: getMainMenuKeyboard(),
     });
     return;
+});
+aiScene.action('ai_ask_more', async (ctx) => {
+    await ctx.answerCbQuery();
+    await ctx.reply('✍️ Напишіть наступне питання:');
+});
+aiScene.action('ai_back', async (ctx) => {
+    await ctx.answerCbQuery();
+    await ctx.scene?.leave();
+    const { getMainMenuKeyboard } = await Promise.resolve().then(() => __importStar(require('../keyboards/mainKeyboards')));
+    await ctx.reply('🏠 Повернувся до головного меню', {
+        reply_markup: getMainMenuKeyboard(),
+    });
 });
 aiScene.on('text', async (ctx) => {
     const { withTimeout, retryOperation } = await Promise.resolve().then(() => __importStar(require('../utils/errorHandler')));
@@ -83,7 +100,12 @@ aiScene.on('text', async (ctx) => {
     await ctx.deleteMessage(thinkingMsg.message_id).catch((err) => {
         logger_1.logger.debug('Failed to delete thinking message', { error: err?.message });
     });
-    await ctx.reply(`🤖 AI-ПОМІЧНИК:\n\n${answer}\n\n` + '❓ Задайте ще питання або натисніть /cancel для виходу');
+    await ctx.reply(`🤖 AI-ПОМІЧНИК:\n\n${answer}`, {
+        reply_markup: telegraf_1.Markup.inlineKeyboard([
+            [{ text: '💬 Запитати ще', callback_data: 'ai_ask_more' }],
+            [{ text: '⬅️ Назад до меню', callback_data: 'ai_back' }],
+        ]).reply_markup,
+    });
 });
 aiScene.on('message', async (ctx) => {
     await ctx.reply('❓ Будь ласка, напишіть текстове питання.\n' + 'Або натисніть "⬅️ Назад до меню" для виходу.');

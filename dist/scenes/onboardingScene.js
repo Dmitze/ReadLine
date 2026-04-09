@@ -164,12 +164,13 @@ onboardingScene.action('onboarding_step2_genres', async (ctx) => {
             telegraf_1.Markup.button.callback('✅ ГОТОВО', 'onboarding_step3_finish'),
             telegraf_1.Markup.button.callback('⏭️ Пропустити', 'onboarding_skip'),
         ]);
-        await ctx.reply('⚔️ *КРОК 2: ОБЕРИ БИТВИ (ЖАНРИ)*\n\n' +
+        const text = '⚔️ *КРОК 2: ОБЕРИ БИТВИ (ЖАНРИ)*\n\n' +
             '_(Прогрес: 2/3)_\n\n' +
             'Вибери 3-5 жанрів, щоб я міг рекомендувати книги саме для тебе! 🎯\n\n' +
             `Всього доступно: ${genres.length} жанрів\n\n` +
             '✨ *Обрано:* 0 жанрів\n\n' +
-            '💡 _Змінювати можна завжди в налаштуваннях!_', {
+            '💡 _Змінювати можна завжди в налаштуваннях!_';
+        await ctx.editMessageText(text, {
             parse_mode: 'Markdown',
             reply_markup: telegraf_1.Markup.inlineKeyboard(genreButtons).reply_markup,
         });

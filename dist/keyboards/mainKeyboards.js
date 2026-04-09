@@ -48,16 +48,18 @@ const getAdaptiveMainMenuKeyboard = (_ctx, _withQuickActions = true) => {
     const deviceType = (0, exports.detectDeviceType)(_ctx);
     const config = (0, exports.getKeyboardConfig)(deviceType);
     const allButtons = [
-        '📚 Бібліотека',
-        '⭐ Топ книги',
+        '📖 Каталог',
+        '🔍 Пошук',
+        '🏆 Топ книги',
         '🆕 Новинки',
-        '❤️ Мої улюблені',
+        '💾 Моя бібліотека',
         '👤 Профіль',
         '🤖 AI Помічник',
-        '🎁 Промокод',
+        '🎁 Отримати промокод',
         '⚙️ Налаштування',
-        '❓ Допомога',
-        "💬 Зворотній зв'язок",
+        'ℹ️ Допомога',
+        "📞 Зворотній зв'язок",
+        '🌐 Yakaboo',
     ];
     const buttons = [];
     for (let i = 0; i < allButtons.length; i += config.buttonsPerRow) {
@@ -72,11 +74,12 @@ const getAdaptiveMainMenuKeyboard = (_ctx, _withQuickActions = true) => {
 exports.getAdaptiveMainMenuKeyboard = getAdaptiveMainMenuKeyboard;
 const getMainMenuKeyboard = () => {
     const buttons = [
-        ['📖 Каталог', '🏆 Топ книги'],
-        ['🆕 Новинки', '💾 Моя бібліотека'],
-        ['👤 Профіль', '🤖 AI Помічник'],
-        ['🎁 Отримати промокод', '⚙️ Налаштування'],
-        ["📞 Зворотній зв'язок", 'ℹ️ Допомога'],
+        ['📖 Каталог', '🔍 Пошук'],
+        ['🏆 Топ книги', '🆕 Новинки'],
+        ['💾 Моя бібліотека', '🤖 AI Помічник'],
+        ['👤 Профіль', '⚙️ Налаштування'],
+        ['🎁 Отримати промокод', "📞 Зворотній зв'язок"],
+        ['ℹ️ Допомога', '🌐 Yakaboo'],
     ];
     return telegraf_1.Markup.keyboard(buttons).resize().oneTime().reply_markup;
 };

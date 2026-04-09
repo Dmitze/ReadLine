@@ -52,7 +52,9 @@ const container = (0, ContainerBootstrap_1.getContainer)();
 const bot = new telegraf_1.Telegraf(env.BOT_TOKEN);
 bot.telegram.setChatMenuButton({
     menuButton: {
-        type: 'commands',
+        type: 'web_app',
+        text: '🌐 Yakaboo',
+        web_app: { url: 'https://www.yakaboo.ua/' },
     },
 });
 (0, middlewareSetup_1.setupMiddleware)(bot);
@@ -96,6 +98,7 @@ bot.use(async (ctx, next) => {
         const text = ctx.message.text;
         const menuButtons = [
             '📖 Каталог',
+            '🔍 Пошук',
             '🏆 Топ книги',
             '🆕 Новинки',
             '💾 Моя бібліотека',
@@ -105,6 +108,7 @@ bot.use(async (ctx, next) => {
             '⚙️ Налаштування',
             'ℹ️ Допомога',
             "📞 Зворотній зв'язок",
+            '🌐 Yakaboo',
             '🏠 На головну',
         ];
         if (menuButtons.includes(text) && ctx.scene) {
@@ -146,33 +150,9 @@ bot.start(async (ctx) => {
                 logger_1.logger.error('Scene context not available for onboarding', { userId });
             }
         }
-        const welcomeMessage = '╔═════════════════════════════════╗\n' +
-            '   ⚔️ <b>Warrior\'s Library</b> ⚔️\n' +
-            '   🗡️ Легендарна Бібліотека 📚\n' +
-            '╚═════════════════════════════════╝\n\n' +
-            `🗡️ Вітаємо, <b>${firstName}</b>!\n\n` +
-            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-            '<b>Твоя Легенда Читача Розпочинається:</b>\n' +
-            'Найбільша колекція книг українською мовою. ' +
-            'Досліджуй нові світи, збирай скарби та отримуй рекомендації від AI Мудреця!\n\n' +
-            '📚 <b>МОЖЛИВОСТІ ТА БОЇВКИ:</b>\n\n' +
-            '🔍 Крамниця Знань - пошук за всіма критеріями\n' +
-            '⭐ Топ книги - найпопулярніші твори\n' +
-            '🆕 Новинки - свіжі надходження\n' +
-            '❤️ Мої Скарби - твоя персональна колекція\n' +
-            '⭐ Оцінки та Відгуки - поділися враженнями\n' +
-            '📥 Завантаження - читай у будь-якому форматі\n' +
-            '🎧 Аудіолегенди - слухай розповіді\n' +
-            '🌐 Онлайн Читання - досліджуй у браузері\n' +
-            '🤖 AI Рекомендації - персональний вибір\n' +
-            '📊 Воїнська Статистика - розпочни свою славу\n\n' +
-            '⚡ <b>КОМАНДИ ВОЇНА:</b>\n' +
-            '/start - Головне Меню\n' +
-            '/help - Доступні можливості\n' +
-            '/cancel - Скасувати\n' +
-            '/admin - Панель Командира\n\n' +
-            '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
-            '👇 <b>Обери свою першу битву:</b>';
+        const welcomeMessage = `⚔️ <b>Warrior's Library</b>\n\n` +
+            `👋 З поверненням, <b>${firstName}</b>!\n\n` +
+            '👇 Оберіть дію:';
         return ctx.reply(welcomeMessage, {
             parse_mode: 'HTML',
             reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)(),
@@ -204,6 +184,16 @@ bot.help((ctx) => {
         [telegraf_1.Markup.button.callback('💡 Поради', 'help_tips')],
     ]);
     return ctx.reply(helpMessage, { ...keyboard, parse_mode: 'HTML' });
+});
+bot.hears('🌐 Yakaboo', async (ctx) => {
+    const message = '<b>📚 НАЦІОНАЛЬНА КНИЖКОВА ПЛАТФОРМА YAKABOO</b>\n\n' +
+        'Yakaboo — це найбільший книжковий інтернет-магазин в Україні.\n\n' +
+        'Тут ви можете знайти понад 75,000 електронних та паперових книг на будь-який смак!\n\n' +
+        '👇 Перейдіть за посиланням нижче:';
+    const keyboard = telegraf_1.Markup.inlineKeyboard([
+        [telegraf_1.Markup.button.url('🌐 Перейти на Yakaboo.ua', 'https://www.yakaboo.ua/')],
+    ]);
+    return ctx.reply(message, { ...keyboard, parse_mode: 'HTML' });
 });
 bot.action('help_buttons', async (ctx) => {
     const message = '<b>📚 ОСНОВНІ КНОПКИ МЕНЮ</b>\n\n' +
@@ -424,6 +414,79 @@ bot.command('settings', async (ctx) => {
     logger_1.logger.userAction(ctx.from.id, 'settings_command');
     return ctx.scene.enter('SETTINGS_SCENE');
 });
+bot.command('catalog', async (ctx) => {
+    logger_1.logger.userAction(ctx.from.id, 'catalog_command');
+    return ctx.scene.enter('CATALOG_SCENE');
+});
+bot.command('library', async (ctx) => {
+    logger_1.logger.userAction(ctx.from.id, 'library_command');
+    const { getSavedBooks } = await Promise.resolve().then(() => __importStar(require('./database/models')));
+    const { displaySavedBooks } = await Promise.resolve().then(() => __importStar(require('./utils/bookDisplay')));
+    const userId = ctx.from.id;
+    const savedBooks = await getSavedBooks(userId);
+    if (savedBooks.length === 0) {
+        await ctx.reply("💾 Ваша бібліотека порожня. Збережіть книги, щоб вони з'явились тут.");
+        return;
+    }
+    return displaySavedBooks(ctx, savedBooks);
+});
+bot.command('profile', async (ctx) => {
+    logger_1.logger.userAction(ctx.from.id, 'profile_command');
+    return ctx.scene.enter('PROFILE_SCENE');
+});
+bot.command('ai', async (ctx) => {
+    logger_1.logger.userAction(ctx.from.id, 'ai_command');
+    return ctx.scene.enter('AI_SCENE');
+});
+bot.command('top', async (ctx) => {
+    logger_1.logger.userAction(ctx.from.id, 'top_command');
+    const { getTopBooks } = await Promise.resolve().then(() => __importStar(require('./database/models')));
+    const { displayTopBooks } = await Promise.resolve().then(() => __importStar(require('./utils/bookDisplay')));
+    const topBooks = await getTopBooks(10);
+    return displayTopBooks(ctx, topBooks);
+});
+bot.command('new', async (ctx) => {
+    logger_1.logger.userAction(ctx.from.id, 'new_command');
+    const { getNewestBooks } = await Promise.resolve().then(() => __importStar(require('./database/models')));
+    const { displayNewBooks } = await Promise.resolve().then(() => __importStar(require('./utils/bookDisplay')));
+    const newBooks = await getNewestBooks(5);
+    if (newBooks.length === 0) {
+        await ctx.reply('📭 В бібліотеці поки що немає книг.');
+        return;
+    }
+    return displayNewBooks(ctx, newBooks);
+});
+bot.command('feedback', async (ctx) => {
+    logger_1.logger.userAction(ctx.from.id, 'feedback_command');
+    return ctx.scene.enter('FEEDBACK_SCENE');
+});
+bot.command('search', async (ctx) => {
+    logger_1.logger.userAction(ctx.from.id, 'search_command');
+    return ctx.scene.enter('SEARCH_SCENE');
+});
+bot.command('website', async (ctx) => {
+    logger_1.logger.userAction(ctx.from.id, 'website_command');
+    return ctx.reply('🌐 Сайт Yakaboo — найбільший книжковий магазин України:', {
+        reply_markup: {
+            inline_keyboard: [[{ text: '📚 Відкрити Yakaboo', url: 'https://www.yakaboo.ua/' }]],
+        },
+    });
+});
+bot.telegram.setMyCommands([
+    { command: 'start', description: '🏠 Головне меню' },
+    { command: 'catalog', description: '📖 Каталог книг' },
+    { command: 'search', description: '🔍 Пошук книг' },
+    { command: 'library', description: '💾 Моя бібліотека' },
+    { command: 'top', description: '🏆 Топ книги' },
+    { command: 'new', description: '🆕 Новинки' },
+    { command: 'ai', description: '🤖 AI Помічник' },
+    { command: 'profile', description: '👤 Мій профіль' },
+    { command: 'settings', description: '⚙️ Налаштування' },
+    { command: 'feedback', description: "📞 Зворотній зв'язок" },
+    { command: 'website', description: '🌐 Сайт Yakaboo' },
+    { command: 'help', description: 'ℹ️ Допомога' },
+    { command: 'admin', description: '🛠️ Адмін панель' },
+]);
 const userHandlers_1 = __importDefault(require("./handlers/userHandlers"));
 const adminHandlers_1 = __importDefault(require("./handlers/adminHandlers"));
 logger_1.logger.info('Registering handlers...');

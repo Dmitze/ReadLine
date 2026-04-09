@@ -258,14 +258,44 @@ settingsScene.action(/freq_(daily|every_4_days|weekly|disabled)/, async (ctx) =>
 });
 settingsScene.action('notif_time', async (ctx) => {
     await ctx.answerCbQuery();
+    ctx.scene.state.settingTime = true;
     await ctx.editMessageText('🕐 <b>Час сповіщень</b>\n\n' +
-        'Налаштування часу буде доступне незабаром!\n\n' +
-        'За замовчуванням сповіщення надсилаються о 10:00.', {
+        'Введіть бажаний час у форматі <b>ГГ:ХХ</b>\n\n' +
+        '💡 Приклади: <code>09:00</code>, <code>18:30</code>, <code>21:00</code>', {
         parse_mode: 'HTML',
         reply_markup: {
             inline_keyboard: [[{ text: '⬅️ Назад', callback_data: 'settings_notifications' }]],
         },
     });
+});
+settingsScene.on('text', async (ctx) => {
+    const state = ctx.scene.state;
+    if (!state.settingTime)
+        return;
+    const timeInput = ctx.message.text.trim();
+    const timeRegex = /^([01]\d|2[0-3]):([0-5]\d)$/;
+    if (!timeRegex.test(timeInput)) {
+        await ctx.reply('❌ Невірний формат. Введіть час у форматі <b>ГГ:ХХ</b>\n💡 Наприклад: <code>10:00</code>', { parse_mode: 'HTML' });
+        return;
+    }
+    const userId = ctx.from?.id;
+    if (!userId)
+        return;
+    const { getUserNotificationSettings, setUserNotificationSettings } = await Promise.resolve().then(() => __importStar(require('../utils/notifications')));
+    const settings = await getUserNotificationSettings(userId);
+    settings.preferredTime = timeInput;
+    await setUserNotificationSettings(settings);
+    state.settingTime = false;
+    await ctx.reply(`✅ <b>Час сповіщень змінено</b>\n\nТепер сповіщення надходитимуть о <b>${timeInput}</b>`, {
+        parse_mode: 'HTML',
+        reply_markup: {
+            inline_keyboard: [
+                [{ text: '⬅️ Назад до сповіщень', callback_data: 'settings_notifications' }],
+                [{ text: '🏠 На головну', callback_data: 'settings_exit' }],
+            ],
+        },
+    });
+    logger_1.logger.userAction(userId, 'change_notification_time', { time: timeInput });
 });
 settingsScene.action('settings_back', async (ctx) => {
     await ctx.answerCbQuery();
@@ -291,12 +321,11 @@ settingsScene.action('settings_back', async (ctx) => {
     }
 });
 settingsScene.action('settings_exit', async (ctx) => {
-    await ctx.answerCbQuery('🏠 Повернення на головну');
+    await ctx.answerCbQuery();
     await ctx.scene.leave();
     const { getMainMenuKeyboard } = await Promise.resolve().then(() => __importStar(require('../keyboards/mainKeyboards')));
-    await ctx.reply('🏠 Ви повернулись на головну', {
-        reply_markup: getMainMenuKeyboard(),
-    });
+    await ctx.editMessageText('🏠 Головне меню').catch(() => { });
+    await ctx.reply('👇 Оберіть дію:', { reply_markup: getMainMenuKeyboard() });
 });
 settingsScene.command('cancel', async (ctx) => {
     await ctx.scene.leave();

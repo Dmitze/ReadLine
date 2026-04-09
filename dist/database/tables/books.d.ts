@@ -26,5 +26,6 @@ export declare const getMostDownloadedBooks: (limit?: number) => Promise<Book[]>
 export declare const getNewestBooks: (limit?: number) => Promise<Book[]>;
 export declare const incrementDownloads: (bookId: number) => Promise<void>;
 export declare const updateBookInfo: (bookId: number, field: string, value: any) => Promise<number>;
+export declare const searchBooksByField: (field: "title" | "author", query: string, limit?: number) => Promise<Book[]>;
 export declare const searchBooks: (query: string, limit?: number) => Promise<Book[]>;
 //# sourceMappingURL=books.d.ts.map

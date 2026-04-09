@@ -78,6 +78,15 @@ class QueryBuilder {
         return this;
     }
     whereIn(column, values) {
+        if (values.length === 0) {
+            this.whereConditions.push({
+                column: '1',
+                operator: '=',
+                value: 0,
+            });
+            this.parameters.push(0);
+            return this;
+        }
         this.whereConditions.push({
             column: this.escapeIdentifier(column),
             operator: 'IN',
@@ -154,6 +163,9 @@ class QueryBuilder {
             switch (condition.operator) {
                 case 'IN':
                     const placeholders = condition.value.map(() => '?').join(', ');
+                    if (!placeholders) {
+                        return `${prefix}1 = 0`;
+                    }
                     return `${prefix}${condition.column} IN (${placeholders})`;
                 case 'BETWEEN':
                     return `${prefix}${condition.column} BETWEEN ? AND ?`;

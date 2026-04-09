@@ -26,9 +26,13 @@ exports.addReview = addReview;
 const getBookReviews = (bookId) => {
     return new Promise((resolve, reject) => {
         const query = `
-      SELECT * FROM reviews 
-      WHERE book_id = ? AND is_published = 1 
-      ORDER BY created_at DESC
+      SELECT r.*, 
+        COALESCE(u.first_name, 'Читач') as user_first_name,
+        u.username as user_username
+      FROM reviews r
+      LEFT JOIN users u ON r.user_id = u.user_id
+      WHERE r.book_id = ? AND r.is_published = 1 
+      ORDER BY r.created_at DESC
     `;
         db_1.db.all(query, [bookId], (err, rows) => {
             if (err) {
