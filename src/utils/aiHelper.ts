@@ -354,6 +354,135 @@ function checkAiRateLimitPerUser(userId: number): boolean {
  * AI чат-бот з Gemini API
  * ✅ ВИПРАВЛЕНО #47: додано per-user rate limiting (не глобальний)
  */
+/**
+ * Окремий запит до конкретного ключа Gemini
+ */
+async function callGeminiAPI(
+  apiKey: string,
+  model: string,
+  question: string,
+  timeoutMs: number
+): Promise<string> {
+  const apiBaseUrl =
+    process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta';
+  const url = `${apiBaseUrl}/models/${model}:generateContent?key=${apiKey}`;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: `Ти - помічник бібліотеки Warrior's Library. Відповідай українською мовою на будь-які питання користувача. Ти можеш:
+- Рекомендувати книги (наприклад "дай топ 10 фантастичних книг")
+- Розповідати про авторів (наприклад "хто такий Гоголь")
+- Відповідати на загальні питання про літературу
+- Давати поради щодо читання
+- Обговорювати жанри та стилі
+
+Відповідай детально та корисно. Питання користувача: ${question}`,
+              },
+            ],
+          },
+        ],
+        generationConfig: {
+          temperature: 0.9,
+          maxOutputTokens: 2000,
+        },
+      }),
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = (await response.json()) as any;
+    if (
+      !data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      typeof data.candidates[0].content.parts[0].text !== 'string'
+    ) {
+      throw new Error('Invalid response structure from Gemini API');
+    }
+
+    return data.candidates[0].content.parts[0].text;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
+/**
+ * Окремий запит до Groq API (fallback для Gemini)
+ */
+async function callGroqAPI(
+  apiKey: string,
+  model: string,
+  question: string,
+  timeoutMs: number
+): Promise<string> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content:
+              "Ти - помічник бібліотеки Warrior's Library. Відповідай українською мовою на будь-які питання користувача.",
+          },
+          {
+            role: 'user',
+            content: question,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Groq API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = (await response.json()) as any;
+    if (!data?.choices?.[0]?.message?.content) {
+      throw new Error('Invalid response structure from Groq API');
+    }
+
+    return data.choices[0].message.content;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
+/**
+ * AI чат-бот з підтримкою декількох ключів та автоматичним fallback
+ */
 export async function askAI(question: string, userId?: number): Promise<string> {
   const { LIMITS } = await import('../constants/limits');
 
@@ -364,137 +493,91 @@ export async function askAI(question: string, userId?: number): Promise<string> 
     );
   }
 
-  const apiKey = process.env.GEMINI_API_KEY;
+  // Отримуємо всі доступні ключі (основний + додаткові через кому)
+  const apiKeys = [
+    process.env.GEMINI_API_KEY,
+    ...(process.env.GEMINI_FALLBACK_KEYS ? process.env.GEMINI_FALLBACK_KEYS.split(',') : []),
+  ].filter(Boolean) as string[];
+
   const model = process.env.GEMINI_MODEL || 'gemini-flash-latest';
 
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY не налаштований');
+  if (apiKeys.length === 0) {
+    throw new Error('Жоден GEMINI_API_KEY не налаштований');
   }
 
-  try {
-    // ✅ ВИПРАВЛЕНО #49: винесено в змінну оточення
-    const apiBaseUrl =
-      process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta';
-    const url = `${apiBaseUrl}/models/${model}:generateContent?key=${apiKey}`;
+  let lastError: any = null;
 
-    // ✅ ВИПРАВЛЕНО: подвійний timeout захист для AI API запитів
-    const controller = new AbortController();
-    const timeoutMs = LIMITS.AI_REQUEST_TIMEOUT;
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  // Пробуємо кожен ключ по черзі
+  for (let i = 0; i < apiKeys.length; i++) {
+    const currentKey = apiKeys[i].trim();
+    try {
+      logger.info(`Спроба AI запиту з ключем #${i + 1}...`);
+      return await callGeminiAPI(currentKey, model, question, LIMITS.AI_REQUEST_TIMEOUT);
+    } catch (error: any) {
+      lastError = error;
+      const isLastKey = i === apiKeys.length - 1;
 
-    const response = await Promise.race([
-      fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        signal: controller.signal,
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: `Ти - помічник бібліотеки Warrior's Library. Відповідай українською мовою на будь-які питання користувача. Ти можеш:
-- Рекомендувати книги (наприклад "дай топ 10 фантастичних книг")
-- Розповідати про авторів (наприклад "хто такий Гоголь")
-- Відповідати на загальні питання про літературу
-- Давати поради щодо читання
-- Обговорювати жанри та стилі
+      // Якщо це помилка перевантаження (503) або ліміту (429), пробуємо наступний ключ
+      if (error.message?.includes('503') || error.message?.includes('429')) {
+        logger.warn(`Ключ #${i + 1} перевантажений, спроба наступного...`);
+        continue;
+      }
 
-Відповідай детально та корисно. Питання користувача: ${question}`,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.9,
-            maxOutputTokens: 2000,
-          },
-        }),
-      }),
-      // ✅ Додатковий timeout через Promise.race
-      new Promise<Response>((_, reject) =>
-        setTimeout(() => reject(new Error('AI request timeout')), timeoutMs)
-      ),
-    ]);
+      // Якщо ключ заблокований (403/401), також пробуємо наступний
+      if (error.message?.includes('403') || error.message?.includes('401')) {
+        logger.error(`Ключ #${i + 1} недійсний або заблокований!`);
+        continue;
+      }
 
-    clearTimeout(timeoutId);
+      // Якщо це тайм-аут і у нас є ще ключі - пробуємо наступний
+      if (error.name === 'AbortError' || error.message?.includes('timeout')) {
+        logger.warn(`Ключ #${i + 1} відхилено по тайм-ауту, спроба наступного...`);
+        continue;
+      }
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      logger.error('Gemini API error response', new Error(errorText));
-      throw new Error(`Gemini API помилка: ${response.status} - ${errorText}`);
+      // Якщо помилка критична і ключ останній - виходимо
+      if (isLastKey) break;
     }
-
-    const data = (await response.json()) as any;
-
-    // ✅ ВИПРАВЛЕНО #14: proper error handling з перевіркою на кожному рівні
-    if (!data) {
-      throw new Error('Порожня відповідь від Gemini API');
-    }
-
-    if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
-      throw new Error('Відсутні candidates у відповіді Gemini API');
-    }
-
-    const candidate = data.candidates[0];
-    if (!candidate || !candidate.content) {
-      throw new Error('Відсутній content у candidate');
-    }
-
-    if (
-      !candidate.content.parts ||
-      !Array.isArray(candidate.content.parts) ||
-      candidate.content.parts.length === 0
-    ) {
-      throw new Error('Відсутні parts у content');
-    }
-
-    const text = candidate.content.parts[0]?.text;
-    if (!text || typeof text !== 'string') {
-      throw new Error('Відсутній text у parts');
-    }
-
-    return text;
-  } catch (error) {
-    // ✅ ВИПРАВЛЕНО #43: logger замість console.error
-    logger.error('Gemini API error', error instanceof Error ? error : new Error(String(error)));
-
-    // ✅ ВИПРАВЛЕНО #10: використовуємо константи замість hardcoded повідомлень
-    const { AI_MESSAGES } = await import('../constants');
-    const lowerQuestion = question.toLowerCase();
-
-    if (lowerQuestion.includes('рекоменд') || lowerQuestion.includes('пораді')) {
-      return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[0];
-    }
-
-    if (lowerQuestion.includes('жанр') || lowerQuestion.includes('що читати')) {
-      return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[1];
-    }
-
-    if (lowerQuestion.includes('автор')) {
-      return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[2];
-    }
-
-    if (error.message?.includes('503')) {
-      return `Зараз на серверах Google Gemini велика кількість запитів. Спробуйте, будь ласка, ще раз через кілька хвилин.`;
-    }
-
-    // Check for common personalities to avoid generic fallback if API fails
-    const commonPersonalities = [
-      'шевченко',
-      'франко',
-      'українка',
-      'грушевський',
-      'сковорода',
-      'котляревський',
-    ];
-    if (commonPersonalities.some((p) => lowerQuestion.includes(p))) {
-      return `Це видатна постать української культури. На жаль, зараз у мене тимчасові технічні труднощі з доступом до бази знань AI, але ви можете знайти книги про цю особу в нашому каталозі за допомогою пошуку.`;
-    }
-
-    return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[3];
   }
+
+  // Якщо Gemini не спрацював, пробуємо Groq (якщо налаштований)
+  const groqKey = process.env.GROQ_API_KEY;
+  const groqModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+
+  if (groqKey) {
+    try {
+      logger.info('Спроба AI запиту через Groq (fallback)...');
+      return await callGroqAPI(groqKey, groqModel, question, LIMITS.AI_REQUEST_TIMEOUT);
+    } catch (error) {
+      logger.error('Groq API error', error instanceof Error ? error : new Error(String(error)));
+      lastError = error;
+    }
+  }
+
+  // Якщо всі ключі не спрацювали, запускаємо покращений fallback
+  const error = lastError || new Error('All AI keys failed');
+  const lowerQuestion = question.toLowerCase();
+
+  if (error.message?.includes('503')) {
+    return `Зараз на серверах Google Gemini велика кількість запитів. Спробуйте, будь ласка, ще раз через кілька хвилин.`;
+  }
+
+  // Check for common personalities to avoid generic fallback if API fails
+  const commonPersonalities = [
+    'шевченко',
+    'франко',
+    'українка',
+    'грушевський',
+    'сковорода',
+    'котляревський',
+  ];
+
+  if (commonPersonalities.some((p) => lowerQuestion.includes(p))) {
+    return `Це видатна постать української культури. На жаль, зараз у мене тимчасові технічні труднощі з доступом до бази знань AI, але ви можете знайти книги про цю особу в нашому каталозі за допомогою пошуку.`;
+  }
+
+  const { AI_MESSAGES } = await import('../constants');
+  return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[3];
 }
 
 /**
