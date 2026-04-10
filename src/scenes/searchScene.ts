@@ -112,7 +112,8 @@ searchScene.on('text', async (ctx: BotContext) => {
         `У нас є бібліотека книг. Користувач шукає: "${query}".\n` +
         `Визнач 3-5 коротких ключових слів (тільки назви книг або імена авторів або один жанр) для пошуку в базі даних SQLite. ` +
         `Відповідай ТІЛЬКИ списком через кому, без пояснень, без лапок. Наприклад: Козачка, Марко Вовчок, Фантастика`;
-      const keywords = await askAI(prompt, ctx.from?.id);
+      const keywordsResponse = await askAI(prompt, ctx.from?.id);
+      const keywords = keywordsResponse.text;
 
       await ctx.telegram.deleteMessage(ctx.chat.id, thinkingMsg.message_id).catch(() => {});
 
