@@ -90,8 +90,8 @@ catalogScene.action('catalog_books_menu', async (ctx) => {
 catalogScene.action('catalog_podcasts_menu', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
   try {
-    const { getPodcasts } = await import('../database/models');
-    const podcasts = await getPodcasts();
+    const { getAllPodcasts } = await import('../database/models');
+    const podcasts = await getAllPodcasts();
     
     if (!podcasts || podcasts.length === 0) {
       await ctx.reply('🎙️ У розділі підкастів поки що порожньо.');
@@ -124,7 +124,8 @@ catalogScene.action('catalog_podcasts_menu', async (ctx: BotContext) => {
 catalogScene.action('catalog_alpha', async (ctx) => {
   await ctx.answerCbQuery();
   try {
-    const books = await getBooksSortedByTitle(20, 0); // Беремо перші 20 для списку
+    const result = await getBooksSortedByTitle(20, 0); // Беремо перші 20 для списку
+    const books = result.books;
     if (books.length === 0) {
       await ctx.reply('📭 Книг не знайдено.');
       return;

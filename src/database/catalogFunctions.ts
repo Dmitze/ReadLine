@@ -252,6 +252,29 @@ export const getBooksWithAudioWithPagination = (
 
 /**
  * Отримати популярні книги з пагінацією (за завантаженнями)
+ */
+export const getMostDownloadedBooks = (limit: number = 10): Promise<Book[]> => {
+  return new Promise((resolve, reject) => {
+    const query = `
+      SELECT * FROM books 
+      WHERE downloads_count IS NOT NULL AND downloads_count > 0 
+      ORDER BY downloads_count DESC 
+      LIMIT ?
+    `;
+
+    db.all(query, [limit], (err, rows: Book[]) => {
+      if (err) {
+        logger.error('Error getting most downloaded books', err, { limit });
+        reject(err);
+      } else {
+        resolve(rows || []);
+      }
+    });
+  });
+};
+
+/**
+ * Отримати популярні книги з пагінацією (за завантаженнями)
  * @param limit - Максимальна кількість книг (за замовчуванням 10)
  * @param offset - Зміщення для пагінації (за замовчуванням 0)
  * @returns Об'єкт з масивом книг та загальною кількістю
@@ -308,7 +331,7 @@ export const getBooksSortedByTitle = (
           [limit, offset],
           (err, rows: Book[]) => {
             if (err) reject(err);
-            else resolve({ books: rows, total: countRow?.total || 0 });
+            else resolve({ books: rows || [], total: countRow?.total || 0 });
           }
         );
       }

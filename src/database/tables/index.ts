@@ -65,3 +65,16 @@ export {
 
 // Export stats functions
 export { getBookDetailedStats } from './stats';
+
+// Export podcasts functions
+export {
+  addPodcast,
+  getAllPodcasts,
+  getPodcastById,
+  updatePodcast,
+  getPodcastReviews,
+  deletePodcast,
+  Podcast,
+  PodcastReview,
+  PodcastListen,
+} from './podcasts';
