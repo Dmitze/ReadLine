@@ -77,7 +77,7 @@ aiScene.on('text', async (ctx: BotContext) => {
   const thinkingMsg = await ctx.reply('🤔 Думаю...');
 
   // Використовуємо withTimeout з константою
-  const answer = await withTimeout(
+  const aiResponse = await withTimeout(
     () => retryOperation(() => askAI(question, ctx.from?.id), 2, 1000),
     CONFIG.AI_TIMEOUT_MS,
     'AI request timeout'
@@ -88,10 +88,16 @@ aiScene.on('text', async (ctx: BotContext) => {
     logger.debug('Failed to delete thinking message', { error: err?.message });
   });
 
+  // Формуємо підпис з моделлю (якщо це не fallback)
+  const modelInfo = aiResponse.provider !== 'Fallback' 
+    ? `\n\n<i>🤖 Модель: ${aiResponse.model} (${aiResponse.provider})</i>`
+    : '';
+
   // Відправляємо відповідь без форматування (щоб уникнути помилок парсингу)
   await ctx.reply(
-    `🤖 AI-ПОМІЧНИК:\n\n${answer}`,
+    `🤖 AI-ПОМІЧНИК:\n\n${aiResponse.text}${modelInfo}`,
     {
+      parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard([
         [{ text: '💬 Запитати ще', callback_data: 'ai_ask_more' }],
         [{ text: '⬅️ Назад до меню', callback_data: 'ai_back' }],
