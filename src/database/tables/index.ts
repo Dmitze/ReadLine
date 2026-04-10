@@ -74,7 +74,6 @@ export {
   updatePodcast,
   getPodcastReviews,
   deletePodcast,
-  Podcast,
-  PodcastReview,
-  PodcastListen,
 } from './podcasts';
+
+export type { Podcast, PodcastReview, PodcastListen } from './podcasts';

@@ -1,5 +1,48 @@
-import { Book } from '../database/models';
+import { Book, Podcast } from '../database/models';
 import { BotContext } from '../types/telegraf';
+
+/**
+ * Format podcast caption for display
+ */
+export const formatPodcastCaption = async (podcast: Podcast): Promise<string> => {
+  const escapeHtml = (text: string) => {
+    if (!text) return '';
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
+      .replace(/�/g, '');
+  };
+
+  const safeTheme = escapeHtml(podcast.theme);
+  const safeDescription = escapeHtml(podcast.description);
+
+  let caption = '━━━━━━━━━━━━━━━━━━━━━\n';
+  caption += `🎙️ <b>${safeTheme}</b>\n`;
+  caption += '━━━━━━━━━━━━━━━━━━━━━\n\n';
+
+  caption += `📝 <b>Опис:</b>\n${safeDescription}\n\n`;
+
+  if (podcast.duration) {
+    const minutes = Math.floor(podcast.duration / 60);
+    const seconds = podcast.duration % 60;
+    caption += `⏱️ <b>Тривалість:</b> ${minutes}:${seconds.toString().padStart(2, '0')}\n`;
+  }
+
+  if (podcast.listens_count) {
+    caption += `📊 <b>Прослуховувань:</b> ${podcast.listens_count}\n`;
+  }
+
+  if (podcast.rating) {
+    caption += `⭐ <b>Рейтинг:</b> ${podcast.rating.toFixed(1)}/5\n`;
+  }
+
+  caption += `\n<i>ID: ${podcast.id}</i>`;
+
+  return caption;
+};
 
 /**
  * Safe parseInt function with NaN validation

@@ -1,6 +1,7 @@
 import { db, Book } from './models';
 import { safeParseFloat } from '../utils/helpers';
 import { QueryBuilder } from './QueryBuilder';
+import { logger } from '../utils/logger';
 
 /**
  * SQL Parameter Types - replaces 'any'

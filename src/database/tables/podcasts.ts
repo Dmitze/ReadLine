@@ -270,3 +270,31 @@ export const deletePodcast = (podcastId: number): Promise<void> => {
     });
   });
 };
+
+/**
+ * Оновити підкаст
+ */
+export const updatePodcast = (podcastId: number, updates: Partial<Podcast>): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const fields = Object.keys(updates).filter((key) => key !== 'id');
+    const setClause = fields.map((field) => `${field} = ?`).join(', ');
+    const values = fields.map((field) => (updates as any)[field]);
+
+    if (fields.length === 0) {
+      resolve();
+      return;
+    }
+
+    const query = `UPDATE podcasts SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+
+    db.run(query, [...values, podcastId], function (err) {
+      if (err) {
+        logger.error('Error updating podcast', err, { podcastId, updates });
+        reject(err);
+      } else {
+        logger.info('Podcast updated successfully', { podcastId, changes: this.changes });
+        resolve();
+      }
+    });
+  });
+};
