@@ -45,7 +45,8 @@ export const getPersonalizedRecommendations = async (userId: number): Promise<st
       '🎯 Жанр\n\n' +
       `Контекст: ${context}`;
 
-    const recommendations = await askAI(question, userId);
+    const aiResponse = await askAI(question, userId);
+    const recommendations = aiResponse.text;
 
     logger.info('AI recommendations generated', { userId, hasHistory: savedBooks.length > 0 });
 
@@ -84,7 +85,8 @@ export const getContextualRecommendations = async (): Promise<string> => {
     'Дай 3-4 рекомендації українською мовою з назвою, автором та коротким поясненням.';
 
   try {
-    const recommendations = await askAI(question);
+    const aiResponse = await askAI(question);
+    const recommendations = aiResponse.text;
     logger.info('Contextual recommendations generated', { hour });
     return recommendations;
   } catch (error) {
@@ -118,7 +120,8 @@ export const getMoodBasedRecommendations = async (mood: string): Promise<string>
     'Для кожної книги вкажи назву, автора та чому вона підійде.';
 
   try {
-    const recommendations = await askAI(question);
+    const aiResponse = await askAI(question);
+    const recommendations = aiResponse.text;
     logger.info('Mood-based recommendations generated', { mood });
     return recommendations;
   } catch (error) {
@@ -144,7 +147,8 @@ export const getSimilarBookRecommendations = async (
     'Для кожної вкажи назву, автора та чому вона схожа.';
 
   try {
-    const recommendations = await askAI(question);
+    const aiResponse = await askAI(question);
+    const recommendations = aiResponse.text;
     logger.info('Similar book recommendations generated', { bookTitle, bookAuthor });
     return recommendations;
   } catch (error) {
