@@ -3,6 +3,7 @@ import addBookScene from '../scenes/addBookScene';
 import editBookScene from '../scenes/editBookScene';
 import manageBooksScene from '../scenes/manageBooksScene';
 import searchScene from '../scenes/searchScene';
+import catalogScene from '../scenes/catalogScene';
 import profileScene from '../scenes/profileScene';
 import rateBookScene from '../scenes/rateBookScene';
 import feedbackScene from '../scenes/feedbackScene';
@@ -24,6 +25,7 @@ export function createStage() {
     editBookScene,
     manageBooksScene,
     searchScene,
+    catalogScene,
     profileScene,
     rateBookScene,
     feedbackScene,
