@@ -362,7 +362,7 @@ async function callGeminiAPI(
   model: string,
   question: string,
   timeoutMs: number
-): Promise<string> {
+): Promise<{ text: string; model: string }> {
   const apiBaseUrl =
     process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta';
   const url = `${apiBaseUrl}/models/${model}:generateContent?key=${apiKey}`;
@@ -416,7 +416,10 @@ async function callGeminiAPI(
       throw new Error('Invalid response structure from Gemini API');
     }
 
-    return data.candidates[0].content.parts[0].text;
+    return {
+      text: data.candidates[0].content.parts[0].text,
+      model: model,
+    };
   } catch (error) {
     clearTimeout(timeoutId);
     throw error;
@@ -431,7 +434,7 @@ async function callGroqAPI(
   model: string,
   question: string,
   timeoutMs: number
-): Promise<string> {
+): Promise<{ text: string; model: string }> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -473,17 +476,26 @@ async function callGroqAPI(
       throw new Error('Invalid response structure from Groq API');
     }
 
-    return data.choices[0].message.content;
+    return {
+      text: data.choices[0].message.content,
+      model: model,
+    };
   } catch (error) {
     clearTimeout(timeoutId);
     throw error;
   }
 }
 
+export interface AIResponse {
+  text: string;
+  model: string;
+  provider: 'Gemini' | 'Groq' | 'Fallback';
+}
+
 /**
  * AI чат-бот з підтримкою декількох ключів та автоматичним fallback
  */
-export async function askAI(question: string, userId?: number): Promise<string> {
+export async function askAI(question: string, userId?: number): Promise<AIResponse> {
   const { LIMITS } = await import('../constants/limits');
 
   // Перевірка rate limit для користувача
@@ -512,7 +524,11 @@ export async function askAI(question: string, userId?: number): Promise<string> 
     const currentKey = apiKeys[i].trim();
     try {
       logger.info(`Спроба AI запиту з ключем #${i + 1}...`);
-      return await callGeminiAPI(currentKey, model, question, LIMITS.AI_REQUEST_TIMEOUT);
+      const result = await callGeminiAPI(currentKey, model, question, LIMITS.AI_REQUEST_TIMEOUT);
+      return {
+        ...result,
+        provider: 'Gemini',
+      };
     } catch (error: any) {
       lastError = error;
       const isLastKey = i === apiKeys.length - 1;
@@ -547,7 +563,11 @@ export async function askAI(question: string, userId?: number): Promise<string> 
   if (groqKey) {
     try {
       logger.info('Спроба AI запиту через Groq (fallback)...');
-      return await callGroqAPI(groqKey, groqModel, question, LIMITS.AI_REQUEST_TIMEOUT);
+      const result = await callGroqAPI(groqKey, groqModel, question, LIMITS.AI_REQUEST_TIMEOUT);
+      return {
+        ...result,
+        provider: 'Groq',
+      };
     } catch (error) {
       logger.error('Groq API error', error instanceof Error ? error : new Error(String(error)));
       lastError = error;
@@ -558,26 +578,33 @@ export async function askAI(question: string, userId?: number): Promise<string> 
   const error = lastError || new Error('All AI keys failed');
   const lowerQuestion = question.toLowerCase();
 
+  let fallbackText = '';
   if (error.message?.includes('503')) {
-    return `Зараз на серверах Google Gemini велика кількість запитів. Спробуйте, будь ласка, ще раз через кілька хвилин.`;
+    fallbackText = `Зараз на серверах Google Gemini велика кількість запитів. Спробуйте, будь ласка, ще раз через кілька хвилин.`;
+  } else {
+    // Check for common personalities to avoid generic fallback if API fails
+    const commonPersonalities = [
+      'шевченко',
+      'франко',
+      'українка',
+      'грушевський',
+      'сковорода',
+      'котляревський',
+    ];
+
+    if (commonPersonalities.some((p) => lowerQuestion.includes(p))) {
+      fallbackText = `Це видатна постать української культури. На жаль, зараз у мене тимчасові технічні труднощі з доступом до бази знань AI, але ви можете знайти книги про цю особу в нашому каталозі за допомогою пошуку.`;
+    } else {
+      const { AI_MESSAGES } = await import('../constants');
+      fallbackText = AI_MESSAGES.FALLBACK_RECOMMENDATIONS[3];
+    }
   }
 
-  // Check for common personalities to avoid generic fallback if API fails
-  const commonPersonalities = [
-    'шевченко',
-    'франко',
-    'українка',
-    'грушевський',
-    'сковорода',
-    'котляревський',
-  ];
-
-  if (commonPersonalities.some((p) => lowerQuestion.includes(p))) {
-    return `Це видатна постать української культури. На жаль, зараз у мене тимчасові технічні труднощі з доступом до бази знань AI, але ви можете знайти книги про цю особу в нашому каталозі за допомогою пошуку.`;
-  }
-
-  const { AI_MESSAGES } = await import('../constants');
-  return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[3];
+  return {
+    text: fallbackText,
+    model: 'Local Fallback',
+    provider: 'Fallback',
+  };
 }
 
 /**
@@ -633,10 +660,11 @@ export async function rerankBooksWithAI(query: string, candidates: Book[]): Prom
     const rankingPrompt = `Given the search query "${query}", rank these books by relevance. Return only a JSON array of book IDs in the preferred order: [${candidates.map(b => b.id).join(',')}]`;
 
     const aiResponse = await askAI(rankingPrompt);
+    const text = aiResponse.text;
 
     // Try to parse AI response as JSON
     try {
-      const parsed = JSON.parse(aiResponse);
+      const parsed = JSON.parse(text);
       if (Array.isArray(parsed) && parsed.length > 0) {
         // Reorder candidates based on AI ranking
         const idToBook = new Map(candidates.map(book => [book.id, book]));
@@ -683,9 +711,7 @@ export async function expandQueryWithAI(query: string): Promise<string[]> {
     const expansionPrompt = `Given the search query "${query}", suggest related search terms, synonyms, and alternative phrasings in Ukrainian. Return only a comma-separated list of terms.`;
 
     const aiResponse = await askAI(expansionPrompt);
-
-    // Parse AI response and combine with base terms
-    const aiTerms = aiResponse
+    const aiTerms = aiResponse.text
       .split(',')
       .map(term => term.trim().toLowerCase())
       .filter(term => term.length > 0);
