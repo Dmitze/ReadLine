@@ -26,7 +26,8 @@ const SEARCH_TYPE_PROMPTS: Record<string, string> = {
 };
 
 const backToSearchTypeKeyboard = Markup.inlineKeyboard([
-  [{ text: '⬅️ Змінити тип пошуку', callback_data: 'search_choose_type' }],
+  [{ text: '🔄 Змінити тип пошуку', callback_data: 'search_choose_type' }],
+  [{ text: '⬅️ Назад', callback_data: 'search_back' }],
 ]).reply_markup;
 
 async function showSearchTypeMenu(ctx: BotContext, edit = false) {
@@ -71,6 +72,15 @@ searchScene.action('search_choose_type', async (ctx: BotContext) => {
 
 searchScene.action('search_back', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
+  
+  // Перевіряємо, чи ми прийшли з каталогу
+  const fromCatalog = (ctx.scene as any).state?.fromCatalog;
+  
+  if (fromCatalog) {
+    await ctx.scene.enter('CATALOG_SCENE');
+    return;
+  }
+
   await ctx.scene?.leave();
   const { getMainMenuKeyboard } = await import('../keyboards/mainKeyboards');
   await ctx.reply('🏠 Повернувся до головного меню:', {
