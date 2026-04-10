@@ -471,7 +471,13 @@ bot.command('settings', async (ctx) => {
 // Команда /catalog
 bot.command('catalog', async (ctx) => {
   logger.userAction(ctx.from.id, 'catalog_command');
-  return ctx.scene.enter('CATALOG_SCENE');
+  return ctx.scene.enter('SEARCH_SCENE');
+});
+
+// Обробник текстової кнопки "📖 Каталог"
+bot.hears('📖 Каталог', async (ctx) => {
+  logger.userAction(ctx.from.id, 'catalog_button');
+  return ctx.scene.enter('SEARCH_SCENE');
 });
 
 // Команда /library
