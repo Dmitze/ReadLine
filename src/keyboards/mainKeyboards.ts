@@ -2,6 +2,7 @@
 import { Markup } from 'telegraf';
 import { Book } from '../database/models';
 import { Context } from 'telegraf';
+import { BUTTONS } from '../constants';
 
 // ============================================
 // АДАПТИВНІ КЛАВІАТУРИ (Завдання 30)
@@ -68,18 +69,18 @@ export const getAdaptiveMainMenuKeyboard = (_ctx: Context, _withQuickActions: bo
 
   // Всі доступні кнопки
   const allButtons = [
-    '📖 Каталог',
-    '🔍 Пошук',
-    '🏆 Топ книги',
-    '🆕 Новинки',
-    '💾 Моя бібліотека',
-    '👤 Профіль',
-    '🤖 AI Помічник',
-    '🎁 Отримати промокод',
-    '⚙️ Налаштування',
-    'ℹ️ Допомога',
-    "📞 Зворотній зв'язок",
-    '🌐 Yakaboo',
+    BUTTONS.CATALOG,
+    BUTTONS.SEARCH,
+    BUTTONS.TOP_BOOKS,
+    BUTTONS.NEW_BOOKS,
+    BUTTONS.MY_LIBRARY,
+    BUTTONS.PROFILE,
+    BUTTONS.AI_ASSISTANT,
+    BUTTONS.PROMO,
+    BUTTONS.SETTINGS,
+    BUTTONS.HELP,
+    BUTTONS.FEEDBACK,
+    BUTTONS.YAKABOO,
   ];
 
   // Розбиваємо кнопки на рядки відповідно до типу пристрою
@@ -103,12 +104,12 @@ export const getAdaptiveMainMenuKeyboard = (_ctx: Context, _withQuickActions: bo
 // Стара версія для зворотної сумісності
 export const getMainMenuKeyboard = () => {
   const buttons = [
-    ['📖 Каталог', '🔍 Пошук'],
-    ['🏆 Топ книги', '🆕 Новинки'],
-    ['💾 Моя бібліотека', '🤖 AI Помічник'],
-    ['👤 Профіль', '⚙️ Налаштування'],
-    ['🎁 Отримати промокод', "📞 Зворотній зв'язок"],
-    ['ℹ️ Допомога', '🌐 Yakaboo'],
+    [BUTTONS.CATALOG, BUTTONS.SEARCH],
+    [BUTTONS.TOP_BOOKS, BUTTONS.NEW_BOOKS],
+    [BUTTONS.MY_LIBRARY, BUTTONS.AI_ASSISTANT],
+    [BUTTONS.PROFILE, BUTTONS.SETTINGS],
+    [BUTTONS.PROMO, BUTTONS.FEEDBACK],
+    [BUTTONS.HELP, BUTTONS.YAKABOO],
   ];
 
   return Markup.keyboard(buttons).resize().oneTime().reply_markup;
