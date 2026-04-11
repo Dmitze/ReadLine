@@ -3,6 +3,7 @@
  */
 
 import { Markup } from 'telegraf';
+import { BUTTONS } from '../constants';
 
 export interface BreadcrumbItem {
   label: string;
@@ -62,11 +63,11 @@ export function getQuickActionsKeyboard() {
   return Markup.keyboard([
     ['⚡ Швидкий пошук', '⭐ Мої улюблені'],
     ['📚 Продовжити читати', '🎲 Випадкова книга'],
-    ['📖 Каталог', '🔍 Пошук'],
-    ['⭐ Топ книги', '🆕 Новинки'],
+    [BUTTONS.CATALOG, BUTTONS.SEARCH],
+    [BUTTONS.TOP_BOOKS, BUTTONS.NEW_BOOKS],
     ['💾 Моя бібліотека', '👤 Профіль'],
     ['🤖 AI Помічник', 'ℹ️ Допомога'],
-    ["📞 Зворотній зв'язок"],
+    [BUTTONS.FEEDBACK],
   ]).resize().reply_markup;
 }
 
@@ -75,10 +76,10 @@ export function getQuickActionsKeyboard() {
  */
 export function getStandardMainMenu() {
   return Markup.keyboard([
-    ['📖 Каталог', '🔍 Пошук'],
-    ['⭐ Топ книги', '🆕 Новинки'],
-    ['💾 Моя бібліотека', '👤 Профіль'],
-    ['🤖 AI Помічник', 'ℹ️ Допомога'],
-    ["📞 Зворотній зв'язок"],
+    [BUTTONS.CATALOG, BUTTONS.SEARCH],
+    [BUTTONS.TOP_BOOKS, BUTTONS.NEW_BOOKS],
+    [BUTTONS.MY_LIBRARY, BUTTONS.PROFILE],
+    [BUTTONS.AI_ASSISTANT, BUTTONS.HELP],
+    [BUTTONS.FEEDBACK],
   ]).resize().reply_markup;
 }
