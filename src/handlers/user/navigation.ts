@@ -9,6 +9,7 @@ import { Telegraf } from 'telegraf';
 import { BotContext } from '../../types/telegraf';
 import { logger } from '../../utils/logger';
 import { getMainMenuKeyboard } from '../../keyboards/mainKeyboards';
+import { UX } from '../../constants';
 
 /**
  * Register navigation handlers
@@ -16,30 +17,31 @@ import { getMainMenuKeyboard } from '../../keyboards/mainKeyboards';
 export function registerNavigationHandlers(bot: Telegraf<BotContext>): void {
   // Назад к главному меню
   bot.hears('⬅️ Назад', async (ctx) => {
-    await ctx.reply('🗡️ Вертаємось на головну базу! ⚔️\n\nОбери свою наступну битву:', {
-      reply_markup: getMainMenuKeyboard(),
-    });
+    await ctx.reply(
+      `<b>${UX.navBackTitle}</b>\n${UX.navBackBody}`,
+      { parse_mode: 'HTML', reply_markup: getMainMenuKeyboard() }
+    );
   });
 
-  // На главную
   bot.hears('🏠 На головну', async (ctx) => {
-    await ctx.reply('🗡️ Головна База ⚔️\n\nОбери дію:', {
-      reply_markup: getMainMenuKeyboard(),
-    });
+    await ctx.reply(
+      `<b>${UX.navHomeTitle}</b>\n${UX.navHomeBody}`,
+      { parse_mode: 'HTML', reply_markup: getMainMenuKeyboard() }
+    );
     logger.userAction(ctx.from!.id, 'go_home');
   });
 
-  // Action: home
   bot.action('home', async (ctx) => {
     try {
-      await ctx.answerCbQuery('🗡️ Обертаємось...');
-      await ctx.reply('🗡️ Головна База ⚔️\n\nОбери дію:', {
-        reply_markup: getMainMenuKeyboard(),
-      });
+      await ctx.answerCbQuery();
+      await ctx.reply(
+        `<b>${UX.navHomeTitle}</b>\n${UX.navHomeBody}`,
+        { parse_mode: 'HTML', reply_markup: getMainMenuKeyboard() }
+      );
       logger.userAction(ctx.from!.id, 'go_home_action');
     } catch (error) {
       logger.error('Error going home', error, { userId: ctx.from?.id });
-      await ctx.answerCbQuery('❌ Помилка при переміщенні');
+      await ctx.answerCbQuery('❌ Помилка');
     }
   });
 }
