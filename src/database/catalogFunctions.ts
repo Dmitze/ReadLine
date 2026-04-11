@@ -339,3 +339,33 @@ export const getBooksSortedByTitle = (
     );
   });
 };
+
+/**
+ * Топ книг за рейтингом з пагінацією (логіка як у getTopBooks)
+ */
+export const getTopBooksWithPagination = (
+  limit: number = 10,
+  offset: number = 0
+): Promise<{ books: Book[]; total: number }> => {
+  return new Promise((resolve, reject) => {
+    db.get(
+      'SELECT COUNT(*) as total FROM books WHERE rating IS NOT NULL AND rating > 0',
+      [],
+      (err, countRow: CountRow | undefined) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        db.all(
+          'SELECT * FROM books WHERE rating IS NOT NULL AND rating > 0 ORDER BY rating DESC, reviews_count DESC LIMIT ? OFFSET ?',
+          [limit, offset],
+          (err, rows: Book[]) => {
+            if (err) reject(err);
+            else resolve({ books: rows || [], total: countRow?.total || 0 });
+          }
+        );
+      }
+    );
+  });
+};
