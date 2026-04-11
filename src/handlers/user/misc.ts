@@ -22,7 +22,7 @@ import {
  */
 export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
   // Промокод - початкове повідомлення
-  bot.hears('🎁 Отримати промокод', async (ctx: BotContext) => {
+  bot.hears(BUTTONS.PROMO, async (ctx: BotContext) => {
     try {
       const userId = ctx.from?.id;
 
@@ -111,7 +111,7 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
           {
             parse_mode: 'HTML',
             reply_markup: Markup.inlineKeyboard([
-              [Markup.button.callback("📞 Зворотній зв'язок", 'feedback')],
+              [Markup.button.callback(BUTTONS.FEEDBACK, 'feedback')],
               [Markup.button.callback('🏠 На головну', 'home')],
             ]).reply_markup,
           }
@@ -198,7 +198,7 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
           {
             parse_mode: 'HTML',
             reply_markup: Markup.inlineKeyboard([
-              [Markup.button.callback("📞 Зворотній зв'язок", 'feedback')],
+              [Markup.button.callback(BUTTONS.FEEDBACK, 'feedback')],
               [Markup.button.callback('🏠 На головну', 'home')],
             ]).reply_markup,
           }
@@ -254,7 +254,7 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
           {
             parse_mode: 'HTML',
             reply_markup: Markup.inlineKeyboard([
-              [Markup.button.callback("📞 Зворотній зв'язок", 'feedback')],
+              [Markup.button.callback(BUTTONS.FEEDBACK, 'feedback')],
               [Markup.button.callback('🏠 На головну', 'home')],
             ]).reply_markup,
           }
@@ -475,7 +475,7 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
         '🎁 Промокод': 'confirm_get_promocode',
         '⚙️ Налаштування': 'settings_scene',
         '❓ Допомога': 'help',
-        '💬 Зворотній зв\'язок': 'feedback',
+        [BUTTONS.FEEDBACK]: 'feedback',
       };
 
       // Отримуємо дію з маппінгу
