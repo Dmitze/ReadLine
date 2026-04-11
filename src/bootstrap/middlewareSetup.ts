@@ -3,6 +3,7 @@ import { BotContext } from '../types/telegraf';
 import { logger } from '../utils/logger';
 import { rateLimitMessage, rateLimitCallback, rateLimitCommand } from '../middleware/rateLimit';
 import { getMainMenuKeyboard } from '../keyboards/mainKeyboards';
+import { UX } from '../constants';
 
 export function setupMiddleware(bot: Telegraf<BotContext>) {
   bot.use(async (ctx, next) => {
@@ -50,7 +51,7 @@ export function setupMiddleware(bot: Telegraf<BotContext>) {
       if (text === '/cancel') {
         if (ctx.scene) {
           await ctx.scene.leave();
-          await ctx.reply('❌ Дію скасовано. Ви повернулися в головне меню.');
+          await ctx.reply(UX.cancelStep);
           return;
         }
       }
