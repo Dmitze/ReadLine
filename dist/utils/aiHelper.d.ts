@@ -13,7 +13,12 @@ export declare function getPersonalCollection(userProfile: UserProfile, allBooks
 export declare function getMoodBasedRecommendations(mood: string, allBooks: Book[]): Promise<Book[]>;
 export declare function isAIEnabled(): boolean;
 export declare function detectGenreFromDescription(description: string): Promise<string | null>;
-export declare function askAI(question: string, userId?: number): Promise<string>;
+export interface AIResponse {
+    text: string;
+    model: string;
+    provider: 'Gemini' | 'Groq' | 'Fallback';
+}
+export declare function askAI(question: string, userId?: number): Promise<AIResponse>;
 export interface UserPreferences {
     favoriteGenres?: string[];
     readingHistory?: number[];

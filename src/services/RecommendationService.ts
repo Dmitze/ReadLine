@@ -1,8 +1,3 @@
-/**
- * Recommendation Service - Бізнес-логіка для рекомендацій книг
- * REFACTOR-003: Service Layer
- */
-
 import { BookRepository } from '../repositories/BookRepository';
 import { SavedBookRepository } from '../repositories/SavedBookRepository';
 import { ReviewRepository } from '../repositories/ReviewRepository';
@@ -22,19 +17,13 @@ export class RecommendationService {
     private reviewRepository: ReviewRepository
   ) {}
 
-  /**
-   * Отримати персоналізовані рекомендації на основі збережених книг
-   */
   async getPersonalizedRecommendations(userId: number, limit: number = 10): Promise<Result<any[]>> {
     try {
-      // Отримати жанри збережених книг користувача
       const savedBooks = await this.savedBookRepository.findByUserId(userId);
       if (savedBooks.length === 0) {
-        // Якщо немає збережених книг, повернути популярні
         return this.getPopularRecommendations(limit);
       }
 
-      // Витягнути жанри
       const genres = new Set<string>();
       for (const saved of savedBooks) {
         const book = await this.bookRepository.findById(saved.book_id);
@@ -43,11 +32,10 @@ export class RecommendationService {
         }
       }
 
-      // Отримати книги за жанрами
       const recommendations = new Map<number, any>();
       for (const genre of genres) {
         const books = await this.bookRepository.findByGenre(genre);
-        // Pagination is applied manually
+
         for (const book of books.slice(0, limit * 2)) {
           const bookId = book.id ?? 0;
           if (bookId && !savedBooks.find((s) => s.book_id === bookId)) {
@@ -62,9 +50,6 @@ export class RecommendationService {
     }
   }
 
-  /**
-   * Отримати популярні рекомендації
-   */
   async getPopularRecommendations(limit: number = 10): Promise<Result<any[]>> {
     try {
       const books = await this.bookRepository.findMostRated(limit);
@@ -76,9 +61,6 @@ export class RecommendationService {
     }
   }
 
-  /**
-   * Отримати рекомендації за жанром
-   */
   async getRecommendationsByGenre(genre: string, limit: number = 10): Promise<Result<any[]>> {
     try {
       const books = await this.bookRepository.findByGenre(genre);
@@ -90,9 +72,6 @@ export class RecommendationService {
     }
   }
 
-  /**
-   * Отримати рекомендації на основі рейтингу
-   */
   async getRecommendationsByRating(
     minRating: number = 4,
     limit: number = 10
@@ -124,9 +103,6 @@ export class RecommendationService {
     }
   }
 
-  /**
-   * Отримати "Читай далі" рекомендації
-   */
   async getContinueReadingRecommendations(
     userId: number,
     limit: number = 5
@@ -138,7 +114,6 @@ export class RecommendationService {
         return new Ok([]);
       }
 
-      // Отримати остаток переглянуті книги (відсортовані за ID - найнові першими)
       const recentBooks = savedBooks.slice(0, 5);
 
       const recommendations = new Map<number, any>();
@@ -146,7 +121,6 @@ export class RecommendationService {
       for (const saved of recentBooks) {
         const book = await this.bookRepository.findById(saved.book_id);
         if (book && book.id) {
-          // Отримати книги того ж автора або жанру
           const byGenre = await this.bookRepository.findByGenre(book.genre);
           for (const recommended of byGenre.slice(0, limit * 2)) {
             const recId = recommended.id ?? 0;
@@ -165,9 +139,6 @@ export class RecommendationService {
     }
   }
 
-  /**
-   * Отримати рекомендації на основі схожості
-   */
   async getSimilarRecommendations(bookId: number, limit: number = 5): Promise<Result<any[]>> {
     try {
       const book = await this.bookRepository.findById(bookId);
@@ -186,9 +157,6 @@ export class RecommendationService {
     }
   }
 
-  /**
-   * Отримати рекомендації "Ви можете пропустити"
-   */
   async getTrendingRecommendations(limit: number = 10): Promise<Result<any[]>> {
     try {
       const books = await this.bookRepository.findNewest(limit);
@@ -200,13 +168,8 @@ export class RecommendationService {
     }
   }
 
-  /**
-   * Отримати рекомендації на основі тегів
-   */
   async getRecommendationsByTags(tags: string[], limit: number = 10): Promise<Result<any[]>> {
     try {
-      // Це спрощена реалізація
-      // У реальному проекті потрібна більш складна логіка пошуку за тегами
       const allBooks = await this.bookRepository.findAll();
       return new Ok(allBooks.slice(0, limit));
     } catch (error) {
@@ -216,9 +179,6 @@ export class RecommendationService {
     }
   }
 
-  /**
-   * Оцінити релевантність рекомендацій
-   */
   async getRankingScore(bookId: number, userId?: number): Promise<Result<number>> {
     try {
       const book = await this.bookRepository.findById(bookId);
@@ -226,16 +186,14 @@ export class RecommendationService {
         return new Err(new Error(`Book with id ${bookId} not found`));
       }
 
-      let score = 50; // Базовий бал
+      let score = 50;
 
-      // Додати бали за рейтинг
       const reviews = await this.reviewRepository.findByBookId(bookId);
       if (reviews.length > 0) {
         const avgRating = reviews.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.length;
         score += avgRating * 10;
       }
 
-      // Додати бали за популярність (кількість рецензій)
       score += Math.min(reviews.length, 50);
 
       return new Ok(Math.min(score, 100));

@@ -1,8 +1,3 @@
-/**
- * Book Requests Handlers
- * Обробники для заявок на фізичні книги
- */
-
 import { Telegraf, Markup } from 'telegraf';
 import { BotContext } from '../../types/telegraf';
 import { logger } from '../../utils/logger';
@@ -14,11 +9,7 @@ import {
   BookRequestStatus,
 } from '../../database/tables/bookRequests';
 
-/**
- * Зареєструвати обробники заявок на книги
- */
 export function registerBookRequestHandlers(bot: Telegraf<BotContext>): void {
-  // Кнопка "📚 Замовити фізичну книгу"
   bot.hears('📚 Замовити фізичну книгу', async (ctx: BotContext) => {
     try {
       const userId = ctx.from?.id;
@@ -58,7 +49,6 @@ export function registerBookRequestHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Створити нову заявку
   bot.action('create_book_request', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -69,7 +59,6 @@ export function registerBookRequestHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Мої заявки
   bot.action('my_book_requests', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -129,7 +118,6 @@ export function registerBookRequestHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Переглянути конкретну заявку
   bot.action(/view_request_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -189,9 +177,10 @@ export function registerBookRequestHandlers(bot: Telegraf<BotContext>): void {
 
       const keyboard = [];
 
-      // Кнопки залежно від статусу
       if (request.status === BookRequestStatus.PENDING) {
-        keyboard.push([Markup.button.callback('❌ Скасувати заявку', `cancel_request_${request.id}`)]);
+        keyboard.push([
+          Markup.button.callback('❌ Скасувати заявку', `cancel_request_${request.id}`),
+        ]);
       }
 
       keyboard.push([Markup.button.callback('⬅️ До списку заявок', 'my_book_requests')]);
@@ -208,7 +197,6 @@ export function registerBookRequestHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Допомога
   bot.action('book_requests_help', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -248,23 +236,18 @@ export function registerBookRequestHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Назад до меню заявок
   bot.action('back_to_requests_menu', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
 
-      await ctx.editMessageText(
-        '📚 <b>ЗАМОВЛЕННЯ ФІЗИЧНОЇ КНИГИ</b>\n\n' +
-          'Оберіть дію:',
-        {
-          parse_mode: 'HTML',
-          reply_markup: Markup.inlineKeyboard([
-            [Markup.button.callback('➕ Нова заявка', 'create_book_request')],
-            [Markup.button.callback('📋 Мої заявки', 'my_book_requests')],
-            [Markup.button.callback('❓ Допомога', 'book_requests_help')],
-          ]).reply_markup,
-        }
-      );
+      await ctx.editMessageText('📚 <b>ЗАМОВЛЕННЯ ФІЗИЧНОЇ КНИГИ</b>\n\n' + 'Оберіть дію:', {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback('➕ Нова заявка', 'create_book_request')],
+          [Markup.button.callback('📋 Мої заявки', 'my_book_requests')],
+          [Markup.button.callback('❓ Допомога', 'book_requests_help')],
+        ]).reply_markup,
+      });
     } catch (error) {
       logger.error('Error going back to requests menu', error, { userId: ctx.from?.id });
       await ctx.answerCbQuery('❌ Помилка');
@@ -272,9 +255,6 @@ export function registerBookRequestHandlers(bot: Telegraf<BotContext>): void {
   });
 }
 
-/**
- * Отримати емодзі статусу
- */
 function getStatusEmoji(status: BookRequestStatus): string {
   switch (status) {
     case BookRequestStatus.PENDING:
@@ -294,9 +274,6 @@ function getStatusEmoji(status: BookRequestStatus): string {
   }
 }
 
-/**
- * Отримати текст статусу
- */
 function getStatusText(status: BookRequestStatus): string {
   switch (status) {
     case BookRequestStatus.PENDING:
@@ -316,9 +293,6 @@ function getStatusText(status: BookRequestStatus): string {
   }
 }
 
-/**
- * Форматувати дату
- */
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleString('uk-UA', {
@@ -330,9 +304,6 @@ function formatDate(dateString: string): string {
   });
 }
 
-/**
- * Отримати кількість днів до дати
- */
 function getDaysLeft(dueDateString: string): number {
   const dueDate = new Date(dueDateString);
   const now = new Date();

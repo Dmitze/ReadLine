@@ -1,11 +1,3 @@
-/**
- * Enhanced Onboarding Scene with Podcasts Support
- * - Better UX/IX with progress indicators
- * - Genre selection linked to real recommendations
- * - Podcast preferences
- * - Content type preferences (books, audiobooks, podcasts)
- */
-
 import { Scenes, Markup } from 'telegraf';
 import { logger } from '../utils/logger';
 import { BotContext } from '../types/telegraf';
@@ -21,9 +13,6 @@ interface OnboardingState {
 
 const onboardingScene = new Scenes.BaseScene<BotContext>('ONBOARDING_SCENE');
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// STEP 1: Ласкаво просимо (Привітання)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 onboardingScene.enter(async (ctx: BotContext) => {
   const userName = ctx.from?.first_name || 'Воїне';
   const state = ctx.scene.state as OnboardingState;
@@ -52,9 +41,6 @@ onboardingScene.enter(async (ctx: BotContext) => {
   );
 });
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// STEP 1: Вибір типів контенту (BOOKS, AUDIOBOOKS, PODCASTS)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 onboardingScene.action('onboarding_step1_start', async (ctx: BotContext) => {
   await ctx.answerCbQuery('🛡️準備 арсенал...');
   const state = ctx.scene.state as OnboardingState;
@@ -66,7 +52,7 @@ onboardingScene.action('onboarding_step1_start', async (ctx: BotContext) => {
       'Які формати тебе цікавлять? Можна вибрати кілька! 👇\n\n' +
       '📕 *Читання* - традиційні книги\n' +
       '🎧 *Аудіокниги* - слухай на ходу\n' +
-      '🎙️ *Подкасти* - інтерв\'ю, лекції, історії\n\n' +
+      "🎙️ *Подкасти* - інтерв'ю, лекції, історії\n\n" +
       '_Ти завжди зможеш змінити це в налаштуваннях_ ⚙️',
     {
       parse_mode: 'Markdown',
@@ -86,7 +72,6 @@ onboardingScene.action('onboarding_step1_start', async (ctx: BotContext) => {
   );
 });
 
-// Обробка вибору типів контенту
 onboardingScene.action(/onboarding_content_(.+)/, async (ctx: BotContext) => {
   try {
     const state = ctx.scene.state as OnboardingState;
@@ -117,10 +102,10 @@ onboardingScene.action(/onboarding_content_(.+)/, async (ctx: BotContext) => {
       }
     }
 
-    // Оновлюємо сообщение з вибраними форматами
-    const selectedText = state.selectedContentTypes.length > 0 
-      ? '\n\n✅ ' + state.selectedContentTypes.map(t => contentMap[t]).join(' + ')
-      : '';
+    const selectedText =
+      state.selectedContentTypes.length > 0
+        ? '\n\n✅ ' + state.selectedContentTypes.map((t) => contentMap[t]).join(' + ')
+        : '';
 
     await ctx.editMessageText(
       '📖 *КРОК 1: ВИБІР ФОРМАТІВ КОНТЕНТУ*\n\n' +
@@ -128,7 +113,7 @@ onboardingScene.action(/onboarding_content_(.+)/, async (ctx: BotContext) => {
         'Які формати тебе цікавлять? Можна вибрати кілька! 👇\n\n' +
         '📕 *Читання* - традиційні книги\n' +
         '🎧 *Аудіокниги* - слухай на ходу\n' +
-        '🎙️ *Подкасти* - інтерв\'ю, лекції, історії\n\n' +
+        "🎙️ *Подкасти* - інтерв'ю, лекції, історії\n\n" +
         '_Ти завжди зможеш змінити це в налаштуваннях_ ⚙️' +
         selectedText,
       {
@@ -153,9 +138,6 @@ onboardingScene.action(/onboarding_content_(.+)/, async (ctx: BotContext) => {
   }
 });
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// STEP 2: Вибір улюблених жанрів
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 onboardingScene.action('onboarding_step2_genres', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
 
@@ -192,13 +174,15 @@ onboardingScene.action('onboarding_step2_genres', async (ctx: BotContext) => {
       reply_markup: Markup.inlineKeyboard(genreButtons).reply_markup,
     });
   } catch (error) {
-    logger.error('Error in onboarding genre selection', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Error in onboarding genre selection',
+      error instanceof Error ? error : new Error(String(error))
+    );
     await ctx.reply('⚠️ Помилка при завантаженні жанрів. Спробуйте пізніше.');
     await ctx.scene.leave();
   }
 });
 
-// Обробка вибору жанру (toggle)
 onboardingScene.action(/onboarding_genre_(.+)/, async (ctx: BotContext) => {
   const state = ctx.scene.state as OnboardingState;
   const genre = ctx.match[1];
@@ -220,7 +204,6 @@ onboardingScene.action(/onboarding_genre_(.+)/, async (ctx: BotContext) => {
     await ctx.answerCbQuery(`✅ ${genre} додано`);
   }
 
-  // Оновлюємо меню з галочками
   try {
     const genres = ALL_GENRES;
     const genreButtons = [];
@@ -270,29 +253,26 @@ onboardingScene.action(/onboarding_genre_(.+)/, async (ctx: BotContext) => {
         });
       });
   } catch (error) {
-    logger.error('Error updating genres display', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Error updating genres display',
+      error instanceof Error ? error : new Error(String(error))
+    );
   }
 });
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// STEP 3: Фінальне привітання та збереження дані
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 onboardingScene.action('onboarding_step3_finish', async (ctx: BotContext) => {
   const state = ctx.scene.state as OnboardingState;
   const userId = ctx.from?.id;
 
   await ctx.answerCbQuery('🛡️ Збереження налаштувань...');
 
-  // Зберігаємо дані в БД
   if (userId) {
     try {
       const { markOnboardingComplete } = await import('../database/userFunctions');
       const { updateUserFavoriteGenres } = await import('../database/userFunctions');
 
-      // Позначаємо онбординг як завершений
       await markOnboardingComplete(userId, state.selectedGenres || []);
 
-      // Оновлюємо улюблені жанри
       if (state.selectedGenres && state.selectedGenres.length > 0) {
         await updateUserFavoriteGenres(userId, state.selectedGenres);
       }
@@ -307,11 +287,9 @@ onboardingScene.action('onboarding_step3_finish', async (ctx: BotContext) => {
         'Error saving onboarding data',
         error instanceof Error ? error : new Error(String(error))
       );
-      // Продовжуємо навіть якщо помилка збереження
     }
   }
 
-  // Показуємо фіналізацію
   let message = '🏰 *ВОЇН ГОТОВИЙ ДО БИТВИ!*\n\n';
   message += '═══════════════════════════════════════\n\n';
 
@@ -350,15 +328,11 @@ onboardingScene.action('onboarding_step3_finish', async (ctx: BotContext) => {
   });
 });
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// SKIP або FINISH: Завершення онбордингу
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 onboardingScene.action(['onboarding_skip', 'onboarding_finish'], async (ctx: BotContext) => {
   const userId = ctx.from?.id;
 
   await ctx.answerCbQuery("👋 Вітаємо в Warrior's Library!");
 
-  // Позначаємо онбординг як завершений
   if (userId) {
     try {
       const { markOnboardingComplete } = await import('../database/userFunctions');
@@ -372,7 +346,6 @@ onboardingScene.action(['onboarding_skip', 'onboarding_finish'], async (ctx: Bot
     }
   }
 
-  // Фіналізація
   await ctx.reply(
     "⚔️ *ЛАСКАВО ПРОСИМО У WARRIOR'S LIBRARY!*\n\n" +
       '═══════════════════════════════════════\n\n' +

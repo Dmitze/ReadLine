@@ -9,7 +9,6 @@ import {
 import { logger } from '../../utils/logger';
 
 export default (bot: Telegraf<BotContext>) => {
-  // Показати список замовлень
   bot.action('admin_orders', async (ctx: BotContext) => {
     (async () => {
       await ctx.answerCbQuery('Завантаження замовлень...');
@@ -23,14 +22,11 @@ export default (bot: Telegraf<BotContext>) => {
       const orders = await getAllBookOrders();
 
       if (orders.length === 0) {
-        await ctx.editMessageText(
-          '📋 <b>ЗАМОВЛЕННЯ КНИГ</b>\n\n' + '📭 Немає замовлень',
-          {
-            parse_mode: 'HTML',
-            reply_markup: Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', 'admin_back')]])
-              .reply_markup,
-          }
-        );
+        await ctx.editMessageText('📋 <b>ЗАМОВЛЕННЯ КНИГ</b>\n\n' + '📭 Немає замовлень', {
+          parse_mode: 'HTML',
+          reply_markup: Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', 'admin_back')]])
+            .reply_markup,
+        });
         return;
       }
 
@@ -38,7 +34,6 @@ export default (bot: Telegraf<BotContext>) => {
       message += `Всього замовлень: ${orders.length}\n\n`;
       message += '━━━━━━━━━━━━━━━━━━━\n\n';
 
-      // Показуємо останні 10 замовлень
       const recentOrders = orders.slice(0, 10);
       recentOrders.forEach((order, index) => {
         const date = new Date(order.created_at || Date.now());
@@ -59,7 +54,10 @@ export default (bot: Telegraf<BotContext>) => {
       }
 
       const buttons = recentOrders.map((o) => [
-        Markup.button.callback(`#${o.id} - ${o.book_title.substring(0, 30)}...`, `admin_view_order_${o.id}`),
+        Markup.button.callback(
+          `#${o.id} - ${o.book_title.substring(0, 30)}...`,
+          `admin_view_order_${o.id}`
+        ),
       ]);
 
       buttons.push([
@@ -82,7 +80,6 @@ export default (bot: Telegraf<BotContext>) => {
     return;
   });
 
-  // Оновити список замовлень
   bot.action('admin_refresh_orders', async (ctx: BotContext) => {
     (async () => {
       await ctx.answerCbQuery('🔄 Оновлення...');
@@ -95,14 +92,11 @@ export default (bot: Telegraf<BotContext>) => {
       const orders = await getAllBookOrders();
 
       if (orders.length === 0) {
-        await ctx.editMessageText(
-          '📋 <b>ЗАМОВЛЕННЯ КНИГ</b>\n\n' + '📭 Немає замовлень',
-          {
-            parse_mode: 'HTML',
-            reply_markup: Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', 'admin_back')]])
-              .reply_markup,
-          }
-        );
+        await ctx.editMessageText('📋 <b>ЗАМОВЛЕННЯ КНИГ</b>\n\n' + '📭 Немає замовлень', {
+          parse_mode: 'HTML',
+          reply_markup: Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', 'admin_back')]])
+            .reply_markup,
+        });
         return;
       }
 
@@ -130,7 +124,10 @@ export default (bot: Telegraf<BotContext>) => {
       }
 
       const buttons = recentOrders.map((o) => [
-        Markup.button.callback(`#${o.id} - ${o.book_title.substring(0, 30)}...`, `admin_view_order_${o.id}`),
+        Markup.button.callback(
+          `#${o.id} - ${o.book_title.substring(0, 30)}...`,
+          `admin_view_order_${o.id}`
+        ),
       ]);
 
       buttons.push([
@@ -153,7 +150,6 @@ export default (bot: Telegraf<BotContext>) => {
     return;
   });
 
-  // Переглянути деталі замовлення
   bot.action(/admin_view_order_(\d+)/, async (ctx: BotContext) => {
     (async () => {
       const match = ctx.match;
@@ -175,8 +171,9 @@ export default (bot: Telegraf<BotContext>) => {
 
       if (!order) {
         await ctx.editMessageText('❌ Замовлення не знайдено', {
-          reply_markup: Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', 'admin_orders')]])
-            .reply_markup,
+          reply_markup: Markup.inlineKeyboard([
+            [Markup.button.callback('⬅️ Назад', 'admin_orders')],
+          ]).reply_markup,
         });
         return;
       }
@@ -203,7 +200,7 @@ export default (bot: Telegraf<BotContext>) => {
         `📅 Дата замовлення: ${dateStr}\n` +
         `🆔 ID користувача: <code>${order.user_id}</code>\n\n` +
         '━━━━━━━━━━━━━━━━━━━\n\n' +
-        '💡 Зв\'яжіться з користувачем для узгодження деталей.';
+        "💡 Зв'яжіться з користувачем для узгодження деталей.";
 
       await ctx.editMessageText(message, {
         parse_mode: 'HTML',
@@ -223,7 +220,6 @@ export default (bot: Telegraf<BotContext>) => {
     return;
   });
 
-  // Видалити замовлення
   bot.action(/admin_delete_order_(\d+)/, async (ctx: BotContext) => {
     (async () => {
       const match = ctx.match;
@@ -240,7 +236,6 @@ export default (bot: Telegraf<BotContext>) => {
         return;
       }
 
-      // Показати підтвердження
       await ctx.editMessageText(
         `⚠️ <b>ВИДАЛЕННЯ ЗАМОВЛЕННЯ #${orderId}</b>\n\n` +
           'Ви впевнені що хочете видалити це замовлення?\n\n' +
@@ -266,7 +261,6 @@ export default (bot: Telegraf<BotContext>) => {
     return;
   });
 
-  // Підтвердити видалення замовлення
   bot.action(/admin_confirm_delete_order_(\d+)/, async (ctx: BotContext) => {
     (async () => {
       const match = ctx.match;
@@ -289,11 +283,13 @@ export default (bot: Telegraf<BotContext>) => {
         await ctx.answerCbQuery('✅ Замовлення видалено');
 
         await ctx.editMessageText(
-          `✅ <b>ЗАМОВЛЕННЯ #${orderId} ВИДАЛЕНО</b>\n\n` + 'Замовлення успішно видалено з бази даних.',
+          `✅ <b>ЗАМОВЛЕННЯ #${orderId} ВИДАЛЕНО</b>\n\n` +
+            'Замовлення успішно видалено з бази даних.',
           {
             parse_mode: 'HTML',
-            reply_markup: Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад до списку', 'admin_orders')]])
-              .reply_markup,
+            reply_markup: Markup.inlineKeyboard([
+              [Markup.button.callback('⬅️ Назад до списку', 'admin_orders')],
+            ]).reply_markup,
           }
         );
 

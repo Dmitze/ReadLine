@@ -1,7 +1,3 @@
-/**
- * Cache Tests - тести для кешування
- */
-
 import { cache } from '../utils/cache';
 
 describe('Cache Service', () => {
@@ -22,15 +18,12 @@ describe('Cache Service', () => {
     });
 
     it('should expire data after TTL', async () => {
-      cache.set('test-key', 'test-value', 100); // 100ms TTL
+      cache.set('test-key', 'test-value', 100);
 
-      // Одразу має бути доступно
       expect(cache.get('test-key')).toBe('test-value');
 
-      // Чекаємо більше TTL
       await new Promise((resolve) => setTimeout(resolve, 150));
 
-      // Має бути expired
       expect(cache.get('test-key')).toBeNull();
     });
   });
@@ -63,10 +56,9 @@ describe('Cache Service', () => {
       expect(result).toBe('fetched-value');
       expect(fetcher).toHaveBeenCalledTimes(1);
 
-      // Другий виклик має використати кеш
       const result2 = await cache.getOrSet('test-key', fetcher);
       expect(result2).toBe('fetched-value');
-      expect(fetcher).toHaveBeenCalledTimes(1); // Не викликається знову
+      expect(fetcher).toHaveBeenCalledTimes(1);
     });
 
     it('should prevent race condition', async () => {
@@ -75,7 +67,6 @@ describe('Cache Service', () => {
         return 'fetched-value';
       });
 
-      // Два паралельні запити
       const [result1, result2] = await Promise.all([
         cache.getOrSet('test-key', fetcher),
         cache.getOrSet('test-key', fetcher),
@@ -83,7 +74,7 @@ describe('Cache Service', () => {
 
       expect(result1).toBe('fetched-value');
       expect(result2).toBe('fetched-value');
-      expect(fetcher).toHaveBeenCalledTimes(1); // Викликається тільки раз
+      expect(fetcher).toHaveBeenCalledTimes(1);
     });
   });
 

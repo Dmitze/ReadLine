@@ -224,7 +224,8 @@ function registerBookActionHandlers(bot) {
                     });
                     logger_1.logger.info('PDF sent successfully', { bookId, userId: ctx.from?.id });
                 }
-                else if (book.file_url && (book.file_url.startsWith('http://') || book.file_url.startsWith('https://'))) {
+                else if (book.file_url &&
+                    (book.file_url.startsWith('http://') || book.file_url.startsWith('https://'))) {
                     logger_1.logger.info('Sending PDF via URL', { bookId, urlLength: book.file_url.length });
                     await ctx.reply(`📥 Посилання для завантаження PDF:\n\n${book.file_url}`, {
                         disable_web_page_preview: false,
@@ -293,7 +294,8 @@ function registerBookActionHandlers(bot) {
                         caption: `📱 ${book.title} - ${book.author}`,
                     });
                 }
-                else if (book.epub_url && (book.epub_url.startsWith('http://') || book.epub_url.startsWith('https://'))) {
+                else if (book.epub_url &&
+                    (book.epub_url.startsWith('http://') || book.epub_url.startsWith('https://'))) {
                     await ctx.reply(`📥 Посилання для завантаження EPUB:\n\n${book.epub_url}`, {
                         disable_web_page_preview: false,
                     });

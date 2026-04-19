@@ -34,7 +34,7 @@ export interface CatalogState {
   genre?: string;
   tagId?: number;
   tagName?: string;
-  /** Оновлюється при рендері списку — для tooltip кнопки 📄 без додаткових запитів */
+
   lastTotalPages?: number;
 }
 
@@ -58,7 +58,6 @@ function mergeCatalogState(ctx: BotContext, patch: Partial<CatalogState>): void 
   ctx.scene.state = { ...cur, ...patch } as CatalogState;
 }
 
-/** Повна заміна стану списку (без «залипання» genre/tag між режимами) */
 function replaceCatalogState(ctx: BotContext, next: CatalogState): void {
   if (!ctx.scene) return;
   ctx.scene.state = { ...next };
@@ -96,7 +95,10 @@ async function sendCatalogScreen(
       });
     }
   } catch (error) {
-    logger.error('Error in sendCatalogScreen', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Error in sendCatalogScreen',
+      error instanceof Error ? error : new Error(String(error))
+    );
     await ctx.reply(text, {
       parse_mode: 'HTML',
       reply_markup: replyMarkup,
@@ -104,9 +106,6 @@ async function sendCatalogScreen(
   }
 }
 
-/**
- * Єдиний рендер списку книг: один inline-повідомлення, без flood.
- */
 async function renderBookList(
   ctx: BotContext,
   titleHtml: string,
@@ -148,9 +147,7 @@ async function renderBookList(
     if (page > 0) {
       navRow.push(Markup.button.callback('⬅️ Назад', 'catalog_prev_page'));
     }
-    navRow.push(
-      Markup.button.callback(`📄 ${page + 1} / ${totalPages}`, 'catalog_page_info')
-    );
+    navRow.push(Markup.button.callback(`📄 ${page + 1} / ${totalPages}`, 'catalog_page_info'));
     if (page < totalPages - 1) {
       navRow.push(Markup.button.callback('Вперед ➡️', 'catalog_next_page'));
     }
@@ -160,13 +157,12 @@ async function renderBookList(
 
     mergeCatalogState(ctx, { lastTotalPages: totalPages });
 
-    await sendCatalogScreen(
-      ctx,
-      body,
-      Markup.inlineKeyboard(keyboardRows).reply_markup
-    );
+    await sendCatalogScreen(ctx, body, Markup.inlineKeyboard(keyboardRows).reply_markup);
   } catch (error) {
-    logger.error('Error in renderBookList', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Error in renderBookList',
+      error instanceof Error ? error : new Error(String(error))
+    );
     await ctx.reply('❌ Помилка завантаження списку.');
   }
 }
@@ -226,9 +222,7 @@ async function renderPodcastList(ctx: BotContext, backCallbackData: string): Pro
     if (page > 0) {
       navRow.push(Markup.button.callback('⬅️ Назад', 'catalog_prev_page'));
     }
-    navRow.push(
-      Markup.button.callback(`📄 ${page + 1} / ${totalPages}`, 'catalog_page_info')
-    );
+    navRow.push(Markup.button.callback(`📄 ${page + 1} / ${totalPages}`, 'catalog_page_info'));
     if (page < totalPages - 1) {
       navRow.push(Markup.button.callback('Вперед ➡️', 'catalog_next_page'));
     }
@@ -295,8 +289,7 @@ async function refreshListFromState(ctx: BotContext): Promise<void> {
       return renderBookList(
         ctx,
         `📚 <b>ЖАНР:</b> ${escapeHtml(genre)}`,
-        (_l, o) =>
-          getBooksByGenreWithPagination(genre, Math.floor(o / PAGE_SIZE) + 1, PAGE_SIZE),
+        (_l, o) => getBooksByGenreWithPagination(genre, Math.floor(o / PAGE_SIZE) + 1, PAGE_SIZE),
         'catalog_genres'
       );
     }
@@ -373,9 +366,8 @@ async function showGenreMenu(ctx: BotContext) {
       await sendCatalogScreen(
         ctx,
         '📭 У каталозі поки що немає книг.',
-        Markup.inlineKeyboard([
-          [Markup.button.callback('⬅️ Назад', 'catalog_books_menu')],
-        ]).reply_markup
+        Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', 'catalog_books_menu')]])
+          .reply_markup
       );
       return;
     }
@@ -391,9 +383,16 @@ async function showGenreMenu(ctx: BotContext) {
     }
     keyboard.push([Markup.button.callback('⬅️ Назад', 'catalog_books_menu')]);
 
-    await sendCatalogScreen(ctx, '📖 <b>КАТАЛОГ ЗА ЖАНРАМИ</b>\n\nОберіть жанр:', Markup.inlineKeyboard(keyboard).reply_markup);
+    await sendCatalogScreen(
+      ctx,
+      '📖 <b>КАТАЛОГ ЗА ЖАНРАМИ</b>\n\nОберіть жанр:',
+      Markup.inlineKeyboard(keyboard).reply_markup
+    );
   } catch (error) {
-    logger.error('Error in showGenreMenu', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Error in showGenreMenu',
+      error instanceof Error ? error : new Error(String(error))
+    );
     await ctx.reply('❌ Помилка завантаження жанрів.');
   }
 }
@@ -458,9 +457,9 @@ catalogScene.action('catalog_tags', async (ctx) => {
   try {
     const tags = await getAllTags();
     const message = '🏷️ <b>ПОШУК ЗА ТЕГАМИ</b>\n\nОберіть тег:';
-    const buttons = tags.slice(0, 40).map((tag) =>
-      Markup.button.callback(`#${tag.name}`, `catalog_tag_${tag.id}`)
-    );
+    const buttons = tags
+      .slice(0, 40)
+      .map((tag) => Markup.button.callback(`#${tag.name}`, `catalog_tag_${tag.id}`));
 
     const keyboard: ReturnType<typeof Markup.button.callback>[][] = [];
     for (let i = 0; i < buttons.length; i += 2) {
@@ -470,7 +469,10 @@ catalogScene.action('catalog_tags', async (ctx) => {
 
     await sendCatalogScreen(ctx, message, Markup.inlineKeyboard(keyboard).reply_markup);
   } catch (error) {
-    logger.error('Error in catalog_tags', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Error in catalog_tags',
+      error instanceof Error ? error : new Error(String(error))
+    );
     await ctx.reply('❌ Помилка завантаження тегів.');
   }
 });
@@ -493,7 +495,10 @@ catalogScene.action(/^catalog_tag_(\d+)$/, async (ctx) => {
     });
     await refreshListFromState(ctx);
   } catch (error) {
-    logger.error('Error in catalog_tag action', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Error in catalog_tag action',
+      error instanceof Error ? error : new Error(String(error))
+    );
     await ctx.reply('❌ Помилка завантаження книг за тегом.');
   }
 });
@@ -517,7 +522,10 @@ catalogScene.action(/^genre_idx_(\d+)$/, async (ctx) => {
     });
     await refreshListFromState(ctx);
   } catch (error) {
-    logger.error('Error in genre selection', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Error in genre selection',
+      error instanceof Error ? error : new Error(String(error))
+    );
     await ctx.reply('❌ Помилка при завантаженні книг.');
   }
 });
@@ -540,8 +548,7 @@ catalogScene.action('catalog_next_page', async (ctx) => {
 
 catalogScene.action('catalog_page_info', async (ctx) => {
   const s = getCatalogState(ctx);
-  const tp =
-    s.lastTotalPages != null && s.lastTotalPages > 0 ? s.lastTotalPages : 1;
+  const tp = s.lastTotalPages != null && s.lastTotalPages > 0 ? s.lastTotalPages : 1;
   await ctx.answerCbQuery(`Сторінка ${s.page + 1} з ${tp}`, { show_alert: false });
 });
 

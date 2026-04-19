@@ -1,7 +1,3 @@
-/**
- * Simple Test to Verify Jest Setup
- */
-
 describe('Basic Math', () => {
   it('should add numbers correctly', () => {
     expect(1 + 1).toBe(2);

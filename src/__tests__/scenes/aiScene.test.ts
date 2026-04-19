@@ -10,7 +10,6 @@ describe('aiScene', () => {
   });
 
   afterAll(async () => {
-    // Cleanup to prevent memory leaks
     jest.clearAllTimers();
     jest.clearAllMocks();
   });

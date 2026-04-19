@@ -74,8 +74,7 @@ class QueueManager {
                 else if (job.isActive?.())
                     status = 'active';
             }
-            catch {
-            }
+            catch { }
             return new Result_1.Ok({
                 status,
                 jobId: job.id.toString(),

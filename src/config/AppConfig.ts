@@ -1,20 +1,12 @@
-/**
- * Application Configuration
- * REFACTOR-018: Configuration Management
- * Uses Zod-validated environment variables
- */
-
 import { getEnv } from './envSchema';
 
 export interface AppConfig {
-  // Bot
   bot: {
     token: string;
     webhook?: string;
     polling: boolean;
   };
 
-  // Database
   database: {
     path: string;
     sqlite?: {
@@ -22,7 +14,6 @@ export interface AppConfig {
     };
   };
 
-  // AI/API
   ai: {
     enabled: boolean;
     provider?: 'openai' | 'anthropic';
@@ -30,27 +21,23 @@ export interface AppConfig {
     timeout?: number;
   };
 
-  // File Storage
   storage: {
     uploadsDir: string;
-    maxFileSize: number; // bytes
+    maxFileSize: number;
     allowedMimeTypes: string[];
   };
 
-  // Server
   server: {
     port: number;
     host: string;
   };
 
-  // Logging
   logging: {
     level: 'debug' | 'info' | 'warn' | 'error';
     format: 'json' | 'text';
     file?: string;
   };
 
-  // Feature Flags
   features: {
     audioBooks: boolean;
     aiAssistant: boolean;
@@ -59,7 +46,6 @@ export interface AppConfig {
     promoCode: boolean;
   };
 
-  // Limits
   limits: {
     booksPerPage: number;
     maxTags: number;
@@ -76,10 +62,6 @@ export class ConfigManager {
     this.config = this.loadConfig();
   }
 
-  /**
-   * Завантажити конфіг зі змінних оточення
-   * Uses validated env from envSchema
-   */
   private loadConfig(): AppConfig {
     const env = getEnv();
     return {
@@ -102,7 +84,7 @@ export class ConfigManager {
       },
       storage: {
         uploadsDir: './uploads',
-        maxFileSize: 52428800, // 50MB
+        maxFileSize: 52428800,
         allowedMimeTypes: ['application/pdf', 'audio/mpeg', 'audio/wav'],
       },
       server: {
@@ -131,23 +113,14 @@ export class ConfigManager {
     };
   }
 
-  /**
-   * Отримати конфіг
-   */
   getConfig(): AppConfig {
     return this.config;
   }
 
-  /**
-   * Отримати конкретну секцію конфігу
-   */
   get<K extends keyof AppConfig>(key: K): AppConfig[K] {
     return this.config[key];
   }
 
-  /**
-   * Перевірити конфіг
-   */
   validate(): boolean {
     if (!this.config.bot.token) {
       throw new Error('BOT_TOKEN is required');
@@ -160,22 +133,15 @@ export class ConfigManager {
     return true;
   }
 
-  /**
-   * Чи включена функція
-   */
   isFeatureEnabled(feature: keyof AppConfig['features']): boolean {
     return this.config.features[feature];
   }
 
-  /**
-   * Отримати ліміт
-   */
   getLimit(limit: keyof AppConfig['limits']): number {
     return this.config.limits[limit];
   }
 }
 
-// Singleton instance
 let configInstance: ConfigManager | null = null;
 
 export function getConfig(): ConfigManager {

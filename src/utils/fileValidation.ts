@@ -1,18 +1,11 @@
-/**
- * File Validation Utilities
- * Валідація завантажуваних файлів (розмір, тип, MIME)
- */
-
 import { logger } from './logger';
 
-// Максимальні розміри файлів (в байтах)
 export const MAX_FILE_SIZES = {
-  PHOTO: 10 * 1024 * 1024, // 10 MB
-  DOCUMENT: 50 * 1024 * 1024, // 50 MB
-  AUDIO: null, // Без ліміту - аудіокниги можуть бути великими (до 5GB)
+  PHOTO: 10 * 1024 * 1024,
+  DOCUMENT: 50 * 1024 * 1024,
+  AUDIO: null,
 } as const;
 
-// Дозволені MIME типи
 export const ALLOWED_MIME_TYPES = {
   PHOTO: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
   DOCUMENT: [
@@ -20,12 +13,11 @@ export const ALLOWED_MIME_TYPES = {
     'application/epub+zip',
     'application/x-mobipocket-ebook',
     'application/x-fictionbook+xml',
-    'application/octet-stream', // для .mobi, .fb2
+    'application/octet-stream',
   ],
   AUDIO: ['audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/ogg'],
 } as const;
 
-// Дозволені розширення файлів
 export const ALLOWED_EXTENSIONS = {
   PHOTO: ['.jpg', '.jpeg', '.png', '.webp'],
   DOCUMENT: ['.pdf', '.epub', '.mobi', '.fb2'],
@@ -39,16 +31,11 @@ export interface FileValidationResult {
   fileSizeMB?: string;
 }
 
-/**
- * Валідація фото
- * ✅ БЕЗ ВАЛІДАЦІЇ - принимаємо будь-які зображення без обмежень
- */
 export function validatePhoto(
   fileSize?: number,
   mimeType?: string,
   fileName?: string
 ): FileValidationResult {
-  // ✅ Приймаємо будь-які фото без перевірки розміру, типу чи розширення
   return {
     isValid: true,
     fileSize,
@@ -56,16 +43,11 @@ export function validatePhoto(
   };
 }
 
-/**
- * Валідація документа (PDF, EPUB, MOBI, FB2)
- * ✅ БЕЗ ВАЛІДАЦІЇ - принимаємо будь-які файли без обмежень
- */
 export function validateDocument(
   fileSize?: number,
   mimeType?: string,
   fileName?: string
 ): FileValidationResult {
-  // ✅ Приймаємо будь-які файли без перевірки розміру, типу чи розширення
   return {
     isValid: true,
     fileSize,
@@ -73,16 +55,11 @@ export function validateDocument(
   };
 }
 
-/**
- * Валідація аудіо файлу
- * ✅ БЕЗ ВАЛІДАЦІЇ - принимаємо будь-які аудіо файли без обмежень
- */
 export function validateAudio(
   fileSize?: number,
   mimeType?: string,
   fileName?: string
 ): FileValidationResult {
-  // ✅ Приймаємо будь-які аудіо файли без перевірки розміру, типу чи розширення
   return {
     isValid: true,
     fileSize,
@@ -90,9 +67,6 @@ export function validateAudio(
   };
 }
 
-/**
- * Форматування розміру файлу для відображення
- */
 export function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 B';
 
@@ -103,9 +77,6 @@ export function formatFileSize(bytes: number): string {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
-/**
- * Перевірка чи файл є зображенням
- */
 export function isImageFile(fileName?: string, mimeType?: string): boolean {
   if (mimeType && (ALLOWED_MIME_TYPES.PHOTO as readonly string[]).includes(mimeType)) {
     return true;
@@ -119,9 +90,6 @@ export function isImageFile(fileName?: string, mimeType?: string): boolean {
   return false;
 }
 
-/**
- * Перевірка чи файл є документом
- */
 export function isDocumentFile(fileName?: string, mimeType?: string): boolean {
   if (mimeType && (ALLOWED_MIME_TYPES.DOCUMENT as readonly string[]).includes(mimeType)) {
     return true;
@@ -135,9 +103,6 @@ export function isDocumentFile(fileName?: string, mimeType?: string): boolean {
   return false;
 }
 
-/**
- * Перевірка чи файл є аудіо
- */
 export function isAudioFile(fileName?: string, mimeType?: string): boolean {
   if (mimeType && (ALLOWED_MIME_TYPES.AUDIO as readonly string[]).includes(mimeType)) {
     return true;

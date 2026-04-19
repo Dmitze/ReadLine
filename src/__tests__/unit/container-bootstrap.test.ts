@@ -1,7 +1,3 @@
-/**
- * Container Bootstrap Tests
- */
-
 import { ServiceContainer } from '../../core/ServiceContainer';
 import {
   bootstrapContainer,

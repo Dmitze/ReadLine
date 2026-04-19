@@ -208,8 +208,7 @@ editExtendedBookInfoScene.action('edit_warnings', async (ctx) => {
     try {
         await ctx.deleteMessage();
     }
-    catch (e) {
-    }
+    catch (e) { }
     await showWarningsKeyboard(ctx, state);
 });
 CONTENT_WARNINGS.forEach((warning) => {
@@ -229,8 +228,7 @@ CONTENT_WARNINGS.forEach((warning) => {
         try {
             await ctx.deleteMessage();
         }
-        catch (e) {
-        }
+        catch (e) { }
         await showWarningsKeyboard(ctx, state);
     });
 });
@@ -273,8 +271,7 @@ editExtendedBookInfoScene.action('save_warnings', async (ctx) => {
             try {
                 await ctx.deleteMessage();
             }
-            catch (e) {
-            }
+            catch (e) { }
             await ctx.reply(successMsg, {
                 parse_mode: 'HTML',
                 reply_markup: telegraf_2.Markup.inlineKeyboard([
@@ -289,8 +286,7 @@ editExtendedBookInfoScene.action('save_warnings', async (ctx) => {
             try {
                 await ctx.deleteMessage();
             }
-            catch (e) {
-            }
+            catch (e) { }
             await ctx.reply('✅ Варнінги успішно оновлено!', {
                 reply_markup: telegraf_2.Markup.inlineKeyboard([
                     [telegraf_2.Markup.button.callback('📖 Редагувати іншу книгу', 'edit_another')],
@@ -311,8 +307,7 @@ editExtendedBookInfoScene.action('cancel_warnings', async (ctx) => {
     try {
         await ctx.deleteMessage();
     }
-    catch (e) {
-    }
+    catch (e) { }
     await ctx.reply(`✅ Знайшли книгу: <b>${state.book.title}</b>${(0, helpers_1.getBookIdText)(state.book.id)}\n` +
         `👤 Автор: ${state.book.author}\n\n` +
         'Що хочете редагувати?', {
@@ -430,8 +425,7 @@ ageOptions.forEach((option) => {
         try {
             await ctx.deleteMessage();
         }
-        catch (e) {
-        }
+        catch (e) { }
         await showWarningsKeyboard(ctx, state);
     });
 });

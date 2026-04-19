@@ -182,7 +182,7 @@ async function showBookPreview(ctx, state) {
             : '\n\n📦 <b>ФІЗИЧНА НАЯВНІСТЬ:</b>\n❌ Тільки електронна версія';
         const safeTitle = escapeHtml(state.title || 'Невідома назва');
         const safeAuthor = escapeHtml(state.author || 'Невідомий автор');
-        const safeGenres = state.selectedGenres?.map(g => escapeHtml(g)).join(', ') || 'Невідомий жанр';
+        const safeGenres = state.selectedGenres?.map((g) => escapeHtml(g)).join(', ') || 'Невідомий жанр';
         const safeDescription = escapeHtml(state.description || 'Без опису');
         const preview = `${getProgress(8)}\n\n` +
             '📖 <b>ПОПЕРЕДНІЙ ПЕРЕГЛЯД</b>\n\n' +

@@ -1,26 +1,17 @@
 #!/usr/bin/env node
 
-/**
- * Script to delete old/expired promo codes
- * Usage:
- *   node scripts/clean-old-promo-codes.js              # Delete used/expired codes
- *   node scripts/clean-old-promo-codes.js --all         # Delete all codes (careful!)
- *   node scripts/clean-old-promo-codes.js --days 30     # Delete codes older than 30 days
- */
-
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
 const dbPath = process.env.DB_PATH || path.join(__dirname, '..', 'database', 'library.db');
 const db = new sqlite3.Database(dbPath);
 
-// Colors
 const colors = {
   reset: '\x1b[0m',
   red: '\x1b[31m',
   green: '\x1b[32m',
   yellow: '\x1b[33m',
-  blue: '\x1b[34m'
+  blue: '\x1b[34m',
 };
 
 function log(msg, color = 'reset') {
@@ -42,8 +33,8 @@ async function deleteExpiredCodes() {
       DELETE FROM promo_codes 
       WHERE is_active = 0
     `;
-    
-    db.run(sql, function(err) {
+
+    db.run(sql, function (err) {
       if (err) reject(err);
       else resolve(this.changes);
     });
@@ -57,8 +48,8 @@ async function deleteOldUnusedCodes(days = 30) {
       WHERE is_active = 0
       AND created_at < datetime('now', '-${days} days')
     `;
-    
-    db.run(sql, function(err) {
+
+    db.run(sql, function (err) {
       if (err) reject(err);
       else resolve(this.changes);
     });
@@ -68,8 +59,8 @@ async function deleteOldUnusedCodes(days = 30) {
 async function deleteAllCodes() {
   return new Promise((resolve, reject) => {
     const sql = `DELETE FROM promo_codes`;
-    
-    db.run(sql, function(err) {
+
+    db.run(sql, function (err) {
       if (err) reject(err);
       else resolve(this.changes);
     });
@@ -80,13 +71,15 @@ async function main() {
   try {
     log('\n🔧 Cleanup old promo codes\n', 'blue');
 
-    // Check if table exists
     await new Promise((resolve, reject) => {
-      db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='promo_codes'", (err, row) => {
-        if (err) reject(err);
-        else if (!row) reject(new Error('promo_codes table not found'));
-        else resolve();
-      });
+      db.get(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='promo_codes'",
+        (err, row) => {
+          if (err) reject(err);
+          else if (!row) reject(new Error('promo_codes table not found'));
+          else resolve();
+        }
+      );
     });
 
     const totalBefore = await getPromoStats();
@@ -96,7 +89,6 @@ async function main() {
     const args = process.argv.slice(2);
 
     if (args.includes('--all')) {
-      // Confirm before deleting all
       log('\n⚠️  WARNING: About to delete ALL promo codes!', 'yellow');
       log('   This action cannot be undone!', 'yellow');
       log('\n❌ Aborted. Use --force to confirm:', 'red');
@@ -124,7 +116,6 @@ async function main() {
       if (err) log(`⚠️  Error closing database: ${err.message}`, 'yellow');
       process.exit(0);
     });
-
   } catch (error) {
     log(`\n❌ Error: ${error.message}`, 'red');
     db.close((err) => {

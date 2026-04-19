@@ -5,7 +5,9 @@ export declare function setupEnvironment(): {
     DB_PATH?: string;
     GEMINI_API_KEY?: string;
     GEMINI_MODEL?: string;
-    AI_PROVIDER?: "gemini" | "openai";
+    GROQ_API_KEY?: string;
+    GROQ_MODEL?: string;
+    AI_PROVIDER?: "gemini" | "openai" | "groq";
     REDIS_HOST?: string;
     REDIS_PORT?: number;
     LOG_LEVEL?: "error" | "debug" | "info" | "warn";

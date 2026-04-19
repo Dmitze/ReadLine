@@ -11,7 +11,9 @@ function registerPodcastHandlers(bot) {
                 await ctx.answerCbQuery();
             }
             catch (cbError) {
-                logger_1.logger.debug('Failed to answer callback query', { error: cbError instanceof Error ? cbError.message : String(cbError) });
+                logger_1.logger.debug('Failed to answer callback query', {
+                    error: cbError instanceof Error ? cbError.message : String(cbError),
+                });
             }
             const podcastsPerPage = 5;
             const { podcasts, total } = await (0, podcasts_1.getAllPodcastsWithPagination)(podcastsPerPage, 0);

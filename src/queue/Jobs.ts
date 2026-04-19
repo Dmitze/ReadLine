@@ -1,14 +1,7 @@
-/**
- * Job Type Definitions and Handlers
- */
-
 import { QueueManager, JobData, QueueConfig } from './Queue';
 import { Result, Ok, Err } from '../core/Result';
 import { logger } from '../utils/logger';
 
-/**
- * Email Job Types
- */
 export interface EmailJobData extends JobData {
   to: string;
   subject: string;
@@ -16,9 +9,6 @@ export interface EmailJobData extends JobData {
   html?: string;
 }
 
-/**
- * Report Generation Job Types
- */
 export interface ReportJobData extends JobData {
   userId: number;
   type: 'daily' | 'weekly' | 'monthly';
@@ -26,9 +16,6 @@ export interface ReportJobData extends JobData {
   endDate: string;
 }
 
-/**
- * User Notification Job Types
- */
 export interface NotificationJobData extends JobData {
   userId: number;
   title: string;
@@ -36,35 +23,23 @@ export interface NotificationJobData extends JobData {
   type?: string;
 }
 
-/**
- * Data Export Job Types
- */
 export interface ExportJobData extends JobData {
   userId: number;
   format: 'csv' | 'json' | 'pdf';
   dataType: 'books' | 'reviews' | 'history';
 }
 
-/**
- * AI Processing Job Types
- */
 export interface AIJobData extends JobData {
   bookId: number;
   prompt: string;
   type: 'recommendation' | 'summary' | 'analysis';
 }
 
-/**
- * Scheduled Maintenance Job Types
- */
 export interface MaintenanceJobData extends JobData {
   type: 'cleanup' | 'optimization' | 'backup';
   targetTables?: string[];
 }
 
-/**
- * Job Queue Registry
- */
 export class JobQueueRegistry {
   private queues: Map<string, QueueManager> = new Map();
   private redisConfig: any;
@@ -76,9 +51,6 @@ export class JobQueueRegistry {
     };
   }
 
-  /**
-   * Get or create queue for job type
-   */
   getQueue(queueName: string): QueueManager {
     if (!this.queues.has(queueName)) {
       const config: QueueConfig = {
@@ -94,51 +66,30 @@ export class JobQueueRegistry {
     return this.queues.get(queueName)!;
   }
 
-  /**
-   * Email queue
-   */
   getEmailQueue(): QueueManager {
     return this.getQueue('emails');
   }
 
-  /**
-   * Report queue
-   */
   getReportQueue(): QueueManager {
     return this.getQueue('reports');
   }
 
-  /**
-   * Notification queue
-   */
   getNotificationQueue(): QueueManager {
     return this.getQueue('notifications');
   }
 
-  /**
-   * Export queue
-   */
   getExportQueue(): QueueManager {
     return this.getQueue('exports');
   }
 
-  /**
-   * AI Processing queue
-   */
   getAIQueue(): QueueManager {
     return this.getQueue('ai-processing');
   }
 
-  /**
-   * Maintenance queue
-   */
   getMaintenanceQueue(): QueueManager {
     return this.getQueue('maintenance');
   }
 
-  /**
-   * Close all queues
-   */
   async closeAll(): Promise<Result<void>> {
     try {
       const promises = Array.from(this.queues.values()).map((q) => q.close());
@@ -151,26 +102,15 @@ export class JobQueueRegistry {
   }
 }
 
-/**
- * Create job queue registry
- */
 export function createJobQueueRegistry(redisConfig?: any): JobQueueRegistry {
   return new JobQueueRegistry(redisConfig);
 }
 
-/**
- * Predefined Job Queue Handlers
- */
 export class JobHandlers {
-  /**
-   * Email handler
-   */
   static async handleEmail(data: EmailJobData): Promise<any> {
     try {
-      // Mock email sending
       logger.info('Sending email', { to: data.to, subject: data.subject });
 
-      // Simulate processing
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
       return {
@@ -182,14 +122,10 @@ export class JobHandlers {
     }
   }
 
-  /**
-   * Report generation handler
-   */
   static async handleReport(data: ReportJobData): Promise<any> {
     try {
       logger.info('Generating report', { type: data.type, userId: data.userId });
 
-      // Simulate report generation
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       return {
@@ -203,14 +139,10 @@ export class JobHandlers {
     }
   }
 
-  /**
-   * Notification handler
-   */
   static async handleNotification(data: NotificationJobData): Promise<any> {
     try {
       logger.info('Sending notification', { userId: data.userId, title: data.title });
 
-      // Simulate notification
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       return {
@@ -222,9 +154,6 @@ export class JobHandlers {
     }
   }
 
-  /**
-   * Export handler
-   */
   static async handleExport(data: ExportJobData): Promise<any> {
     try {
       logger.info('Exporting data', {
@@ -233,7 +162,6 @@ export class JobHandlers {
         userId: data.userId,
       });
 
-      // Simulate export
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       return {
@@ -247,14 +175,10 @@ export class JobHandlers {
     }
   }
 
-  /**
-   * AI Processing handler
-   */
   static async handleAIProcessing(data: AIJobData): Promise<any> {
     try {
       logger.info('Processing AI request', { bookId: data.bookId, type: data.type });
 
-      // Simulate AI processing
       await new Promise((resolve) => setTimeout(resolve, 3000));
 
       return {
@@ -268,14 +192,10 @@ export class JobHandlers {
     }
   }
 
-  /**
-   * Maintenance handler
-   */
   static async handleMaintenance(data: MaintenanceJobData): Promise<any> {
     try {
       logger.info('Running maintenance', { type: data.type });
 
-      // Simulate maintenance
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
       return {

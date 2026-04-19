@@ -1,15 +1,4 @@
-/**
- * Predefined Validation Schemas
- * REFACTOR-014: Comprehensive Input Validation
- */
-
 import { ValidationBuilder } from './Validator';
-
-/**
- * Схеми валідації для основних сутностей
- */
-
-// ==================== BOOK SCHEMAS ====================
 
 export const BookCreateSchema = {
   title: ['required', 'string', 'min:1', 'max:255'],
@@ -37,8 +26,6 @@ export const BookSearchSchema = {
   offset: ['number', 'min:0'],
 };
 
-// ==================== USER SCHEMAS ====================
-
 export const UserCreateSchema = {
   telegram_id: ['required', 'number'],
   username: ['string', 'username', 'min:3', 'max:32'],
@@ -55,8 +42,6 @@ export const UserUpdateSchema = {
   is_admin: ['boolean'],
 };
 
-// ==================== REVIEW SCHEMAS ====================
-
 export const ReviewCreateSchema = {
   book_id: ['required', 'number', 'min:1'],
   user_id: ['required', 'number', 'min:1'],
@@ -68,8 +53,6 @@ export const ReviewUpdateSchema = {
   rating: ['number', 'in:1:2:3:4:5'],
   comment: ['string', 'max:2000'],
 };
-
-// ==================== AUDIO SCHEMAS ====================
 
 export const AudioCreateSchema = {
   book_id: ['required', 'number', 'min:1'],
@@ -85,24 +68,15 @@ export const AudioUpdateSchema = {
   quality: ['in:low:medium:high'],
 };
 
-// ==================== TAG SCHEMAS ====================
-
-/**
- * Теги повинні бути однослівними (максимум 2 слова без пробілів)
- * Приклади валідних тегів: "Детектив", "Графічний_роман"
- * Приклади невалідних тегів: "Сучасна література" (2 слова з пробілом)
- */
 export const TagCreateSchema = {
-  name: ['required', 'string', 'min:1', 'max:50', 'tag'], // Спеціальна валідація для тегів
+  name: ['required', 'string', 'min:1', 'max:50', 'tag'],
   description: ['string', 'max:500'],
 };
 
 export const TagUpdateSchema = {
-  name: ['string', 'min:1', 'max:50', 'tag'], // Спеціальна валідація для тегів
+  name: ['string', 'min:1', 'max:50', 'tag'],
   description: ['string', 'max:500'],
 };
-
-// ==================== PROMO CODE SCHEMAS ====================
 
 export const PromoCodeCreateSchema = {
   code: ['required', 'string', 'pattern:[A-Z0-9]{4,12}', 'max:12'],
@@ -111,15 +85,11 @@ export const PromoCodeCreateSchema = {
   is_active: ['boolean'],
 };
 
-// ==================== SAVED BOOK SCHEMAS ====================
-
 export const SavedBookSchema = {
   book_id: ['required', 'number', 'min:1'],
   user_id: ['required', 'number', 'min:1'],
   collection: ['string', 'max:50'],
 };
-
-// ==================== FEEDBACK SCHEMAS ====================
 
 export const FeedbackCreateSchema = {
   content: ['required', 'string', 'min:10', 'max:5000'],
@@ -131,14 +101,10 @@ export const FeedbackReplySchema = {
   message: ['required', 'string', 'min:1', 'max:2000'],
 };
 
-// ==================== PAGINATION SCHEMAS ====================
-
 export const PaginationSchema = {
   page: ['number', 'min:1'],
   limit: ['number', 'min:1', 'max:100'],
 };
-
-// ==================== FILTER SCHEMAS ====================
 
 export const BookFilterSchema = {
   genre: ['string', 'max:100'],
@@ -148,8 +114,6 @@ export const BookFilterSchema = {
   limit: ['number', 'min:1', 'max:100'],
   offset: ['number', 'min:0'],
 };
-
-// ==================== Fluent Builder Examples ====================
 
 export function createBookValidation() {
   return new ValidationBuilder()

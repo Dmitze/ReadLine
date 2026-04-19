@@ -1,11 +1,3 @@
-/**
- * Date Formatter Utilities
- * ✅ ВИПРАВЛЕНО #48: централізоване форматування дат
- */
-
-/**
- * Форматує дату в українському форматі
- */
 export function formatDate(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   return d.toLocaleDateString('uk-UA', {
@@ -15,9 +7,6 @@ export function formatDate(date: Date | string): string {
   });
 }
 
-/**
- * Форматує дату та час
- */
 export function formatDateTime(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   return d.toLocaleString('uk-UA', {
@@ -29,16 +18,10 @@ export function formatDateTime(date: Date | string): string {
   });
 }
 
-/**
- * Форматує дату для БД (ISO)
- */
 export function formatDateForDB(date: Date = new Date()): string {
   return date.toISOString();
 }
 
-/**
- * Форматує відносний час ("2 години тому")
- */
 export function formatRelativeTime(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   const now = new Date();
@@ -55,9 +38,6 @@ export function formatRelativeTime(date: Date | string): string {
   return formatDate(d);
 }
 
-/**
- * Форматує тривалість (секунди → "1г 23хв")
- */
 export function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);

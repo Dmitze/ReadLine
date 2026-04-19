@@ -1,51 +1,26 @@
 import { BaseRepository } from './BaseRepository';
 
-/**
- * Tag entity interface
- */
 export interface Tag {
   id?: number;
   name: string;
   created_at?: string;
 }
 
-/**
- * BookTag junction table interface
- */
 export interface BookTag {
   book_id: number;
   tag_id: number;
   created_at?: string;
 }
 
-/**
- * TagRepository - Manages tags and book-tag associations
- * Handles tag creation, management, and tag-based book filtering
- */
 export class TagRepository extends BaseRepository<Tag> {
-  /**
-   * Creates instance of TagRepository
-   * @param db DatabaseWrapper instance
-   */
   constructor(db: any) {
     super(db, 'tags');
   }
 
-  /**
-   * Get all tags ordered by name
-   * @returns Promise with Tag array
-   */
   async getAllTags(): Promise<Tag[]> {
     return this.query('SELECT * FROM tags ORDER BY name');
   }
 
-  /**
-   * Create a new tag
-   * ВАЖЛИВО: теги повинні бути однослівними (максимум 2 слова без пробілів)
-   * @param name Tag name (e.g., "Детектив" or "Графічний_роман")
-   * @returns Promise with tag ID
-   * @throws Error if tag name is invalid
-   */
   async createTag(name: string): Promise<number> {
     const { isValidTag, normalizeTag } = await import('../utils/tagValidator');
 
@@ -58,41 +33,23 @@ export class TagRepository extends BaseRepository<Tag> {
     const normalized = normalizeTag(name);
     const tagId = await this.insert({ name: normalized });
 
-    // ✅ Інвалідація кеша тегів після додавання нового тегу
     const { invalidateTagsCache } = await import('../scenes/addBook/utils');
     invalidateTagsCache();
 
     return tagId;
   }
 
-  /**
-   * Get tag by ID
-   * @param tagId Tag ID
-   * @returns Promise with Tag or null
-   */
   async getTagById(tagId: number): Promise<Tag | null> {
     const tags = await this.query<Tag>('SELECT * FROM tags WHERE id = ?', [tagId]);
     return tags[0] || null;
   }
 
-  /**
-   * Get tag by name
-   * @param name Tag name
-   * @returns Promise with Tag or null
-   */
   async getTagByName(name: string): Promise<Tag | null> {
     const tags = await this.query<Tag>('SELECT * FROM tags WHERE name = ?', [name]);
     return tags[0] || null;
   }
 
-  /**
-   * Update a tag
-   * @param tagId Tag ID
-   * @param updates Partial tag data
-   * @returns Promise with number of affected rows
-   */
   async updateTag(tagId: number, updates: Partial<Tag>): Promise<number> {
-    // ✅ Whitelist для захисту від SQL injection
     const allowedFields = ['name'];
     const validUpdates: Record<string, any> = {};
 
@@ -109,20 +66,10 @@ export class TagRepository extends BaseRepository<Tag> {
     return this.update(tagId, validUpdates);
   }
 
-  /**
-   * Delete a tag
-   * @param tagId Tag ID
-   * @returns Promise with number of deleted rows
-   */
   async deleteTag(tagId: number): Promise<number> {
     return this.delete(tagId);
   }
 
-  /**
-   * Get all tags for a specific book
-   * @param bookId Book ID
-   * @returns Promise with Tag array
-   */
   async getBookTags(bookId: number): Promise<Tag[]> {
     const query = `
       SELECT t.* FROM tags t
@@ -133,11 +80,6 @@ export class TagRepository extends BaseRepository<Tag> {
     return this.query(query, [bookId]);
   }
 
-  /**
-   * Get tags for multiple books in one query (N+1 fix)
-   * @param bookIds Array of book IDs
-   * @returns Promise with Map<bookId, Tag[]>
-   */
   async getBooksTagsBatch(bookIds: number[]): Promise<Map<number, Tag[]>> {
     if (bookIds.length === 0) {
       return new Map();
@@ -167,12 +109,6 @@ export class TagRepository extends BaseRepository<Tag> {
     return tagMap;
   }
 
-  /**
-   * Add a tag to a book
-   * @param bookId Book ID
-   * @param tagId Tag ID
-   * @returns Promise<void>
-   */
   async addBookTag(bookId: number, tagId: number): Promise<void> {
     await this.db.run('INSERT OR IGNORE INTO book_tags (book_id, tag_id) VALUES (?, ?)', [
       bookId,
@@ -180,48 +116,24 @@ export class TagRepository extends BaseRepository<Tag> {
     ]);
   }
 
-  /**
-   * Add multiple tags to a book (batch operation)
-   * @param bookId Book ID
-   * @param tagIds Array of tag IDs
-   * @returns Promise<void>
-   */
   async addBookTags(bookId: number, tagIds: number[]): Promise<void> {
     if (tagIds.length === 0) return;
 
-    // ✅ Batch INSERT для всіх тегів за один запит
     const placeholders = tagIds.map(() => '(?, ?)').join(', ');
-    const values = tagIds.flatMap(tagId => [bookId, tagId]);
+    const values = tagIds.flatMap((tagId) => [bookId, tagId]);
 
     const query = `INSERT OR IGNORE INTO book_tags (book_id, tag_id) VALUES ${placeholders}`;
     await this.db.run(query, values);
   }
 
-  /**
-   * Remove a tag from a book
-   * @param bookId Book ID
-   * @param tagId Tag ID
-   * @returns Promise<void>
-   */
   async removeBookTag(bookId: number, tagId: number): Promise<void> {
     await this.db.run('DELETE FROM book_tags WHERE book_id = ? AND tag_id = ?', [bookId, tagId]);
   }
 
-  /**
-   * Remove all tags from a book
-   * @param bookId Book ID
-   * @returns Promise<void>
-   */
   async clearBookTags(bookId: number): Promise<void> {
     await this.db.run('DELETE FROM book_tags WHERE book_id = ?', [bookId]);
   }
 
-  /**
-   * Search books by tag name
-   * @param tagName Tag name (supports partial matching)
-   * @param limit Maximum number of results
-   * @returns Promise with books matching the tag
-   */
   async searchBooksByTag(tagName: string, limit: number = 10): Promise<Array<any>> {
     if (!tagName || tagName.trim().length < 2) {
       return [];
@@ -240,11 +152,6 @@ export class TagRepository extends BaseRepository<Tag> {
     return this.db.all(query, [`%${sanitizedTag}%`, limit]);
   }
 
-  /**
-   * Get popular tags with book count
-   * @param limit Maximum number of results
-   * @returns Promise with tags and their usage count
-   */
   async getPopularTags(limit: number = 10): Promise<Array<Tag & { count: number }>> {
     const query = `
       SELECT t.*, COUNT(bt.book_id) as count FROM tags t
@@ -256,11 +163,6 @@ export class TagRepository extends BaseRepository<Tag> {
     return this.db.all(query, [limit]);
   }
 
-  /**
-   * Get tag usage statistics
-   * @param tagId Tag ID
-   * @returns Promise with tag usage stats
-   */
   async getTagStats(tagId: number): Promise<{
     tagId: number;
     bookCount: number;
@@ -278,12 +180,6 @@ export class TagRepository extends BaseRepository<Tag> {
     };
   }
 
-  /**
-   * Check if a book has a specific tag
-   * @param bookId Book ID
-   * @param tagId Tag ID
-   * @returns Promise with boolean
-   */
   async hasBookTag(bookId: number, tagId: number): Promise<boolean> {
     const results = await this.db.all<{ count: number }>(
       'SELECT COUNT(*) as count FROM book_tags WHERE book_id = ? AND tag_id = ?',
@@ -292,10 +188,6 @@ export class TagRepository extends BaseRepository<Tag> {
     return (results[0]?.count || 0) > 0;
   }
 
-  /**
-   * Get unused tags (with no books)
-   * @returns Promise with Tag array
-   */
   async getUnusedTags(): Promise<Tag[]> {
     const query = `
       SELECT t.* FROM tags t
@@ -306,12 +198,6 @@ export class TagRepository extends BaseRepository<Tag> {
     return this.query(query);
   }
 
-  /**
-   * Get all books with a specific tag
-   * @param tagId Tag ID
-   * @param limit Maximum number of results
-   * @returns Promise with books
-   */
   async getBooksByTag(tagId: number, limit: number = 20): Promise<Array<any>> {
     const query = `
       SELECT DISTINCT b.* FROM books b
@@ -323,12 +209,6 @@ export class TagRepository extends BaseRepository<Tag> {
     return this.db.all(query, [tagId, limit]);
   }
 
-  /**
-   * Merge two tags (combine all books from sourceTag to targetTag)
-   * @param sourceTagId Tag ID to merge from
-   * @param targetTagId Tag ID to merge to
-   * @returns Promise<void>
-   */
   async mergeTags(sourceTagId: number, targetTagId: number): Promise<void> {
     await this.db.run(
       `INSERT OR IGNORE INTO book_tags (book_id, tag_id)
@@ -336,24 +216,13 @@ export class TagRepository extends BaseRepository<Tag> {
       [targetTagId, sourceTagId]
     );
 
-    // Delete the source tag
     await this.deleteTag(sourceTagId);
   }
 
-  /**
-   * Get tag count
-   * @returns Promise with total tag count
-   */
   async getTagCount(): Promise<number> {
     return this.count();
   }
 
-  /**
-   * Create tag if not exists
-   * ВАЖЛИВО: теги повинні бути однослівними (максимум 2 слова без пробілів)
-   * @param name Tag name
-   * @returns Promise with tag ID
-   */
   async getOrCreateTag(name: string): Promise<number> {
     const { normalizeTag } = await import('../utils/tagValidator');
     const normalized = normalizeTag(name);
@@ -365,9 +234,6 @@ export class TagRepository extends BaseRepository<Tag> {
     return this.createTag(normalized);
   }
 
-  /**
-   * Aliases for compatibility with services
-   */
   async findByBookId(bookId: number): Promise<Tag[]> {
     return this.getBookTags(bookId);
   }

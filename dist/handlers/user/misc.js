@@ -6,7 +6,7 @@ const logger_1 = require("../../utils/logger");
 const constants_1 = require("../../constants");
 const promoCodeFunctions_1 = require("../../database/promoCodeFunctions");
 function registerMiscHandlers(bot) {
-    bot.hears('🎁 Отримати промокод', async (ctx) => {
+    bot.hears(constants_1.BUTTONS.PROMO, async (ctx) => {
         try {
             const userId = ctx.from?.id;
             if (!userId) {
@@ -75,7 +75,7 @@ function registerMiscHandlers(bot) {
                     'На жаль, зараз немає доступних промокодів. Спробуйте пізніше або зверніться до адміністратора.', {
                     parse_mode: 'HTML',
                     reply_markup: telegraf_1.Markup.inlineKeyboard([
-                        [telegraf_1.Markup.button.callback("📞 Зворотній зв'язок", 'feedback')],
+                        [telegraf_1.Markup.button.callback(constants_1.BUTTONS.FEEDBACK, 'feedback')],
                         [telegraf_1.Markup.button.callback('🏠 На головну', 'home')],
                     ]).reply_markup,
                 });
@@ -92,7 +92,7 @@ function registerMiscHandlers(bot) {
                 '3️⃣ Введіть промокод у розділі підписки\n' +
                 '4️⃣ Насолоджуйтесь 75 000+ книгами! 📚\n\n' +
                 '━━━━━━━━━━━━━━━━━━━\n\n' +
-                '⚠️ <b>Пам\'ятайте:</b>\n' +
+                "⚠️ <b>Пам'ятайте:</b>\n" +
                 '• Промокод діє для ОДНОЇ реєстрації\n' +
                 '• Якщо НЕ використали - поверніть його!\n' +
                 '• Інші зможуть ним скористатися\n\n' +
@@ -140,7 +140,7 @@ function registerMiscHandlers(bot) {
                     'Неможливо знайти ваш промокод. Зверніться до адміністратора.', {
                     parse_mode: 'HTML',
                     reply_markup: telegraf_1.Markup.inlineKeyboard([
-                        [telegraf_1.Markup.button.callback("📞 Зворотній зв'язок", 'feedback')],
+                        [telegraf_1.Markup.button.callback(constants_1.BUTTONS.FEEDBACK, 'feedback')],
                         [telegraf_1.Markup.button.callback('🏠 На головну', 'home')],
                     ]).reply_markup,
                 });
@@ -152,7 +152,7 @@ function registerMiscHandlers(bot) {
                 'Якщо ви повернете промокод:\n' +
                 '✅ Він стане доступним для інших користувачів\n' +
                 '✅ Ви зможете отримати новий промокод пізніше\n' +
-                '❌ Цей промокод більше не буде прив\'язаний до вас\n\n' +
+                "❌ Цей промокод більше не буде прив'язаний до вас\n\n" +
                 '💡 Поверніть промокод тільки якщо ви НЕ зареєструвалися на Yakaboo!', {
                 parse_mode: 'HTML',
                 reply_markup: telegraf_1.Markup.inlineKeyboard([
@@ -182,7 +182,7 @@ function registerMiscHandlers(bot) {
                     'Не вдалося повернути промокод. Спробуйте пізніше або зверніться до адміністратора.', {
                     parse_mode: 'HTML',
                     reply_markup: telegraf_1.Markup.inlineKeyboard([
-                        [telegraf_1.Markup.button.callback("📞 Зворотній зв'язок", 'feedback')],
+                        [telegraf_1.Markup.button.callback(constants_1.BUTTONS.FEEDBACK, 'feedback')],
                         [telegraf_1.Markup.button.callback('🏠 На головну', 'home')],
                     ]).reply_markup,
                 });
@@ -364,7 +364,7 @@ function registerMiscHandlers(bot) {
                 '🎁 Промокод': 'confirm_get_promocode',
                 '⚙️ Налаштування': 'settings_scene',
                 '❓ Допомога': 'help',
-                '💬 Зворотній зв\'язок': 'feedback',
+                [constants_1.BUTTONS.FEEDBACK]: 'feedback',
             };
             const action = menuMap[buttonName];
             if (!action) {
@@ -379,16 +379,19 @@ function registerMiscHandlers(bot) {
                 await ctx.scene.enter('CATALOG_SCENE');
             }
             else if (action === 'top_books') {
-                await ctx.reply('🏆 <b>ТОП КНИГИ</b>\n\n' +
-                    'Завантаження топ книг за рейтингом...', { parse_mode: 'HTML' });
+                await ctx.reply('🏆 <b>ТОП КНИГИ</b>\n\n' + 'Завантаження топ книг за рейтингом...', {
+                    parse_mode: 'HTML',
+                });
             }
             else if (action === 'new_books') {
-                await ctx.reply('🆕 <b>НОВИНКИ</b>\n\n' +
-                    'Завантаження нових книг...', { parse_mode: 'HTML' });
+                await ctx.reply('🆕 <b>НОВИНКИ</b>\n\n' + 'Завантаження нових книг...', {
+                    parse_mode: 'HTML',
+                });
             }
             else if (action === 'saved_books') {
-                await ctx.reply('❤️ <b>МОЇ УЛЮБЛЕНІ</b>\n\n' +
-                    'Завантаження ваших улюблених книг...', { parse_mode: 'HTML' });
+                await ctx.reply('❤️ <b>МОЇ УЛЮБЛЕНІ</b>\n\n' + 'Завантаження ваших улюблених книг...', {
+                    parse_mode: 'HTML',
+                });
             }
             else if (action === 'settings_scene') {
                 await ctx.scene.enter('SETTINGS_SCENE');

@@ -12,7 +12,6 @@ interface OnboardingState {
 
 const onboardingScene = new Scenes.BaseScene<BotContext>('ONBOARDING_SCENE');
 
-// Крок 1: Привітання
 onboardingScene.enter(async (ctx: BotContext) => {
   const userName = ctx.from?.first_name || 'Друже';
 
@@ -34,7 +33,6 @@ onboardingScene.enter(async (ctx: BotContext) => {
   );
 });
 
-// Початок онбордингу
 onboardingScene.action('onboarding_start', async (ctx: BotContext) => {
   await ctx.answerCbQuery('⚔️ Готуєш арсенал...');
 
@@ -59,19 +57,16 @@ onboardingScene.action('onboarding_start', async (ctx: BotContext) => {
   );
 });
 
-// Вибір жанрів
 onboardingScene.action('onboarding_genres', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
 
   const state = ctx.scene.state as OnboardingState;
   state.selectedGenres = [];
 
-  // ✅ ВИПРАВЛЕНО #27: кешування жанрів
   const { cache, CACHE_KEYS, CACHE_TTL } = await import('../utils/cache');
   const genres = await cache.getOrSet(CACHE_KEYS.GENRES, getGenres, CACHE_TTL.LONG);
 
   if (genres.length === 0) {
-    // Якщо жанрів немає, пропускаємо цей крок
     await ctx.reply(
       '✅ *Все готово!*\n\n' +
         'Тепер ти можеш користуватися всіма функціями бота.\n\n' +
@@ -86,7 +81,6 @@ onboardingScene.action('onboarding_genres', async (ctx: BotContext) => {
     return;
   }
 
-  // Створюємо кнопки з жанрами (по 2 в рядок)
   const genreButtons = [];
   for (let i = 0; i < genres.length; i += 2) {
     const row = [Markup.button.callback(genres[i], `onboarding_genre_${genres[i]}`)];
@@ -113,7 +107,6 @@ onboardingScene.action('onboarding_genres', async (ctx: BotContext) => {
   );
 });
 
-// Вибір конкретного жанру
 onboardingScene.action(/onboarding_genre_(.+)/, async (ctx: BotContext) => {
   const state = ctx.scene.state as OnboardingState;
   const genre = ctx.match[1];
@@ -122,14 +115,11 @@ onboardingScene.action(/onboarding_genre_(.+)/, async (ctx: BotContext) => {
     state.selectedGenres = [];
   }
 
-  // Перевіряємо чи жанр вже вибраний
   const index = state.selectedGenres.indexOf(genre);
   if (index > -1) {
-    // Видаляємо жанр
     state.selectedGenres.splice(index, 1);
     await ctx.answerCbQuery(`❌ ${genre} видалено`);
   } else {
-    // Додаємо жанр
     if (state.selectedGenres.length >= 5) {
       await ctx.answerCbQuery('⚠️ Максимум 5 жанрів');
       return;
@@ -138,8 +128,6 @@ onboardingScene.action(/onboarding_genre_(.+)/, async (ctx: BotContext) => {
     await ctx.answerCbQuery(`✅ ${genre} додано`);
   }
 
-  // Оновлюємо повідомлення
-  // ✅ ВИПРАВЛЕНО #27: кешування жанрів
   const { cache, CACHE_KEYS, CACHE_TTL } = await import('../utils/cache');
   const genres = await cache.getOrSet(CACHE_KEYS.GENRES, getGenres, CACHE_TTL.LONG);
   const genreButtons = [];
@@ -176,7 +164,7 @@ onboardingScene.action(/onboarding_genre_(.+)/, async (ctx: BotContext) => {
         reply_markup: Markup.inlineKeyboard(genreButtons).reply_markup,
       }
     )
-    // ✅ ВИПРАВЛЕНО #11: Додано тип для error параметра
+
     .catch((error: unknown) => {
       logger.debug('Failed to edit message', {
         error: error instanceof Error ? error.message : String(error),
@@ -184,14 +172,12 @@ onboardingScene.action(/onboarding_genre_(.+)/, async (ctx: BotContext) => {
     });
 });
 
-// Завершення вибору жанрів
 onboardingScene.action('onboarding_genres_done', async (ctx: BotContext) => {
   const state = ctx.scene.state as OnboardingState;
   const userId = ctx.from?.id;
 
   await ctx.answerCbQuery('✅ Жанри збережено!');
 
-  // Зберігаємо улюблені жанри в БД та профіль
   if (userId) {
     await markOnboardingComplete(userId, state.selectedGenres || [])
       .then(() => {
@@ -207,7 +193,6 @@ onboardingScene.action('onboarding_genres_done', async (ctx: BotContext) => {
         );
       });
 
-    // Додатково оновлюємо улюблені жанри в профілі
     if (state.selectedGenres && state.selectedGenres.length > 0) {
       const { updateUserFavoriteGenres } = await import('../database/userFunctions');
       await updateUserFavoriteGenres(userId, state.selectedGenres).catch((error) => {
@@ -239,13 +224,11 @@ onboardingScene.action('onboarding_genres_done', async (ctx: BotContext) => {
   });
 });
 
-// Пропуск або завершення
 onboardingScene.action(['onboarding_skip', 'onboarding_finish'], async (ctx: BotContext) => {
   const userId = ctx.from?.id;
 
   await ctx.answerCbQuery("👋 Вітаємо в Warrior's Library!");
 
-  // Позначаємо онбординг як завершений навіть якщо пропустили
   if (userId) {
     await markOnboardingComplete(userId)
       .then(() => {

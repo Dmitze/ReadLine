@@ -6,4 +6,6 @@ export { saveBook, unsaveBook, isBookSaved, getSavedBooks, getSavedBooksCount } 
 export { addAdmin, isAdmin, getAllAdmins, getAdminStats, getExtendedAdminStats, removeAdmin, } from './admins';
 export { addFeedbackMessage, getPendingFeedbackMessages, getAllFeedbackMessages, updateFeedbackStatus, addAdminReply, deleteFeedback, } from './feedback';
 export { getBookDetailedStats } from './stats';
+export { addPodcast, getAllPodcasts, getPodcastById, updatePodcast, getPodcastReviews, deletePodcast, } from './podcasts';
+export type { Podcast, PodcastReview, PodcastListen } from './podcasts';
 //# sourceMappingURL=index.d.ts.map

@@ -1,10 +1,3 @@
-/**
- * Top and New Books Handlers
- * REFACTOR-009: Split userHandlers.ts
- *
- * Обработчики для топ книг и новинок
- */
-
 import { Telegraf } from 'telegraf';
 import { BotContext } from '../../types/telegraf';
 import { logger } from '../../utils/logger';
@@ -13,11 +6,7 @@ import { cache, CACHE_KEYS, CACHE_TTL } from '../../utils/cache';
 import { getTopBooks, getNewestBooks } from '../../database/models';
 import { displayTopBooks, displayNewBooks } from '../../utils/bookDisplay';
 
-/**
- * Register top and new books handlers
- */
 export function registerTopAndNewHandlers(bot: Telegraf<BotContext>): void {
-  // Топ книги
   bot.hears(['🏆 Топ книги', BUTTONS.TOP_BOOKS], async (ctx) => {
     try {
       const topBooks = await cache.getOrSet(
@@ -34,7 +23,6 @@ export function registerTopAndNewHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Новинки
   bot.hears(BUTTONS.NEW_BOOKS, async (ctx) => {
     try {
       const newBooks = await getNewestBooks(5);

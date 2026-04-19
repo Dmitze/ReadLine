@@ -43,7 +43,7 @@ createBookRequestScene.on('text', async (ctx) => {
     }
     if (state.step === 'author') {
         if (text.length < 2) {
-            await ctx.reply('❌ Ім\'я автора занадто коротке. Мінімум 2 символи. Спробуйте ще раз:');
+            await ctx.reply("❌ Ім'я автора занадто коротке. Мінімум 2 символи. Спробуйте ще раз:");
             return;
         }
         state.book_author = text;
@@ -54,9 +54,7 @@ createBookRequestScene.on('text', async (ctx) => {
             'Введіть жанр книги або натисніть "Пропустити":\n\n' +
             '💡 <i>Приклад: "Поезія", "Роман", "Фантастика"</i>', {
             parse_mode: 'HTML',
-            reply_markup: telegraf_1.Markup.keyboard([['⏭️ Пропустити'], ['❌ Скасувати']])
-                .resize()
-                .reply_markup,
+            reply_markup: telegraf_1.Markup.keyboard([['⏭️ Пропустити'], ['❌ Скасувати']]).resize().reply_markup,
         });
         return;
     }
@@ -74,9 +72,7 @@ createBookRequestScene.on('text', async (ctx) => {
             'Додайте коментар до заявки або натисніть "Пропустити":\n\n' +
             '💡 <i>Наприклад, вкажіть видання, рік випуску, чи інші деталі</i>', {
             parse_mode: 'HTML',
-            reply_markup: telegraf_1.Markup.keyboard([['⏭️ Пропустити'], ['❌ Скасувати']])
-                .resize()
-                .reply_markup,
+            reply_markup: telegraf_1.Markup.keyboard([['⏭️ Пропустити'], ['❌ Скасувати']]).resize().reply_markup,
         });
         return;
     }

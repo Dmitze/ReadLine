@@ -1,7 +1,3 @@
-/**
- * Скрипт для отримання User ID адміністратора
- */
-
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 

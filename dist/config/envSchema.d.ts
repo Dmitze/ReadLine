@@ -5,7 +5,9 @@ export declare const envSchema: z.ZodObject<{
     DB_PATH: z.ZodDefault<z.ZodString>;
     GEMINI_API_KEY: z.ZodOptional<z.ZodString>;
     GEMINI_MODEL: z.ZodDefault<z.ZodString>;
-    AI_PROVIDER: z.ZodDefault<z.ZodEnum<["gemini", "openai"]>>;
+    GROQ_API_KEY: z.ZodOptional<z.ZodString>;
+    GROQ_MODEL: z.ZodDefault<z.ZodString>;
+    AI_PROVIDER: z.ZodDefault<z.ZodEnum<["gemini", "openai", "groq"]>>;
     REDIS_HOST: z.ZodDefault<z.ZodString>;
     REDIS_PORT: z.ZodEffects<z.ZodDefault<z.ZodString>, number, string>;
     LOG_LEVEL: z.ZodDefault<z.ZodEnum<["debug", "info", "warn", "error"]>>;
@@ -18,7 +20,9 @@ export declare const envSchema: z.ZodObject<{
     DB_PATH?: string;
     GEMINI_API_KEY?: string;
     GEMINI_MODEL?: string;
-    AI_PROVIDER?: "gemini" | "openai";
+    GROQ_API_KEY?: string;
+    GROQ_MODEL?: string;
+    AI_PROVIDER?: "gemini" | "openai" | "groq";
     REDIS_HOST?: string;
     REDIS_PORT?: number;
     LOG_LEVEL?: "error" | "debug" | "info" | "warn";
@@ -30,7 +34,9 @@ export declare const envSchema: z.ZodObject<{
     DB_PATH?: string;
     GEMINI_API_KEY?: string;
     GEMINI_MODEL?: string;
-    AI_PROVIDER?: "gemini" | "openai";
+    GROQ_API_KEY?: string;
+    GROQ_MODEL?: string;
+    AI_PROVIDER?: "gemini" | "openai" | "groq";
     REDIS_HOST?: string;
     REDIS_PORT?: string;
     LOG_LEVEL?: "error" | "debug" | "info" | "warn";

@@ -238,8 +238,7 @@ const migration009_AddFTS5Search = {
         try {
             await db.run('DROP TABLE IF EXISTS books_fts');
         }
-        catch {
-        }
+        catch { }
     },
 };
 const migration010_20251119_seed_demo_books = {
@@ -266,8 +265,7 @@ const migration010_20251119_seed_demo_books = {
             console.warn('Demo seed failed:', error?.message);
         }
     },
-    down: async (_db) => {
-    },
+    down: async (_db) => { },
 };
 const migration002_AddActivityTracking = {
     version: '002_20251114_add_activity_tracking',
@@ -529,7 +527,7 @@ const migration012_AddUserColumns = {
     up: async (db) => {
         const wrapper = db instanceof dbWrapper_1.DatabaseWrapper ? db : new dbWrapper_1.DatabaseWrapper(db);
         const tableInfo = await wrapper.all('PRAGMA table_info(users)');
-        const columnNames = tableInfo.map(col => col.name.toLowerCase());
+        const columnNames = tableInfo.map((col) => col.name.toLowerCase());
         const runSQL = async (sql) => {
             if (db instanceof dbWrapper_1.DatabaseWrapper) {
                 await db.run(sql);

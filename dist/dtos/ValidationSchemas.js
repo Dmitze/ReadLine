@@ -230,9 +230,7 @@ function validatePaginationParams(limit, offset) {
 function validateSortParams(sortBy, order, allowedFields) {
     const defaultSort = allowedFields?.[0] || 'id';
     const candidate = sortBy ?? '';
-    const validSort = allowedFields && allowedFields.includes(candidate)
-        ? candidate
-        : defaultSort;
+    const validSort = allowedFields && allowedFields.includes(candidate) ? candidate : defaultSort;
     const validOrder = (order?.toLowerCase() === 'desc' ? 'desc' : 'asc');
     return { sortBy: validSort, order: validOrder };
 }

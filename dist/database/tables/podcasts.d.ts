@@ -42,4 +42,5 @@ export declare const incrementPodcastListens: (podcastId: number, userId: number
 export declare const addPodcastReview: (review: PodcastReview) => Promise<number>;
 export declare const getPodcastReviews: (podcastId: number) => Promise<PodcastReview[]>;
 export declare const deletePodcast: (podcastId: number) => Promise<void>;
+export declare const updatePodcast: (podcastId: number, updates: Partial<Podcast>) => Promise<void>;
 //# sourceMappingURL=podcasts.d.ts.map

@@ -1,22 +1,10 @@
-/**
- * Physical Books Request System - v2.0
- * Повна система заявок на фізичні книги
- */
-
 import { db } from './db';
 import { logger } from '../../utils/logger';
-
-// ==========================================
-// TYPES & INTERFACES
-// ==========================================
 
 export type RequestStatus = 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
 export type BookCondition = 'new' | 'like_new' | 'good' | 'acceptable' | 'poor';
 export type LoanStatus = 'active' | 'returned' | 'overdue' | 'lost';
 
-/**
- * Заявка на отримання фізичної книги
- */
 export interface PhysicalBookRequest {
   id?: number;
   user_id: number;
@@ -36,9 +24,6 @@ export interface PhysicalBookRequest {
   completed_at?: string;
 }
 
-/**
- * Фізична книга в бібліотеці
- */
 export interface PhysicalBook {
   id?: number;
   book_id?: number;
@@ -54,9 +39,6 @@ export interface PhysicalBook {
   added_by?: number;
 }
 
-/**
- * Видача книги користувачу
- */
 export interface BookLoan {
   id?: number;
   physical_book_id: number;
@@ -70,9 +52,6 @@ export interface BookLoan {
   notes?: string;
 }
 
-/**
- * Історія змін статусу заявки
- */
 export interface RequestHistory {
   id?: number;
   request_id: number;
@@ -83,13 +62,6 @@ export interface RequestHistory {
   changed_at?: string;
 }
 
-// ==========================================
-// DATABASE INITIALIZATION
-// ==========================================
-
-/**
- * Ініціалізація всіх таблиць для системи фізичних книг
- */
 export const initPhysicalBooksSystem = async (): Promise<void> => {
   return new Promise((resolve, reject) => {
     const sql = `
@@ -178,13 +150,6 @@ export const initPhysicalBooksSystem = async (): Promise<void> => {
   });
 };
 
-// ==========================================
-// REQUEST FUNCTIONS
-// ==========================================
-
-/**
- * Створити нову заявку
- */
 export const createRequest = async (request: PhysicalBookRequest): Promise<number> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -219,9 +184,6 @@ export const createRequest = async (request: PhysicalBookRequest): Promise<numbe
   });
 };
 
-/**
- * Отримати заявку за ID
- */
 export const getRequestById = async (id: number): Promise<PhysicalBookRequest | undefined> => {
   return new Promise((resolve, reject) => {
     db.get(
@@ -235,9 +197,6 @@ export const getRequestById = async (id: number): Promise<PhysicalBookRequest | 
   });
 };
 
-/**
- * Отримати всі заявки користувача
- */
 export const getUserRequests = async (userId: number): Promise<PhysicalBookRequest[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -251,9 +210,6 @@ export const getUserRequests = async (userId: number): Promise<PhysicalBookReque
   });
 };
 
-/**
- * Отримати заявки за статусом
- */
 export const getRequestsByStatus = async (
   status: RequestStatus
 ): Promise<PhysicalBookRequest[]> => {
@@ -269,9 +225,6 @@ export const getRequestsByStatus = async (
   });
 };
 
-/**
- * Оновити статус заявки з історією
- */
 export const updateRequestStatus = async (
   requestId: number,
   newStatus: RequestStatus,
@@ -279,7 +232,6 @@ export const updateRequestStatus = async (
   reason?: string
 ): Promise<void> => {
   return new Promise((resolve, reject) => {
-    // Отримуємо поточний статус
     db.get(
       'SELECT status FROM physical_book_requests WHERE id = ?',
       [requestId],
@@ -291,7 +243,6 @@ export const updateRequestStatus = async (
 
         const oldStatus = row?.status;
 
-        // Оновлюємо статус
         const updateQuery = `
         UPDATE physical_book_requests 
         SET status = ?, reviewed_at = CURRENT_TIMESTAMP, reviewed_by = ?, 
@@ -310,7 +261,6 @@ export const updateRequestStatus = async (
               return;
             }
 
-            // Додаємо в історію
             addHistory(requestId, oldStatus, newStatus, adminId, reason)
               .then(() => {
                 logger.info('Request status updated', { requestId, oldStatus, newStatus });
@@ -318,7 +268,7 @@ export const updateRequestStatus = async (
               })
               .catch((historyErr) => {
                 logger.error('Error adding history', historyErr);
-                resolve(); // Все одно успіх
+                resolve();
               });
           }
         );
@@ -327,9 +277,6 @@ export const updateRequestStatus = async (
   });
 };
 
-/**
- * Скасувати заявку
- */
 export const cancelRequest = async (requestId: number, userId: number): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     db.run(
@@ -343,9 +290,6 @@ export const cancelRequest = async (requestId: number, userId: number): Promise<
   });
 };
 
-/**
- * Підрахувати заявки за статусом
- */
 export const countRequests = async (status: RequestStatus): Promise<number> => {
   return new Promise((resolve, reject) => {
     db.get(
@@ -359,13 +303,6 @@ export const countRequests = async (status: RequestStatus): Promise<number> => {
   });
 };
 
-// ==========================================
-// PHYSICAL BOOKS FUNCTIONS
-// ==========================================
-
-/**
- * Додати фізичну книгу
- */
 export const addPhysicalBook = async (book: PhysicalBook): Promise<number> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -402,9 +339,6 @@ export const addPhysicalBook = async (book: PhysicalBook): Promise<number> => {
   });
 };
 
-/**
- * Отримати доступні фізичні книги
- */
 export const getAvailableBooks = async (): Promise<PhysicalBook[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -418,9 +352,6 @@ export const getAvailableBooks = async (): Promise<PhysicalBook[]> => {
   });
 };
 
-/**
- * Перевірити доступність книги
- */
 export const isBookAvailable = async (bookId: number): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     db.get(
@@ -434,13 +365,6 @@ export const isBookAvailable = async (bookId: number): Promise<boolean> => {
   });
 };
 
-// ==========================================
-// LOAN FUNCTIONS
-// ==========================================
-
-/**
- * Створити видачу книги
- */
 export const createLoan = async (loan: BookLoan): Promise<number> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -464,7 +388,6 @@ export const createLoan = async (loan: BookLoan): Promise<number> => {
           logger.error('Error creating loan', err);
           reject(err);
         } else {
-          // Зменшуємо доступність
           db.run(
             'UPDATE physical_books SET quantity_available = quantity_available - 1 WHERE id = ?',
             [loan.physical_book_id],
@@ -482,12 +405,8 @@ export const createLoan = async (loan: BookLoan): Promise<number> => {
   });
 };
 
-/**
- * Повернути книгу
- */
 export const returnBook = async (loanId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
-    // Отримуємо інформацію про видачу
     db.get(
       'SELECT physical_book_id FROM book_loans WHERE id = ?',
       [loanId],
@@ -497,7 +416,6 @@ export const returnBook = async (loanId: number): Promise<void> => {
           return;
         }
 
-        // Оновлюємо статус
         db.run(
           'UPDATE book_loans SET status = ?, returned_at = CURRENT_TIMESTAMP WHERE id = ?',
           ['returned', loanId],
@@ -507,7 +425,6 @@ export const returnBook = async (loanId: number): Promise<void> => {
               return;
             }
 
-            // Збільшуємо доступність
             db.run(
               'UPDATE physical_books SET quantity_available = quantity_available + 1 WHERE id = ?',
               [row.physical_book_id],
@@ -526,9 +443,6 @@ export const returnBook = async (loanId: number): Promise<void> => {
   });
 };
 
-/**
- * Отримати активні видачі користувача
- */
 export const getUserLoans = async (userId: number): Promise<BookLoan[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -542,9 +456,6 @@ export const getUserLoans = async (userId: number): Promise<BookLoan[]> => {
   });
 };
 
-/**
- * Отримати прострочені видачі
- */
 export const getOverdueLoans = async (): Promise<BookLoan[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -558,13 +469,6 @@ export const getOverdueLoans = async (): Promise<BookLoan[]> => {
   });
 };
 
-// ==========================================
-// HISTORY FUNCTIONS
-// ==========================================
-
-/**
- * Додати запис в історію
- */
 const addHistory = async (
   requestId: number,
   oldStatus: string | undefined,
@@ -589,9 +493,6 @@ const addHistory = async (
   });
 };
 
-/**
- * Отримати історію змін заявки
- */
 export const getRequestHistory = async (requestId: number): Promise<RequestHistory[]> => {
   return new Promise((resolve, reject) => {
     db.all(

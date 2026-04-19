@@ -8,9 +8,6 @@ import { createBookManagementService } from '../services/BookManagementService';
 import { db } from '../database/models';
 import { getMainMenuKeyboard } from '../keyboards/mainKeyboards';
 
-/**
- * Інтерфейс для стану сцени управління книгами
- */
 interface ManageBooksSceneState {
   selectedBooks: number[];
   selectedTags: number[];
@@ -28,7 +25,6 @@ manageBooksScene.enter(async (ctx: BotContext) => {
     return ctx.scene.leave();
   }
 
-  // Показуємо меню фільтрів
   await ctx.reply(
     '📚 *Управління книгами*\n\n' + `Всього книг: ${books.length}\n\n` + 'Оберіть спосіб пошуку:',
     {
@@ -44,10 +40,9 @@ manageBooksScene.enter(async (ctx: BotContext) => {
   );
 });
 
-// Фільтр за жанром
 manageBooksScene.action('filter_by_genre', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
-  // ✅ ВИПРАВЛЕНО #27: кешування жанрів
+
   const { getGenres } = await import('../database/models');
   const { cache, CACHE_KEYS, CACHE_TTL } = await import('../utils/cache');
   const genres = await cache.getOrSet(CACHE_KEYS.GENRES, getGenres, CACHE_TTL.LONG);
@@ -57,7 +52,6 @@ manageBooksScene.action('filter_by_genre', async (ctx: BotContext) => {
     return;
   }
 
-  // Створюємо кнопки для жанрів (використовуємо індекс замість повної назви)
   const keyboard = genres.map((genre, index) => [
     Markup.button.callback(genre, `genre_filter_${index}`),
   ]);
@@ -69,7 +63,6 @@ manageBooksScene.action('filter_by_genre', async (ctx: BotContext) => {
   });
 });
 
-// Показати книги за жанром
 manageBooksScene.action(/genre_filter_(\d+)/, async (ctx: BotContext) => {
   const match = ctx.match;
   if (!match || !match[1]) {
@@ -79,7 +72,6 @@ manageBooksScene.action(/genre_filter_(\d+)/, async (ctx: BotContext) => {
 
   const genreIndex = parseInt(match[1]);
 
-  // Отримуємо жанр за індексом
   const { getGenres } = await import('../database/models');
   const { cache, CACHE_KEYS, CACHE_TTL } = await import('../utils/cache');
   const genres = await cache.getOrSet(CACHE_KEYS.GENRES, getGenres, CACHE_TTL.LONG);
@@ -102,7 +94,6 @@ manageBooksScene.action(/genre_filter_(\d+)/, async (ctx: BotContext) => {
 
   await ctx.reply(`📚 Знайдено ${books.length} книг в жанрі "${genre}":`);
 
-  // Показуємо перші 10 книг
   const booksToShow = books.slice(0, 10);
 
   for (const book of booksToShow) {
@@ -130,7 +121,6 @@ manageBooksScene.action(/genre_filter_(\d+)/, async (ctx: BotContext) => {
   }
 });
 
-// Пошук за назвою
 manageBooksScene.action('search_by_title', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
   await ctx.editMessageText(
@@ -141,7 +131,6 @@ manageBooksScene.action('search_by_title', async (ctx: BotContext) => {
   );
 });
 
-// Показати всі книги
 manageBooksScene.action('show_all_books', async (ctx: BotContext) => {
   await ctx.answerCbQuery('Завантаження...');
 
@@ -176,13 +165,11 @@ manageBooksScene.action('show_all_books', async (ctx: BotContext) => {
   }
 });
 
-// Назад до меню управління
 manageBooksScene.action('back_to_manage', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
   await ctx.scene.reenter();
 });
 
-// Назад до адмін-панелі
 manageBooksScene.action('back_to_admin', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
   await ctx.scene.leave();
@@ -191,7 +178,6 @@ manageBooksScene.action('back_to_admin', async (ctx: BotContext) => {
   });
 });
 
-// Обробка редагування книги
 manageBooksScene.action(/edit_book_(\d+)/, async (ctx: BotContext) => {
   const match = ctx.match;
   if (!match || !match[1]) {
@@ -202,15 +188,13 @@ manageBooksScene.action(/edit_book_(\d+)/, async (ctx: BotContext) => {
 
   const bookId = parseInt(match[1]);
   logger.info('Edit book action triggered', { bookId, userId: ctx.from?.id });
-  
+
   await ctx.answerCbQuery('Відкриваємо редагування...');
 
-  // Переходимо до сцени редагування
   logger.info('Entering EDIT_BOOK_SCENE', { bookId, userId: ctx.from?.id });
   await ctx.scene.enter('EDIT_BOOK_SCENE', { bookId });
 });
 
-// Обробка видалення книги
 manageBooksScene.action(/delete_book_(\d+)/, async (ctx: BotContext) => {
   const match = ctx.match;
   if (!match || !match[1]) {
@@ -228,7 +212,6 @@ manageBooksScene.action(/delete_book_(\d+)/, async (ctx: BotContext) => {
 
   await ctx.answerCbQuery();
 
-  // Показуємо підтвердження
   await ctx.reply(
     '⚠️ <b>ПІДТВЕРДЖЕННЯ ВИДАЛЕННЯ</b>\n\n' +
       'Ви впевнені, що хочете видалити книгу?\n\n' +
@@ -245,7 +228,6 @@ manageBooksScene.action(/delete_book_(\d+)/, async (ctx: BotContext) => {
   );
 });
 
-// Підтвердження видалення
 manageBooksScene.action(/confirm_delete_(\d+)/, async (ctx: BotContext) => {
   const match = ctx.match;
   if (!match || !match[1]) {
@@ -261,25 +243,24 @@ manageBooksScene.action(/confirm_delete_(\d+)/, async (ctx: BotContext) => {
     return;
   }
 
-  // Видаляємо книгу
   await deleteBook(bookId);
 
   await ctx.answerCbQuery('✅ Книгу видалено');
   await ctx.editMessageText(
-    '✅ <b>Книгу видалено</b>\n\n' + `📖 ${book.title}${getBookIdText(book.id)}\n` + `👤 ${book.author}`,
+    '✅ <b>Книгу видалено</b>\n\n' +
+      `📖 ${book.title}${getBookIdText(book.id)}\n` +
+      `👤 ${book.author}`,
     { parse_mode: 'HTML' }
   );
 
   logger.adminAction(ctx.from!.id, 'delete_book', { bookId, title: book.title });
 });
 
-// Скасування видалення
 manageBooksScene.action('cancel_delete', async (ctx: BotContext) => {
   await ctx.answerCbQuery('Скасовано');
   await ctx.editMessageText('❌ Видалення скасовано');
 });
 
-// Команда для пошуку книги
 manageBooksScene.command('find', async (ctx) => {
   const searchTerm = ctx.message.text.replace('/find', '').trim();
 
@@ -317,7 +298,6 @@ manageBooksScene.command('find', async (ctx) => {
   }
 });
 
-// Масове редагування - показати всі книги з чекбоксами
 manageBooksScene.action('bulk_edit', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
   const books = await getAllBooks();
@@ -327,13 +307,11 @@ manageBooksScene.action('bulk_edit', async (ctx: BotContext) => {
     return;
   }
 
-  // Зберігаємо вибрані книги в state
   const state = ctx.scene.state as ManageBooksSceneState;
   if (!state.selectedBooks) {
     state.selectedBooks = [];
   }
 
-  // Показуємо перші 10 книг з кнопками вибору
   const bookButtons = books
     .slice(0, 10)
     .map((book) => [
@@ -354,7 +332,6 @@ manageBooksScene.action('bulk_edit', async (ctx: BotContext) => {
   );
 });
 
-// Вибір книги для масового редагування
 manageBooksScene.action(/bulk_select_(\d+)/, async (ctx: BotContext) => {
   const bookId = parseInt(ctx.match[1]);
   const state = ctx.scene.state as ManageBooksSceneState;
@@ -363,7 +340,6 @@ manageBooksScene.action(/bulk_select_(\d+)/, async (ctx: BotContext) => {
     state.selectedBooks = [];
   }
 
-  // Перевіряємо чи книга вже вибрана
   const index = state.selectedBooks.indexOf(bookId);
   if (index > -1) {
     state.selectedBooks.splice(index, 1);
@@ -373,7 +349,6 @@ manageBooksScene.action(/bulk_select_(\d+)/, async (ctx: BotContext) => {
     await ctx.answerCbQuery('✅ Книгу додано до вибору');
   }
 
-  // Оновлюємо повідомлення
   const books = await getAllBooks();
   const bookButtons = books.slice(0, 10).map((book) => {
     const isSelected = book.id ? state.selectedBooks.includes(book.id) : false;
@@ -393,7 +368,6 @@ manageBooksScene.action(/bulk_select_(\d+)/, async (ctx: BotContext) => {
   await ctx.editMessageReplyMarkup(Markup.inlineKeyboard(bookButtons).reply_markup);
 });
 
-// Показати дії для масового редагування
 manageBooksScene.action('bulk_edit_actions', async (ctx: BotContext) => {
   const state = ctx.scene.state as ManageBooksSceneState;
 
@@ -421,11 +395,9 @@ manageBooksScene.action('bulk_edit_actions', async (ctx: BotContext) => {
   );
 });
 
-// Зробити книги доступними
 manageBooksScene.action('bulk_make_available', async (ctx: BotContext) => {
   const state = ctx.scene.state as ManageBooksSceneState;
 
-  // ✅ ВИПРАВЛЕНО #7: додано підтвердження перед bulk edit
   await ctx.answerCbQuery();
   await ctx.reply(
     '⚠️ *ПІДТВЕРДЖЕННЯ*\n\n' +
@@ -443,7 +415,6 @@ manageBooksScene.action('bulk_make_available', async (ctx: BotContext) => {
   );
 });
 
-// Підтвердження bulk_make_available
 manageBooksScene.action('confirm_bulk_available', async (ctx: BotContext) => {
   const state = ctx.scene.state as ManageBooksSceneState;
   await ctx.answerCbQuery('⏳ Оновлюю...');
@@ -467,21 +438,17 @@ manageBooksScene.action('confirm_bulk_available', async (ctx: BotContext) => {
       );
     }
   } else {
-    await ctx.editMessageText(
-      '❌ *Помилка при оновленні*\n\n' +
-        result.error.message,
-      { parse_mode: 'Markdown' }
-    );
+    await ctx.editMessageText('❌ *Помилка при оновленні*\n\n' + result.error.message, {
+      parse_mode: 'Markdown',
+    });
   }
 
   state.selectedBooks = [];
 });
 
-// Зробити книги недоступними
 manageBooksScene.action('bulk_make_unavailable', async (ctx: BotContext) => {
   const state = ctx.scene.state as ManageBooksSceneState;
 
-  // ✅ ВИПРАВЛЕНО #7: додано підтвердження
   await ctx.answerCbQuery();
   await ctx.reply(
     '⚠️ *ПІДТВЕРДЖЕННЯ*\n\n' +
@@ -499,7 +466,6 @@ manageBooksScene.action('bulk_make_unavailable', async (ctx: BotContext) => {
   );
 });
 
-// Підтвердження bulk_make_unavailable
 manageBooksScene.action('confirm_bulk_unavailable', async (ctx: BotContext) => {
   const state = ctx.scene.state as ManageBooksSceneState;
   await ctx.answerCbQuery('⏳ Оновлюю...');
@@ -523,17 +489,14 @@ manageBooksScene.action('confirm_bulk_unavailable', async (ctx: BotContext) => {
       );
     }
   } else {
-    await ctx.editMessageText(
-      '❌ *Помилка при оновленні*\n\n' +
-        result.error.message,
-      { parse_mode: 'Markdown' }
-    );
+    await ctx.editMessageText('❌ *Помилка при оновленні*\n\n' + result.error.message, {
+      parse_mode: 'Markdown',
+    });
   }
 
   state.selectedBooks = [];
 });
 
-// Додати теги до кількох книг
 manageBooksScene.action('bulk_add_tags', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
 
@@ -550,7 +513,6 @@ manageBooksScene.action('bulk_add_tags', async (ctx: BotContext) => {
     state.selectedTags = [];
   }
 
-  // Створюємо кнопки з тегами
   const tagButtons = [];
   for (let i = 0; i < allTags.length; i += 2) {
     const row = [Markup.button.callback(allTags[i].name, `bulk_tag_${allTags[i].id}`)];
@@ -575,7 +537,6 @@ manageBooksScene.action('bulk_add_tags', async (ctx: BotContext) => {
   );
 });
 
-// Вибір тегу
 manageBooksScene.action(/bulk_tag_(\d+)/, async (ctx: BotContext) => {
   const tagId = parseInt(ctx.match[1]);
   const state = ctx.scene.state as ManageBooksSceneState;
@@ -593,7 +554,6 @@ manageBooksScene.action(/bulk_tag_(\d+)/, async (ctx: BotContext) => {
     await ctx.answerCbQuery('✅ Тег додано');
   }
 
-  // Оновлюємо кнопки
   const { getAllTags } = await import('../database/tagFunctions');
   const allTags = await getAllTags();
 
@@ -622,7 +582,6 @@ manageBooksScene.action(/bulk_tag_(\d+)/, async (ctx: BotContext) => {
   await ctx.editMessageReplyMarkup(Markup.inlineKeyboard(tagButtons).reply_markup);
 });
 
-// Застосувати теги до книг
 manageBooksScene.action('bulk_apply_tags', async (ctx: BotContext) => {
   const state = ctx.scene.state as ManageBooksSceneState;
 
@@ -658,11 +617,9 @@ manageBooksScene.action('bulk_apply_tags', async (ctx: BotContext) => {
   state.selectedTags = [];
 });
 
-// ✅ ВИПРАВЛЕНО #22: cleanup при виході зі сцени для запобігання memory leak
 manageBooksScene.leave((ctx: BotContext) => {
   const state = ctx.scene.state as ManageBooksSceneState;
 
-  // Очищаємо всі тимчасові дані
   if (state) {
     state.selectedBooks = [];
     state.selectedTags = [];
@@ -673,7 +630,6 @@ manageBooksScene.leave((ctx: BotContext) => {
   logger.debug('Manage books scene cleanup completed', { userId: ctx.from?.id });
 });
 
-// ✅ ВИПРАВЛЕНО #12: Масове видалення книг
 manageBooksScene.action('bulk_delete', async (ctx: BotContext) => {
   const state = ctx.scene.state as ManageBooksSceneState;
 
@@ -684,7 +640,6 @@ manageBooksScene.action('bulk_delete', async (ctx: BotContext) => {
 
   await ctx.answerCbQuery();
 
-  // Отримуємо назви книг для підтвердження
   const bookNames = await Promise.all(
     state.selectedBooks.map(async (id: number) => {
       const book = await getBookById(id);
@@ -715,7 +670,6 @@ manageBooksScene.action('bulk_delete', async (ctx: BotContext) => {
   );
 });
 
-// Підтвердження масового видалення
 manageBooksScene.action('confirm_bulk_delete', async (ctx: BotContext) => {
   const state = ctx.scene.state as ManageBooksSceneState;
 
@@ -739,7 +693,6 @@ manageBooksScene.action('confirm_bulk_delete', async (ctx: BotContext) => {
     failedCount = data.errors.length;
   }
 
-  // Очищаємо вибір
   state.selectedBooks = [];
 
   await ctx.reply(

@@ -1,1 +1,1 @@
-{"version":3,"file":"stats.d.ts","sourceRoot":"","sources":["../../../src/database/tables/stats.ts"],"names":[],"mappings":"AAWA,eAAO,MAAM,oBAAoB,GAAI,QAAQ,MAAM,KAAG,OAAO,CAAC,GAAG,CA0FhE,CAAC"}
+{"version":3,"file":"stats.d.ts","sourceRoot":"","sources":["../../../src/database/tables/stats.ts"],"names":[],"mappings":"AAGA,eAAO,MAAM,oBAAoB,GAAI,QAAQ,MAAM,KAAG,OAAO,CAAC,GAAG,CAsFhE,CAAC"}

@@ -1,8 +1,3 @@
-/**
- * Book Display Utilities - функції для показу книг
- * Усуває дублювання коду в handlers
- */
-
 import { Context } from 'telegraf';
 import { Book } from '../database/models';
 import { formatBookCaption } from './helpers';
@@ -24,9 +19,6 @@ export interface DisplayBooksOptions {
   indexPrefix?: string;
 }
 
-/**
- * Показати список книг користувачу
- */
 export async function displayBookList(
   ctx: Context,
   books: Book[],
@@ -44,7 +36,6 @@ export async function displayBookList(
       await ctx.reply(headerText, { parse_mode: 'HTML' });
     }
 
-    // Показати кожну книгу
     for (const [index, book] of books.entries()) {
       await displaySingleBook(ctx, book, {
         isSaved,
@@ -66,10 +57,6 @@ export async function displayBookList(
   }
 }
 
-/**
- * Показати одну книгу
- * ✅ ОПТИМІЗОВАНО: можна передати теги для batch loading
- */
 export async function displaySingleBook(
   ctx: Context,
   book: Book,
@@ -120,9 +107,6 @@ export async function displaySingleBook(
   }
 }
 
-/**
- * Показати повідомлення коли книг немає
- */
 export async function displayNoBooks(
   ctx: Context,
   message: string = '📭 Книг не знайдено.'
@@ -131,9 +115,6 @@ export async function displayNoBooks(
   logger.debug('Displayed no books message', { message });
 }
 
-/**
- * Показати топ книги компактним списком
- */
 export async function displayTopBooks(
   ctx: Context,
   books: Book[],
@@ -149,9 +130,7 @@ export async function displayTopBooks(
 
   const keyboard = limitedBooks.map((book, index) => [
     Markup.button.callback(
-      truncateInlineLabel(
-        `${index + 1}. ⭐${book.rating?.toFixed(1) ?? '—'} · ${book.title}`
-      ),
+      truncateInlineLabel(`${index + 1}. ⭐${book.rating?.toFixed(1) ?? '—'} · ${book.title}`),
       `view_book_${book.id}`
     ),
   ]);
@@ -168,9 +147,6 @@ export async function displayTopBooks(
   });
 }
 
-/**
- * Показати нові книги компактним списком
- */
 export async function displayNewBooks(
   ctx: Context,
   books: Book[],
@@ -193,8 +169,7 @@ export async function displayNewBooks(
 
   keyboard.push([Markup.button.callback('🏠 На головну', 'home')]);
 
-  const noun =
-    limitedBooks.length === 1 ? 'книга' : limitedBooks.length < 5 ? 'книги' : 'книг';
+  const noun = limitedBooks.length === 1 ? 'книга' : limitedBooks.length < 5 ? 'книги' : 'книг';
   const header =
     `🆕 <b>${UX.newListTitle}</b>\n` +
     `<i>Останні ${limitedBooks.length} ${noun} · ${UX.listOpenCardHint}</i>`;
@@ -205,9 +180,6 @@ export async function displayNewBooks(
   });
 }
 
-/**
- * Показати збережені книги
- */
 export async function displaySavedBooks(ctx: Context, books: Book[]): Promise<void> {
   if (books.length === 0) {
     await ctx.reply(UX.emptyLibraryHtml, { parse_mode: 'HTML' });
@@ -242,9 +214,6 @@ export async function displaySavedBooks(ctx: Context, books: Book[]): Promise<vo
   });
 }
 
-/**
- * Показати результати пошуку
- */
 export async function displaySearchResults(
   ctx: Context,
   books: Book[],

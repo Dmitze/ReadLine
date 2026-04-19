@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getBackKeyboard = exports.getEnhancedBookKeyboard = exports.getAdaptiveBookKeyboard = exports.getGenreKeyboard = exports.getAdaptiveGenreKeyboard = exports.getMainMenuKeyboard = exports.getAdaptiveMainMenuKeyboard = exports.getKeyboardConfig = exports.detectDeviceType = void 0;
 const telegraf_1 = require("telegraf");
+const constants_1 = require("../constants");
 const detectDeviceType = (ctx) => {
     const botCtx = ctx;
     const savedDeviceType = botCtx?.session?.deviceType || botCtx?.state?.deviceType;
@@ -48,18 +49,18 @@ const getAdaptiveMainMenuKeyboard = (_ctx, _withQuickActions = true) => {
     const deviceType = (0, exports.detectDeviceType)(_ctx);
     const config = (0, exports.getKeyboardConfig)(deviceType);
     const allButtons = [
-        '📖 Каталог',
-        '🔍 Пошук',
-        '🏆 Топ книги',
-        '🆕 Новинки',
-        '💾 Моя бібліотека',
-        '👤 Профіль',
-        '🤖 AI Помічник',
-        '🎁 Отримати промокод',
-        '⚙️ Налаштування',
-        'ℹ️ Допомога',
-        "📞 Зворотній зв'язок",
-        '🌐 Yakaboo',
+        constants_1.BUTTONS.CATALOG,
+        constants_1.BUTTONS.SEARCH,
+        constants_1.BUTTONS.TOP_BOOKS,
+        constants_1.BUTTONS.NEW_BOOKS,
+        constants_1.BUTTONS.MY_LIBRARY,
+        constants_1.BUTTONS.PROFILE,
+        constants_1.BUTTONS.AI_ASSISTANT,
+        constants_1.BUTTONS.PROMO,
+        constants_1.BUTTONS.SETTINGS,
+        constants_1.BUTTONS.HELP,
+        constants_1.BUTTONS.FEEDBACK,
+        constants_1.BUTTONS.YAKABOO,
     ];
     const buttons = [];
     for (let i = 0; i < allButtons.length; i += config.buttonsPerRow) {
@@ -74,12 +75,12 @@ const getAdaptiveMainMenuKeyboard = (_ctx, _withQuickActions = true) => {
 exports.getAdaptiveMainMenuKeyboard = getAdaptiveMainMenuKeyboard;
 const getMainMenuKeyboard = () => {
     const buttons = [
-        ['📖 Каталог', '🔍 Пошук'],
-        ['🏆 Топ книги', '🆕 Новинки'],
-        ['💾 Моя бібліотека', '🤖 AI Помічник'],
-        ['👤 Профіль', '⚙️ Налаштування'],
-        ['🎁 Отримати промокод', "📞 Зворотній зв'язок"],
-        ['ℹ️ Допомога', '🌐 Yakaboo'],
+        [constants_1.BUTTONS.CATALOG, constants_1.BUTTONS.SEARCH],
+        [constants_1.BUTTONS.TOP_BOOKS, constants_1.BUTTONS.NEW_BOOKS],
+        [constants_1.BUTTONS.MY_LIBRARY, constants_1.BUTTONS.AI_ASSISTANT],
+        [constants_1.BUTTONS.PROFILE, constants_1.BUTTONS.SETTINGS],
+        [constants_1.BUTTONS.PROMO, constants_1.BUTTONS.FEEDBACK],
+        [constants_1.BUTTONS.HELP, constants_1.BUTTONS.YAKABOO],
     ];
     return telegraf_1.Markup.keyboard(buttons).resize().oneTime().reply_markup;
 };
@@ -99,9 +100,7 @@ const getAdaptiveGenreKeyboard = (ctx, genres) => {
 };
 exports.getAdaptiveGenreKeyboard = getAdaptiveGenreKeyboard;
 const getGenreKeyboard = (genres) => {
-    const keyboard = genres.map((genre, index) => [
-        telegraf_1.Markup.button.callback(genre, `genre_${index}`),
-    ]);
+    const keyboard = genres.map((genre, index) => [telegraf_1.Markup.button.callback(genre, `genre_${index}`)]);
     keyboard.push([telegraf_1.Markup.button.callback('⬅️ Назад', 'catalog_books')]);
     return telegraf_1.Markup.inlineKeyboard(keyboard).reply_markup;
 };

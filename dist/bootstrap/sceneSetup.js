@@ -9,6 +9,7 @@ const addBookScene_1 = __importDefault(require("../scenes/addBookScene"));
 const editBookScene_1 = __importDefault(require("../scenes/editBookScene"));
 const manageBooksScene_1 = __importDefault(require("../scenes/manageBooksScene"));
 const searchScene_1 = __importDefault(require("../scenes/searchScene"));
+const catalogScene_1 = __importDefault(require("../scenes/catalogScene"));
 const profileScene_1 = __importDefault(require("../scenes/profileScene"));
 const rateBookScene_1 = __importDefault(require("../scenes/rateBookScene"));
 const feedbackScene_1 = __importDefault(require("../scenes/feedbackScene"));
@@ -29,6 +30,7 @@ function createStage() {
         editBookScene_1.default,
         manageBooksScene_1.default,
         searchScene_1.default,
+        catalogScene_1.default,
         profileScene_1.default,
         rateBookScene_1.default,
         feedbackScene_1.default,

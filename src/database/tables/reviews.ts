@@ -1,15 +1,7 @@
-/**
- * Reviews Table Operations
- * REFACTOR-009: Split models.ts - Reviews module
- */
-
 import { db } from './db';
 import { Review } from './types';
 import { logger } from '../../utils/logger';
 
-/**
- * Add a review
- */
 export const addReview = (reviewData: Omit<Review, 'id' | 'created_at'>): Promise<number> => {
   return new Promise((resolve, reject) => {
     const { book_id, user_id, user_name, rating, comment, is_published = false } = reviewData;
@@ -35,9 +27,6 @@ export const addReview = (reviewData: Omit<Review, 'id' | 'created_at'>): Promis
   });
 };
 
-/**
- * Get reviews for a book
- */
 export const getBookReviews = (bookId: number): Promise<Review[]> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -61,9 +50,6 @@ export const getBookReviews = (bookId: number): Promise<Review[]> => {
   });
 };
 
-/**
- * Get pending reviews (for admin)
- */
 export const getPendingReviews = (): Promise<Review[]> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -85,9 +71,6 @@ export const getPendingReviews = (): Promise<Review[]> => {
   });
 };
 
-/**
- * Approve review (alias for publishReview)
- */
 export const approveReview = (reviewId: number): Promise<number> => {
   return new Promise((resolve, reject) => {
     const query = 'UPDATE reviews SET is_published = 1 WHERE id = ?';
@@ -104,9 +87,6 @@ export const approveReview = (reviewId: number): Promise<number> => {
   });
 };
 
-/**
- * Delete review
- */
 export const deleteReview = (reviewId: number): Promise<number> => {
   return new Promise((resolve, reject) => {
     const query = 'DELETE FROM reviews WHERE id = ?';
@@ -123,16 +103,10 @@ export const deleteReview = (reviewId: number): Promise<number> => {
   });
 };
 
-/**
- * Publish review (alias for approveReview)
- */
 export const publishReview = (reviewId: number): Promise<number> => {
   return approveReview(reviewId);
 };
 
-/**
- * Update book rating and reviews count
- */
 export const updateBookRating = (bookId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query = `

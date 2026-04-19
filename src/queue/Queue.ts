@@ -1,8 +1,3 @@
-/**
- * Queue System using Bull + Redis
- * Manages async job processing for background tasks
- */
-
 import Queue, { Job, JobOptions } from 'bull';
 import Redis from 'ioredis';
 import { Result, Ok, Err } from '../core/Result';
@@ -32,9 +27,6 @@ export interface JobResult {
   attemptsMade?: number;
 }
 
-/**
- * Queue Manager - Wraps Bull queue with Result pattern
- */
 export class QueueManager {
   private queue: Queue.Queue;
   private redis: Redis;
@@ -65,9 +57,6 @@ export class QueueManager {
     this.setupEventListeners();
   }
 
-  /**
-   * Register job handler
-   */
   registerHandler(jobType: string, handler: (data: JobData) => Promise<any>): void {
     this.jobHandlers.set(jobType, handler);
 
@@ -80,9 +69,6 @@ export class QueueManager {
     });
   }
 
-  /**
-   * Add job to queue
-   */
   async addJob(jobType: string, data: JobData, options?: JobOptions): Promise<Result<JobResult>> {
     try {
       const job = await this.queue.add(jobType, data, {
@@ -100,9 +86,6 @@ export class QueueManager {
     }
   }
 
-  /**
-   * Get job status
-   */
   async getJobStatus(jobId: string): Promise<Result<JobResult>> {
     try {
       const job = await this.queue.getJob(jobId);
@@ -112,14 +95,12 @@ export class QueueManager {
       }
 
       let status: JobResult['status'] = 'pending';
-      // Bull job status methods - synchronous calls
+
       try {
         if ((job as any).isCompleted?.()) status = 'completed';
         else if ((job as any).isFailed?.()) status = 'failed';
         else if ((job as any).isActive?.()) status = 'active';
-      } catch {
-        // If status check fails, default to pending
-      }
+      } catch {}
 
       return new Ok({
         status,
@@ -134,9 +115,6 @@ export class QueueManager {
     }
   }
 
-  /**
-   * Wait for job completion
-   */
   async waitForJob(jobId: string, timeout: number = 30000): Promise<Result<any>> {
     try {
       const job = await this.queue.getJob(jobId);
@@ -152,9 +130,6 @@ export class QueueManager {
     }
   }
 
-  /**
-   * Retry failed job
-   */
   async retryJob(jobId: string): Promise<Result<JobResult>> {
     try {
       const job = await this.queue.getJob(jobId);
@@ -180,9 +155,6 @@ export class QueueManager {
     }
   }
 
-  /**
-   * Remove job
-   */
   async removeJob(jobId: string): Promise<Result<void>> {
     try {
       const job = await this.queue.getJob(jobId);
@@ -197,9 +169,6 @@ export class QueueManager {
     }
   }
 
-  /**
-   * Get queue statistics
-   */
   async getStats(): Promise<
     Result<{
       waiting: number;
@@ -217,9 +186,6 @@ export class QueueManager {
     }
   }
 
-  /**
-   * Clear queue
-   */
   async clear(): Promise<Result<void>> {
     try {
       await this.queue.clean(0, 'completed');
@@ -230,9 +196,6 @@ export class QueueManager {
     }
   }
 
-  /**
-   * Setup event listeners
-   */
   private setupEventListeners(): void {
     this.queue.on('completed', (job: Job) => {
       logger.info('Job completed', { jobId: job.id });
@@ -251,18 +214,12 @@ export class QueueManager {
     });
   }
 
-  /**
-   * Close queue and redis connection
-   */
   async close(): Promise<void> {
     await this.queue.close();
     await this.redis.quit();
   }
 }
 
-/**
- * Create queue manager
- */
 export function createQueueManager(config: QueueConfig): QueueManager {
   return new QueueManager(config);
 }

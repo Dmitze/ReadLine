@@ -46,8 +46,13 @@ class UserRepository extends BaseRepository_1.BaseRepository {
                 return 0;
             }
             const allowedFields = [
-                'username', 'first_name', 'last_name', 'language_code',
-                'is_admin', 'is_new', 'last_seen'
+                'username',
+                'first_name',
+                'last_name',
+                'language_code',
+                'is_admin',
+                'is_new',
+                'last_seen',
             ];
             const validUpdates = {};
             for (const [key, value] of Object.entries(updates)) {

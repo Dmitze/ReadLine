@@ -1,8 +1,3 @@
-/**
- * User Service - Бізнес-логіка для роботи з користувачами
- * REFACTOR-003: Service Layer
- */
-
 import { UserRepository } from '../repositories/UserRepository';
 import { Result, Ok, Err } from '../core/Result';
 import { logger } from '../utils/logger';
@@ -26,12 +21,6 @@ export interface UpdateUserInput {
 export class UserService {
   constructor(private userRepository: UserRepository) {}
 
-  /**
-   * Отримати або створити користувача
-   * @param telegramId - Telegram ID користувача
-   * @param input - Опціональні дані для створення нового користувача
-   * @returns Result з даними користувача
-   */
   async getOrCreateUser(telegramId: number, input?: CreateUserInput): Promise<Result<any>> {
     try {
       let user = await this.userRepository.findByTelegramId(telegramId);
@@ -59,9 +48,6 @@ export class UserService {
     }
   }
 
-  /**
-   * Отримати користувача за ID
-   */
   async getUserById(userId: number): Promise<Result<any>> {
     try {
       const user = await this.userRepository.findById(userId);
@@ -74,9 +60,6 @@ export class UserService {
     }
   }
 
-  /**
-   * Отримати користувача за Telegram ID
-   */
   async getUserByTelegramId(telegramId: number): Promise<Result<any>> {
     try {
       const user = await this.userRepository.findByTelegramId(telegramId);
@@ -89,9 +72,6 @@ export class UserService {
     }
   }
 
-  /**
-   * Оновити користувача
-   */
   async updateUser(userId: number, input: UpdateUserInput): Promise<Result<void>> {
     try {
       const user = await this.userRepository.findById(userId);
@@ -112,9 +92,6 @@ export class UserService {
     }
   }
 
-  /**
-   * Промоувати користувача в адміни
-   */
   async promoteToAdmin(userId: number): Promise<Result<void>> {
     try {
       const user = await this.userRepository.findById(userId);
@@ -133,9 +110,6 @@ export class UserService {
     }
   }
 
-  /**
-   * Позбавити адмін прав
-   */
   async revokeAdmin(userId: number): Promise<Result<void>> {
     try {
       const user = await this.userRepository.findById(userId);
@@ -154,9 +128,6 @@ export class UserService {
     }
   }
 
-  /**
-   * Отримати всіх адмінів
-   */
   async getAllAdmins(): Promise<Result<any[]>> {
     try {
       const admins = await this.userRepository.findAdmins();
@@ -166,9 +137,6 @@ export class UserService {
     }
   }
 
-  /**
-   * Отримати кількість користувачів
-   */
   async getUserCount(): Promise<Result<number>> {
     try {
       const count = await this.userRepository.count();
@@ -178,24 +146,18 @@ export class UserService {
     }
   }
 
-  /**
-   * Отримати мову користувача (default: 'uk')
-   */
   async getUserLanguage(userId: number): Promise<Result<string>> {
     try {
       const user = await this.userRepository.findById(userId);
       if (!user) {
         return new Err(new Error(`User with id ${userId} not found`));
       }
-      return new Ok('uk'); // Default language
+      return new Ok('uk');
     } catch (error) {
       return new Err(error instanceof Error ? error : new Error('Failed to fetch user language'));
     }
   }
 
-  /**
-   * Оновити мову користувача
-   */
   async setUserLanguage(userId: number, language: string): Promise<Result<void>> {
     try {
       const user = await this.userRepository.findById(userId);

@@ -1,12 +1,6 @@
-/**
- * Services Integration Tests - Phase 3
- * Tests for Service layer operations
- */
-
 describe('Services Integration Tests - Phase 3', () => {
   describe('BookService', () => {
     it('should create and retrieve books', () => {
-      // Book creation and retrieval
       const mockBook = {
         id: 1,
         title: 'Test Book',

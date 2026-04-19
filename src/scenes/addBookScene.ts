@@ -1,22 +1,3 @@
-/**
- * ADD BOOK SCENE - НОВАЯ ВЕРСИЯ (12 ШАГОВ)
- * Процес додавання книги адміністратором з новою структурою
- * 
- * ШАГИ:
- * 0: Назва книги
- * 1: Автор
- * 2: Жанри
- * 3: Опис
- * 4: Фото обкладинки
- * 5: ISBN (опціонально)
- * 6: Мова книги
- * 7: Фізична наявність (Так/Ні)
- * 8: Завантаження форматів (ДО 3: файл, аудіо, посилання)
- * 9: Вибір тегів
- * 10: Попередній перегляд
- * 11: Підтвердження
- */
-
 import { Scenes, Markup } from 'telegraf';
 import { addBook } from '../database/models';
 import { addBookTag } from '../database/tagFunctions';
@@ -50,36 +31,34 @@ import {
   otherLanguages,
 } from './addBook/languageStep';
 
-// Type guards
 function isMessageWithDocument(ctx: BotContext): ctx is BotContext & {
-  message: { document: { file_id: string; file_name?: string; file_size?: number; mime_type?: string } }
+  message: {
+    document: { file_id: string; file_name?: string; file_size?: number; mime_type?: string };
+  };
 } {
   return ctx.message && 'document' in ctx.message && ctx.message.document !== undefined;
 }
 
 function isMessageWithAudio(ctx: BotContext): ctx is BotContext & {
-  message: { audio: { file_id: string; file_name?: string; duration?: number } }
+  message: { audio: { file_id: string; file_name?: string; duration?: number } };
 } {
   return ctx.message && 'audio' in ctx.message && ctx.message.audio !== undefined;
 }
 
 function isMessageWithVoice(ctx: BotContext): ctx is BotContext & {
-  message: { voice: { file_id: string; duration?: number } }
+  message: { voice: { file_id: string; duration?: number } };
 } {
   return ctx.message && 'voice' in ctx.message && ctx.message.voice !== undefined;
 }
 
 function isMessageWithText(ctx: BotContext): ctx is BotContext & {
-  message: { text: string }
+  message: { text: string };
 } {
   return ctx.message && 'text' in ctx.message && typeof ctx.message.text === 'string';
 }
 
 const fileUploadLimiter = new RateLimiter({ maxRequests: 5, windowMs: 60000 });
 
-/**
- * Побудувати клавіатуру для вибору тегів
- */
 function buildTagsKeyboard(tags: any[], selectedTagIds: number[]) {
   const keyboard = tags.map((tag) => [
     {
@@ -93,9 +72,6 @@ function buildTagsKeyboard(tags: any[], selectedTagIds: number[]) {
   return { inline_keyboard: keyboard };
 }
 
-/**
- * Попередній перегляд перед публікацією
- */
 async function showFinalPreview(ctx: BotContext, state: WizardState) {
   const { getAllTags } = await import('../database/tagFunctions');
 
@@ -103,9 +79,9 @@ async function showFinalPreview(ctx: BotContext, state: WizardState) {
   if (state.selectedTags && state.selectedTags.length > 0) {
     const allTags = await getAllTags();
     const selectedTagNames = state.selectedTags
-      .map(tagId => allTags.find(t => t.id === tagId)?.name)
+      .map((tagId) => allTags.find((t) => t.id === tagId)?.name)
       .filter((name): name is string => name !== undefined)
-      .map(name => escapeHtml(name))
+      .map((name) => escapeHtml(name))
       .join(', ');
     tagsText = `\n🏷️ Теги: ${selectedTagNames}`;
   }
@@ -115,9 +91,8 @@ async function showFinalPreview(ctx: BotContext, state: WizardState) {
   if (state.bookAudio) formats.push('🎧 Аудіо');
   if (state.bookLink) formats.push('🔗 Посилання');
 
-  const formatsText = formats.length > 0 
-    ? '\n📎 Формати: ' + formats.join(', ')
-    : '\n📎 Формати: Немає';
+  const formatsText =
+    formats.length > 0 ? '\n📎 Формати: ' + formats.join(', ') : '\n📎 Формати: Немає';
 
   const physicalText = state.is_physically_available
     ? '\n📦 Фізична наявність: ✅ Є в бібліотеці'
@@ -153,16 +128,16 @@ ${getProgress(11)}
       parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard([
         [Markup.button.callback('✅ Підтвердити і опублікувати', `confirm_book_${userId}`)],
-        [Markup.button.callback('❌ Скасувати', `cancel_book_${userId}`)]
-      ]).reply_markup
+        [Markup.button.callback('❌ Скасувати', `cancel_book_${userId}`)],
+      ]).reply_markup,
     });
   } else {
     await ctx.reply(previewText, {
       parse_mode: 'HTML',
       reply_markup: Markup.inlineKeyboard([
         [Markup.button.callback('✅ Підтвердити і опублікувати', `confirm_book_${userId}`)],
-        [Markup.button.callback('❌ Скасувати', `cancel_book_${userId}`)]
-      ]).reply_markup
+        [Markup.button.callback('❌ Скасувати', `cancel_book_${userId}`)],
+      ]).reply_markup,
     });
   }
 }
@@ -170,7 +145,6 @@ ${getProgress(11)}
 const addBookScene = new Scenes.WizardScene(
   'ADD_BOOK_SCENE',
 
-  // ========== КРОК 0: НАЗВА КНИГИ ==========
   async (ctx) => {
     logUserAction(ctx, 'start_add_book');
     await ctx.reply(
@@ -181,7 +155,6 @@ const addBookScene = new Scenes.WizardScene(
     return ctx.wizard.next();
   },
 
-  // ========== КРОК 1: АВТОР ==========
   async (ctx: BotContext) => {
     if (!ctx.message || !('text' in ctx.message)) {
       await ctx.reply('❌ Будь ласка, надішліть текст (назву книги).');
@@ -190,7 +163,7 @@ const addBookScene = new Scenes.WizardScene(
 
     const title = ctx.message.text.trim();
     const { VALIDATION } = await import('../constants');
-    
+
     if (title.length < VALIDATION.TITLE_MIN) {
       await ctx.reply(`❌ Назва занадто коротка. Мінімум ${VALIDATION.TITLE_MIN} символи.`);
       return;
@@ -214,7 +187,6 @@ const addBookScene = new Scenes.WizardScene(
     return ctx.wizard.next();
   },
 
-  // ========== КРОК 2: ЖАНРИ ==========
   async (ctx: BotContext) => {
     if (!ctx.message || !('text' in ctx.message)) {
       await ctx.reply("❌ Будь ласка, надішліть текст (ім'я автора).");
@@ -223,7 +195,7 @@ const addBookScene = new Scenes.WizardScene(
 
     const author = ctx.message.text.trim();
     const { VALIDATION } = await import('../constants');
-    
+
     if (author.length < VALIDATION.AUTHOR_MIN) {
       await ctx.reply(`❌ Ім\'я автора занадто коротке. Мінімум ${VALIDATION.AUTHOR_MIN} символи.`);
       return;
@@ -261,7 +233,6 @@ const addBookScene = new Scenes.WizardScene(
     return ctx.wizard.next();
   },
 
-  // ========== КРОК 3: ОБРОБКА ЖАНРІВ (callback handler) ==========
   async (ctx: BotContext) => {
     const state = ctx.wizard?.state as WizardState;
 
@@ -282,7 +253,7 @@ const addBookScene = new Scenes.WizardScene(
           return;
         }
 
-        state.genre = state.selectedGenres.join('\n'); // Зберігаємо всі жанри, розділені новим рядком
+        state.genre = state.selectedGenres.join('\n');
         await ctx.answerCbQuery('✅ Жанри обрано');
         await ctx.editMessageText(`📚 Жанри обрано:\n${state.selectedGenres.join('\n')}`);
         autoSaveState(state);
@@ -317,7 +288,9 @@ const addBookScene = new Scenes.WizardScene(
       if (action.startsWith('genre_popular_') || action.startsWith('genre_all_')) {
         const parts = action.split('_');
         const genreIndex = parseInt(parts[2]);
-        const genres = action.startsWith('genre_popular_') ? popularGenres : [...popularGenres, ...otherGenres];
+        const genres = action.startsWith('genre_popular_')
+          ? popularGenres
+          : [...popularGenres, ...otherGenres];
         const selectedGenre = genres[genreIndex];
 
         if (!state.selectedGenres) state.selectedGenres = [];
@@ -335,9 +308,10 @@ const addBookScene = new Scenes.WizardScene(
           await ctx.answerCbQuery(`✅ ${selectedGenre} додано (${state.selectedGenres.length}/5)`);
         }
 
-        const selectedText = state.selectedGenres.length > 0
-          ? `\n\n✅ Вибрано: ${state.selectedGenres.join(', ')}`
-          : '';
+        const selectedText =
+          state.selectedGenres.length > 0
+            ? `\n\n✅ Вибрано: ${state.selectedGenres.join(', ')}`
+            : '';
 
         await ctx.editMessageText(
           `${getProgress(3)}\n📚 Оберіть жанри книги (1-5 жанрів):${selectedText}`,
@@ -358,7 +332,7 @@ const addBookScene = new Scenes.WizardScene(
 
     const description = ctx.message.text.trim();
     const { VALIDATION } = await import('../constants');
-    
+
     if (description.length < VALIDATION.DESCRIPTION_MIN) {
       await ctx.reply(`❌ Опис занадто короткий. Мінімум ${VALIDATION.DESCRIPTION_MIN} символів.`);
       return;
@@ -393,7 +367,6 @@ const addBookScene = new Scenes.WizardScene(
     return ctx.wizard.next();
   },
 
-  // ========== КРОК 5: ФОТО ==========
   async (ctx: BotContext) => {
     const state = ctx.wizard?.state as WizardState;
 
@@ -423,12 +396,10 @@ const addBookScene = new Scenes.WizardScene(
 
     autoSaveState(state);
 
-    // Показуємо ISBN крок
     await showISBNInput(ctx);
     return ctx.wizard.next();
   },
 
-  // ========== КРОК 6: ISBN (опціонально) ==========
   async (ctx: BotContext) => {
     const state = ctx.wizard?.state as WizardState;
     const userId = ctx.from?.id;
@@ -461,12 +432,10 @@ const addBookScene = new Scenes.WizardScene(
 
     autoSaveState(state);
 
-    // Показуємо меню мови
     await showLanguageMenu(ctx, state);
     return ctx.wizard.next();
   },
 
-  // ========== КРОК 7: МОВА (callback handler) ==========
   async (ctx: BotContext) => {
     const state = ctx.wizard?.state as WizardState;
     const userId = ctx.from?.id;
@@ -500,29 +469,24 @@ const addBookScene = new Scenes.WizardScene(
       await ctx.editMessageText(`✅ Мова: ${selectedLanguage}`);
       logUserAction(ctx, 'selected_language', { language: selectedLanguage });
 
-      // Переходимо до фізичної наявності
       if (!userId) {
         await ctx.reply('❌ Помилка: користувач не ідентифікований');
         return ctx.scene?.leave();
       }
 
-      await ctx.reply(
-        `${getProgress(8)}\n\n📦 <b>ЧИ Є ЦЯ КНИГА ФІЗИЧНО В НАЯВНОСТІ?</b>`,
-        {
-          parse_mode: 'HTML',
-          reply_markup: Markup.inlineKeyboard([
-            [
-              Markup.button.callback('✅ Є фізично', `book_physical_yes_${userId}`),
-              Markup.button.callback('❌ Немає', `book_physical_no_${userId}`),
-            ]
-          ]).reply_markup,
-        }
-      );
+      await ctx.reply(`${getProgress(8)}\n\n📦 <b>ЧИ Є ЦЯ КНИГА ФІЗИЧНО В НАЯВНОСТІ?</b>`, {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+          [
+            Markup.button.callback('✅ Є фізично', `book_physical_yes_${userId}`),
+            Markup.button.callback('❌ Немає', `book_physical_no_${userId}`),
+          ],
+        ]).reply_markup,
+      });
       return ctx.wizard.next();
     }
   },
 
-  // ========== КРОК 8: ФІЗИЧНА НАЯВНІСТЬ ==========
   async (ctx: BotContext) => {
     const state = ctx.wizard?.state as WizardState;
 
@@ -545,13 +509,11 @@ const addBookScene = new Scenes.WizardScene(
 
       autoSaveState(state);
 
-      // Показуємо меню для завантаження форматів
       await showFileFormatMenu(ctx, state);
       return ctx.wizard.next();
     }
   },
 
-  // ========== КРОК 9: ЗАВАНТАЖЕННЯ ФОРМАТІВ ==========
   async (ctx: BotContext) => {
     const state = ctx.wizard?.state as WizardState;
     const userId = ctx.from?.id;
@@ -561,24 +523,29 @@ const addBookScene = new Scenes.WizardScene(
       return ctx.scene?.leave();
     }
 
-    // Callback handlers для вибору формату
     if (ctx.callbackQuery && 'data' in ctx.callbackQuery) {
       const action = ctx.callbackQuery.data;
 
       if (action.startsWith('file_upload_choose_')) {
         const format = action.split('_')[3] as 'pdf' | 'audio' | 'link';
-        
+
         if (format === 'pdf') {
           await ctx.answerCbQuery('📄 Завантажуємо файл');
-          await ctx.editMessageText(`${getProgress(9)}\n\n📎 Надішліть файл книги (PDF, EPUB, FB2):`);
+          await ctx.editMessageText(
+            `${getProgress(9)}\n\n📎 Надішліть файл книги (PDF, EPUB, FB2):`
+          );
           state.currentUploadFormat = 'file';
         } else if (format === 'audio') {
           await ctx.answerCbQuery('🎧 Завантажуємо аудіо');
-          await ctx.editMessageText(`${getProgress(9)}\n\n🎧 Надішліть аудіофайл книги (MP3, WAV):`);
+          await ctx.editMessageText(
+            `${getProgress(9)}\n\n🎧 Надішліть аудіофайл книги (MP3, WAV):`
+          );
           state.currentUploadFormat = 'audio';
         } else if (format === 'link') {
           await ctx.answerCbQuery('🔗 Додаємо посилання');
-          await ctx.editMessageText(`${getProgress(9)}\n\n🔗 Введіть посилання на книгу:\n\n${examples.link}`);
+          await ctx.editMessageText(
+            `${getProgress(9)}\n\n🔗 Введіть посилання на книгу:\n\n${examples.link}`
+          );
           state.currentUploadFormat = 'link';
         }
         autoSaveState(state);
@@ -587,21 +554,20 @@ const addBookScene = new Scenes.WizardScene(
 
       if (action.startsWith('file_upload_done_')) {
         await ctx.answerCbQuery('✅ Переходимо до тегів');
-        
-        // Показуємо теги
+
         const tags = await getCachedTags();
         const keyboard = buildTagsKeyboard(tags, state.selectedTags || []);
 
         await ctx.editMessageText(
           `${getProgress(10)}\n🏷️ <b>Додайте теги до книги (опціонально):</b>\n\n` +
-          'Оберіть один або кілька тегів...' +
-          (state.selectedTags && state.selectedTags.length > 0
-            ? `\n\n✅ <b>Вибрані теги:</b> ${tags
-                .filter((t: any) => state.selectedTags?.includes(t.id))
-                .map((t: any) => t.name)
-                .join(', ')}`
-            : '') +
-          '\n\nНатисніть "Далі" коли закінчите...',
+            'Оберіть один або кілька тегів...' +
+            (state.selectedTags && state.selectedTags.length > 0
+              ? `\n\n✅ <b>Вибрані теги:</b> ${tags
+                  .filter((t: any) => state.selectedTags?.includes(t.id))
+                  .map((t: any) => t.name)
+                  .join(', ')}`
+              : '') +
+            '\n\nНатисніть "Далі" коли закінчите...',
           {
             parse_mode: 'HTML',
             reply_markup: keyboard,
@@ -613,7 +579,6 @@ const addBookScene = new Scenes.WizardScene(
       return;
     }
 
-    // Обробка завантаження файлу
     const { allowed } = await fileUploadLimiter.check(ctx);
     if (!allowed) {
       await ctx.reply('❌ Занадто багато завантажень. Зачекайте хвилину.');
@@ -632,11 +597,9 @@ const addBookScene = new Scenes.WizardScene(
 
     autoSaveState(state);
 
-    // Показуємо меню знову
     await showFileFormatMenu(ctx, state);
   },
 
-  // ========== КРОК 10: ТЕГИ (callback handler) ==========
   async (ctx: BotContext) => {
     const state = ctx.wizard?.state as WizardState;
     const userId = ctx.from?.id;
@@ -672,23 +635,23 @@ const addBookScene = new Scenes.WizardScene(
 
       autoSaveState(state);
 
-      // Оновлюємо повідомлення з відгуком про вибір тегів
       try {
         const tags = await getCachedTags();
-        
-        const selectedText = state.selectedTags && state.selectedTags.length > 0
-          ? `\n\n✅ <b>Вибрані теги:</b> ${tags
-              .filter((t: any) => state.selectedTags?.includes(t.id))
-              .map((t: any) => t.name)
-              .join(', ')}`
-          : '';
+
+        const selectedText =
+          state.selectedTags && state.selectedTags.length > 0
+            ? `\n\n✅ <b>Вибрані теги:</b> ${tags
+                .filter((t: any) => state.selectedTags?.includes(t.id))
+                .map((t: any) => t.name)
+                .join(', ')}`
+            : '';
 
         const keyboard = buildTagsKeyboard(tags, state.selectedTags || []);
 
         await ctx.editMessageText(
           `${getProgress(10)}\n🏷️ <b>Додайте теги до книги (опціонально):</b>\n\n` +
-          `Оберіть один або кілька тегів...${selectedText}\n\n` +
-          'Натисніть "Далі" коли закінчите...',
+            `Оберіть один або кілька тегів...${selectedText}\n\n` +
+            'Натисніть "Далі" коли закінчите...',
           {
             parse_mode: 'HTML',
             reply_markup: keyboard,
@@ -700,14 +663,10 @@ const addBookScene = new Scenes.WizardScene(
     }
   },
 
-  // ========== КРОК 11: ПОПЕРЕДНІЙ ПЕРЕГЛЯД / ПІДТВЕРДЖЕННЯ ==========
   async (_ctx: BotContext) => {
-    // Цей крок для обробки callback'ів підтвердження
     return;
   }
 );
-
-// ========== CALLBACKS HANDLERS ==========
 
 addBookScene.action(/^confirm_book_(\d+)$/, async (ctx: BotContext) => {
   const state = ctx.wizard?.state as WizardState;
@@ -792,7 +751,9 @@ addBookScene.action(/^confirm_book_(\d+)$/, async (ctx: BotContext) => {
   } catch (error) {
     logger.error('Error publishing book', error as Error);
     console.error('Full error details:', error);
-    await ctx.reply(`❌ Помилка при публікації книги: ${error instanceof Error ? error.message : String(error)}`);
+    await ctx.reply(
+      `❌ Помилка при публікації книги: ${error instanceof Error ? error.message : String(error)}`
+    );
     cleanupWizardState(ctx);
     return ctx.scene?.leave();
   }
@@ -806,8 +767,6 @@ addBookScene.action(/^cancel_book_(\d+)$/, async (ctx: BotContext) => {
   cleanupWizardState(ctx);
   return ctx.scene.leave();
 });
-
-
 
 addBookScene.command('cancel', async (ctx) => {
   await ctx.reply('❌ Додавання книги скасовано', {

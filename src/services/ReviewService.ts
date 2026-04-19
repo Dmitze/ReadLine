@@ -1,8 +1,3 @@
-/**
- * Review Service - Бізнес-логіка для роботи з рецензіями
- * REFACTOR-003: Service Layer
- */
-
 import { ReviewRepository } from '../repositories/ReviewRepository';
 import { BookRepository } from '../repositories/BookRepository';
 import { Result, Ok, Err } from '../core/Result';
@@ -25,9 +20,6 @@ export class ReviewService {
     private bookRepository: BookRepository
   ) {}
 
-  /**
-   * Створити рецензію
-   */
   async createReview(input: CreateReviewInput): Promise<Result<number>> {
     try {
       if (input.rating < 1 || input.rating > 5) {
@@ -39,7 +31,6 @@ export class ReviewService {
         return new Err(new Error(`Book with id ${input.book_id} not found`));
       }
 
-      // Перевірити, чи користувач вже залишив рецензію
       const existingReview = await this.reviewRepository.findByUserAndBook(
         input.user_id,
         input.book_id
@@ -63,9 +54,6 @@ export class ReviewService {
     }
   }
 
-  /**
-   * Отримати рецензію за ID
-   */
   async getReviewById(reviewId: number): Promise<Result<any>> {
     try {
       const review = await this.reviewRepository.findById(reviewId);
@@ -78,9 +66,6 @@ export class ReviewService {
     }
   }
 
-  /**
-   * Оновити рецензію
-   */
   async updateReview(reviewId: number, input: UpdateReviewInput): Promise<Result<void>> {
     try {
       const review = await this.reviewRepository.findById(reviewId);
@@ -103,9 +88,6 @@ export class ReviewService {
     }
   }
 
-  /**
-   * Видалити рецензію
-   */
   async deleteReview(reviewId: number): Promise<Result<void>> {
     try {
       const review = await this.reviewRepository.findById(reviewId);
@@ -120,9 +102,6 @@ export class ReviewService {
     }
   }
 
-  /**
-   * Опублікувати рецензію
-   */
   async publishReview(reviewId: number): Promise<Result<void>> {
     try {
       const review = await this.reviewRepository.findById(reviewId);
@@ -141,9 +120,6 @@ export class ReviewService {
     }
   }
 
-  /**
-   * Відхилити рецензію
-   */
   async rejectReview(reviewId: number): Promise<Result<void>> {
     try {
       const review = await this.reviewRepository.findById(reviewId);
@@ -158,9 +134,6 @@ export class ReviewService {
     }
   }
 
-  /**
-   * Отримати рецензії книги
-   */
   async getBookReviews(bookId: number, onlyPublished: boolean = true): Promise<Result<any[]>> {
     try {
       const reviews = await this.reviewRepository.findByBookId(bookId);
@@ -171,9 +144,6 @@ export class ReviewService {
     }
   }
 
-  /**
-   * Отримати рецензії користувача
-   */
   async getUserReviews(userId: number): Promise<Result<any[]>> {
     try {
       const reviews = await this.reviewRepository.findByUserId(userId);
@@ -183,9 +153,6 @@ export class ReviewService {
     }
   }
 
-  /**
-   * Отримати рецензії на модерацію
-   */
   async getPendingReviews(): Promise<Result<any[]>> {
     try {
       const reviews = await this.reviewRepository.findPending();
@@ -195,9 +162,6 @@ export class ReviewService {
     }
   }
 
-  /**
-   * Отримати середній рейтинг книги
-   */
   async getBookAverageRating(bookId: number): Promise<Result<number>> {
     try {
       const reviews = await this.reviewRepository.findByBookId(bookId);

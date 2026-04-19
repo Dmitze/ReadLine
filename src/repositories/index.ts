@@ -1,9 +1,3 @@
-/**
- * Repositories barrel export
- * REFACTOR-002: Repository Layer Separation
- * REFACTOR-012: Database Query Optimization
- */
-
 export { BaseRepository } from './BaseRepository';
 export {
   OptimizedRepository,

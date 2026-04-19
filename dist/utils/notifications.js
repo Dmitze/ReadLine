@@ -219,7 +219,7 @@ const getPersonalizedNotification = async (userId) => {
         });
         if (topBooks && topBooks.count > 0) {
             return (`⭐ ${firstName}, погляньте на це!\n\n` +
-                '🏆 У нас з\'явилися найкраще оцінені книги цього місяця.\n\n' +
+                "🏆 У нас з'явилися найкраще оцінені книги цього місяця.\n\n" +
                 'Вже читаєш щось круте? 🔥');
         }
         const booksReadThisWeek = await new Promise((resolve, reject) => {

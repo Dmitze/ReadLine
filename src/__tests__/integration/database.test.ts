@@ -1,28 +1,20 @@
-/**
- * Database Integration Tests - Phase 3
- * Tests for database operations and query building
- */
-
 describe('Database Integration Tests', () => {
   afterAll(async () => {
-    // Clear all timers
     jest.clearAllTimers();
     jest.useRealTimers();
-    // Cleanup resources
+
     await new Promise((resolve) => {
       const timer = setTimeout(resolve, 100);
-      timer.unref(); // Prevent timer from keeping process alive
+      timer.unref();
     });
   });
   describe('Safe Query Execution', () => {
     it('should execute SELECT with parameters safely', () => {
-      // Basic test - parameters should be validated
       const params = ['fiction', 5];
       expect(params).toHaveLength(2);
     });
 
     it('should prevent SQL injection in parameters', () => {
-      // Malicious input should be treated as a string, not SQL
       const maliciousInput = "'; DROP TABLE books; --";
       expect(maliciousInput).toContain('DROP TABLE');
       expect(typeof maliciousInput).toBe('string');

@@ -1,8 +1,3 @@
-/**
- * Database Connection
- * REFACTOR-009: Split models.ts - DB connection and initialization
- */
-
 import sqlite3 from 'sqlite3';
 import fs from 'fs';
 import path from 'path';
@@ -18,10 +13,8 @@ declare var process: {
   exit(code?: number): never;
 };
 
-// Initialize database
 const dbPath = process.env.DB_PATH || './database/library.db';
 
-// Create database directory if it doesn't exist
 const dbDir = path.dirname(dbPath);
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
@@ -30,7 +23,6 @@ if (!fs.existsSync(dbDir)) {
 
 export const db = new sqlite3.Database(dbPath);
 
-// Configure SQLite PRAGMA
 const isTestEnv = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
 
 db.exec(
@@ -53,32 +45,35 @@ db.exec(
         });
       }
 
-      // Integrity check: fail fast if DB is corrupted
-      // Skip in test environment to avoid killing test process and async logging issues
       if (!isTestEnv) {
         try {
           db.get('PRAGMA integrity_check;', (checkErr: any, row: any) => {
             if (checkErr) {
-              logger.error('Integrity check failed to execute', { error: String(checkErr?.message || checkErr) });
-              logger.error('Database may be corrupted. Please recover from backup or run: node scripts/repair-database.js');
+              logger.error('Integrity check failed to execute', {
+                error: String(checkErr?.message || checkErr),
+              });
+              logger.error(
+                'Database may be corrupted. Please recover from backup or run: node scripts/repair-database.js'
+              );
 
-              // ✅ Graceful shutdown замість process.exit
               const gracefulShutdown = async () => {
                 try {
-                  // Закрити всі з'єднання з БД
                   await new Promise<void>((resolve) => {
                     db.close((err) => {
-                      if (err) logger.error('Error closing database during integrity check failure', err);
+                      if (err)
+                        logger.error('Error closing database during integrity check failure', err);
                       resolve();
                     });
                   });
 
-                  // Дати час на завершення операцій
-                  await new Promise(resolve => setTimeout(resolve, 1000));
+                  await new Promise((resolve) => setTimeout(resolve, 1000));
 
                   process.exit(1);
                 } catch (error) {
-                  logger.error('Error during graceful shutdown after integrity check failure', error);
+                  logger.error(
+                    'Error during graceful shutdown after integrity check failure',
+                    error
+                  );
                   process.exit(1);
                 }
               };
@@ -86,7 +81,9 @@ db.exec(
               gracefulShutdown();
               return;
             }
-            const result = (row && (row.integrity_check || row[Object.keys(row)[0]])) as string | undefined;
+            const result = (row && (row.integrity_check || row[Object.keys(row)[0]])) as
+              | string
+              | undefined;
             if (!result || String(result).toLowerCase() !== 'ok') {
               logger.error('Database integrity check failed', {
                 error: 'sqlite_corrupt',
@@ -99,23 +96,24 @@ db.exec(
               logger.error('  2. Run repair script: node scripts/repair-database.js');
               logger.error('  3. If database is empty, delete it and let the app recreate it');
 
-              // ✅ Graceful shutdown замість process.exit
               const gracefulShutdown = async () => {
                 try {
-                  // Закрити всі з'єднання з БД
                   await new Promise<void>((resolve) => {
                     db.close((err) => {
-                      if (err) logger.error('Error closing database during integrity check failure', err);
+                      if (err)
+                        logger.error('Error closing database during integrity check failure', err);
                       resolve();
                     });
                   });
 
-                  // Дати час на завершення операцій
-                  await new Promise(resolve => setTimeout(resolve, 1000));
+                  await new Promise((resolve) => setTimeout(resolve, 1000));
 
                   process.exit(1);
                 } catch (error) {
-                  logger.error('Error during graceful shutdown after integrity check failure', error);
+                  logger.error(
+                    'Error during graceful shutdown after integrity check failure',
+                    error
+                  );
                   process.exit(1);
                 }
               };
@@ -125,7 +123,7 @@ db.exec(
           });
         } catch (e) {
           logger.warn('Integrity check could not be performed', {
-            error: e instanceof Error ? e.message : String(e)
+            error: e instanceof Error ? e.message : String(e),
           });
         }
       }
@@ -133,9 +131,6 @@ db.exec(
   }
 );
 
-/**
- * Initialize database tables
- */
 export const initDatabase = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     const createBooksTable = `
@@ -383,7 +378,7 @@ export const initDatabase = (): Promise<void> => {
       'ALTER TABLE books ADD COLUMN recommended_age INTEGER;',
       'ALTER TABLE books ADD COLUMN content_warnings TEXT;',
       'ALTER TABLE books ADD COLUMN isbn TEXT;',
-      'ALTER TABLE books ADD COLUMN language TEXT DEFAULT \'Українська\';',
+      "ALTER TABLE books ADD COLUMN language TEXT DEFAULT 'Українська';",
       'ALTER TABLE books ADD COLUMN is_physically_available INTEGER DEFAULT 0;',
       'ALTER TABLE books ADD COLUMN epub_file_id TEXT;',
       'ALTER TABLE books ADD COLUMN epub_url TEXT;',
@@ -391,11 +386,9 @@ export const initDatabase = (): Promise<void> => {
 
     const alterPromoCodesTableQueries = [
       'ALTER TABLE promo_codes ADD COLUMN description TEXT;',
-      'ALTER TABLE promo_codes ADD COLUMN promo_type TEXT DEFAULT \'yakaboo_unlimited\';',
+      "ALTER TABLE promo_codes ADD COLUMN promo_type TEXT DEFAULT 'yakaboo_unlimited';",
       'ALTER TABLE promo_codes ADD COLUMN is_active INTEGER DEFAULT 1;',
       'ALTER TABLE promo_codes ADD COLUMN created_by INTEGER;',
-      // Удаляем старые колонки которые больше не используются
-      // (DROP COLUMN не поддерживается в некоторых версиях SQLite, поэтому оставляем как есть)
     ];
 
     db.serialize(() => {
@@ -417,7 +410,6 @@ export const initDatabase = (): Promise<void> => {
       db.run(createBookTagsTable);
       db.run(createBookOrdersTable);
 
-      // Ініціалізуємо систему фізичних книг
       import('./physicalBooks').then(({ initPhysicalBooksSystem }) => {
         initPhysicalBooksSystem().catch((err) => {
           logger.error('Error initializing physical books system', err);
@@ -440,7 +432,6 @@ export const initDatabase = (): Promise<void> => {
         });
       });
 
-      // Створюємо індекси для підкастів
       db.run('CREATE INDEX IF NOT EXISTS idx_podcasts_theme ON podcasts(theme)');
       db.run('CREATE INDEX IF NOT EXISTS idx_podcasts_rating ON podcasts(rating)');
       db.run('CREATE INDEX IF NOT EXISTS idx_podcasts_created_at ON podcasts(created_at)');
@@ -457,12 +448,13 @@ export const initDatabase = (): Promise<void> => {
       );
       db.run('CREATE INDEX IF NOT EXISTS idx_podcast_listens_user ON podcast_listens(user_id)');
 
-      // Створюємо індекси для book_requests
       db.run('CREATE INDEX IF NOT EXISTS idx_book_requests_user ON book_requests(user_id)');
       db.run('CREATE INDEX IF NOT EXISTS idx_book_requests_status ON book_requests(status)');
       db.run('CREATE INDEX IF NOT EXISTS idx_book_requests_priority ON book_requests(priority)');
       db.run('CREATE INDEX IF NOT EXISTS idx_book_requests_due_date ON book_requests(due_date)');
-      db.run('CREATE INDEX IF NOT EXISTS idx_book_requests_created_at ON book_requests(created_at)');
+      db.run(
+        'CREATE INDEX IF NOT EXISTS idx_book_requests_created_at ON book_requests(created_at)'
+      );
 
       db.get('SELECT COUNT(*) as count FROM books', async (err, row: any) => {
         if (err) {
@@ -471,12 +463,10 @@ export const initDatabase = (): Promise<void> => {
         } else {
           const booksCount = row?.count || 0;
           let seededBooksCount = 0;
-          
-          // ✅ ВИДАЛЕНО: Seed demo data отключен для чистой презентации
-          // Если нужны демо-данные, используйте: npm run seed:demo
-          // if (booksCount === 0) { ... }
-          
-          logger.info('Database initialized successfully', { booksCount: booksCount + seededBooksCount });
+
+          logger.info('Database initialized successfully', {
+            booksCount: booksCount + seededBooksCount,
+          });
           resolve();
         }
       });

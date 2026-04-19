@@ -70,7 +70,7 @@ onboardingScene.action('onboarding_step1_start', async (ctx) => {
         'Які формати тебе цікавлять? Можна вибрати кілька! 👇\n\n' +
         '📕 *Читання* - традиційні книги\n' +
         '🎧 *Аудіокниги* - слухай на ходу\n' +
-        '🎙️ *Подкасти* - інтерв\'ю, лекції, історії\n\n' +
+        "🎙️ *Подкасти* - інтерв'ю, лекції, історії\n\n" +
         '_Ти завжди зможеш змінити це в налаштуваннях_ ⚙️', {
         parse_mode: 'Markdown',
         reply_markup: telegraf_1.Markup.inlineKeyboard([
@@ -116,14 +116,14 @@ onboardingScene.action(/onboarding_content_(.+)/, async (ctx) => {
             }
         }
         const selectedText = state.selectedContentTypes.length > 0
-            ? '\n\n✅ ' + state.selectedContentTypes.map(t => contentMap[t]).join(' + ')
+            ? '\n\n✅ ' + state.selectedContentTypes.map((t) => contentMap[t]).join(' + ')
             : '';
         await ctx.editMessageText('📖 *КРОК 1: ВИБІР ФОРМАТІВ КОНТЕНТУ*\n\n' +
             '_(Прогрес: 1/3)_\n\n' +
             'Які формати тебе цікавлять? Можна вибрати кілька! 👇\n\n' +
             '📕 *Читання* - традиційні книги\n' +
             '🎧 *Аудіокниги* - слухай на ходу\n' +
-            '🎙️ *Подкасти* - інтерв\'ю, лекції, історії\n\n' +
+            "🎙️ *Подкасти* - інтерв'ю, лекції, історії\n\n" +
             '_Ти завжди зможеш змінити це в налаштуваннях_ ⚙️' +
             selectedText, {
             parse_mode: 'Markdown',

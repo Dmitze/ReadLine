@@ -1,10 +1,3 @@
-/**
- * User Handlers Index
- * REFACTOR-009: Split userHandlers.ts
- *
- * Централізований експорт усіх user handlers
- */
-
 import { Telegraf } from 'telegraf';
 import { BotContext } from '../../types/telegraf';
 import { logger } from '../../utils/logger';
@@ -21,12 +14,8 @@ import { registerBookRequestHandlers } from './bookRequests';
 import { registerAIAssistantHandlers } from '../../scenes/aiAssistantScene';
 import { registerProfileHandlers } from './profileHandlers';
 
-// Флаг для предотвращения повторной регистрации
 let handlersRegistered = false;
 
-/**
- * Register all user handlers
- */
 export function registerUserHandlers(bot: Telegraf<BotContext>): void {
   if (handlersRegistered) {
     logger.warn('User handlers already registered, skipping...');
@@ -36,7 +25,6 @@ export function registerUserHandlers(bot: Telegraf<BotContext>): void {
   logger.info('Registering user handlers...');
 
   try {
-    // Регистрируем модули
     registerNavigationHandlers(bot);
     registerTopAndNewHandlers(bot);
     registerLibraryHandlers(bot);
@@ -60,9 +48,6 @@ export function registerUserHandlers(bot: Telegraf<BotContext>): void {
   }
 }
 
-/**
- * Reset handlers registration flag (для тестов)
- */
 export function resetHandlersFlag(): void {
   handlersRegistered = false;
 }

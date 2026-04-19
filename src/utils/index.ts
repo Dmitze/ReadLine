@@ -1,8 +1,3 @@
-/**
- * Utils barrel export
- * REFACTOR-009: Circuit Breaker for AI API
- */
-
 export {
   CircuitBreaker,
   HttpCircuitBreaker,

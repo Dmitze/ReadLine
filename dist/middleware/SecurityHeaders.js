@@ -112,7 +112,7 @@ function requestValidationMiddleware() {
             if (callbackData.length > LIMITS.MAX_CALLBACK_DATA_LENGTH) {
                 logger_1.logger.warn('⚠️ Large callback_query data detected', {
                     length: callbackData.length,
-                    limit: LIMITS.MAX_CALLBACK_DATA_LENGTH
+                    limit: LIMITS.MAX_CALLBACK_DATA_LENGTH,
                 });
                 await ctx.answerCbQuery('❌ Дані занадто великі');
                 return;
@@ -123,7 +123,7 @@ function requestValidationMiddleware() {
             if (messageText.length > LIMITS.MESSAGE_MAX) {
                 logger_1.logger.warn('⚠️ Large message text detected', {
                     length: messageText.length,
-                    limit: LIMITS.MESSAGE_MAX
+                    limit: LIMITS.MESSAGE_MAX,
                 });
                 await ctx.reply(`⚠️ Повідомлення занадто велике. Максимум ${LIMITS.MESSAGE_MAX} символів.`);
                 return;

@@ -72,9 +72,9 @@ async function showFinalPreview(ctx, state) {
     if (state.selectedTags && state.selectedTags.length > 0) {
         const allTags = await getAllTags();
         const selectedTagNames = state.selectedTags
-            .map(tagId => allTags.find(t => t.id === tagId)?.name)
+            .map((tagId) => allTags.find((t) => t.id === tagId)?.name)
             .filter((name) => name !== undefined)
-            .map(name => (0, helpers_1.escapeHtml)(name))
+            .map((name) => (0, helpers_1.escapeHtml)(name))
             .join(', ');
         tagsText = `\n🏷️ Теги: ${selectedTagNames}`;
     }
@@ -85,9 +85,7 @@ async function showFinalPreview(ctx, state) {
         formats.push('🎧 Аудіо');
     if (state.bookLink)
         formats.push('🔗 Посилання');
-    const formatsText = formats.length > 0
-        ? '\n📎 Формати: ' + formats.join(', ')
-        : '\n📎 Формати: Немає';
+    const formatsText = formats.length > 0 ? '\n📎 Формати: ' + formats.join(', ') : '\n📎 Формати: Немає';
     const physicalText = state.is_physically_available
         ? '\n📦 Фізична наявність: ✅ Є в бібліотеці'
         : '\n📦 Фізична наявність: ❌ Тільки електронна';
@@ -118,8 +116,8 @@ ${(0, utils_1.getProgress)(11)}
             parse_mode: 'HTML',
             reply_markup: telegraf_1.Markup.inlineKeyboard([
                 [telegraf_1.Markup.button.callback('✅ Підтвердити і опублікувати', `confirm_book_${userId}`)],
-                [telegraf_1.Markup.button.callback('❌ Скасувати', `cancel_book_${userId}`)]
-            ]).reply_markup
+                [telegraf_1.Markup.button.callback('❌ Скасувати', `cancel_book_${userId}`)],
+            ]).reply_markup,
         });
     }
     else {
@@ -127,8 +125,8 @@ ${(0, utils_1.getProgress)(11)}
             parse_mode: 'HTML',
             reply_markup: telegraf_1.Markup.inlineKeyboard([
                 [telegraf_1.Markup.button.callback('✅ Підтвердити і опублікувати', `confirm_book_${userId}`)],
-                [telegraf_1.Markup.button.callback('❌ Скасувати', `cancel_book_${userId}`)]
-            ]).reply_markup
+                [telegraf_1.Markup.button.callback('❌ Скасувати', `cancel_book_${userId}`)],
+            ]).reply_markup,
         });
     }
 }
@@ -238,7 +236,9 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
         if (action.startsWith('genre_popular_') || action.startsWith('genre_all_')) {
             const parts = action.split('_');
             const genreIndex = parseInt(parts[2]);
-            const genres = action.startsWith('genre_popular_') ? utils_1.popularGenres : [...utils_1.popularGenres, ...utils_1.otherGenres];
+            const genres = action.startsWith('genre_popular_')
+                ? utils_1.popularGenres
+                : [...utils_1.popularGenres, ...utils_1.otherGenres];
             const selectedGenre = genres[genreIndex];
             if (!state.selectedGenres)
                 state.selectedGenres = [];
@@ -388,7 +388,7 @@ const addBookScene = new telegraf_1.Scenes.WizardScene('ADD_BOOK_SCENE', async (
                 [
                     telegraf_1.Markup.button.callback('✅ Є фізично', `book_physical_yes_${userId}`),
                     telegraf_1.Markup.button.callback('❌ Немає', `book_physical_no_${userId}`),
-                ]
+                ],
             ]).reply_markup,
         });
         return ctx.wizard.next();

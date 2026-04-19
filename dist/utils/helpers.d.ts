@@ -1,5 +1,6 @@
-import { Book } from '../database/models';
+import { Book, Podcast } from '../database/models';
 import { BotContext } from '../types/telegraf';
+export declare const formatPodcastCaption: (podcast: Podcast) => Promise<string>;
 export declare function safeParseInt(value: string | number, defaultValue?: number): number;
 export declare function safeParseFloat(value: string | number, defaultValue?: number): number;
 export declare const formatBookCaption: (book: Book, tags?: Array<{

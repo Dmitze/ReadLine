@@ -1,8 +1,3 @@
-/**
- * Services barrel export
- * REFACTOR-003: Service Layer
- */
-
 export {
   BookService,
   type CreateBookInput,

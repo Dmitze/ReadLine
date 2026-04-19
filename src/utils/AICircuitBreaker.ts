@@ -1,43 +1,25 @@
-/**
- * AI Circuit Breaker
- * REFACTOR-009: Circuit Breaker for AI API
- *
- * Specialized circuit breaker for AI API calls (Gemini, OpenAI, etc.)
- * with rate limiting, timeout management, and fallback strategies
- */
-
 import { CircuitBreaker, CircuitState, CircuitMetrics } from './CircuitBreaker';
 import { RetryStrategy } from './RetryStrategy';
 import { logger } from './logger';
 
-/**
- * AI Circuit Breaker configuration
- */
 export interface AICircuitBreakerConfig {
   name?: string;
-  failureThreshold?: number; // Number of failures to open circuit (default: 5)
-  successThreshold?: number; // Successes in half-open to close (default: 2)
-  timeout?: number; // Time to wait before half-open attempt (default: 60000)
+  failureThreshold?: number;
+  successThreshold?: number;
+  timeout?: number;
 
-  // Rate limiting
-  maxRequestsPerMinute?: number; // Rate limit per minute (default: 60)
-  maxConcurrentRequests?: number; // Max concurrent requests (default: 5)
+  maxRequestsPerMinute?: number;
+  maxConcurrentRequests?: number;
 
-  // Retry strategy
-  enableRetry?: boolean; // Enable automatic retry (default: true)
-  maxRetryAttempts?: number; // Retry attempts (default: 2)
-  retryInitialDelay?: number; // Initial retry delay in ms (default: 500)
+  enableRetry?: boolean;
+  maxRetryAttempts?: number;
+  retryInitialDelay?: number;
 
-  // Timeouts
-  requestTimeout?: number; // Request timeout in ms (default: 25000)
+  requestTimeout?: number;
 
-  // Callbacks
-  onFallback?: (reason: string) => Promise<string>; // Fallback handler
+  onFallback?: (reason: string) => Promise<string>;
 }
 
-/**
- * AI Circuit Breaker statistics
- */
 export interface AICircuitBreakerStats extends CircuitMetrics {
   rateLimitHits: number;
   concurrentRequests: number;
@@ -45,9 +27,6 @@ export interface AICircuitBreakerStats extends CircuitMetrics {
   totalResponseTime: number;
 }
 
-/**
- * Specialized circuit breaker for AI API calls
- */
 export class AICircuitBreaker {
   private circuitBreaker: CircuitBreaker<any>;
   private retryStrategy: RetryStrategy;
@@ -75,7 +54,6 @@ export class AICircuitBreaker {
     this.requestTimeout = config.requestTimeout || 25000;
     this.onFallback = config.onFallback;
 
-    // Initialize circuit breaker
     this.circuitBreaker = new CircuitBreaker({
       name,
       failureThreshold: config.failureThreshold || 5,
@@ -89,26 +67,24 @@ export class AICircuitBreaker {
       },
     });
 
-    // Initialize retry strategy
     this.retryStrategy = new RetryStrategy({
       name: `${name}-Retry`,
       maxAttempts: config.maxRetryAttempts || 2,
       initialDelay: config.retryInitialDelay || 500,
       retryableErrors: (error) => {
         const message = error.message.toLowerCase();
-        // Retry on network errors, timeouts, and specific HTTP errors
+
         return (
           message.includes('timeout') ||
           message.includes('econnrefused') ||
           message.includes('econnreset') ||
-          message.includes('429') || // Too many requests
-          message.includes('503') || // Service unavailable
-          message.includes('502') // Bad gateway
+          message.includes('429') ||
+          message.includes('503') ||
+          message.includes('502')
         );
       },
     });
 
-    // Initialize stats
     this.stats = {
       ...this.circuitBreaker.getMetrics(),
       rateLimitHits: 0,
@@ -118,15 +94,11 @@ export class AICircuitBreaker {
     };
   }
 
-  /**
-   * Execute AI API request with protection
-   */
   async request<T>(fn: () => Promise<T>, context?: string): Promise<T> {
     const requestId = `${Date.now()}-${Math.random()}`;
     const startTime = Date.now();
 
     try {
-      // Check rate limiting
       if (!this.checkRateLimit()) {
         this.rateLimitHits++;
         const reason = 'Rate limit exceeded';
@@ -234,16 +206,10 @@ export class AICircuitBreaker {
     return true;
   }
 
-  /**
-   * Get circuit breaker state
-   */
   getState(): CircuitState {
     return this.circuitBreaker.getState();
   }
 
-  /**
-   * Get combined statistics
-   */
   getStats(): AICircuitBreakerStats {
     const metrics = this.circuitBreaker.getMetrics();
 
@@ -257,9 +223,6 @@ export class AICircuitBreaker {
     };
   }
 
-  /**
-   * Get health status
-   */
   getHealth(): {
     status: 'healthy' | 'degraded' | 'unhealthy';
     state: CircuitState;
@@ -292,9 +255,6 @@ export class AICircuitBreaker {
     return { status, state, message };
   }
 
-  /**
-   * Get formatted status
-   */
   getStatus(): string {
     const stats = this.getStats();
     const health = this.getHealth();
@@ -312,9 +272,6 @@ export class AICircuitBreaker {
     );
   }
 
-  /**
-   * Reset all statistics
-   */
   reset(): void {
     this.circuitBreaker.reset();
     this.retryStrategy.resetStats();
@@ -325,22 +282,13 @@ export class AICircuitBreaker {
     logger.info('AI Circuit Breaker reset');
   }
 
-  /**
-   * Stop monitoring
-   */
   stop(): void {
     this.circuitBreaker.stop();
   }
 }
 
-/**
- * Global AI Circuit Breaker instance
- */
 let globalAICircuitBreaker: AICircuitBreaker | null = null;
 
-/**
- * Get or create global AI Circuit Breaker
- */
 export function getAICircuitBreaker(config?: AICircuitBreakerConfig): AICircuitBreaker {
   if (!globalAICircuitBreaker) {
     globalAICircuitBreaker = new AICircuitBreaker(config);
@@ -348,9 +296,6 @@ export function getAICircuitBreaker(config?: AICircuitBreakerConfig): AICircuitB
   return globalAICircuitBreaker;
 }
 
-/**
- * Reset global AI Circuit Breaker
- */
 export function resetAICircuitBreaker(): void {
   if (globalAICircuitBreaker) {
     globalAICircuitBreaker.reset();

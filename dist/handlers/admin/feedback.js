@@ -31,7 +31,7 @@ exports.default = (bot) => {
                 await ctx.reply('✅ <b>Немає нових повідомлень</b>\n\n' +
                     "Всі повідомлення зворотного зв'язку прочитані.\n\n" +
                     '💡 Користувачі можуть надіслати повідомлення через:\n' +
-                    "Головне меню → 📞 Зворотній зв'язок", {
+                    "Головне меню → 📞 Зворотний зв'язок", {
                     parse_mode: 'Markdown',
                     reply_markup: telegraf_1.Markup.inlineKeyboard([
                         [telegraf_1.Markup.button.callback('📜 Показати історію', 'view_feedback_history')],

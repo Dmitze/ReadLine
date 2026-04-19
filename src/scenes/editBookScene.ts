@@ -15,14 +15,14 @@ interface EditBookState {
 
 const editBookScene = new Scenes.WizardScene(
   'EDIT_BOOK_SCENE',
-  // Крок 1: Показати поточні дані книги та меню редагування
+
   async (ctx: BotContext) => {
     const state = ctx.scene.state as EditBookState;
 
-    logger.info('EditBookScene step 1 entered', { 
+    logger.info('EditBookScene step 1 entered', {
       bookId: state.bookId,
       hasSceneState: !!ctx.scene.state,
-      userId: ctx.from?.id 
+      userId: ctx.from?.id,
     });
 
     if (!state.bookId) {
@@ -45,7 +45,6 @@ const editBookScene = new Scenes.WizardScene(
       return ctx.scene.leave();
     }
 
-    // Зберігаємо дані книги в state
     const wizardState = ctx.wizard.state as EditBookState;
     wizardState.book = book;
 
@@ -79,7 +78,6 @@ const editBookScene = new Scenes.WizardScene(
     return ctx.wizard.next();
   },
 
-  // Крок 2: Обробка вибору поля для редагування
   async (ctx: BotContext) => {
     if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) {
       await ctx.reply('❌ Будь ласка, використовуйте кнопки для вибору');
@@ -98,12 +96,11 @@ const editBookScene = new Scenes.WizardScene(
     if (action === 'back_to_list') {
       await ctx.answerCbQuery('Повертаємось до списку книг');
       await ctx.reply('⬅️ Повертаємось до списку книг');
-      // Повертаємось до сцени управління книгами
+
       return ctx.scene.enter('MANAGE_BOOKS_SCENE');
     }
 
     if (action === 'save_changes') {
-      // Зберігаємо зміни
       const updates = state.updates || {};
 
       if (Object.keys(updates).length === 0) {
@@ -120,7 +117,6 @@ const editBookScene = new Scenes.WizardScene(
       }
       await ctx.answerCbQuery('✅ Зміни збережено!');
 
-      // Показуємо що саме змінено
       const changedFields = Object.keys(updates)
         .map((key) => {
           const fieldNames: Record<string, string> = {
@@ -143,8 +139,6 @@ const editBookScene = new Scenes.WizardScene(
         logger.adminAction(ctx.from.id, 'edit_book', { bookId: state.book.id, updates });
       }
 
-      // ✅ ВИПРАВЛЕНО: Гарантуємо що сцена коректно завершується
-      // Невелика затримка перед виходом щоб Telegram встиг отримати всі повідомлення
       setTimeout(() => {
         ctx.scene.leave().catch((err: unknown) => {
           logger.error('Error leaving edit scene', { error: err });
@@ -154,7 +148,6 @@ const editBookScene = new Scenes.WizardScene(
       return;
     }
 
-    // Зберігаємо яке поле редагуємо
     state.editingField = action.replace('edit_', '');
 
     await ctx.answerCbQuery();
@@ -170,7 +163,9 @@ const editBookScene = new Scenes.WizardScene(
     };
 
     // ✅ ВИПРАВЛЕНО #11: Перевірка що editingField існує перед використанням як ключ
-    const fieldName = (state.editingField && fieldNames[state.editingField as keyof typeof fieldNames]) || 'значення';
+    const fieldName =
+      (state.editingField && fieldNames[state.editingField as keyof typeof fieldNames]) ||
+      'значення';
 
     if (state.editingField === 'availability') {
       await ctx.editMessageReplyMarkup({
@@ -183,17 +178,12 @@ const editBookScene = new Scenes.WizardScene(
     } else if (state.editingField === 'photo') {
       await ctx.reply('🖼️ Надішліть нове фото обкладинки або натисніть /skip щоб пропустити');
     } else if (state.editingField === 'genre') {
-      // Ініціалізуємо масив обраних жанрів з поточних жанрів книги (розділені новим рядком)
-      state.selectedGenres = state.book?.genre 
-        ? state.book.genre.split('\n').filter(Boolean) 
-        : [];
+      state.selectedGenres = state.book?.genre ? state.book.genre.split('\n').filter(Boolean) : [];
 
-      // ✅ ВИПРАВЛЕНО #11: Ініціалізувати selectedGenres якщо undefined
       const selectedGenres = state.selectedGenres || [];
       const popularGenres = POPULAR_GENRES;
       const otherGenres = OTHER_GENRES;
 
-      // Популярні жанри
       const popularKeyboard = [];
       for (let i = 0; i < popularGenres.length; i += 2) {
         const row = [
@@ -213,7 +203,6 @@ const editBookScene = new Scenes.WizardScene(
         popularKeyboard.push(row);
       }
 
-      // Інші жанри
       const otherKeyboard = [];
       for (let i = 0; i < otherGenres.length; i += 2) {
         const row = [
@@ -254,22 +243,19 @@ const editBookScene = new Scenes.WizardScene(
     return ctx.wizard.next();
   },
 
-  // Крок 3: Отримання нового значення
   async (ctx: BotContext) => {
     const state = ctx.wizard.state as EditBookState;
 
-    // Обробка callback для доступності
     if (ctx.callbackQuery && 'data' in ctx.callbackQuery) {
       const action = ctx.callbackQuery.data;
 
       if (action === 'back_to_menu') {
         await ctx.answerCbQuery();
-        // Повертаємось до меню редагування
+
         ctx.wizard.selectStep(0);
         return;
       }
 
-      // Обробка вибору жанрів
       if (action.startsWith('genre_')) {
         const selectedGenre = action.replace('genre_', '');
 
@@ -337,7 +323,6 @@ const editBookScene = new Scenes.WizardScene(
         return;
       }
 
-      // Показати більше жанрів
       if (action === 'show_more_genres') {
         const otherGenres = OTHER_GENRES;
 
@@ -380,7 +365,6 @@ const editBookScene = new Scenes.WizardScene(
         return;
       }
 
-      // Повернення до популярних жанрів
       if (action === 'back_to_popular_genres') {
         const popularGenres = POPULAR_GENRES;
 
@@ -427,7 +411,6 @@ const editBookScene = new Scenes.WizardScene(
         return;
       }
 
-      // Завершення вибору жанрів
       if (action === 'genres_done') {
         if (!state.selectedGenres || state.selectedGenres.length === 0) {
           await ctx.answerCbQuery('❌ Оберіть хоча б один жанр!', { show_alert: true });
@@ -435,14 +418,12 @@ const editBookScene = new Scenes.WizardScene(
         }
 
         state.updates = state.updates || {};
-        state.updates.genre = state.selectedGenres.join('\n'); // Зберігаємо всі жанри, розділені новим рядком
+        state.updates.genre = state.selectedGenres.join('\n');
 
         await ctx.answerCbQuery(`✅ Жанри змінено (${state.selectedGenres.length} обрано)`);
 
-        // Повертаємося на крок 0 (меню редагування)
         ctx.wizard.selectStep(0);
 
-        // Показуємо меню редагування з оновленою інформацією
         if (!state.book) {
           await ctx.reply('❌ Помилка: дані книги відсутні');
           return ctx.scene.leave();
@@ -479,10 +460,8 @@ const editBookScene = new Scenes.WizardScene(
 
         await ctx.answerCbQuery('✅ Змінено');
 
-        // Повертаємося на крок 0 (меню редагування)
         ctx.wizard.selectStep(0);
 
-        // Показуємо меню редагування
         const { Markup } = await import('telegraf');
 
         if (!state.book) {
@@ -515,13 +494,11 @@ const editBookScene = new Scenes.WizardScene(
       }
     }
 
-    // Обробка команди skip
     if (ctx.message && 'text' in ctx.message && ctx.message.text === '/skip') {
       await ctx.reply('⏭️ Пропущено. Використайте меню вище для продовження.');
       return;
     }
 
-    // Обробка фото
     if (state.editingField === 'photo') {
       if (
         ctx.message &&
@@ -531,7 +508,6 @@ const editBookScene = new Scenes.WizardScene(
       ) {
         const photo = ctx.message.photo[ctx.message.photo.length - 1];
 
-        // Перевіряємо розмір фото
         if (photo.file_size && photo.file_size > 10 * 1024 * 1024) {
           await ctx.reply('❌ Фото занадто велике. Максимум 10 МБ. Спробуйте інше фото або /skip');
           return;
@@ -540,11 +516,8 @@ const editBookScene = new Scenes.WizardScene(
         state.updates = state.updates || {};
         state.updates.photo_file_id = photo.file_id;
 
-        // ✅ ВИПРАВЛЕНО: Повертаємось до меню редагування замість простого превью
-        // Повертаємося на крок 0 (меню редагування)
         ctx.wizard.selectStep(0);
 
-        // Показуємо меню редагування з оновленою інформацією
         if (!state.book) {
           await ctx.reply('❌ Помилка: дані книги відсутні');
           return ctx.scene.leave();
@@ -572,7 +545,6 @@ const editBookScene = new Scenes.WizardScene(
         });
         return;
       } else if (ctx.message && 'text' in ctx.message) {
-        // Якщо надіслано текст замість фото
         await ctx.reply('❌ Будь ласка, надішліть фото (не текст) або /skip для пропуску');
         return;
       } else {
@@ -581,7 +553,6 @@ const editBookScene = new Scenes.WizardScene(
       }
     }
 
-    // Обробка текстових полів
     if (!ctx.message || !('text' in ctx.message)) {
       await ctx.reply('❌ Будь ласка, надішліть текст');
       return;
@@ -589,29 +560,21 @@ const editBookScene = new Scenes.WizardScene(
 
     const newValue = ctx.message.text;
 
-    // Валідація
     if (newValue.length < 2) {
       await ctx.reply('❌ Значення занадто коротке. Спробуйте ще раз:');
       return;
     }
 
-    // ✅ ВИДАЛЕНО: Ограничение на описание больше не применяется (было 500 символов)
-    // Опис тепер може бути довільної довжини
-
-    // Зберігаємо зміну
     state.updates = state.updates || {};
-    // ✅ ВИПРАВЛЕНО #11: Перевірка що editingField існує перед використанням як ключ
+
     if (state.editingField) {
       state.updates[state.editingField] = newValue;
     }
 
-    // ✅ ВИПРАВЛЕНО: Повертаємось до меню редагування замість простого повідомлення
     await ctx.answerCbQuery?.();
-    
-    // Повертаємося на крок 0 (меню редагування)
+
     ctx.wizard.selectStep(0);
 
-    // Показуємо меню редагування з оновленою інформацією
     if (!state.book) {
       await ctx.reply('❌ Помилка: дані книги відсутні');
       return ctx.scene.leave();

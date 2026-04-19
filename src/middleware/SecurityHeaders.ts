@@ -1,8 +1,3 @@
-/**
- * Security Headers & CORS Middleware
- * REFACTOR-015: CORS + Security Headers
- */
-
 import { BotContext } from '../types/telegraf';
 import { logger } from '../utils/logger';
 
@@ -26,9 +21,6 @@ export interface SecurityHeadersConfig {
   xPoweredBy?: boolean;
 }
 
-/**
- * Default security headers configuration
- */
 const DEFAULT_SECURITY_HEADERS: SecurityHeadersConfig = {
   contentSecurityPolicy: "default-src 'self'",
   crossOriginResourcePolicy: 'cross-origin',
@@ -40,17 +32,10 @@ const DEFAULT_SECURITY_HEADERS: SecurityHeadersConfig = {
   xPoweredBy: false,
 };
 
-/**
- * Security headers middleware
- */
 export function securityHeadersMiddleware(config: SecurityHeadersConfig = {}) {
   const mergedConfig = { ...DEFAULT_SECURITY_HEADERS, ...config };
 
   return async (ctx: BotContext, next: () => Promise<void>) => {
-    // Note: Telegraf bots don't have traditional HTTP response headers
-    // This middleware adds security context information
-
-    // Store security headers info in context
     (ctx as any).securityHeaders = {
       contentSecurityPolicy: mergedConfig.contentSecurityPolicy,
       crossOriginResourcePolicy: mergedConfig.crossOriginResourcePolicy,
@@ -65,9 +50,6 @@ export function securityHeadersMiddleware(config: SecurityHeadersConfig = {}) {
   };
 }
 
-/**
- * CORS validation middleware
- */
 export function corsMiddleware(config: CORSConfig = {}) {
   const corsConfig: Required<CORSConfig> = {
     origin: config.origin || '*',
@@ -84,7 +66,6 @@ export function corsMiddleware(config: CORSConfig = {}) {
   };
 
   return async (ctx: BotContext, next: () => Promise<void>) => {
-    // Store CORS info in context
     (ctx as any).cors = {
       origin: corsConfig.origin,
       credentials: corsConfig.credentials,
@@ -98,9 +79,6 @@ export function corsMiddleware(config: CORSConfig = {}) {
   };
 }
 
-/**
- * Check if origin is allowed
- */
 function isOriginAllowed(
   origin: string,
   allowedOrigins: string | string[] | ((origin: string) => boolean)
@@ -120,41 +98,34 @@ function isOriginAllowed(
   return allowedOrigins.includes(origin);
 }
 
-/**
- * Request validation middleware
- * Checks for common attack patterns
- */
 export function requestValidationMiddleware() {
   return async (ctx: BotContext, next: () => Promise<void>) => {
     const { LIMITS } = await import('../constants/limits');
 
-    // Validate callback_query size
     const callbackData = (ctx.callbackQuery as any)?.data;
     if (callbackData && typeof callbackData === 'string') {
       if (callbackData.length > LIMITS.MAX_CALLBACK_DATA_LENGTH) {
         logger.warn('⚠️ Large callback_query data detected', {
           length: callbackData.length,
-          limit: LIMITS.MAX_CALLBACK_DATA_LENGTH
+          limit: LIMITS.MAX_CALLBACK_DATA_LENGTH,
         });
         await ctx.answerCbQuery('❌ Дані занадто великі');
         return;
       }
     }
 
-    // Validate message text size
     const messageText = (ctx.message as any)?.text;
     if (messageText && typeof messageText === 'string') {
       if (messageText.length > LIMITS.MESSAGE_MAX) {
         logger.warn('⚠️ Large message text detected', {
           length: messageText.length,
-          limit: LIMITS.MESSAGE_MAX
+          limit: LIMITS.MESSAGE_MAX,
         });
         await ctx.reply(`⚠️ Повідомлення занадто велике. Максимум ${LIMITS.MESSAGE_MAX} символів.`);
         return;
       }
     }
 
-    // Check for potential SQL injection patterns in user input
     const userInput = [messageText, callbackData, (ctx as any).session?.userInput].filter(Boolean);
 
     for (const input of userInput) {
@@ -170,9 +141,6 @@ export function requestValidationMiddleware() {
   };
 }
 
-/**
- * Check for SQL injection patterns
- */
 function hasSQLInjectionPattern(input: string): boolean {
   const sqlPatterns = [
     /(\bunion\b.*\bselect\b)/i,
@@ -189,9 +157,6 @@ function hasSQLInjectionPattern(input: string): boolean {
   return sqlPatterns.some((pattern) => pattern.test(input));
 }
 
-/**
- * XSS prevention middleware
- */
 export function xssPreventionMiddleware() {
   return async (ctx: BotContext, next: () => Promise<void>) => {
     const messageText = (ctx.message as any)?.text;
@@ -209,9 +174,6 @@ export function xssPreventionMiddleware() {
   };
 }
 
-/**
- * Check for XSS patterns
- */
 function checkXSSPatterns(input: string): boolean {
   const xssPatterns = [
     /<script[^>]*>[\s\S]*?<\/script>/gi,
@@ -227,9 +189,6 @@ function checkXSSPatterns(input: string): boolean {
   return xssPatterns.some((pattern) => pattern.test(input));
 }
 
-/**
- * Rate limiting on per-user basis with tracking
- */
 export interface UserSecurityContext {
   userId: number;
   lastActivity: Date;
@@ -241,9 +200,6 @@ export interface UserSecurityContext {
 export class SecurityContext {
   private users: Map<number, UserSecurityContext> = new Map();
 
-  /**
-   * Check user security status
-   */
   checkUser(userId: number): UserSecurityContext {
     let context = this.users.get(userId);
 
@@ -261,32 +217,22 @@ export class SecurityContext {
     return context;
   }
 
-  /**
-   * Record suspicious activity
-   */
   recordSuspiciousActivity(userId: number): void {
     const context = this.checkUser(userId);
     context.suspiciousActivities++;
 
-    // Block after 3 suspicious activities
     if (context.suspiciousActivities >= 3) {
       context.isBlocked = true;
       logger.warn(`⚠️ User ${userId} blocked due to suspicious activity`);
     }
   }
 
-  /**
-   * Increment request count
-   */
   incrementRequest(userId: number): void {
     const context = this.checkUser(userId);
     context.requestCount++;
     context.lastActivity = new Date();
   }
 
-  /**
-   * Unblock user (admin action)
-   */
   unblockUser(userId: number): void {
     const context = this.users.get(userId);
     if (context) {
@@ -296,11 +242,8 @@ export class SecurityContext {
     }
   }
 
-  /**
-   * Cleanup old entries
-   */
   cleanup(): void {
-    const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24 hours
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
 
     for (const [userId, context] of this.users.entries()) {
       if (context.lastActivity.getTime() < cutoff) {
@@ -310,9 +253,6 @@ export class SecurityContext {
   }
 }
 
-/**
- * Create security context middleware
- */
 export function createSecurityContextMiddleware(securityContext: SecurityContext) {
   return async (ctx: BotContext, next: () => Promise<void>) => {
     const userId = ctx.from?.id;
@@ -331,16 +271,12 @@ export function createSecurityContextMiddleware(securityContext: SecurityContext
 
     securityContext.incrementRequest(userId);
 
-    // Store in context
     (ctx as any).securityContext = userContext;
 
     await next();
   };
 }
 
-/**
- * Comprehensive security middleware stack
- */
 export function createSecurityMiddlewareStack(config?: {
   cors?: CORSConfig;
   headers?: SecurityHeadersConfig;
@@ -354,9 +290,6 @@ export function createSecurityMiddlewareStack(config?: {
     xssPrevention: xssPreventionMiddleware(),
     securityContext: createSecurityContextMiddleware(securityContext),
 
-    /**
-     * Apply all middleware in order
-     */
     apply: (bot: { use: (middleware: unknown) => void }) => {
       bot.use(corsMiddleware(config?.cors));
       bot.use(securityHeadersMiddleware(config?.headers));

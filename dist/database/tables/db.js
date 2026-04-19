@@ -72,7 +72,9 @@ exports.db.exec(`
             try {
                 exports.db.get('PRAGMA integrity_check;', (checkErr, row) => {
                     if (checkErr) {
-                        logger_1.logger.error('Integrity check failed to execute', { error: String(checkErr?.message || checkErr) });
+                        logger_1.logger.error('Integrity check failed to execute', {
+                            error: String(checkErr?.message || checkErr),
+                        });
                         logger_1.logger.error('Database may be corrupted. Please recover from backup or run: node scripts/repair-database.js');
                         const gracefulShutdown = async () => {
                             try {
@@ -83,7 +85,7 @@ exports.db.exec(`
                                         resolve();
                                     });
                                 });
-                                await new Promise(resolve => setTimeout(resolve, 1000));
+                                await new Promise((resolve) => setTimeout(resolve, 1000));
                                 process.exit(1);
                             }
                             catch (error) {
@@ -115,7 +117,7 @@ exports.db.exec(`
                                         resolve();
                                     });
                                 });
-                                await new Promise(resolve => setTimeout(resolve, 1000));
+                                await new Promise((resolve) => setTimeout(resolve, 1000));
                                 process.exit(1);
                             }
                             catch (error) {
@@ -129,7 +131,7 @@ exports.db.exec(`
             }
             catch (e) {
                 logger_1.logger.warn('Integrity check could not be performed', {
-                    error: e instanceof Error ? e.message : String(e)
+                    error: e instanceof Error ? e.message : String(e),
                 });
             }
         }
@@ -365,14 +367,14 @@ const initDatabase = () => {
             'ALTER TABLE books ADD COLUMN recommended_age INTEGER;',
             'ALTER TABLE books ADD COLUMN content_warnings TEXT;',
             'ALTER TABLE books ADD COLUMN isbn TEXT;',
-            'ALTER TABLE books ADD COLUMN language TEXT DEFAULT \'Українська\';',
+            "ALTER TABLE books ADD COLUMN language TEXT DEFAULT 'Українська';",
             'ALTER TABLE books ADD COLUMN is_physically_available INTEGER DEFAULT 0;',
             'ALTER TABLE books ADD COLUMN epub_file_id TEXT;',
             'ALTER TABLE books ADD COLUMN epub_url TEXT;',
         ];
         const alterPromoCodesTableQueries = [
             'ALTER TABLE promo_codes ADD COLUMN description TEXT;',
-            'ALTER TABLE promo_codes ADD COLUMN promo_type TEXT DEFAULT \'yakaboo_unlimited\';',
+            "ALTER TABLE promo_codes ADD COLUMN promo_type TEXT DEFAULT 'yakaboo_unlimited';",
             'ALTER TABLE promo_codes ADD COLUMN is_active INTEGER DEFAULT 1;',
             'ALTER TABLE promo_codes ADD COLUMN created_by INTEGER;',
         ];
@@ -435,7 +437,9 @@ const initDatabase = () => {
                 else {
                     const booksCount = row?.count || 0;
                     let seededBooksCount = 0;
-                    logger_1.logger.info('Database initialized successfully', { booksCount: booksCount + seededBooksCount });
+                    logger_1.logger.info('Database initialized successfully', {
+                        booksCount: booksCount + seededBooksCount,
+                    });
                     resolve();
                 }
             });

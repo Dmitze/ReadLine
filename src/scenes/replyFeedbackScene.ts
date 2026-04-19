@@ -32,7 +32,6 @@ replyFeedbackScene.enter(async (ctx: BotContext) => {
   );
 });
 
-// ✅ ВИПРАВЛЕНО #15: покращена обробка блокування бота
 replyFeedbackScene.on('text', async (ctx: BotContext) => {
   const state = ctx.scene.state as ReplyState;
   const replyText = 'text' in ctx.message ? ctx.message.text : '';
@@ -70,11 +69,9 @@ replyFeedbackScene.on('text', async (ctx: BotContext) => {
       });
     })
     .catch(async (sendError: any) => {
-      // Детальна обробка помилок Telegram API
       const errorMessage = sendError?.message || String(sendError);
       const errorCode = sendError?.response?.error_code;
 
-      // Перевіряємо різні типи помилок
       const isBotBlocked =
         errorMessage.includes('bot was blocked by the user') ||
         errorMessage.includes('user is deactivated') ||
@@ -121,7 +118,6 @@ replyFeedbackScene.on('text', async (ctx: BotContext) => {
   return ctx.scene.leave();
 });
 
-// Cleanup при виході зі сцени
 replyFeedbackScene.leave((ctx: BotContext) => {
   const state = ctx.scene.state as ReplyState;
   if (state) {

@@ -34,7 +34,9 @@ function registerCatalogHandlers(bot) {
                 await ctx.answerCbQuery();
             }
             catch (cbError) {
-                logger_1.logger.debug('Failed to answer callback query', { error: cbError instanceof Error ? cbError.message : String(cbError) });
+                logger_1.logger.debug('Failed to answer callback query', {
+                    error: cbError instanceof Error ? cbError.message : String(cbError),
+                });
             }
             await ctx.editMessageText('📚 <b>КАТАЛОГ КНИГ</b>\n\n' + 'Оберіть спосіб перегляду:', {
                 parse_mode: 'HTML',
@@ -129,20 +131,22 @@ function registerCatalogHandlers(bot) {
                 await ctx.editMessageText(`📭 <b>Книги жанру "${genre}"</b>\n\nНа жаль, книг цього жанру ще немає.`, {
                     parse_mode: 'HTML',
                     reply_markup: telegraf_1.Markup.inlineKeyboard([
-                        [telegraf_1.Markup.button.callback('⬅️ Назад до жанрів', 'catalog_genres')]
-                    ]).reply_markup
+                        [telegraf_1.Markup.button.callback('⬅️ Назад до жанрів', 'catalog_genres')],
+                    ]).reply_markup,
                 });
                 return;
             }
             let message = `📖 <b>ЖАНР: ${genre.toUpperCase()}</b>\n\n`;
             message += `Знайдено ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}:\n\n`;
-            const keyboard = books.slice(0, 10).map((book) => [
-                telegraf_1.Markup.button.callback(`📖 ${book.title} - ${book.author}`, `view_book_${book.id}`)
+            const keyboard = books
+                .slice(0, 10)
+                .map((book) => [
+                telegraf_1.Markup.button.callback(`📖 ${book.title} - ${book.author}`, `view_book_${book.id}`),
             ]);
             keyboard.push([telegraf_1.Markup.button.callback('⬅️ Назад до жанрів', 'catalog_genres')]);
             await ctx.editMessageText(message, {
                 parse_mode: 'HTML',
-                reply_markup: telegraf_1.Markup.inlineKeyboard(keyboard).reply_markup
+                reply_markup: telegraf_1.Markup.inlineKeyboard(keyboard).reply_markup,
             });
             logger_1.logger.userAction(ctx.from.id, 'view_genre_books', { genre, count: books.length });
         }
@@ -168,7 +172,7 @@ function registerCatalogHandlers(bot) {
                 message += `${index + 1}. <b>${book.title}</b> - ${book.author}\n   ${rating}\n\n`;
             });
             const keyboard = books.map((book) => [
-                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
             ]);
             const navButtons = [];
             if (totalPages > 1) {
@@ -205,7 +209,7 @@ function registerCatalogHandlers(bot) {
                 message += `${index + 1}. <b>${book.title}</b> - ${book.author}\n`;
             });
             const keyboard = books.map((book) => [
-                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
             ]);
             const navButtons = [];
             if (totalPages > 1) {
@@ -248,7 +252,7 @@ function registerCatalogHandlers(bot) {
                 message += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}\n   📥 ${downloads} завантажень\n\n`;
             });
             const keyboard = books.map((book) => [
-                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
             ]);
             const navButtons = [];
             if (page > 0) {
@@ -314,7 +318,7 @@ function registerCatalogHandlers(bot) {
                 message += `${index + 1}. <b>${book.title}</b> - ${book.author}\n`;
             });
             const keyboard = books.map((book) => [
-                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
             ]);
             const navButtons = [];
             if (totalPages > 1) {
@@ -351,7 +355,7 @@ function registerCatalogHandlers(bot) {
                 message += `${index + 1}. <b>${book.title}</b> - ${book.author}\n`;
             });
             const keyboard = books.map((book) => [
-                telegraf_1.Markup.button.callback(`🎧 ${book.title}`, `view_book_${book.id}`)
+                telegraf_1.Markup.button.callback(`🎧 ${book.title}`, `view_book_${book.id}`),
             ]);
             const navButtons = [];
             if (totalPages > 1) {
@@ -389,7 +393,7 @@ function registerCatalogHandlers(bot) {
                 message += `${index + 1}. <b>${book.title}</b> - ${book.author}\n   📥 ${downloads} завантажень\n\n`;
             });
             const keyboard = books.map((book) => [
-                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
             ]);
             const navButtons = [];
             if (totalPages > 1) {
@@ -458,7 +462,7 @@ function registerCatalogHandlers(bot) {
                 message += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}\n`;
             });
             const keyboard = books.map((book) => [
-                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
             ]);
             const navButtons = [];
             if (page > 0) {
@@ -503,7 +507,7 @@ function registerCatalogHandlers(bot) {
                 message += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}\n`;
             });
             const keyboard = books.map((book) => [
-                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
             ]);
             const navButtons = [];
             if (page > 0) {
@@ -549,7 +553,7 @@ function registerCatalogHandlers(bot) {
                 message += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}\n   ${rating}\n\n`;
             });
             const keyboard = books.map((book) => [
-                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
             ]);
             const navButtons = [];
             if (page > 0) {
@@ -594,7 +598,7 @@ function registerCatalogHandlers(bot) {
                 message += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}\n`;
             });
             const keyboard = books.map((book) => [
-                telegraf_1.Markup.button.callback(`🎧 ${book.title}`, `view_book_${book.id}`)
+                telegraf_1.Markup.button.callback(`🎧 ${book.title}`, `view_book_${book.id}`),
             ]);
             const navButtons = [];
             if (page > 0) {
@@ -704,7 +708,7 @@ function registerCatalogHandlers(bot) {
                 message += `${index + 1}. <b>${book.title}</b> - ${book.author}\n`;
             });
             const keyboard = books.map((book) => [
-                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
             ]);
             const navButtons = [];
             if (totalPages > 1) {
@@ -756,7 +760,7 @@ function registerCatalogHandlers(bot) {
                 message += `${page * booksPerPage + index + 1}. <b>${book.title}</b> - ${book.author}\n`;
             });
             const keyboard = books.map((book) => [
-                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+                telegraf_1.Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
             ]);
             const navButtons = [];
             if (page > 0) {

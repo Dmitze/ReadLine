@@ -32,13 +32,21 @@ async function showFormatSelection(ctx) {
         addedFormats.push('🌐 Посилання');
     const availableFormats = [];
     if (!hasFile)
-        availableFormats.push([{ text: '📄 Додати файл книги', callback_data: `add_more_file_${userId}` }]);
+        availableFormats.push([
+            { text: '📄 Додати файл книги', callback_data: `add_more_file_${userId}` },
+        ]);
     if (!hasAudio)
-        availableFormats.push([{ text: '🎧 Додати аудіофайл', callback_data: `add_more_audio_${userId}` }]);
+        availableFormats.push([
+            { text: '🎧 Додати аудіофайл', callback_data: `add_more_audio_${userId}` },
+        ]);
     if (!hasLink)
-        availableFormats.push([{ text: '🌐 Додати посилання', callback_data: `add_more_link_${userId}` }]);
+        availableFormats.push([
+            { text: '🌐 Додати посилання', callback_data: `add_more_link_${userId}` },
+        ]);
     if (availableFormats.length > 0) {
-        availableFormats.push([{ text: '✅ Далі до тегів', callback_data: `skip_more_formats_${userId}` }]);
+        availableFormats.push([
+            { text: '✅ Далі до тегів', callback_data: `skip_more_formats_${userId}` },
+        ]);
         await ctx.reply(`✅ Додано: ${addedFormats.join(', ') || 'поки нічого'}\n\n` + 'Хочете додати ще формати?', {
             reply_markup: { inline_keyboard: availableFormats },
         });
@@ -59,7 +67,9 @@ async function proceedToTags(ctx) {
     if (allTags.length > 0) {
         const tagButtons = [];
         for (let i = 0; i < allTags.length; i += 2) {
-            const row = [telegraf_1.Markup.button.callback(allTags[i].name, `preview_tag_${allTags[i].id}_${userId}`)];
+            const row = [
+                telegraf_1.Markup.button.callback(allTags[i].name, `preview_tag_${allTags[i].id}_${userId}`),
+            ];
             if (i + 1 < allTags.length) {
                 row.push(telegraf_1.Markup.button.callback(allTags[i + 1].name, `preview_tag_${allTags[i + 1].id}_${userId}`));
             }

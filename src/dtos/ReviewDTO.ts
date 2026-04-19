@@ -1,32 +1,17 @@
-/**
- * DTOs (Data Transfer Objects) for Review entity
- * Used for API contracts and data validation
- * @module dtos/ReviewDTO
- */
-
-/**
- * Request DTO for creating a review
- */
 export interface CreateReviewDTO {
   book_id: number;
   user_id: number;
-  rating: number; // 1-5
+  rating: number;
   comment?: string;
   is_published?: boolean;
 }
 
-/**
- * Request DTO for updating a review
- */
 export interface UpdateReviewDTO {
   rating?: number;
   comment?: string;
   is_published?: boolean;
 }
 
-/**
- * Response DTO for review details
- */
 export interface ReviewResponseDTO {
   id: number;
   book_id: number;
@@ -38,26 +23,17 @@ export interface ReviewResponseDTO {
   updated_at?: string;
 }
 
-/**
- * Response DTO for review with user info
- */
 export interface ReviewWithUserDTO extends ReviewResponseDTO {
   username?: string;
   user_avatar?: string;
 }
 
-/**
- * Response DTO for review with book info
- */
 export interface ReviewWithBookDTO extends ReviewResponseDTO {
   book_title: string;
   book_author: string;
   book_cover?: string;
 }
 
-/**
- * Response DTO for review list item
- */
 export interface ReviewListItemDTO {
   id: number;
   book_id: number;
@@ -68,9 +44,6 @@ export interface ReviewListItemDTO {
   created_at?: string;
 }
 
-/**
- * Query DTO for review search/filtering
- */
 export interface ReviewSearchDTO {
   book_id?: number;
   user_id?: number;
@@ -83,9 +56,6 @@ export interface ReviewSearchDTO {
   order?: 'asc' | 'desc';
 }
 
-/**
- * Response DTO for book ratings summary
- */
 export interface BookRatingSummaryDTO {
   book_id: number;
   average_rating: number;
@@ -95,9 +65,6 @@ export interface BookRatingSummaryDTO {
   };
 }
 
-/**
- * Response DTO for user review history
- */
 export interface UserReviewHistoryDTO {
   user_id: number;
   reviews: ReviewListItemDTO[];
@@ -105,18 +72,12 @@ export interface UserReviewHistoryDTO {
   average_rating: number;
 }
 
-/**
- * Request DTO for publishing pending reviews
- */
 export interface PublishReviewDTO {
   review_id: number;
-  admin_id: number; // Admin who approved
-  rejection_reason?: string; // If rejected
+  admin_id: number;
+  rejection_reason?: string;
 }
 
-/**
- * Response DTO for pending reviews (moderation queue)
- */
 export interface PendingReviewDTO {
   id: number;
   book_id: number;
@@ -129,9 +90,6 @@ export interface PendingReviewDTO {
   awaiting_approval: boolean;
 }
 
-/**
- * Response DTO for review statistics
- */
 export interface ReviewStatsDTO {
   total_reviews: number;
   published_reviews: number;
@@ -144,9 +102,6 @@ export interface ReviewStatsDTO {
   };
 }
 
-/**
- * DTO for bulk review operations
- */
 export interface BulkReviewOperationDTO {
   review_ids: number[];
   action: 'publish' | 'reject' | 'delete';

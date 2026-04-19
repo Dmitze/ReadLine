@@ -308,7 +308,6 @@ export default (bot: Telegraf<BotContext>) => {
     return;
   });
 
-  // Інструкції для адміністратора
   bot.action('admin_help', async (ctx: BotContext) => {
     (async () => {
       await ctx.answerCbQuery();
@@ -353,7 +352,6 @@ export default (bot: Telegraf<BotContext>) => {
     return;
   });
 
-  // Розділ: Управління контентом
   bot.action('admin_help_content', async (ctx: BotContext) => {
     const message =
       '<b>📚 УПРАВЛІННЯ КОНТЕНТОМ</b>\n\n' +
@@ -396,7 +394,6 @@ export default (bot: Telegraf<BotContext>) => {
     return ctx.editMessageText(message, { ...backButton, parse_mode: 'HTML' });
   });
 
-  // Розділ: Промокоди та замовлення
   bot.action('admin_help_promo', async (ctx: BotContext) => {
     const message =
       '<b>🎁 ПРОМОКОДИ ТА ЗАМОВЛЕННЯ</b>\n\n' +
@@ -424,7 +421,7 @@ export default (bot: Telegraf<BotContext>) => {
       '    1. Натисни "📋 Замовлення"\n' +
       '    2. Переглядай мову замовлень\n' +
       '    3. Помічай як оброблені\n' +
-      '    4. Зв\'яжись з користувачем\n\n' +
+      "    4. Зв'яжись з користувачем\n\n" +
       '<i>← Назад в меню інструкцій</i>';
 
     const backButton = Markup.inlineKeyboard([
@@ -435,7 +432,6 @@ export default (bot: Telegraf<BotContext>) => {
     return ctx.editMessageText(message, { ...backButton, parse_mode: 'HTML' });
   });
 
-  // Розділ: Модерація
   bot.action('admin_help_moderation', async (ctx: BotContext) => {
     const message =
       '<b>📊 МОДЕРАЦІЯ ТА ВІДГУКИ</b>\n\n' +
@@ -454,7 +450,7 @@ export default (bot: Telegraf<BotContext>) => {
       '    • Модерируй регулярно - не накопичуй\n' +
       '    • Видаляй рецензии с бранью\n' +
       '    • Поверни спам-повідомлення\n\n' +
-      '<b>💬 ЗВОРОТНІЙ ЗВ\'ЯЗОК (ПОВІДОМЛЕННЯ)</b>\n' +
+      "<b>💬 ЗВОРОТНІЙ ЗВ'ЯЗОК (ПОВІДОМЛЕННЯ)</b>\n" +
       '  Натисни "💬 Повідомлення"\n\n' +
       '  <b>Що це?</b>\n' +
       '    • Помилки з боту\n' +
@@ -476,7 +472,6 @@ export default (bot: Telegraf<BotContext>) => {
     return ctx.editMessageText(message, { ...backButton, parse_mode: 'HTML' });
   });
 
-  // Розділ: Статистика
   bot.action('admin_help_stats', async (ctx: BotContext) => {
     const message =
       '<b>📈 СТАТИСТИКА БОТА</b>\n\n' +
@@ -514,7 +509,6 @@ export default (bot: Telegraf<BotContext>) => {
     return ctx.editMessageText(message, { ...backButton, parse_mode: 'HTML' });
   });
 
-  // Розділ: Система
   bot.action('admin_help_system', async (ctx: BotContext) => {
     const message =
       '<b>⚙️ СИСТЕМА ТА НАЛАШТУВАННЯ</b>\n\n' +
@@ -527,7 +521,7 @@ export default (bot: Telegraf<BotContext>) => {
       '    ✓ Якщо бот залис (не реагує на команди)\n' +
       '    ✓ Після оновлення коду\n' +
       '    ✓ При дивних помилках\n' +
-      '    ✓ Для оптимізації пам\'яті\n\n' +
+      "    ✓ Для оптимізації пам'яті\n\n" +
       '  Як використовувати:\n' +
       '    1. Натисни "🔄 Перезавантажити бота"\n' +
       '    2. Підтверди дію\n' +
@@ -562,7 +556,6 @@ export default (bot: Telegraf<BotContext>) => {
     return ctx.editMessageText(message, { ...backButton, parse_mode: 'HTML' });
   });
 
-  // Розділ: Поради для адміністраторів
   bot.action('admin_help_tips', async (ctx: BotContext) => {
     const message =
       '<b>💡 ПОРАДИ ДЛЯ АДМІНІСТРАТОРІВ</b>\n\n' +
@@ -621,10 +614,9 @@ export default (bot: Telegraf<BotContext>) => {
     ]);
 
     return ctx.editMessageText(message, { ...backButton, parse_mode: 'HTML' });
-    });
+  });
 
-    // Перезавантаження бота
-    bot.action('restart_bot', async (ctx: BotContext) => {
+  bot.action('restart_bot', async (ctx: BotContext) => {
     (async () => {
       await ctx.answerCbQuery();
 
@@ -634,7 +626,6 @@ export default (bot: Telegraf<BotContext>) => {
         return;
       }
 
-      // Запитуємо підтвердження
       await ctx.editMessageText(
         '⚠️ <b>ПЕРЕЗАВАНТАЖЕННЯ БОТА</b>\n\n' +
           'Це діяння перезагрузить бота повністю.\n\n' +
@@ -660,10 +651,9 @@ export default (bot: Telegraf<BotContext>) => {
       ctx.answerCbQuery('❌ Помилка');
     });
     return;
-    });
+  });
 
-    // Підтвердження перезавантаження
-    bot.action('confirm_restart', async (ctx: BotContext) => {
+  bot.action('confirm_restart', async (ctx: BotContext) => {
     (async () => {
       await ctx.answerCbQuery('🔄 Перезавантажуємо бота...');
 
@@ -683,13 +673,9 @@ export default (bot: Telegraf<BotContext>) => {
         { parse_mode: 'HTML' }
       );
 
-      // Затримка 2 сек перед перезавантаженням
-      // щоб повідомлення встигло надіслатися
       setTimeout(() => {
         logger.info('Executing bot restart...');
-        // Exit з кодом 1 - сигнал для перезагрузки
-        // Якщо використовується PM2, він автоматично перезагрузить процес
-        // Якщо ні - потрібно вручну перезагрузити або використовувати npm scripts
+
         process.exit(1);
       }, 2000);
     })().catch((error) => {
@@ -701,5 +687,5 @@ export default (bot: Telegraf<BotContext>) => {
       ctx.answerCbQuery('❌ Помилка при перезавантаженні');
     });
     return;
-    });
-    };
+  });
+};

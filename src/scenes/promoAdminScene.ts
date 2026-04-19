@@ -1,7 +1,3 @@
-/**
- * Promo Admin Scene - сцена керування промокодами для адміна
- */
-
 import { Scenes } from 'telegraf';
 import { BotContext } from '../types/telegraf';
 import { logger } from '../utils/logger';
@@ -15,7 +11,6 @@ import {
 
 const promoAdminScene = new Scenes.BaseScene<BotContext>('PROMO_ADMIN_SCENE');
 
-// Вхід в сцену
 promoAdminScene.enter(async (ctx) => {
   try {
     const stats = await getExtendedPromoStats();
@@ -47,7 +42,6 @@ promoAdminScene.enter(async (ctx) => {
   }
 });
 
-// Додавання промокоду
 promoAdminScene.action('promo_add', async (ctx) => {
   await ctx.answerCbQuery();
   await ctx.editMessageText(
@@ -65,82 +59,76 @@ promoAdminScene.action('promo_add', async (ctx) => {
   (ctx.scene as any).state.waitingForPromoCode = true;
 });
 
-// Список промокодів
 promoAdminScene.action('promo_list', async (ctx) => {
   await ctx.answerCbQuery('Завантаження...');
 
   try {
     const promoCodes = await getAllPromoCodes();
 
-  if (promoCodes.length === 0) {
-    await ctx.editMessageText(
-      '📋 <b>СПИСОК ПРОМОКОДІВ</b>\n\n' +
-        '📭 Промокодів ще немає.\n\n' +
-        'Додайте перший промокод натиснувши "➕ Додати промокод"',
-      {
-        parse_mode: 'HTML',
-        reply_markup: {
-          inline_keyboard: [
-            [{ text: '➕ Додати промокод', callback_data: 'promo_add' }],
-            [{ text: '⬅️ Назад', callback_data: 'promo_back_to_menu' }],
-          ],
-        },
-      }
-    );
-    return;
-  }
+    if (promoCodes.length === 0) {
+      await ctx.editMessageText(
+        '📋 <b>СПИСОК ПРОМОКОДІВ</b>\n\n' +
+          '📭 Промокодів ще немає.\n\n' +
+          'Додайте перший промокод натиснувши "➕ Додати промокод"',
+        {
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [
+              [{ text: '➕ Додати промокод', callback_data: 'promo_add' }],
+              [{ text: '⬅️ Назад', callback_data: 'promo_back_to_menu' }],
+            ],
+          },
+        }
+      );
+      return;
+    }
 
-  let message = '📋 <b>СПИСОК ПРОМОКОДІВ</b>\n\n';
+    let message = '📋 <b>СПИСОК ПРОМОКОДІВ</b>\n\n';
 
-  for (const promo of promoCodes.slice(0, LIMITS.DISPLAY_LIMIT)) {
-    const status = promo.is_active ? '✅' : '❌';
-    message += `${status} <code>${promo.code}</code>\n`;
-    message += `   ${promo.description}\n`;
-    message += '   📚 Yakaboo Unlimited\n\n';
-  }
+    for (const promo of promoCodes.slice(0, LIMITS.DISPLAY_LIMIT)) {
+      const status = promo.is_active ? '✅' : '❌';
+      message += `${status} <code>${promo.code}</code>\n`;
+      message += `   ${promo.description}\n`;
+      message += '   📚 Yakaboo Unlimited\n\n';
+    }
 
-  if (promoCodes.length > 10) {
-    message += `\n<i>Показано 10 з ${promoCodes.length} промокодів</i>`;
-  }
+    if (promoCodes.length > 10) {
+      message += `\n<i>Показано 10 з ${promoCodes.length} промокодів</i>`;
+    }
 
-  await ctx.editMessageText(message, {
-    parse_mode: 'HTML',
-    reply_markup: {
-      inline_keyboard: [
-        [{ text: '➕ Додати промокод', callback_data: 'promo_add' }],
-        [{ text: '⬅️ Назад', callback_data: 'promo_back_to_menu' }],
-      ],
-    },
-  });
+    await ctx.editMessageText(message, {
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: '➕ Додати промокод', callback_data: 'promo_add' }],
+          [{ text: '⬅️ Назад', callback_data: 'promo_back_to_menu' }],
+        ],
+      },
+    });
   } catch (error) {
     logger.error('Error loading promo codes list', error);
     await ctx.editMessageText('❌ Помилка при завантаженні списку промокодів');
   }
 });
 
-// Детальна статистика
 promoAdminScene.action('promo_stats', async (ctx) => {
   await ctx.answerCbQuery('Завантаження статистики...');
 
   try {
     const stats = await getExtendedPromoStats();
 
-    // Формуємо основну інформацію
     let messageText = '📊 <b>РОЗШИРЕНА СТАТИСТИКА ПРОМОКОДІВ</b>\n\n';
 
-    // Загальна інформація
     messageText += '📈 <b>Загальна інформація:</b>\n';
     messageText += `• Всього створено: ${stats.total}\n`;
     messageText += `• Доступних: ${stats.available}\n`;
     messageText += `• Використано: ${stats.used}\n`;
     messageText += `• Відсоток використання: ${stats.usagePercent}%\n\n`;
 
-    // Користувачі
     messageText += '👥 <b>Користувачі:</b>\n';
     messageText += `• Отримали промокод: ${stats.usedByUsers}\n`;
     messageText += `• Середнє використання на користувача: ${stats.avgUsage > 0 ? stats.avgUsage : '—'}\n\n`;
 
-    // По типам знижок
     if (stats.byDiscountType.length > 0) {
       messageText += '💰 <b>За типами знижок:</b>\n';
       stats.byDiscountType.forEach((dt) => {
@@ -149,12 +137,10 @@ promoAdminScene.action('promo_stats', async (ctx) => {
       messageText += '\n';
     }
 
-    // Нові промокоди
     messageText += '🆕 <b>Нові промокоди:</b>\n';
     messageText += `• Сьогодні: ${stats.createdToday}\n`;
     messageText += `• Цього тижня: ${stats.createdThisWeek}\n\n`;
 
-    // Топ промокоди
     if (stats.topPromos.length > 0 && stats.topPromos.some((p) => p.used > 0)) {
       messageText += '🏆 <b>Топ промокоди:</b>\n';
       stats.topPromos.forEach((promo, i) => {
@@ -191,20 +177,17 @@ promoAdminScene.action('promo_stats', async (ctx) => {
   }
 });
 
-// Повернення до меню
 promoAdminScene.action('promo_back_to_menu', async (ctx) => {
   await ctx.answerCbQuery();
   return ctx.scene.enter('PROMO_ADMIN_SCENE');
 });
 
-// Вихід зі сцени
 promoAdminScene.action('promo_back', async (ctx) => {
   await ctx.answerCbQuery('Повертаємось до адмінки');
   await ctx.scene.leave();
   await ctx.reply('🔙 Повернулися до адмін-панелі');
 });
 
-// Обробка введення промокоду
 promoAdminScene.on('text', async (ctx) => {
   if (!(ctx.scene as any).state.waitingForPromoCode) {
     return;
@@ -212,7 +195,6 @@ promoAdminScene.on('text', async (ctx) => {
 
   const code = ctx.message.text.trim().toUpperCase();
 
-  // Валідація
   if (code.length < 3) {
     await ctx.reply('❌ Код промокоду занадто короткий. Мінімум 3 символи.');
     return;
@@ -229,7 +211,6 @@ promoAdminScene.on('text', async (ctx) => {
   }
 
   try {
-    // Перевіряємо чи існує
     const existing = await getPromoCodeByCode(code);
     if (existing) {
       await ctx.reply(
@@ -241,46 +222,42 @@ promoAdminScene.on('text', async (ctx) => {
       return;
     }
 
-    // Додаємо промокод
     const promoId = await addPromoCode(code, ctx.from?.id);
     const newPromo = await getPromoCodeByCode(code);
 
-  if (!newPromo) {
-    await ctx.reply('❌ Помилка при отриманні даних промокоду');
-    return;
-  }
+    if (!newPromo) {
+      await ctx.reply('❌ Помилка при отриманні даних промокоду');
+      return;
+    }
 
-  await ctx.reply(
-    '✅ *ПРОМОКОД УСПІШНО ДОДАНИЙ!*\n\n' +
-      `🎫 *Код:* \`${newPromo.code}\`\n` +
-      '📚 *Тип:* Yakaboo Unlimited підписка\n' +
-      `📝 *Опис:* ${newPromo.description}\n\n` +
-      '✨ Користувачі зможуть отримати цей промокод через кнопку "🎁 Отримати промокод"\n\n' +
-      '🔄 Після використання промокод можна повернути, і він стане доступним знову.',
-    { parse_mode: 'Markdown' }
-  );
+    await ctx.reply(
+      '✅ *ПРОМОКОД УСПІШНО ДОДАНИЙ!*\n\n' +
+        `🎫 *Код:* \`${newPromo.code}\`\n` +
+        '📚 *Тип:* Yakaboo Unlimited підписка\n' +
+        `📝 *Опис:* ${newPromo.description}\n\n` +
+        '✨ Користувачі зможуть отримати цей промокод через кнопку "🎁 Отримати промокод"\n\n' +
+        '🔄 Після використання промокод можна повернути, і він стане доступним знову.',
+      { parse_mode: 'Markdown' }
+    );
 
-  logger.adminAction(ctx.from?.id || 0, 'add_promo_code', { code, promoId });
+    logger.adminAction(ctx.from?.id || 0, 'add_promo_code', { code, promoId });
 
-  (ctx.scene as any).state.waitingForPromoCode = false;
+    (ctx.scene as any).state.waitingForPromoCode = false;
 
-  // Повертаємось до меню
-  setTimeout(async () => {
-    await ctx.scene.enter('PROMO_ADMIN_SCENE');
-  }, 2000);
+    setTimeout(async () => {
+      await ctx.scene.enter('PROMO_ADMIN_SCENE');
+    }, 2000);
   } catch (error) {
     logger.error('Error adding promo code', error);
     await ctx.reply('❌ Помилка при додаванні промокоду. Спробуйте ще раз.');
   }
 });
 
-// Команда скасування
 promoAdminScene.command('cancel', async (ctx) => {
   await ctx.scene.leave();
   await ctx.reply('❌ Керування промокодами закрито');
 });
 
-// Cleanup при виході зі сцени
 promoAdminScene.leave((ctx: BotContext) => {
   const state = (ctx.scene as any).state;
   if (state) {

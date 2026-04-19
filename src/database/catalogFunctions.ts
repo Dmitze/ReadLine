@@ -3,10 +3,6 @@ import { safeParseFloat } from '../utils/helpers';
 import { QueryBuilder } from './QueryBuilder';
 import { logger } from '../utils/logger';
 
-/**
- * SQL Parameter Types - replaces 'any'
- * Supported types for SQL query parameters
- */
 export type SQLParameter = string | number | boolean | null | undefined;
 export type SQLParameters = SQLParameter[];
 
@@ -24,31 +20,20 @@ interface CountRow {
   total: number;
 }
 
-/**
- * Отримати книги з фільтрами та сортуванням
- * Використовує QueryBuilder для динамічних SQL запитів
- * @param filters - Фільтри та налаштування сортування
- * @returns Об'єкт з масивом книг та загальною кількістю
- */
 export const getBooksWithFilters = async (
   filters: CatalogFilters
 ): Promise<{ books: Book[]; total: number }> => {
-  // ✅ Використати QueryBuilder для динамічних запитів
-  const qb = new QueryBuilder()
-    .from('books')
-    .where('is_available', '=', 1);
+  const qb = new QueryBuilder().from('books').where('is_available', '=', 1);
 
   if (filters.genre) {
     qb.where('genre', '=', filters.genre);
   }
 
   if (filters.hasAudio) {
-    qb.where('audio_file_id', 'IS NOT NULL')
-      .or('audio_external_link', 'IS NOT NULL');
+    qb.where('audio_file_id', 'IS NOT NULL').or('audio_external_link', 'IS NOT NULL');
   }
 
   if (filters.minRating !== undefined) {
-    // ✅ Валідація minRating
     const safeMinRating = safeParseFloat(filters.minRating, 0);
     if (safeMinRating >= 0 && safeMinRating <= 5) {
       qb.where('rating', '>=', safeMinRating);
@@ -60,8 +45,7 @@ export const getBooksWithFilters = async (
 
   switch (sortBy) {
     case 'rating':
-      qb.orderBy('rating', sortOrder)
-         .orderBy('reviews_count', 'DESC');
+      qb.orderBy('rating', sortOrder).orderBy('reviews_count', 'DESC');
       break;
     case 'date':
       qb.orderBy('created_at', sortOrder);
@@ -77,9 +61,7 @@ export const getBooksWithFilters = async (
   }
 
   const countQuery = qb.clone().columns('COUNT(*) as total');
-  const dataQuery = qb
-    .limit(filters.limit || 10)
-    .offset(filters.offset || 0);
+  const dataQuery = qb.limit(filters.limit || 10).offset(filters.offset || 0);
 
   const [totalResult, books] = await Promise.all([
     new Promise<{ total: number } | undefined>((resolve, reject) => {
@@ -93,17 +75,12 @@ export const getBooksWithFilters = async (
         if (err) reject(err);
         else resolve(rows || []);
       });
-    })
+    }),
   ]);
 
   return { books, total: totalResult?.total || 0 };
 };
 
-/**
- * Отримати книги з аудіо
- * @param limit - Максимальна кількість книг (за замовчуванням 10)
- * @returns Масив книг з аудіо
- */
 export const getBooksWithAudio = (limit: number = 10): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -121,13 +98,6 @@ export const getBooksWithAudio = (limit: number = 10): Promise<Book[]> => {
   });
 };
 
-// Отримати книги з високим рейтингом
-/**
- * Отримати книги з високим рейтингом
- * @param minRating - Мінімальний рейтинг (за замовчуванням 4)
- * @param limit - Максимальна кількість книг (за замовчуванням 10)
- * @returns Масив книг з високим рейтингом
- */
 export const getHighRatedBooks = (minRating: number = 4, limit: number = 10): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -142,13 +112,6 @@ export const getHighRatedBooks = (minRating: number = 4, limit: number = 10): Pr
   });
 };
 
-/**
- * Отримати книги з високим рейтингом з пагінацією
- * @param minRating - Мінімальний рейтинг (за замовчуванням 4)
- * @param limit - Максимальна кількість книг (за замовчуванням 10)
- * @param offset - Зміщення для пагінації (за замовчуванням 0)
- * @returns Об'єкт з масивом книг та загальною кількістю
- */
 export const getHighRatedBooksWithPagination = (
   minRating: number = 4,
   limit: number = 10,
@@ -177,12 +140,6 @@ export const getHighRatedBooksWithPagination = (
   });
 };
 
-/**
- * Отримати нові книги з пагінацією
- * @param limit - Максимальна кількість книг (за замовчуванням 10)
- * @param offset - Зміщення для пагінації (за замовчуванням 0)
- * @returns Об'єкт з масивом книг та загальною кількістю
- */
 export const getNewestBooksWithPagination = (
   limit: number = 10,
   offset: number = 0
@@ -210,12 +167,6 @@ export const getNewestBooksWithPagination = (
   });
 };
 
-/**
- * Отримати книги з аудіо з пагінацією
- * @param limit - Максимальна кількість книг (за замовчуванням 10)
- * @param offset - Зміщення для пагінації (за замовчуванням 0)
- * @returns Об'єкт з масивом книг та загальною кількістю
- */
 export const getBooksWithAudioWithPagination = (
   limit: number = 10,
   offset: number = 0
@@ -251,9 +202,6 @@ export const getBooksWithAudioWithPagination = (
   });
 };
 
-/**
- * Отримати популярні книги з пагінацією (за завантаженнями)
- */
 export const getMostDownloadedBooks = (limit: number = 10): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -274,12 +222,6 @@ export const getMostDownloadedBooks = (limit: number = 10): Promise<Book[]> => {
   });
 };
 
-/**
- * Отримати популярні книги з пагінацією (за завантаженнями)
- * @param limit - Максимальна кількість книг (за замовчуванням 10)
- * @param offset - Зміщення для пагінації (за замовчуванням 0)
- * @returns Об'єкт з масивом книг та загальною кількістю
- */
 export const getMostDownloadedBooksWithPagination = (
   limit: number = 10,
   offset: number = 0
@@ -307,12 +249,6 @@ export const getMostDownloadedBooksWithPagination = (
   });
 };
 
-/**
- * Отримати книги за алфавітом
- * @param limit - Максимальна кількість книг (за замовчуванням 10)
- * @param offset - Зміщення для пагінації (за замовчуванням 0)
- * @returns Об'єкт з масивом книг та загальною кількістю
- */
 export const getBooksSortedByTitle = (
   limit: number = 10,
   offset: number = 0
@@ -340,9 +276,6 @@ export const getBooksSortedByTitle = (
   });
 };
 
-/**
- * Топ книг за рейтингом з пагінацією (логіка як у getTopBooks)
- */
 export const getTopBooksWithPagination = (
   limit: number = 10,
   offset: number = 0

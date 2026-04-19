@@ -4,11 +4,11 @@ const swaggerOptions = {
     definition: {
         openapi: '3.0.0',
         info: {
-            title: 'Warrior\'s Library Bot API',
+            title: "Warrior's Library Bot API",
             description: 'Telegram bot API for military library management',
             version: '1.0.0',
             contact: {
-                name: 'Warrior\'s Library Support',
+                name: "Warrior's Library Support",
                 email: 'support@warriorslibrary.local',
             },
         },

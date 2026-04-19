@@ -178,7 +178,12 @@ class ReviewRepository extends BaseRepository_1.BaseRepository {
                 return 0;
             }
             const allowedFields = [
-                'book_id', 'user_id', 'user_name', 'rating', 'comment', 'is_published'
+                'book_id',
+                'user_id',
+                'user_name',
+                'rating',
+                'comment',
+                'is_published',
             ];
             const validUpdates = {};
             for (const [key, value] of Object.entries(updates)) {

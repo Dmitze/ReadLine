@@ -62,7 +62,7 @@ async function resetOnboarding(telegramId) {
                             resolve({
                                 message: `⚠️ Користувач ${telegramId} не знайдений в БД`,
                                 changedRows: 0,
-                                found: false
+                                found: false,
                             });
                         }
                         else {
@@ -70,7 +70,7 @@ async function resetOnboarding(telegramId) {
                                 message: `✅ Онбординг скинутий для @${row.username || telegramId}`,
                                 changedRows: this.changes,
                                 found: true,
-                                user: row
+                                user: row,
                             });
                         }
                     });

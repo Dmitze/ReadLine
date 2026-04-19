@@ -14,7 +14,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBookDetailedStats = exports.deleteFeedback = exports.addAdminReply = exports.updateFeedbackStatus = exports.getAllFeedbackMessages = exports.getPendingFeedbackMessages = exports.addFeedbackMessage = exports.removeAdmin = exports.getExtendedAdminStats = exports.getAdminStats = exports.getAllAdmins = exports.isAdmin = exports.addAdmin = exports.getSavedBooksCount = exports.getSavedBooks = exports.isBookSaved = exports.unsaveBook = exports.saveBook = exports.updateBookRating = exports.deleteReview = exports.publishReview = exports.approveReview = exports.getPendingReviews = exports.getBookReviews = exports.addReview = exports.searchBooks = exports.updateBookInfo = exports.incrementDownloads = exports.getNewestBooks = exports.getMostDownloadedBooks = exports.getTopBooks = exports.deleteBook = exports.updateBook = exports.getBooksWithPagination = exports.getBooksByGenreWithPagination = exports.getGenres = exports.getBookById = exports.getAllAvailableBooks = exports.getAllBooks = exports.getBooksByGenre = exports.addBook = exports.initDatabase = exports.db = void 0;
+exports.deletePodcast = exports.getPodcastReviews = exports.updatePodcast = exports.getPodcastById = exports.getAllPodcasts = exports.addPodcast = exports.getBookDetailedStats = exports.deleteFeedback = exports.addAdminReply = exports.updateFeedbackStatus = exports.getAllFeedbackMessages = exports.getPendingFeedbackMessages = exports.addFeedbackMessage = exports.removeAdmin = exports.getExtendedAdminStats = exports.getAdminStats = exports.getAllAdmins = exports.isAdmin = exports.addAdmin = exports.getSavedBooksCount = exports.getSavedBooks = exports.isBookSaved = exports.unsaveBook = exports.saveBook = exports.updateBookRating = exports.deleteReview = exports.publishReview = exports.approveReview = exports.getPendingReviews = exports.getBookReviews = exports.addReview = exports.searchBooks = exports.updateBookInfo = exports.incrementDownloads = exports.getNewestBooks = exports.getMostDownloadedBooks = exports.getTopBooks = exports.deleteBook = exports.updateBook = exports.getBooksWithPagination = exports.getBooksByGenreWithPagination = exports.getGenres = exports.getBookById = exports.getAllAvailableBooks = exports.getAllBooks = exports.getBooksByGenre = exports.addBook = exports.initDatabase = exports.db = void 0;
 __exportStar(require("./types"), exports);
 var db_1 = require("./db");
 Object.defineProperty(exports, "db", { enumerable: true, get: function () { return db_1.db; } });
@@ -66,4 +66,11 @@ Object.defineProperty(exports, "addAdminReply", { enumerable: true, get: functio
 Object.defineProperty(exports, "deleteFeedback", { enumerable: true, get: function () { return feedback_1.deleteFeedback; } });
 var stats_1 = require("./stats");
 Object.defineProperty(exports, "getBookDetailedStats", { enumerable: true, get: function () { return stats_1.getBookDetailedStats; } });
+var podcasts_1 = require("./podcasts");
+Object.defineProperty(exports, "addPodcast", { enumerable: true, get: function () { return podcasts_1.addPodcast; } });
+Object.defineProperty(exports, "getAllPodcasts", { enumerable: true, get: function () { return podcasts_1.getAllPodcasts; } });
+Object.defineProperty(exports, "getPodcastById", { enumerable: true, get: function () { return podcasts_1.getPodcastById; } });
+Object.defineProperty(exports, "updatePodcast", { enumerable: true, get: function () { return podcasts_1.updatePodcast; } });
+Object.defineProperty(exports, "getPodcastReviews", { enumerable: true, get: function () { return podcasts_1.getPodcastReviews; } });
+Object.defineProperty(exports, "deletePodcast", { enumerable: true, get: function () { return podcasts_1.deletePodcast; } });
 //# sourceMappingURL=index.js.map

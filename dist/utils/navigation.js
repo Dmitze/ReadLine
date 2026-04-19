@@ -6,6 +6,7 @@ exports.createBreadcrumbText = createBreadcrumbText;
 exports.getQuickActionsKeyboard = getQuickActionsKeyboard;
 exports.getStandardMainMenu = getStandardMainMenu;
 const telegraf_1 = require("telegraf");
+const constants_1 = require("../constants");
 function formatBreadcrumbs(items) {
     return items.map((item) => item.label).join(' > ');
 }
@@ -32,20 +33,20 @@ function getQuickActionsKeyboard() {
     return telegraf_1.Markup.keyboard([
         ['⚡ Швидкий пошук', '⭐ Мої улюблені'],
         ['📚 Продовжити читати', '🎲 Випадкова книга'],
-        ['📖 Каталог', '🔍 Пошук'],
-        ['⭐ Топ книги', '🆕 Новинки'],
+        [constants_1.BUTTONS.CATALOG, constants_1.BUTTONS.SEARCH],
+        [constants_1.BUTTONS.TOP_BOOKS, constants_1.BUTTONS.NEW_BOOKS],
         ['💾 Моя бібліотека', '👤 Профіль'],
         ['🤖 AI Помічник', 'ℹ️ Допомога'],
-        ["📞 Зворотній зв'язок"],
+        [constants_1.BUTTONS.FEEDBACK],
     ]).resize().reply_markup;
 }
 function getStandardMainMenu() {
     return telegraf_1.Markup.keyboard([
-        ['📖 Каталог', '🔍 Пошук'],
-        ['⭐ Топ книги', '🆕 Новинки'],
-        ['💾 Моя бібліотека', '👤 Профіль'],
-        ['🤖 AI Помічник', 'ℹ️ Допомога'],
-        ["📞 Зворотній зв'язок"],
+        [constants_1.BUTTONS.CATALOG, constants_1.BUTTONS.SEARCH],
+        [constants_1.BUTTONS.TOP_BOOKS, constants_1.BUTTONS.NEW_BOOKS],
+        [constants_1.BUTTONS.MY_LIBRARY, constants_1.BUTTONS.PROFILE],
+        [constants_1.BUTTONS.AI_ASSISTANT, constants_1.BUTTONS.HELP],
+        [constants_1.BUTTONS.FEEDBACK],
     ]).resize().reply_markup;
 }
 //# sourceMappingURL=navigation.js.map

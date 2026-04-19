@@ -1,16 +1,8 @@
-/**
- * Auth Middleware - перевірка прав доступу
- */
-
 import { Context, Middleware } from 'telegraf';
 import { isAdmin } from '../database/models';
 import { logger } from '../utils/logger';
 import { ERRORS } from '../constants';
 
-/**
- * Middleware для перевірки чи користувач є адміном
- * ✅ ВИПРАВЛЕНО #12: правильна блокування не-адмінів
- */
 export const requireAdmin: Middleware<Context> = async (ctx, next) => {
   try {
     const userId = ctx.from?.id;
@@ -18,7 +10,7 @@ export const requireAdmin: Middleware<Context> = async (ctx, next) => {
     if (!userId) {
       await ctx.reply(ERRORS.NO_ADMIN_ACCESS);
       logger.warn('Auth attempt without user ID');
-      return; // Блокуємо виконання
+      return;
     }
 
     const isUserAdmin = await isAdmin(userId);
@@ -26,10 +18,9 @@ export const requireAdmin: Middleware<Context> = async (ctx, next) => {
     if (!isUserAdmin) {
       await ctx.reply(ERRORS.NO_ADMIN_ACCESS);
       logger.warn('Unauthorized admin access attempt', { userId });
-      return; // Блокуємо виконання
+      return;
     }
 
-    // Тільки для адмінів викликаємо next()
     await next();
   } catch (error) {
     logger.error(
@@ -38,13 +29,9 @@ export const requireAdmin: Middleware<Context> = async (ctx, next) => {
       { userId: ctx.from?.id }
     );
     await ctx.reply(ERRORS.GENERIC);
-    // Не викликаємо next() при помилці
   }
 };
 
-/**
- * Middleware для логування дій користувачів
- */
 export const logUserAction: Middleware<Context> = async (ctx, next) => {
   const userId = ctx.from?.id;
   const messageText = 'text' in ctx.message! ? ctx.message.text : 'non-text';
@@ -57,12 +44,8 @@ export const logUserAction: Middleware<Context> = async (ctx, next) => {
   return next();
 };
 
-/**
- * Middleware для перевірки чи бот може відповісти користувачу
- */
 export const canReply: Middleware<Context> = async (ctx, next) => {
   try {
-    // Перевіряємо чи можемо відправити повідомлення
     if (!ctx.from) {
       logger.warn('Message without sender');
       return;

@@ -1,10 +1,4 @@
-/**
- * Result Pattern Tests
- * Tests for type-safe error handling using Result type
- */
-
 describe('Result Pattern', () => {
-  // Result type implementation for testing
   type Result<T, E = Error> = { ok: true; value: T } | { ok: false; error: E };
 
   const Ok = <T, E = Error>(value: T): Result<T, E> => ({
@@ -58,7 +52,7 @@ describe('Result Pattern', () => {
 
     expect(isOk(result)).toBe(true);
     if (isOk(result)) {
-      expect(result.value).toBe(11); // (5 * 2) + 1
+      expect(result.value).toBe(11);
     }
   });
 

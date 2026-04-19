@@ -57,9 +57,9 @@ const bookOrderScene = new telegraf_1.Scenes.WizardScene('BOOK_ORDER_SCENE', asy
     const alreadyOrdered = await (0, bookOrderFunctions_1.hasUserOrderedBook)(ctx.from.id, bookId);
     if (alreadyOrdered) {
         await ctx.reply('⚠️ <b>Ви вже замовляли цю книгу!</b>\n\n' +
-            'Перегляньте свої замовлення в профілі або зв\'яжіться з адміністратором.', {
+            "Перегляньте свої замовлення в профілі або зв'яжіться з адміністратором.", {
             parse_mode: 'HTML',
-            reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)()
+            reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)(),
         });
         return ctx.scene.leave();
     }
@@ -71,12 +71,12 @@ const bookOrderScene = new telegraf_1.Scenes.WizardScene('BOOK_ORDER_SCENE', asy
         `👤 Автор: ${book.author}\n\n` +
         '━━━━━━━━━━━━━━━━━━━\n\n' +
         'Для замовлення книги заповніть контактні дані.\n' +
-        'Адміністратор зв\'яжеться з вами для узгодження деталей.\n\n' +
+        "Адміністратор зв'яжеться з вами для узгодження деталей.\n\n" +
         '👤 <b>КРОК 1/4: ПІБ</b>\n\n' +
-        'Введіть ваше повне ім\'я:\n' +
+        "Введіть ваше повне ім'я:\n" +
         '💡 <i>Приклад: Іваненко Іван Іванович</i>', {
         parse_mode: 'HTML',
-        reply_markup: telegraf_1.Markup.keyboard([['❌ Скасувати']]).resize().reply_markup
+        reply_markup: telegraf_1.Markup.keyboard([['❌ Скасувати']]).resize().reply_markup,
     });
     return ctx.wizard.next();
 }, async (ctx) => {
@@ -88,7 +88,7 @@ const bookOrderScene = new telegraf_1.Scenes.WizardScene('BOOK_ORDER_SCENE', asy
     const text = ctx.message.text.trim();
     if (text === '❌ Скасувати') {
         await ctx.reply('❌ Замовлення скасовано.', {
-            reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)()
+            reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)(),
         });
         return ctx.scene.leave();
     }
@@ -161,8 +161,8 @@ const bookOrderScene = new telegraf_1.Scenes.WizardScene('BOOK_ORDER_SCENE', asy
             parse_mode: 'HTML',
             reply_markup: telegraf_1.Markup.inlineKeyboard([
                 [telegraf_1.Markup.button.callback('✅ Підтвердити', 'confirm_order')],
-                [telegraf_1.Markup.button.callback('❌ Скасувати', 'cancel_order')]
-            ]).reply_markup
+                [telegraf_1.Markup.button.callback('❌ Скасувати', 'cancel_order')],
+            ]).reply_markup,
         });
         return ctx.wizard.next();
     }
@@ -181,7 +181,7 @@ const bookOrderScene = new telegraf_1.Scenes.WizardScene('BOOK_ORDER_SCENE', asy
                 full_name: state.full_name,
                 callsign: state.callsign,
                 unit: state.unit,
-                phone: state.phone
+                phone: state.phone,
             });
             logger_1.logger.info(`Book order created: ${orderId} by user ${ctx.from.id} for book ${state.bookId}`);
             await ctx.editMessageText('✅ <b>ЗАМОВЛЕННЯ СТВОРЕНО!</b>\n\n' +
@@ -189,13 +189,13 @@ const bookOrderScene = new telegraf_1.Scenes.WizardScene('BOOK_ORDER_SCENE', asy
                 `📖 Книга: ${state.bookTitle}\n` +
                 `👤 Автор: ${state.bookAuthor}\n\n` +
                 '━━━━━━━━━━━━━━━━━━━\n\n' +
-                '📞 Адміністратор зв\'яжеться з вами найближчим часом\n' +
+                "📞 Адміністратор зв'яжеться з вами найближчим часом\n" +
                 'для узгодження деталей отримання книги.\n\n' +
                 '💡 Ви можете переглянути свої замовлення в профілі.', {
-                parse_mode: 'HTML'
+                parse_mode: 'HTML',
             });
             await ctx.reply('Виберіть дію:', {
-                reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)()
+                reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)(),
             });
             try {
                 const { getAllAdmins } = await Promise.resolve().then(() => __importStar(require('../database/models')));
@@ -212,12 +212,14 @@ const bookOrderScene = new telegraf_1.Scenes.WizardScene('BOOK_ORDER_SCENE', asy
                             `🎯 Позивний: ${state.callsign}\n` +
                             `🏢 Підрозділ: ${state.unit}\n` +
                             `📞 Телефон: ${state.phone}\n\n` +
-                            '💡 Зв\'яжіться з користувачем для узгодження деталей.', {
+                            "💡 Зв'яжіться з користувачем для узгодження деталей.", {
                             parse_mode: 'HTML',
                             reply_markup: telegraf_1.Markup.inlineKeyboard([
-                                [telegraf_1.Markup.button.callback('📋 Переглянути замовлення', `admin_view_order_${orderId}`)],
-                                [telegraf_1.Markup.button.callback('📋 Всі замовлення', 'admin_orders')]
-                            ]).reply_markup
+                                [
+                                    telegraf_1.Markup.button.callback('📋 Переглянути замовлення', `admin_view_order_${orderId}`),
+                                ],
+                                [telegraf_1.Markup.button.callback('📋 Всі замовлення', 'admin_orders')],
+                            ]).reply_markup,
                         });
                     }
                     catch (error) {
@@ -233,17 +235,16 @@ const bookOrderScene = new telegraf_1.Scenes.WizardScene('BOOK_ORDER_SCENE', asy
         catch (error) {
             logger_1.logger.error('Error creating book order:', error);
             await ctx.reply('❌ Помилка при створенні замовлення.\n' +
-                'Спробуйте пізніше або зв\'яжіться з адміністратором.', {
-                reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)()
+                "Спробуйте пізніше або зв'яжіться з адміністратором.", {
+                reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)(),
             });
             return ctx.scene.leave();
         }
     }
     if (action === 'cancel_order') {
         await ctx.answerCbQuery('❌ Замовлення скасовано');
-        await ctx.reply('❌ Замовлення скасовано.\n\n' +
-            'Ви можете замовити книгу пізніше.', {
-            reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)()
+        await ctx.reply('❌ Замовлення скасовано.\n\n' + 'Ви можете замовити книгу пізніше.', {
+            reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)(),
         });
         return ctx.scene.leave();
     }

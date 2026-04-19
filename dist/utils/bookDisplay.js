@@ -43,7 +43,13 @@ exports.displaySearchResults = displaySearchResults;
 const helpers_1 = require("./helpers");
 const mainKeyboards_1 = require("../keyboards/mainKeyboards");
 const constants_1 = require("../constants");
+const helpers_2 = require("./helpers");
 const logger_1 = require("./logger");
+function truncateInlineLabel(text, max = 50) {
+    if (text.length <= max)
+        return text;
+    return `${text.slice(0, max - 1)}…`;
+}
 async function displayBookList(ctx, books, options = {}) {
     const { title, subtitle, isSaved = false, showIndex = false, indexPrefix = '' } = options;
     try {
@@ -115,76 +121,66 @@ async function displayNoBooks(ctx, message = '📭 Книг не знайден�
 }
 async function displayTopBooks(ctx, books, limit = constants_1.CONFIG.MAX_TOP_BOOKS) {
     if (books.length === 0) {
-        await displayNoBooks(ctx, '📭 Поки що немає оцінених книг.\n\nБудьте першим хто оцінить книги! ⭐');
+        await displayNoBooks(ctx, constants_1.UX.emptyTop);
         return;
     }
     const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
     const limitedBooks = books.slice(0, limit);
-    await ctx.reply(`🏆 <b>ТОП-${limitedBooks.length} КНИГ ЗА РЕЙТИНГОМ</b>\n\n` +
-        'Найкращі книги нашої бібліотеки за оцінками читачів:\n\n' +
-        'Оберіть книгу для детального перегляду:', { parse_mode: 'HTML' });
     const keyboard = limitedBooks.map((book, index) => [
-        Markup.button.callback(`${index + 1}. ⭐${book.rating?.toFixed(1) || '0.0'} ${book.title} - ${book.author}`, `view_book_${book.id}`),
+        Markup.button.callback(truncateInlineLabel(`${index + 1}. ⭐${book.rating?.toFixed(1) ?? '—'} · ${book.title}`), `view_book_${book.id}`),
     ]);
     keyboard.push([Markup.button.callback('🏠 На головну', 'home')]);
-    await ctx.reply('📚 <b>Список топ книг:</b>', {
+    const header = `🏆 <b>${constants_1.UX.topListTitle}</b>\n` +
+        `<i>${limitedBooks.length} із ${books.length} · ${constants_1.UX.listOpenCardHint}</i>`;
+    await ctx.reply(header, {
         parse_mode: 'HTML',
         reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
     });
 }
 async function displayNewBooks(ctx, books, limit = constants_1.CONFIG.MAX_NEW_BOOKS) {
     if (books.length === 0) {
-        await displayNoBooks(ctx, '📭 Книг ще немає в бібліотеці.');
+        await displayNoBooks(ctx, constants_1.UX.emptyNew);
         return;
     }
     const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
     const limitedBooks = books.slice(0, limit);
-    await ctx.reply('🆕 <b>НОВИНКИ БІБЛІОТЕКИ</b>\n\n' +
-        `Останні ${limitedBooks.length} додані ${limitedBooks.length === 1 ? 'книга' : 'книг'}:\n\n` +
-        'Оберіть книгу для детального перегляду:', { parse_mode: 'HTML' });
     const keyboard = limitedBooks.map((book, index) => [
-        Markup.button.callback(`${index + 1}. 📖 ${book.title} - ${book.author}`, `view_book_${book.id}`),
+        Markup.button.callback(truncateInlineLabel(`${index + 1}. 📖 ${book.title} · ${book.author}`), `view_book_${book.id}`),
     ]);
     keyboard.push([Markup.button.callback('🏠 На головну', 'home')]);
-    await ctx.reply('📚 <b>Список новинок:</b>', {
+    const noun = limitedBooks.length === 1 ? 'книга' : limitedBooks.length < 5 ? 'книги' : 'книг';
+    const header = `🆕 <b>${constants_1.UX.newListTitle}</b>\n` +
+        `<i>Останні ${limitedBooks.length} ${noun} · ${constants_1.UX.listOpenCardHint}</i>`;
+    await ctx.reply(header, {
         parse_mode: 'HTML',
         reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
     });
 }
 async function displaySavedBooks(ctx, books) {
     if (books.length === 0) {
-        await ctx.reply('💾 <b>Ваша бібліотека порожня</b>\n\n' +
-            'Зберігайте цікаві книги натискаючи кнопку 💾 ЗБЕРЕГТИ при перегляді книги.\n\n' +
-            'Збережені книги завжди будуть доступні тут для швидкого доступу!', { parse_mode: 'HTML' });
+        await ctx.reply(constants_1.UX.emptyLibraryHtml, { parse_mode: 'HTML' });
         return;
     }
     const { Markup } = await Promise.resolve().then(() => __importStar(require('telegraf')));
-    await ctx.reply('💾 <b>МОЯ БІБЛІОТЕКА</b>\n\n' +
-        `У вас збережено ${books.length} ${books.length === 1 ? 'книга' : 'книг'}:\n\n` +
-        'Оберіть книгу для перегляду:', { parse_mode: 'HTML' });
-    const keyboard = books
-        .slice(0, 20)
-        .map((book, index) => [
-        Markup.button.callback(`${index + 1}. ${book.title} - ${book.author}`, `view_saved_book_${book.id}`),
+    const shown = books.slice(0, constants_1.CONFIG.MAX_SAVED_BOOKS_DISPLAY);
+    const keyboard = shown.map((book, index) => [
+        Markup.button.callback(truncateInlineLabel(`${index + 1}. ${book.title} · ${book.author}`), `view_saved_book_${book.id}`),
     ]);
     keyboard.push([Markup.button.callback('🏠 На головну', 'home')]);
-    await ctx.reply('📚 <b>Список книг:</b>', {
+    const extra = books.length > constants_1.CONFIG.MAX_SAVED_BOOKS_DISPLAY
+        ? `\n\n<i>Показано ${constants_1.CONFIG.MAX_SAVED_BOOKS_DISPLAY} з ${books.length}. Решту знайдіть через пошук.</i>`
+        : '';
+    const noun = books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг';
+    const header = `💾 <b>${constants_1.UX.savedListTitle}</b>\n` +
+        `<i>${books.length} ${noun} · ${constants_1.UX.listOpenCardHint}</i>${extra}`;
+    await ctx.reply(header, {
         parse_mode: 'HTML',
         reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
     });
-    if (books.length > 20) {
-        await ctx.reply(`ℹ️ Показано 20 з ${books.length} книг. Використовуйте пошук для інших книг.`);
-    }
 }
 async function displaySearchResults(ctx, books, searchTerm) {
     if (books.length === 0) {
-        await ctx.reply('📭 <b>Нічого не знайдено</b>\n\n' +
-            `За запитом "${searchTerm}" книг не знайдено.\n\n` +
-            '💡 <b>Спробуйте:</b>\n' +
-            '• Використати інші ключові слова\n' +
-            '• Перевірити правильність назви\n' +
-            '• Шукати за автором або жанром\n' +
-            '• Скоротити запит (мінімум 2 символи)', { parse_mode: 'HTML' });
+        await ctx.reply(constants_1.UX.searchEmptyHtml((0, helpers_2.escapeHtml)(searchTerm)), { parse_mode: 'HTML' });
         return;
     }
     const resultsText = books.length === constants_1.CONFIG.MAX_SEARCH_RESULTS

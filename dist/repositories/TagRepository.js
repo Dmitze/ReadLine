@@ -120,7 +120,7 @@ class TagRepository extends BaseRepository_1.BaseRepository {
         if (tagIds.length === 0)
             return;
         const placeholders = tagIds.map(() => '(?, ?)').join(', ');
-        const values = tagIds.flatMap(tagId => [bookId, tagId]);
+        const values = tagIds.flatMap((tagId) => [bookId, tagId]);
         const query = `INSERT OR IGNORE INTO book_tags (book_id, tag_id) VALUES ${placeholders}`;
         await this.db.run(query, values);
     }

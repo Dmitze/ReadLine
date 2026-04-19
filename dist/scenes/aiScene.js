@@ -57,9 +57,7 @@ aiScene.enter(async (ctx) => {
         '💡 Або використовуйте /cancel для виходу', {
         parse_mode: 'HTML',
         reply_markup: {
-            inline_keyboard: [
-                [{ text: '⬅️ Назад до меню', callback_data: 'ai_back' }],
-            ],
+            inline_keyboard: [[{ text: '⬅️ Назад до меню', callback_data: 'ai_back' }]],
         },
     });
 });
@@ -96,11 +94,15 @@ aiScene.on('text', async (ctx) => {
         return;
     }
     const thinkingMsg = await ctx.reply('🤔 Думаю...');
-    const answer = await withTimeout(() => retryOperation(() => (0, aiHelper_1.askAI)(question, ctx.from?.id), 2, 1000), CONFIG.AI_TIMEOUT_MS, 'AI request timeout');
+    const aiResponse = await withTimeout(() => retryOperation(() => (0, aiHelper_1.askAI)(question, ctx.from?.id), 2, 1000), CONFIG.AI_TIMEOUT_MS, 'AI request timeout');
     await ctx.deleteMessage(thinkingMsg.message_id).catch((err) => {
         logger_1.logger.debug('Failed to delete thinking message', { error: err?.message });
     });
-    await ctx.reply(`🤖 AI-ПОМІЧНИК:\n\n${answer}`, {
+    const modelInfo = aiResponse.provider !== 'Fallback'
+        ? `\n\n<i>🤖 Модель: ${aiResponse.model} (${aiResponse.provider})</i>`
+        : '';
+    await ctx.reply(`🤖 AI-ПОМІЧНИК:\n\n${aiResponse.text}${modelInfo}`, {
+        parse_mode: 'HTML',
         reply_markup: telegraf_1.Markup.inlineKeyboard([
             [{ text: '💬 Запитати ще', callback_data: 'ai_ask_more' }],
             [{ text: '⬅️ Назад до меню', callback_data: 'ai_back' }],

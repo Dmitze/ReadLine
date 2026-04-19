@@ -1,7 +1,3 @@
-/**
- * Cache Service - in-memory кешування для швидкого доступу
- */
-
 import { logger } from './logger';
 
 interface CacheItem<T> {
@@ -11,13 +7,10 @@ interface CacheItem<T> {
 
 class CacheService {
   private cache: Map<string, CacheItem<any>> = new Map();
-  // ✅ ВИПРАВЛЕНО #10: додано pending promises для уникнення race condition
-  private pending: Map<string, Promise<any>> = new Map();
-  private defaultTTL = 5 * 60 * 1000; // 5 хвилин за замовчуванням
 
-  /**
-   * Отримати значення з кешу
-   */
+  private pending: Map<string, Promise<any>> = new Map();
+  private defaultTTL = 5 * 60 * 1000;
+
   get<T>(key: string): T | null {
     const item = this.cache.get(key);
 
@@ -26,7 +19,6 @@ class CacheService {
       return null;
     }
 
-    // Перевіряємо чи не expired
     if (Date.now() > item.expiresAt) {
       logger.debug('Cache expired', { key });
       this.cache.delete(key);
@@ -37,9 +29,6 @@ class CacheService {
     return item.data as T;
   }
 
-  /**
-   * Зберегти значення в кеш
-   */
   set<T>(key: string, data: T, ttl?: number): void {
     const expiresAt = Date.now() + (ttl || this.defaultTTL);
 
@@ -51,29 +40,20 @@ class CacheService {
     logger.debug('Cache set', { key, ttl: ttl || this.defaultTTL });
   }
 
-  /**
-   * Видалити значення з кешу
-   */
   delete(key: string): void {
     this.cache.delete(key);
     logger.debug('Cache delete', { key });
   }
 
-  /**
-   * Очистити весь кеш
-   */
   clear(): void {
     this.cache.clear();
     logger.debug('Cache cleared');
   }
 
-  /**
-   * Видалити всі expired записи
-   */
   cleanup(): void {
     const now = Date.now();
     let removed = 0;
-    // ✅ ВИПРАВЛЕНО #34: збираємо keys перед видаленням
+
     const keysToRemove: string[] = [];
 
     for (const [key, item] of this.cache.entries()) {
@@ -90,10 +70,6 @@ class CacheService {
     logger.debug('Cache cleanup', { removed });
   }
 
-  /**
-   * Отримати або встановити значення
-   * ✅ ВИПРАВЛЕНО #10: race condition - два паралельні запити не виконають fetcher двічі
-   */
   async getOrSet<T>(key: string, fetcher: () => Promise<T>, ttl?: number): Promise<T> {
     const cached = this.get<T>(key);
 
@@ -101,14 +77,12 @@ class CacheService {
       return cached;
     }
 
-    // Перевіряємо чи вже виконується запит
     const pendingPromise = this.pending.get(key);
     if (pendingPromise) {
       logger.debug('Cache pending hit', { key });
       return pendingPromise;
     }
 
-    // Створюємо новий запит
     logger.debug('Cache fetch', { key });
     const promise = fetcher()
       .then((data) => {
@@ -125,9 +99,6 @@ class CacheService {
     return promise;
   }
 
-  /**
-   * Отримати статистику кешу
-   */
   getStats() {
     const now = Date.now();
     let expired = 0;
@@ -149,11 +120,8 @@ class CacheService {
   }
 }
 
-// Singleton instance
 export const cache = new CacheService();
 
-// Періодична очистка expired записів (кожні 10 хвилин)
-// Зберігаємо reference для можливості очистки в тестах
 export const cleanupInterval = setInterval(
   () => {
     cache.cleanup();
@@ -161,12 +129,10 @@ export const cleanupInterval = setInterval(
   10 * 60 * 1000
 );
 
-// Дозволяємо unref в Node.js environment щоб не блокувати exit
 if (cleanupInterval.unref) {
   cleanupInterval.unref();
 }
 
-// Cache keys для різних типів даних
 export const CACHE_KEYS = {
   GENRES: 'genres',
   TOP_BOOKS: 'top_books',
@@ -178,10 +144,9 @@ export const CACHE_KEYS = {
   USER_SAVED_BOOKS: (userId: number) => `user_saved_${userId}`,
 } as const;
 
-// TTL для різних типів даних (в мілісекундах)
 export const CACHE_TTL = {
-  SHORT: 1 * 60 * 1000, // 1 хвилина
-  MEDIUM: 5 * 60 * 1000, // 5 хвилин
-  LONG: 15 * 60 * 1000, // 15 хвилин
-  VERY_LONG: 60 * 60 * 1000, // 1 година
+  SHORT: 1 * 60 * 1000,
+  MEDIUM: 5 * 60 * 1000,
+  LONG: 15 * 60 * 1000,
+  VERY_LONG: 60 * 60 * 1000,
 } as const;

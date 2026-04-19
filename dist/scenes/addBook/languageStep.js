@@ -6,13 +6,7 @@ exports.showAllLanguages = showAllLanguages;
 exports.showISBNInput = showISBNInput;
 const telegraf_1 = require("telegraf");
 const utils_1 = require("./utils");
-exports.popularLanguages = [
-    'Українська',
-    'Російська',
-    'Англійська',
-    'Німецька',
-    'Французька',
-];
+exports.popularLanguages = ['Українська', 'Російська', 'Англійська', 'Німецька', 'Французька'];
 exports.otherLanguages = [
     'Іспанська',
     'Італійська',

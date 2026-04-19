@@ -1,8 +1,3 @@
-/**
- * SQL Query Builder with Parameterized Queries
- * REFACTOR-016: SQL Injection Protection
- */
-
 export type WhereOperator =
   | '='
   | '!='
@@ -75,25 +70,15 @@ export class QueryBuilder {
     return this;
   }
 
-  /**
-   * Додати LEFT JOIN
-   */
   leftJoin(table: string, condition: string): this {
     return this.join(table, condition, 'LEFT');
   }
 
-  /**
-   * Додати RIGHT JOIN
-   */
   rightJoin(table: string, condition: string): this {
     return this.join(table, condition, 'RIGHT');
   }
 
-  /**
-   * Додати WHERE умову
-   */
   where(column: string, operator: WhereOperator | string, value?: any): this {
-    // Якщо переданий тільки стовпець та значення (за замовчуванням =)
     if (value === undefined) {
       value = operator;
       operator = '=';
@@ -109,9 +94,6 @@ export class QueryBuilder {
     return this;
   }
 
-  /**
-   * Додати AND умову
-   */
   and(column: string, operator: WhereOperator | string, value?: any): this {
     if (value === undefined) {
       value = operator;
@@ -129,9 +111,6 @@ export class QueryBuilder {
     return this;
   }
 
-  /**
-   * Додати OR умову
-   */
   or(column: string, operator: WhereOperator | string, value?: any): this {
     if (value === undefined) {
       value = operator;
@@ -149,12 +128,8 @@ export class QueryBuilder {
     return this;
   }
 
-  /**
-   * Додати WHERE IN умову
-   */
   whereIn(column: string, values: any[]): this {
     if (values.length === 0) {
-      // Empty IN () is invalid SQL — add a condition that always returns false
       this.whereConditions.push({
         column: '1',
         operator: '=',
@@ -174,9 +149,6 @@ export class QueryBuilder {
     return this;
   }
 
-  /**
-   * Додати WHERE BETWEEN умову
-   */
   whereBetween(column: string, min: any, max: any): this {
     this.whereConditions.push({
       column: this.escapeIdentifier(column),
@@ -188,17 +160,11 @@ export class QueryBuilder {
     return this;
   }
 
-  /**
-   * Додати GROUP BY
-   */
   groupBy(...columns: string[]): this {
     this.groupByColumns = columns.map((col) => this.escapeIdentifier(col));
     return this;
   }
 
-  /**
-   * Додати ORDER BY
-   */
   orderBy(column: string, direction: OrderDirection = 'ASC'): this {
     this.orderByClauses.push({
       column: this.escapeIdentifier(column),
@@ -207,51 +173,37 @@ export class QueryBuilder {
     return this;
   }
 
-  /**
-   * Встановити LIMIT
-   */
   limit(value: number): this {
     this.limitValue = Math.max(0, Math.floor(value));
     return this;
   }
 
-  /**
-   * Встановити OFFSET
-   */
   offset(value: number): this {
     this.offsetValue = Math.max(0, Math.floor(value));
     return this;
   }
 
-  /**
-   * Отримати SQL запит
-   */
   toSql(): string {
     let sql = `SELECT ${this.select.join(', ')} FROM ${this.fromTable}`;
 
-    // Додати JOIN
     for (const join of this.joins) {
       sql += ` ${join.type} JOIN ${join.table} ON ${join.on}`;
     }
 
-    // Додати WHERE
     if (this.whereConditions.length > 0) {
       const conditions = this.buildWhereConditions();
       sql += ` WHERE ${conditions}`;
     }
 
-    // Додати GROUP BY
     if (this.groupByColumns.length > 0) {
       sql += ` GROUP BY ${this.groupByColumns.join(', ')}`;
     }
 
-    // Додати ORDER BY
     if (this.orderByClauses.length > 0) {
       const orderClauses = this.orderByClauses.map((o) => `${o.column} ${o.direction}`).join(', ');
       sql += ` ORDER BY ${orderClauses}`;
     }
 
-    // Додати LIMIT і OFFSET
     if (this.limitValue !== null) {
       sql += ` LIMIT ${this.limitValue}`;
     }
@@ -262,16 +214,10 @@ export class QueryBuilder {
     return sql;
   }
 
-  /**
-   * Отримати параметри для параметризованого запиту
-   */
   getParameters(): any[] {
     return this.parameters;
   }
 
-  /**
-   * Отримати параметризований запит та параметри
-   */
   build(): { sql: string; parameters: any[] } {
     return {
       sql: this.toSql(),
@@ -279,9 +225,6 @@ export class QueryBuilder {
     };
   }
 
-  /**
-   * Побудувати WHERE умови
-   */
   private buildWhereConditions(): string {
     return this.whereConditions
       .map((condition, index) => {
@@ -291,7 +234,6 @@ export class QueryBuilder {
           case 'IN':
             const placeholders = (condition.value as any[]).map(() => '?').join(', ');
             if (!placeholders) {
-              // Empty array — condition always false
               return `${prefix}1 = 0`;
             }
             return `${prefix}${condition.column} IN (${placeholders})`;
@@ -309,20 +251,13 @@ export class QueryBuilder {
       .join(' ');
   }
 
-  /**
-   * Екранувати ідентифікатор (назва таблиці, стовпця)
-   */
   private escapeIdentifier(identifier: string): string {
-    // Дозволені символи для ідентифікаторів
     if (!/^[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)?$/.test(identifier)) {
       throw new Error(`Invalid identifier: ${identifier}`);
     }
     return identifier;
   }
 
-  /**
-   * Скинути запит
-   */
   reset(): this {
     this.select = ['*'];
     this.fromTable = '';
@@ -521,9 +456,6 @@ export class UpdateBuilder {
   }
 }
 
-/**
- * Builder для DELETE запитів
- */
 export class DeleteBuilder {
   private tableName: string = '';
   private whereConditions: WhereCondition[] = [];

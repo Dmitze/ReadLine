@@ -38,20 +38,33 @@ async function showFileFormatMenu(ctx, state) {
         loadedFormats.push('🎧 Аудіо');
     if (state.bookLink)
         loadedFormats.push('🔗 Посилання');
-    const loadedText = loadedFormats.length > 0
-        ? `\n\n✅ Вже завантажені: ${loadedFormats.join(', ')}`
-        : '';
+    const loadedText = loadedFormats.length > 0 ? `\n\n✅ Вже завантажені: ${loadedFormats.join(', ')}` : '';
     const canAddMore = loadedFormats.length < 3;
     const keyboard = [];
     if (canAddMore) {
         if (!state.bookFile) {
-            keyboard.push([{ text: '📄 Завантажити файл (PDF, EPUB, FB2)', callback_data: `file_upload_choose_pdf_${userId}` }]);
+            keyboard.push([
+                {
+                    text: '📄 Завантажити файл (PDF, EPUB, FB2)',
+                    callback_data: `file_upload_choose_pdf_${userId}`,
+                },
+            ]);
         }
         if (!state.bookAudio) {
-            keyboard.push([{ text: '🎧 Завантажити аудіокнигу (MP3, WAV)', callback_data: `file_upload_choose_audio_${userId}` }]);
+            keyboard.push([
+                {
+                    text: '🎧 Завантажити аудіокнигу (MP3, WAV)',
+                    callback_data: `file_upload_choose_audio_${userId}`,
+                },
+            ]);
         }
         if (!state.bookLink) {
-            keyboard.push([{ text: '🔗 Додати посилання на книгу', callback_data: `file_upload_choose_link_${userId}` }]);
+            keyboard.push([
+                {
+                    text: '🔗 Додати посилання на книгу',
+                    callback_data: `file_upload_choose_link_${userId}`,
+                },
+            ]);
         }
     }
     keyboard.push([{ text: '✅ Готово', callback_data: `file_upload_done_${userId}` }]);

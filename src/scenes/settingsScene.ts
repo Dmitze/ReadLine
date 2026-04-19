@@ -1,4 +1,3 @@
-// Scene для налаштувань користувача (Завдання 30, 31)
 import { Scenes, Markup } from 'telegraf';
 import { BotContext } from '../types/telegraf';
 import { setUserKeyboardPreference } from '../utils/userPreferences';
@@ -6,7 +5,6 @@ import { logger } from '../utils/logger';
 
 const settingsScene = new Scenes.BaseScene<BotContext>('SETTINGS_SCENE');
 
-// Вхід в scene
 settingsScene.enter(async (ctx) => {
   await ctx.reply('⚙️ <b>Налаштування</b>\n\n' + 'Оберіть що хочете налаштувати:', {
     parse_mode: 'HTML',
@@ -20,7 +18,6 @@ settingsScene.enter(async (ctx) => {
   });
 });
 
-// Налаштування клавіатури
 settingsScene.action('settings_keyboard', async (ctx) => {
   await ctx.answerCbQuery();
   await ctx.editMessageText(
@@ -43,7 +40,6 @@ settingsScene.action('settings_keyboard', async (ctx) => {
   );
 });
 
-// Вибір типу клавіатури
 settingsScene.action(/keyboard_(mobile|tablet|desktop)/, async (ctx) => {
   if (!ctx.match) {
     await ctx.answerCbQuery('❌ Помилка');
@@ -62,7 +58,6 @@ settingsScene.action(/keyboard_(mobile|tablet|desktop)/, async (ctx) => {
     const success = setUserKeyboardPreference(userId, deviceType);
 
     if (success) {
-      // Зберігаємо в session для миттєвого застосування
       ctx.session.deviceType = deviceType;
 
       const deviceNames = {
@@ -97,7 +92,6 @@ settingsScene.action(/keyboard_(mobile|tablet|desktop)/, async (ctx) => {
   }
 });
 
-// Налаштування сповіщень (Завдання 31)
 settingsScene.action('settings_notifications', async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) {
@@ -141,7 +135,6 @@ settingsScene.action('settings_notifications', async (ctx) => {
   );
 });
 
-// Увімкнути/вимкнути сповіщення
 settingsScene.action('notif_toggle', async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) {
@@ -160,7 +153,6 @@ settingsScene.action('notif_toggle', async (ctx) => {
 
   await ctx.answerCbQuery(settings.enabled ? '✅ Сповіщення увімкнено' : '🔕 Сповіщення вимкнено');
 
-  // Показуємо оновлене меню сповіщень
   const frequencyNames = {
     daily: 'Щодня',
     every_4_days: 'Раз на 4 дні',
@@ -193,7 +185,6 @@ settingsScene.action('notif_toggle', async (ctx) => {
       }
     );
   } catch (error) {
-    // Handle "message is not modified" error - occurs when state doesn't actually change
     if (error instanceof Error && error.message.includes('message is not modified')) {
       logger.warn('Notification toggle: message content unchanged', { userId });
     } else {
@@ -203,7 +194,6 @@ settingsScene.action('notif_toggle', async (ctx) => {
   }
 });
 
-// Змінити частоту сповіщень
 settingsScene.action('notif_frequency', async (ctx) => {
   await ctx.answerCbQuery();
   await ctx.editMessageText(
@@ -223,7 +213,6 @@ settingsScene.action('notif_frequency', async (ctx) => {
   );
 });
 
-// Встановити частоту
 settingsScene.action(/freq_(daily|every_4_days|weekly|disabled)/, async (ctx) => {
   if (!ctx.match) {
     await ctx.answerCbQuery('❌ Помилка');
@@ -279,7 +268,6 @@ settingsScene.action(/freq_(daily|every_4_days|weekly|disabled)/, async (ctx) =>
   }
 });
 
-// Змінити час сповіщень
 settingsScene.action('notif_time', async (ctx) => {
   await ctx.answerCbQuery();
   (ctx.scene as any).state.settingTime = true;
@@ -296,7 +284,6 @@ settingsScene.action('notif_time', async (ctx) => {
   );
 });
 
-// Обробка введення часу
 settingsScene.on('text', async (ctx) => {
   const state = (ctx.scene as any).state;
   if (!state.settingTime) return;
@@ -315,7 +302,9 @@ settingsScene.on('text', async (ctx) => {
   const userId = ctx.from?.id;
   if (!userId) return;
 
-  const { getUserNotificationSettings, setUserNotificationSettings } = await import('../utils/notifications');
+  const { getUserNotificationSettings, setUserNotificationSettings } = await import(
+    '../utils/notifications'
+  );
   const settings = await getUserNotificationSettings(userId);
   settings.preferredTime = timeInput;
   await setUserNotificationSettings(settings);
@@ -338,7 +327,6 @@ settingsScene.on('text', async (ctx) => {
   logger.userAction(userId, 'change_notification_time', { time: timeInput });
 });
 
-// Повернення до меню налаштувань
 settingsScene.action('settings_back', async (ctx) => {
   await ctx.answerCbQuery();
   try {
@@ -361,7 +349,6 @@ settingsScene.action('settings_back', async (ctx) => {
   }
 });
 
-// Вихід з налаштувань
 settingsScene.action('settings_exit', async (ctx) => {
   await ctx.answerCbQuery();
   await ctx.scene.leave();
@@ -370,7 +357,6 @@ settingsScene.action('settings_exit', async (ctx) => {
   await ctx.reply('👇 Оберіть дію:', { reply_markup: getMainMenuKeyboard() });
 });
 
-// Команда для виходу
 settingsScene.command('cancel', async (ctx) => {
   await ctx.scene.leave();
   await ctx.reply('❌ Налаштування закрито');

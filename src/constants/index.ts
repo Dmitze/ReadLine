@@ -1,8 +1,3 @@
-/**
- * Константи для бота - усі тексти в одному місці
- */
-
-// Кнопки головного меню (єдине джерело правди для тексту кнопок)
 export const BUTTONS = {
   CATALOG: '📖 Каталог',
   SEARCH: '🔍 Пошук',
@@ -21,13 +16,12 @@ export const BUTTONS = {
   REQUEST_PHYSICAL_BOOK: '📚 Замовити фізичну книгу',
   HOME: '🏠 На головну',
   BACK: '⬅️ Назад',
-  // Швидкі дії
+
   QUICK_SEARCH: '⚡ Швидкий пошук',
   MY_FAVORITES: '⭐ Мої улюблені',
   RANDOM_BOOK: '🎲 Випадкова книга',
 } as const;
 
-// Повідомлення помилок
 export const ERRORS = {
   GENERIC: '❌ Виникла помилка. Спробуйте ще раз.',
   NO_GENRES: '❌ Виникла помилка при отриманні жанрів.',
@@ -47,7 +41,6 @@ export const ERRORS = {
   RATE_LIMIT: '⚠️ Занадто багато запитів',
 } as const;
 
-// Успішні повідомлення
 export const SUCCESS = {
   BOOK_SAVED: '❤️ Збережено!',
   BOOK_UNSAVED: '💔 Видалено зі збережених',
@@ -56,7 +49,6 @@ export const SUCCESS = {
   FILE_SENT: '📥 Файл надіслано вам у приватні повідомлення',
 } as const;
 
-// Емодзі
 export const EMOJI = {
   BOOK: '📖',
   SEARCH: '🔍',
@@ -75,9 +67,6 @@ export const EMOJI = {
   BELL: '🔔',
 } as const;
 
-/**
- * Сучасний тон інтерфейсу: коротко, ясно, без «стін тексту».
- */
 export const UX = {
   welcomeBack: (nameSafe: string) =>
     `<b>Warrior's Library</b>\n` +
@@ -97,8 +86,7 @@ export const UX = {
   cancelStep: 'Скасовано. Далі — оберіть дію в меню знизу.',
 
   helpHubHtml:
-    `<b>Warrior's Library</b> · довідка\n\n` +
-    `Короткі відповіді, без зайвого. Оберіть тему:`,
+    `<b>Warrior's Library</b> · довідка\n\n` + `Короткі відповіді, без зайвого. Оберіть тему:`,
 
   yakabooTeaserHtml:
     `<b>Yakaboo</b> · книжкова платформа України\n\n` +
@@ -123,21 +111,18 @@ export const UX = {
     `Спробуйте інше слово, автора або жанр. Мінімум 2 символи в запиті.`,
 } as const;
 
-// Статуси
 export const STATUS = {
   PENDING: 'pending',
   APPROVED: 'approved',
   REJECTED: 'rejected',
 } as const;
 
-// Типи файлів
 export const FILE_TYPES = {
   PHYSICAL: 'physical',
   LINK: 'link',
   FILE: 'file',
 } as const;
 
-// Сцени
 export const SCENES = {
   ADD_BOOK: 'ADD_BOOK_SCENE',
   SEARCH: 'SEARCH_SCENE',
@@ -147,7 +132,6 @@ export const SCENES = {
   AI: 'AI_SCENE',
 } as const;
 
-// Конфігурація
 export const CONFIG = {
   PAGINATION_LIMIT: 5,
   MAX_TOP_BOOKS: 10,
@@ -172,7 +156,6 @@ export const CONFIG = {
   ANALYTICS_CLEANUP_THRESHOLD: 0.2,
 } as const;
 
-// Validation limits
 export const VALIDATION = {
   TITLE_MIN: 2,
   TITLE_MAX: 200,
@@ -188,7 +171,6 @@ export const VALIDATION = {
   MESSAGE_MAX: 4000,
 } as const;
 
-// ✅ ВИПРАВЛЕНО #42: константи для часу доби
 export const TIME_OF_DAY = {
   MORNING_START: 6,
   AFTERNOON_START: 12,
@@ -196,7 +178,6 @@ export const TIME_OF_DAY = {
   NIGHT_START: 22,
 } as const;
 
-// Команди
 export const COMMANDS = {
   START: 'start',
   HELP: 'help',
@@ -204,11 +185,9 @@ export const COMMANDS = {
   CANCEL: 'cancel',
 } as const;
 
-// ✅ REFACTOR-011: Export additional constants
 export * from './timeouts';
 export * from './limits';
 
-// ✅ ВИПРАВЛЕНО #10: AI повідомлення винесені в константи
 export const AI_MESSAGES = {
   FALLBACK_RECOMMENDATIONS: [
     'Рекомендую почати з класичної української літератури: "Кобзар" Тараса Шевченка або "Лісова пісня" Лесі Українки.',
@@ -231,7 +210,6 @@ export const AI_MESSAGES = {
   },
 } as const;
 
-// Callback actions
 export const ACTIONS = {
   ADD_BOOK: 'add_book',
   ADMIN_STATS: 'admin_stats',

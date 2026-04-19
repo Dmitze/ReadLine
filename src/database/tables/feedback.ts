@@ -1,15 +1,7 @@
-/**
- * Feedback Table Operations
- * REFACTOR-009: Split models.ts - Feedback module
- */
-
 import { db } from './db';
 import { FeedbackMessage } from './types';
 import { logger } from '../../utils/logger';
 
-/**
- * Add feedback message
- */
 export const addFeedbackMessage = (
   feedbackData: Omit<FeedbackMessage, 'id' | 'status' | 'created_at' | 'read_at'>
 ): Promise<number> => {
@@ -29,9 +21,6 @@ export const addFeedbackMessage = (
   });
 };
 
-/**
- * Get pending feedback messages
- */
 export const getPendingFeedbackMessages = (): Promise<FeedbackMessage[]> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -51,9 +40,6 @@ export const getPendingFeedbackMessages = (): Promise<FeedbackMessage[]> => {
   });
 };
 
-/**
- * Get all feedback messages
- */
 export const getAllFeedbackMessages = (): Promise<FeedbackMessage[]> => {
   return new Promise((resolve, reject) => {
     const query = 'SELECT * FROM feedback ORDER BY created_at DESC';
@@ -69,9 +55,6 @@ export const getAllFeedbackMessages = (): Promise<FeedbackMessage[]> => {
   });
 };
 
-/**
- * Update feedback status
- */
 export const updateFeedbackStatus = (feedbackId: number, status: string): Promise<number> => {
   return new Promise((resolve, reject) => {
     const query = 'UPDATE feedback SET status = ? WHERE id = ?';
@@ -88,9 +71,6 @@ export const updateFeedbackStatus = (feedbackId: number, status: string): Promis
   });
 };
 
-/**
- * Add admin reply to feedback
- */
 export const addAdminReply = (feedbackId: number, reply: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -111,9 +91,6 @@ export const addAdminReply = (feedbackId: number, reply: string): Promise<void> 
   });
 };
 
-/**
- * Delete feedback
- */
 export const deleteFeedback = (feedbackId: number): Promise<number> => {
   return new Promise((resolve, reject) => {
     const query = 'DELETE FROM feedback WHERE id = ?';

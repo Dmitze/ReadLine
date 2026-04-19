@@ -1,11 +1,6 @@
-/**
- * REST API Server
- * Provides HTTP endpoints for bot functionality
- */
-
 import express, { Express, Request, Response, NextFunction } from 'express';
 import swaggerUi from 'swagger-ui-express';
-// @ts-ignore - swagger-jsdoc doesn't have TypeScript definitions
+
 import swaggerJsdoc from 'swagger-jsdoc';
 import { ServiceContainer } from '../core/ServiceContainer';
 import swaggerOptions from './swagger';
@@ -19,9 +14,6 @@ export interface RestAPIConfig {
   apiPrefix?: string;
 }
 
-/**
- * REST API Server
- */
 export class RestAPI {
   private app: Express;
   private port: number;
@@ -42,14 +34,10 @@ export class RestAPI {
     this.setupErrorHandling();
   }
 
-  /**
-   * Setup middleware
-   */
   private setupMiddleware(): void {
     this.app.use(express.json({ limit: '10mb' }));
     this.app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-    // CORS
     this.app.use((req: Request, res: Response, next: NextFunction) => {
       res.header('Access-Control-Allow-Origin', '*');
       res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -62,16 +50,12 @@ export class RestAPI {
       next();
     });
 
-    // Request logging
     this.app.use((req: Request, res: Response, next: NextFunction) => {
       logger.info('API Request', { method: req.method, path: req.path });
       next();
     });
   }
 
-  /**
-   * Setup Swagger documentation
-   */
   private setupSwagger(enabled: boolean): void {
     if (!enabled) return;
 
@@ -88,13 +72,7 @@ export class RestAPI {
     logger.info('Swagger documentation available at /api-docs');
   }
 
-  /**
-   * Setup API routes
-   */
   private setupRoutes(prefix: string): void {
-    /**
-     * Health check endpoint
-     */
     this.app.get(`${prefix}/health`, (req: Request, res: Response) => {
       res.json({
         status: 'ok',
@@ -103,16 +81,12 @@ export class RestAPI {
       });
     });
 
-    /**
-     * Books endpoints
-     */
     this.app.get(`${prefix}/books`, async (req: Request, res: Response) => {
       try {
         const page = parseInt(req.query.page as string) || 1;
         const limit = parseInt(req.query.limit as string) || 20;
         const genre = req.query.genre as string;
 
-        // This would use the BookService from container
         res.json({
           success: true,
           data: [],
@@ -145,12 +119,6 @@ export class RestAPI {
       }
     });
 
-    /**
-     * Get detailed book information with rating distribution, readers count, quotes, age group and content warnings
-     * @route GET /api/books/:id/details
-     * @param {number} id - Book ID
-     * @returns {Object} Book details with extended information
-     */
     this.app.get(`${prefix}/books/:id/details`, async (req: Request, res: Response) => {
       try {
         const bookId = parseInt(req.params.id as string);
@@ -177,15 +145,6 @@ export class RestAPI {
       }
     });
 
-    /**
-     * Update book extended information (age group, content warnings)
-     * @route PUT /api/books/:id/extended-info
-     * @param {number} id - Book ID
-     * @param {Object} body - Update data
-     * @param {number} body.recommended_age - Recommended age (0, 6, 12, 16, 18)
-     * @param {Array<string>} body.content_warnings - Content warnings list
-     * @returns {Object} Update result
-     */
     this.app.put(`${prefix}/books/:id/extended-info`, async (req: Request, res: Response) => {
       try {
         const bookId = parseInt(req.params.id as string);
@@ -217,9 +176,6 @@ export class RestAPI {
       }
     });
 
-    /**
-     * Reviews endpoints
-     */
     this.app.get(`${prefix}/books/:id/reviews`, async (req: Request, res: Response) => {
       try {
         const bookId = parseInt(req.params.id as string);
@@ -236,9 +192,6 @@ export class RestAPI {
       }
     });
 
-    /**
-     * Jobs endpoints
-     */
     this.app.get(`${prefix}/jobs/:jobId`, async (req: Request, res: Response) => {
       try {
         const jobId = req.params.jobId;
@@ -278,9 +231,6 @@ export class RestAPI {
       }
     });
 
-    /**
-     * Statistics endpoints
-     */
     this.app.get(`${prefix}/stats`, async (req: Request, res: Response) => {
       try {
         res.json({
@@ -303,11 +253,7 @@ export class RestAPI {
     logger.info('API routes registered', { prefix });
   }
 
-  /**
-   * Setup error handling
-   */
   private setupErrorHandling(): void {
-    // 404 handler
     this.app.use((req: Request, res: Response) => {
       res.status(404).json({
         success: false,
@@ -317,7 +263,6 @@ export class RestAPI {
       });
     });
 
-    // Global error handler
     this.app.use((error: any, req: Request, res: Response, next: NextFunction) => {
       logger.error('API Error', error as Error);
 
@@ -329,9 +274,6 @@ export class RestAPI {
     });
   }
 
-  /**
-   * Start the server
-   */
   async start(): Promise<void> {
     return new Promise((resolve) => {
       this.app.listen(this.port, this.host, () => {
@@ -344,17 +286,11 @@ export class RestAPI {
     });
   }
 
-  /**
-   * Get Express app instance
-   */
   getApp(): Express {
     return this.app;
   }
 }
 
-/**
- * Create REST API server
- */
 export function createRestAPI(serviceContainer: ServiceContainer, config: RestAPIConfig): RestAPI {
   return new RestAPI(serviceContainer, config);
 }

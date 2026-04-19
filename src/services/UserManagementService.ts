@@ -1,8 +1,3 @@
-/**
- * User Management Service
- * Handles business logic for user operations, profiles, and statistics
- */
-
 import { Result, ok, err } from '../core/Result';
 import { logger } from '../utils/logger';
 import { LIMITS } from '../constants/limits';
@@ -33,21 +28,15 @@ export interface PersonalCollectionResult {
 export class UserManagementService {
   constructor(private db: any) {}
 
-  /**
-   * Get complete user profile with statistics and preferences
-   */
   async getUserProfile(userId: number): Promise<Result<UserProfile, Error>> {
     try {
-      // Get basic user info
       const { getUserDetailedStats } = await import('../database/userFunctions');
       const stats = await getUserDetailedStats(userId);
 
-      // Get saved books for genre analysis
       const { getSavedBooks } = await import('../database/models');
       const { getBookTags } = await import('../database/tagFunctions');
       const savedBooks = await getSavedBooks(userId);
 
-      // Collect genres from saved books
       const genresFromBooks = new Set<string>();
       savedBooks.forEach((book) => {
         if (book.genre) {
@@ -55,10 +44,8 @@ export class UserManagementService {
         }
       });
 
-      // Combine with favorite genres
       const allGenres = [...new Set([...stats.favoriteGenres, ...Array.from(genresFromBooks)])];
 
-      // Collect user tags
       const allUserTags = new Set<string>();
       for (const book of savedBooks) {
         const bookTags = await getBookTags(book.id!);
@@ -83,9 +70,6 @@ export class UserManagementService {
     }
   }
 
-  /**
-   * Get detailed user statistics
-   */
   async getUserStats(userId: number): Promise<Result<UserStats, Error>> {
     try {
       const { getUserDetailedStats } = await import('../database/userFunctions');
@@ -98,12 +82,11 @@ export class UserManagementService {
     }
   }
 
-  /**
-   * Generate personal book collection for user
-   */
-  async getPersonalCollection(userId: number, limit: number = 5): Promise<Result<PersonalCollectionResult, Error>> {
+  async getPersonalCollection(
+    userId: number,
+    limit: number = 5
+  ): Promise<Result<PersonalCollectionResult, Error>> {
     try {
-      // Try smart recommendations first
       const { getSmartRecommendations } = await import('../database/recommendationFunctions');
       let collection = await getSmartRecommendations(userId, limit);
 
@@ -115,7 +98,6 @@ export class UserManagementService {
         });
       }
 
-      // Fallback to top books
       const { getTopBooks } = await import('../database/models');
       const topBooks = await getTopBooks(Math.min(limit, 3));
 
@@ -127,7 +109,6 @@ export class UserManagementService {
         });
       }
 
-      // Final fallback to newest books
       const { getNewestBooks } = await import('../database/models');
       const newBooks = await getNewestBooks(Math.min(limit, 3));
 
@@ -143,9 +124,6 @@ export class UserManagementService {
     }
   }
 
-  /**
-   * Get user's favorite genres based on saved books and reviews
-   */
   async getUserFavoriteGenres(userId: number): Promise<Result<string[], Error>> {
     try {
       const { getSavedBooks } = await import('../database/models');
@@ -166,9 +144,6 @@ export class UserManagementService {
     }
   }
 
-  /**
-   * Get user's interest tags based on saved books
-   */
   async getUserInterestTags(userId: number): Promise<Result<string[], Error>> {
     try {
       const { getSavedBooks } = await import('../database/models');
@@ -189,13 +164,8 @@ export class UserManagementService {
     }
   }
 
-  /**
-   * Check if user can perform certain actions (rate limiting, permissions)
-   */
   async canUserPerformAction(userId: number, action: string): Promise<Result<boolean, Error>> {
     try {
-      // Basic implementation - can be extended with rate limiting logic
-      // For now, always allow actions
       return ok(true);
     } catch (error) {
       const errMsg = error instanceof Error ? error : new Error(String(error));
@@ -204,9 +174,6 @@ export class UserManagementService {
     }
   }
 
-  /**
-   * Format user profile text for display
-   */
   formatProfileText(profile: UserProfile): string {
     let profileText = '<b>👤 Ваш профіль</b>\n\n';
     profileText += `🆔 ID: ${profile.userId}\n`;
@@ -216,12 +183,10 @@ export class UserManagementService {
     profileText += `💾 Збережених книг: ${profile.stats.savedBooksCount}\n`;
     profileText += `⭐ Залишено відгуків: ${profile.stats.reviewsCount}\n`;
 
-    // Listening time
     const hours = Math.floor(profile.stats.totalListeningTime / 3600);
     const minutes = Math.floor((profile.stats.totalListeningTime % 3600) / 60);
     profileText += `🎧 Прослухано: ${hours}г ${minutes}хв\n`;
 
-    // Favorite genres
     if (profile.favoriteGenres.length > 0) {
       profileText += '\n<b>📚 Улюблені жанри:</b>\n';
       profile.favoriteGenres.slice(0, 5).forEach((genre, i) => {
@@ -231,7 +196,6 @@ export class UserManagementService {
       profileText += '\n<i>📚 Улюблені жанри ще не встановлені</i>\n';
     }
 
-    // User tags
     if (profile.userTags.length > 0) {
       profileText += '\n<b>🏷️ Ваші інтереси (теги):</b>\n';
       const tagsArray = profile.userTags.slice(0, LIMITS.TAGS_LIMIT);
@@ -243,9 +207,6 @@ export class UserManagementService {
     return profileText;
   }
 
-  /**
-   * Format detailed statistics text
-   */
   formatDetailedStatsText(stats: UserStats): string {
     const hours = Math.floor(stats.totalListeningTime / 3600);
     const minutes = Math.floor((stats.totalListeningTime % 3600) / 60);
@@ -271,11 +232,6 @@ export class UserManagementService {
   }
 }
 
-/**
- * Create a new UserManagementService instance
- * @param db - Database connection
- * @returns UserManagementService instance
- */
 export function createUserManagementService(db: any): UserManagementService {
   return new UserManagementService(db);
 }

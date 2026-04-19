@@ -28,11 +28,16 @@ export declare const getBooksWithAudioWithPagination: (limit?: number, offset?: 
     books: Book[];
     total: number;
 }>;
+export declare const getMostDownloadedBooks: (limit?: number) => Promise<Book[]>;
 export declare const getMostDownloadedBooksWithPagination: (limit?: number, offset?: number) => Promise<{
     books: Book[];
     total: number;
 }>;
 export declare const getBooksSortedByTitle: (limit?: number, offset?: number) => Promise<{
+    books: Book[];
+    total: number;
+}>;
+export declare const getTopBooksWithPagination: (limit?: number, offset?: number) => Promise<{
     books: Book[];
     total: number;
 }>;

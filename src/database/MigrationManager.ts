@@ -1,8 +1,3 @@
-/**
- * Database Migration Manager
- * High-level API for managing database migrations
- */
-
 import { MigrationRunner } from './Migration';
 import { Database, DatabaseWrapper } from './dbWrapper';
 import { allMigrations } from './migrations';
@@ -32,17 +27,11 @@ export class MigrationManager {
     this.runner = new MigrationRunner(this.wrapper);
   }
 
-  /**
-   * Initialize the migration system
-   */
   async init(): Promise<void> {
     await this.runner.initialize();
     this.runner.registerAll(...allMigrations);
   }
 
-  /**
-   * Run all pending migrations
-   */
   async migrate(): Promise<{ count: number; migrations: string[] }> {
     logger.info('🔄 Running database migrations...\n');
 
@@ -68,9 +57,6 @@ export class MigrationManager {
     };
   }
 
-  /**
-   * Rollback last migration or specific version
-   */
   async rollback(targetVersion?: string): Promise<{ count: number; migrations: string[] }> {
     logger.info('🔄 Rolling back migrations...\n');
 
@@ -85,9 +71,6 @@ export class MigrationManager {
     };
   }
 
-  /**
-   * Get migration status
-   */
   async getStatus(): Promise<MigrationStatus> {
     const executed = await this.runner.getExecuted();
     const status = await this.runner.getStatus();
@@ -112,13 +95,9 @@ export class MigrationManager {
     };
   }
 
-  /**
-   * Reset database (rollback all migrations)
-   */
   async reset(): Promise<void> {
     logger.info('⚠️  CAUTION: This will delete all data!\n');
 
-    // In production, require confirmation
     if (process.env.NODE_ENV === 'production') {
       throw new Error('Cannot reset database in production');
     }
@@ -126,9 +105,6 @@ export class MigrationManager {
     await this.runner.reset();
   }
 
-  /**
-   * Fresh database (reset + migrate)
-   */
   async fresh(): Promise<void> {
     logger.info('🔄 Refreshing database...\n');
 
@@ -141,9 +117,6 @@ export class MigrationManager {
     await this.migrate();
   }
 
-  /**
-   * Print migration status to console
-   */
   async printStatus(): Promise<void> {
     const status = await this.getStatus();
 
@@ -166,9 +139,6 @@ export class MigrationManager {
     logger.info('\n' + '─'.repeat(60) + '\n');
   }
 
-  /**
-   * Run a specific migration by version (for development/testing)
-   */
   async runSpecific(version: string): Promise<void> {
     const migration = allMigrations.find((m) => m.version === version);
 
@@ -201,21 +171,16 @@ export class MigrationManager {
     }
   }
 
-  /**
-   * Validate migration integrity
-   */
   async validate(): Promise<{ valid: boolean; errors: string[] }> {
     const errors: string[] = [];
     const executed = await this.runner.getExecuted();
 
-    // Check that all executed migrations exist
     for (const record of executed) {
       if (!allMigrations.some((m) => m.version === record.version)) {
         errors.push(`Orphan migration found: ${record.version} (no definition found)`);
       }
     }
 
-    // Check migrations are in order
     const executedVersions = executed.map((r) => r.version);
     const sortedVersions = [...executedVersions].sort();
 
@@ -230,9 +195,6 @@ export class MigrationManager {
   }
 }
 
-/**
- * Create and initialize migration manager
- */
 export async function createMigrationManager(db: Database): Promise<MigrationManager> {
   const manager = new MigrationManager(db);
   await manager.init();

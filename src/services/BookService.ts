@@ -1,8 +1,3 @@
-/**
- * Book Service - Бізнес-логіка для роботи з книгами
- * REFACTOR-003: Service Layer
- */
-
 import { BookRepository } from '../repositories/BookRepository';
 import { ReviewRepository } from '../repositories/ReviewRepository';
 import { SavedBookRepository } from '../repositories/SavedBookRepository';
@@ -46,11 +41,6 @@ export class BookService {
     private tagRepository: TagRepository
   ) {}
 
-  /**
-   * Створити нову книгу
-   * @param input - Дані для створення книги
-   * @returns Result з ID нової книги
-   */
   async createBook(input: CreateBookInput): Promise<Result<number>> {
     try {
       if (!input.title || !input.author || !input.genre) {
@@ -76,11 +66,6 @@ export class BookService {
     }
   }
 
-  /**
-   * Отримати книгу за ID
-   * @param bookId - ID книги
-   * @returns Result з даними книги включаючи відгуки та рейтинг
-   */
   async getBookById(bookId: number): Promise<Result<any>> {
     try {
       const book = await this.bookRepository.findById(bookId);
@@ -105,9 +90,6 @@ export class BookService {
     }
   }
 
-  /**
-   * Оновити книгу
-   */
   async updateBook(bookId: number, input: UpdateBookInput): Promise<Result<void>> {
     try {
       const book = await this.bookRepository.findById(bookId);
@@ -129,9 +111,6 @@ export class BookService {
     }
   }
 
-  /**
-   * Видалити книгу
-   */
   async deleteBook(bookId: number): Promise<Result<void>> {
     try {
       const book = await this.bookRepository.findById(bookId);
@@ -139,7 +118,6 @@ export class BookService {
         return new Err(new Error(`Book with id ${bookId} not found`));
       }
 
-      // Видалити всі пов'язані дані
       await this.reviewRepository.deleteByBookId(bookId);
       await this.savedBookRepository.deleteByBookId(bookId);
       await this.tagRepository.deleteByBookId(bookId);
@@ -151,9 +129,6 @@ export class BookService {
     }
   }
 
-  /**
-   * Пошук книг
-   */
   async searchBooks(filters: BookFilters): Promise<Result<any[]>> {
     try {
       let query = 'SELECT * FROM books WHERE 1=1';
@@ -183,7 +158,6 @@ export class BookService {
       query += ' LIMIT ? OFFSET ?';
       params.push(limit, offset);
 
-      // Using direct database call for complex filtered query
       const books = await (this.bookRepository as any).db.all(query, params);
       return new Ok(books);
     } catch (error) {
@@ -191,9 +165,6 @@ export class BookService {
     }
   }
 
-  /**
-   * Отримати популярні книги
-   */
   async getPopularBooks(limit: number = 10): Promise<Result<any[]>> {
     try {
       const books = await this.bookRepository.findMostRated(limit);
@@ -203,9 +174,6 @@ export class BookService {
     }
   }
 
-  /**
-   * Отримати нові книги
-   */
   async getNewBooks(limit: number = 10): Promise<Result<any[]>> {
     try {
       const books = await this.bookRepository.findNewest(limit);
@@ -215,9 +183,6 @@ export class BookService {
     }
   }
 
-  /**
-   * Отримати книги за жанром
-   */
   async getBooksByGenre(
     genre: string,
     limit: number = 20,
@@ -225,7 +190,7 @@ export class BookService {
   ): Promise<Result<any[]>> {
     try {
       const books = await this.bookRepository.findByGenre(genre);
-      // Apply pagination manually
+
       const paginatedBooks = books.slice(offset, offset + limit);
       return new Ok(paginatedBooks);
     } catch (error) {
@@ -233,9 +198,6 @@ export class BookService {
     }
   }
 
-  /**
-   * Отримати схожі книги
-   */
   async getSimilarBooks(bookId: number, limit: number = 5): Promise<Result<any[]>> {
     try {
       const book = await this.bookRepository.findById(bookId);
@@ -252,9 +214,6 @@ export class BookService {
     }
   }
 
-  /**
-   * Додати тег до книги
-   */
   async addTagToBook(bookId: number, tagId: number): Promise<Result<void>> {
     try {
       const book = await this.bookRepository.findById(bookId);
@@ -274,9 +233,6 @@ export class BookService {
     }
   }
 
-  /**
-   * Отримати теги книги
-   */
   async getBookTags(bookId: number): Promise<Result<any[]>> {
     try {
       const tags = await this.tagRepository.findByBookId(bookId);
@@ -286,10 +242,6 @@ export class BookService {
     }
   }
 
-  /**
-   * Отримати детальну інформацію про книгу (розширена інформація)
-   * Включає розподіл рейтингів, кількість читачів, популярні цитати, вікову групу та тригери вмісту
-   */
   async getDetailedBookInfo(bookId: number): Promise<Result<any>> {
     try {
       const stats = await getBookDetailedStats(bookId);
@@ -301,12 +253,6 @@ export class BookService {
     }
   }
 
-  /**
-   * Оновити розширену інформацію про книгу
-   * @param bookId - ID книги
-   * @param recommendedAge - Рекомендована вікова група (0 - всім, 6, 12, 16, 18)
-   * @param contentWarnings - Масив тригерів вмісту (наприклад: ["violence", "explicit_content"])
-   */
   async updateBookExtendedInfo(
     bookId: number,
     recommendedAge?: number,

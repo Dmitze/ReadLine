@@ -186,8 +186,11 @@ function registerAdminBookRequestHandlers(bot) {
             if (request.status === bookRequests_1.BookRequestStatus.APPROVED) {
                 keyboard.push([telegraf_1.Markup.button.callback('📖 Видати книгу', `issue_request_${request.id}`)]);
             }
-            if (request.status === bookRequests_1.BookRequestStatus.ISSUED || request.status === bookRequests_1.BookRequestStatus.OVERDUE) {
-                keyboard.push([telegraf_1.Markup.button.callback('✔️ Повернути книгу', `return_request_${request.id}`)]);
+            if (request.status === bookRequests_1.BookRequestStatus.ISSUED ||
+                request.status === bookRequests_1.BookRequestStatus.OVERDUE) {
+                keyboard.push([
+                    telegraf_1.Markup.button.callback('✔️ Повернути книгу', `return_request_${request.id}`),
+                ]);
             }
             keyboard.push([telegraf_1.Markup.button.callback('⬅️ Назад', 'admin_book_requests')]);
             await ctx.editMessageText(message, {
@@ -255,8 +258,7 @@ function registerAdminBookRequestHandlers(bot) {
                 return;
             await ctx.answerCbQuery();
             const requestId = parseInt(match[1], 10);
-            await ctx.editMessageText('📖 <b>ВИДАЧА КНИГИ</b>\n\n' +
-                'Оберіть термін видачі:', {
+            await ctx.editMessageText('📖 <b>ВИДАЧА КНИГИ</b>\n\n' + 'Оберіть термін видачі:', {
                 parse_mode: 'HTML',
                 reply_markup: telegraf_1.Markup.inlineKeyboard([
                     [telegraf_1.Markup.button.callback('7 днів', `issue_book_${requestId}_7`)],
@@ -334,7 +336,9 @@ async function showRequestsList(ctx, status) {
     if (requests.length === 0) {
         await ctx.editMessageText(`📭 <b>НЕМАЄ ЗАЯВОК</b>\n\n${statusEmoji} Статус: ${statusText}`, {
             parse_mode: 'HTML',
-            reply_markup: telegraf_1.Markup.inlineKeyboard([[telegraf_1.Markup.button.callback('⬅️ Назад', 'admin_book_requests')]]).reply_markup,
+            reply_markup: telegraf_1.Markup.inlineKeyboard([
+                [telegraf_1.Markup.button.callback('⬅️ Назад', 'admin_book_requests')],
+            ]).reply_markup,
         });
         return;
     }

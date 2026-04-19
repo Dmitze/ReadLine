@@ -1,14 +1,5 @@
-/**
- * DTOs (Data Transfer Objects) for User entity
- * Used for API contracts and data validation
- * @module dtos/UserDTO
- */
-
-/**
- * Request DTO for creating a user
- */
 export interface CreateUserDTO {
-  user_id: number; // Telegram user ID
+  user_id: number;
   username?: string;
   first_name?: string;
   last_name?: string;
@@ -17,9 +8,6 @@ export interface CreateUserDTO {
   language?: string;
 }
 
-/**
- * Request DTO for updating a user
- */
 export interface UpdateUserDTO {
   username?: string;
   first_name?: string;
@@ -30,12 +18,9 @@ export interface UpdateUserDTO {
   last_seen?: string;
 }
 
-/**
- * Response DTO for user profile
- */
 export interface UserResponseDTO {
   id: number;
-  user_id: number; // Telegram user ID
+  user_id: number;
   username?: string;
   first_name?: string;
   last_name?: string;
@@ -48,9 +33,6 @@ export interface UserResponseDTO {
   last_seen?: string;
 }
 
-/**
- * Response DTO for user statistics
- */
 export interface UserStatsDTO {
   id: number;
   username?: string;
@@ -61,9 +43,6 @@ export interface UserStatsDTO {
   is_admin: boolean;
 }
 
-/**
- * Response DTO for user library (saved books)
- */
 export interface UserLibraryDTO {
   user_id: number;
   saved_books: Array<{
@@ -77,9 +56,6 @@ export interface UserLibraryDTO {
   total_saved: number;
 }
 
-/**
- * Request DTO for updating user preferences
- */
 export interface UpdateUserPreferencesDTO {
   favorite_genres?: string[];
   language?: string;
@@ -88,9 +64,6 @@ export interface UpdateUserPreferencesDTO {
   notification_time?: string;
 }
 
-/**
- * Response DTO for user preferences
- */
 export interface UserPreferencesDTO {
   user_id: number;
   favorite_genres: string[];
@@ -100,9 +73,6 @@ export interface UserPreferencesDTO {
   notification_time: string;
 }
 
-/**
- * Query DTO for user search/filtering
- */
 export interface UserSearchDTO {
   query?: string;
   is_admin?: boolean;
@@ -112,9 +82,6 @@ export interface UserSearchDTO {
   order?: 'asc' | 'desc';
 }
 
-/**
- * Response DTO for user activity
- */
 export interface UserActivityDTO {
   user_id: number;
   last_seen: string;
@@ -124,18 +91,12 @@ export interface UserActivityDTO {
   status: 'active' | 'inactive' | 'suspended';
 }
 
-/**
- * Response DTO for admin user with extended info
- */
 export interface AdminUserDTO extends UserResponseDTO {
   total_users_managed?: number;
   moderation_actions?: number;
   last_action?: string;
 }
 
-/**
- * DTO for user notification settings
- */
 export interface UserNotificationSettingsDTO {
   user_id: number;
   enabled: boolean;

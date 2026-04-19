@@ -1,10 +1,3 @@
-/**
- * DTO Exports
- * Central export point for all Data Transfer Objects
- * @module dtos
- */
-
-// Book DTOs
 export type {
   CreateBookDTO,
   UpdateBookDTO,
@@ -18,7 +11,6 @@ export type {
   BookDownloadDTO,
 } from './BookDTO';
 
-// User DTOs
 export type {
   CreateUserDTO,
   UpdateUserDTO,
@@ -33,7 +25,6 @@ export type {
   UserNotificationSettingsDTO,
 } from './UserDTO';
 
-// Review DTOs
 export type {
   CreateReviewDTO,
   UpdateReviewDTO,
@@ -50,7 +41,6 @@ export type {
   BulkReviewOperationDTO,
 } from './ReviewDTO';
 
-// Audio DTOs
 export type {
   CreateAudioChapterDTO,
   UpdateAudioChapterDTO,
@@ -67,10 +57,8 @@ export type {
   ListeningSessionDTO,
 } from './AudioDTO';
 
-// Validation - Types
 export type { ValidationError, ValidationResult, Validator } from './ValidationSchemas';
 
-// Validation - Functions
 export {
   ValidationRules,
   BookValidationSchema,

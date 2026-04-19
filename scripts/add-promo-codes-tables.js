@@ -1,8 +1,3 @@
-/**
- * Міграція: Додавання таблиць для системи промокодів
- * Запуск: node scripts/add-promo-codes-tables.js
- */
-
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
@@ -12,8 +7,8 @@ const db = new sqlite3.Database(dbPath);
 console.log('🔄 Додавання таблиць для системи промокодів...');
 
 db.serialize(() => {
-  // Таблиця промокодів
-  db.run(`
+  db.run(
+    `
     CREATE TABLE IF NOT EXISTS promo_codes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       code TEXT UNIQUE NOT NULL,
@@ -24,16 +19,18 @@ db.serialize(() => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       created_by INTEGER
     )
-  `, (err) => {
-    if (err) {
-      console.error('❌ Помилка створення таблиці promo_codes:', err);
-    } else {
-      console.log('✅ Таблиця promo_codes створена');
+  `,
+    (err) => {
+      if (err) {
+        console.error('❌ Помилка створення таблиці promo_codes:', err);
+      } else {
+        console.log('✅ Таблиця promo_codes створена');
+      }
     }
-  });
+  );
 
-  // Таблиця використаних промокодів
-  db.run(`
+  db.run(
+    `
     CREATE TABLE IF NOT EXISTS used_promo_codes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -42,27 +39,34 @@ db.serialize(() => {
       FOREIGN KEY (promo_code_id) REFERENCES promo_codes (id),
       UNIQUE(user_id, promo_code_id)
     )
-  `, (err) => {
-    if (err) {
-      console.error('❌ Помилка створення таблиці used_promo_codes:', err);
-    } else {
-      console.log('✅ Таблиця used_promo_codes створена');
+  `,
+    (err) => {
+      if (err) {
+        console.error('❌ Помилка створення таблиці used_promo_codes:', err);
+      } else {
+        console.log('✅ Таблиця used_promo_codes створена');
+      }
     }
-  });
+  );
 
-  // Індекси для оптимізації
   db.run(`CREATE INDEX IF NOT EXISTS idx_promo_codes_active ON promo_codes(is_active)`, (err) => {
     if (err) console.error('❌ Помилка створення індексу idx_promo_codes_active:', err);
   });
 
-  db.run(`CREATE INDEX IF NOT EXISTS idx_used_promo_codes_user ON used_promo_codes(user_id)`, (err) => {
-    if (err) console.error('❌ Помилка створення індексу idx_used_promo_codes_user:', err);
-  });
+  db.run(
+    `CREATE INDEX IF NOT EXISTS idx_used_promo_codes_user ON used_promo_codes(user_id)`,
+    (err) => {
+      if (err) console.error('❌ Помилка створення індексу idx_used_promo_codes_user:', err);
+    }
+  );
 
-  db.run(`CREATE INDEX IF NOT EXISTS idx_used_promo_codes_promo ON used_promo_codes(promo_code_id)`, (err) => {
-    if (err) console.error('❌ Помилка створення індексу idx_used_promo_codes_promo:', err);
-    else console.log('✅ Індекси створені');
-  });
+  db.run(
+    `CREATE INDEX IF NOT EXISTS idx_used_promo_codes_promo ON used_promo_codes(promo_code_id)`,
+    (err) => {
+      if (err) console.error('❌ Помилка створення індексу idx_used_promo_codes_promo:', err);
+      else console.log('✅ Індекси створені');
+    }
+  );
 });
 
 db.close((err) => {

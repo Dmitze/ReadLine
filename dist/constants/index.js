@@ -14,9 +14,10 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ACTIONS = exports.AI_MESSAGES = exports.COMMANDS = exports.TIME_OF_DAY = exports.VALIDATION = exports.CONFIG = exports.SCENES = exports.FILE_TYPES = exports.STATUS = exports.EMOJI = exports.SUCCESS = exports.ERRORS = exports.BUTTONS = void 0;
+exports.ACTIONS = exports.AI_MESSAGES = exports.COMMANDS = exports.TIME_OF_DAY = exports.VALIDATION = exports.CONFIG = exports.SCENES = exports.FILE_TYPES = exports.STATUS = exports.UX = exports.EMOJI = exports.SUCCESS = exports.ERRORS = exports.BUTTONS = void 0;
 exports.BUTTONS = {
     CATALOG: '📖 Каталог',
+    SEARCH: '🔍 Пошук',
     CATALOG_OLD: '📖 Перегляд каталогу',
     TOP_BOOKS: '🏆 Топ книги',
     NEW_BOOKS: '🆕 Новинки',
@@ -25,10 +26,13 @@ exports.BUTTONS = {
     PROFILE_OLD: '👤 Мій профіль',
     HELP: 'ℹ️ Допомога',
     AI_ASSISTANT: '🤖 AI Помічник',
-    FEEDBACK: "📞 Зворотній зв'язок",
+    SETTINGS: '⚙️ Налаштування',
+    PROMO: '🎁 Отримати промокод',
+    YAKABOO: '🌐 Yakaboo',
+    FEEDBACK: "📞 Зворотний зв'язок",
     REQUEST_PHYSICAL_BOOK: '📚 Замовити фізичну книгу',
-    BACK: '⬅️ Назад',
     HOME: '🏠 На головну',
+    BACK: '⬅️ Назад',
     QUICK_SEARCH: '⚡ Швидкий пошук',
     MY_FAVORITES: '⭐ Мої улюблені',
     RANDOM_BOOK: '🎲 Випадкова книга',
@@ -74,6 +78,34 @@ exports.EMOJI = {
     LOADING: '🤔',
     TROPHY: '🏆',
     BELL: '🔔',
+};
+exports.UX = {
+    welcomeBack: (nameSafe) => `<b>Warrior's Library</b>\n` +
+        `З поверненням, <b>${nameSafe}</b>.\n\n` +
+        `<i>Головне — у кнопках нижче. Швидкі команди — меню Telegram (☰ /).</i>`,
+    errorGlobalHtml: `<b>Не вдалося обробити запит</b>\n\n` +
+        `• /start — оновити сесію\n` +
+        `• Спробуйте ще раз за хвилину\n` +
+        `• Якщо повторюється — напишіть адміністратору`,
+    navHomeTitle: '🏠 На головній',
+    navHomeBody: 'Оберіть дію в меню нижче.',
+    navBackTitle: 'Назад',
+    navBackBody: 'Повернулись на крок назад.',
+    cancelStep: 'Скасовано. Далі — оберіть дію в меню знизу.',
+    helpHubHtml: `<b>Warrior's Library</b> · довідка\n\n` + `Короткі відповіді, без зайвого. Оберіть тему:`,
+    yakabooTeaserHtml: `<b>Yakaboo</b> · книжкова платформа України\n\n` +
+        `75 000+ електронних і паперових книг. Сайт і застосунки для читання.`,
+    listOpenCardHint: 'Торкніться рядка — відкриється картка з файлами та відгуками.',
+    topListTitle: 'Топ за рейтингом',
+    newListTitle: 'Новинки',
+    savedListTitle: 'Моя бібліотека',
+    emptyTop: '📭 Поки немає оцінених книг.\n\nСтаньте першим — відкрийте будь-яку книгу та поставте ⭐.',
+    emptyNew: '📭 Новинок ще немає. Загляньте в Каталог або натисніть «Топ книги».',
+    emptyLibraryHtml: `<b>Тут поки порожньо</b>\n\n` +
+        `У картці книги натисніть «Зберегти» — і вона з’явиться тут (до 20 книг).`,
+    searchEmptyHtml: (querySafe) => `<b>Нічого не знайдено</b>\n\n` +
+        `Запит: «${querySafe}»\n\n` +
+        `Спробуйте інше слово, автора або жанр. Мінімум 2 символи в запиті.`,
 };
 exports.STATUS = {
     PENDING: 'pending',

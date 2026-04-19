@@ -12,7 +12,6 @@ export interface BookTag {
   created_at?: string;
 }
 
-// Отримати всі теги
 export const getAllTags = (): Promise<Tag[]> => {
   return new Promise((resolve, reject) => {
     db.all('SELECT * FROM tags ORDER BY name', (err, rows: Tag[]) => {
@@ -22,8 +21,6 @@ export const getAllTags = (): Promise<Tag[]> => {
   });
 };
 
-// Додати новий тег
-// ВАЖЛИВО: теги повинні бути однослівними (максимум 2 слова без пробілів)
 export const addTag = async (name: string): Promise<number> => {
   const { isValidTag, normalizeTag } = await import('../utils/tagValidator');
 
@@ -39,20 +36,16 @@ export const addTag = async (name: string): Promise<number> => {
     db.run('INSERT INTO tags (name) VALUES (?)', [normalized], function (err) {
       if (err) reject(err);
       else {
-        // ✅ Інвалідація кеша тегів після додавання нового тегу
         try {
           const { invalidateTagsCache } = require('../scenes/addBook/utils');
           invalidateTagsCache();
-        } catch (err) {
-          // Ignore cache invalidation errors
-        }
+        } catch (err) {}
         resolve(this.lastID);
       }
     });
   });
 };
 
-// Отримати теги книги
 export const getBookTags = (bookId: number): Promise<Tag[]> => {
   return new Promise((resolve, reject) => {
     const query =
@@ -64,7 +57,6 @@ export const getBookTags = (bookId: number): Promise<Tag[]> => {
   });
 };
 
-// Batch версія - отримати теги для багатьох книг одразу (N+1 fix)
 export const getBooksTagsBatch = (bookIds: number[]): Promise<Map<number, Tag[]>> => {
   return new Promise((resolve, reject) => {
     if (bookIds.length === 0) {
@@ -102,7 +94,6 @@ export const getBooksTagsBatch = (bookIds: number[]): Promise<Map<number, Tag[]>
   });
 };
 
-// Додати тег до книги
 export const addBookTag = (bookId: number, tagId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     db.run(
@@ -116,7 +107,6 @@ export const addBookTag = (bookId: number, tagId: number): Promise<void> => {
   });
 };
 
-// Видалити тег з книги
 export const removeBookTag = (bookId: number, tagId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     db.run('DELETE FROM book_tags WHERE book_id = ? AND tag_id = ?', [bookId, tagId], (err) => {
@@ -126,8 +116,6 @@ export const removeBookTag = (bookId: number, tagId: number): Promise<void> => {
   });
 };
 
-// Пошук книг за тегом
-// ✅ ВИПРАВЛЕНО #16: використовуємо sanitization utility
 export const searchBooksByTag = (tagName: string, limit: number = 10): Promise<any[]> => {
   return new Promise(async (resolve, reject) => {
     const { sanitizeTag } = await import('../utils/sanitization');
@@ -150,7 +138,6 @@ export const searchBooksByTag = (tagName: string, limit: number = 10): Promise<a
   });
 };
 
-// Пошук книг за тегом з пагінацією
 export const searchBooksByTagWithPagination = (
   tagName: string,
   limit: number = 10,
@@ -192,7 +179,6 @@ export const searchBooksByTagWithPagination = (
   });
 };
 
-// Отримати популярні теги
 export const getPopularTags = (limit: number = 10): Promise<Array<Tag & { count: number }>> => {
   return new Promise((resolve, reject) => {
     const query = `SELECT t.*, COUNT(bt.book_id) as count FROM tags t

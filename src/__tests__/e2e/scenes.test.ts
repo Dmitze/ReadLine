@@ -1,8 +1,3 @@
-/**
- * Scenes E2E Tests - Phase 4
- * Tests for scene and handler interactions
- */
-
 describe('Scenes E2E Tests - Phase 4', () => {
   describe('Search Scene', () => {
     it('should handle search initialization', () => {
@@ -153,7 +148,7 @@ describe('Scenes E2E Tests - Phase 4', () => {
     });
 
     it('should handle timeout', () => {
-      const timeout = 5000; // 5 seconds
+      const timeout = 5000;
       expect(timeout).toBeGreaterThan(0);
     });
 
@@ -219,8 +214,8 @@ describe('Scenes E2E Tests - Phase 4', () => {
 
   describe('Performance', () => {
     it('should complete operations within timeout', () => {
-      const duration = 2500; // 2.5 seconds
-      const timeout = 5000; // 5 seconds
+      const duration = 2500;
+      const timeout = 5000;
 
       expect(duration).toBeLessThan(timeout);
     });

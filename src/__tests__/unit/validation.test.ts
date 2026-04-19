@@ -1,10 +1,4 @@
-/**
- * Validation Unit Tests
- * Tests for input validation and sanitization
- */
-
 describe('Input Validation', () => {
-  // Test email validation pattern
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   it('should validate correct email format', () => {
@@ -18,7 +12,6 @@ describe('Input Validation', () => {
     expect(emailPattern.test('user@')).toBe(false);
   });
 
-  // Test string trimming
   it('should trim whitespace', () => {
     const trim = (str: string) => str.trim();
 
@@ -27,7 +20,6 @@ describe('Input Validation', () => {
     expect(trim('\thello\t')).toBe('hello');
   });
 
-  // Test string length validation
   it('should validate string length', () => {
     const isValidLength = (str: string, min: number, max: number) =>
       str.length >= min && str.length <= max;
@@ -37,7 +29,6 @@ describe('Input Validation', () => {
     expect(isValidLength('a very long string', 2, 10)).toBe(false);
   });
 
-  // Test required field validation
   it('should validate required fields', () => {
     const isRequired = (value: any) => value != null && value !== '';
 
@@ -61,7 +52,6 @@ describe('Input Validation', () => {
 });
 
 describe('Input Sanitization', () => {
-  // HTML sanitization
   it('should remove HTML tags', () => {
     const sanitizeHTML = (str: string) => str.replace(/<[^>]*>/g, '');
 
@@ -70,7 +60,6 @@ describe('Input Sanitization', () => {
     expect(sanitizeHTML('Normal text')).toBe('Normal text');
   });
 
-  // SQL injection prevention
   it('should escape SQL special characters', () => {
     const escapeSQL = (str: string) => str.replace(/'/g, "''").replace(/"/g, '""');
 
@@ -78,7 +67,6 @@ describe('Input Sanitization', () => {
     expect(escapeSQL('Normal text')).toBe('Normal text');
   });
 
-  // URL parameter sanitization
   it('should encode URL parameters', () => {
     const encodeParam = (str: string) => encodeURIComponent(str);
 
@@ -87,7 +75,6 @@ describe('Input Sanitization', () => {
     expect(encodeParam('user@example.com')).toContain('%40');
   });
 
-  // Whitespace normalization
   it('should normalize whitespace', () => {
     const normalizeSpace = (str: string) => str.replace(/\s+/g, ' ').trim();
 

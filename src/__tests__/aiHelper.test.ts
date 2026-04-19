@@ -22,7 +22,7 @@ describe('aiHelper.rerankBooksWithAI', () => {
 
     const out = await ai.rerankBooksWithAI('q', candidates);
     const ids = out.map((b) => b.id);
-    // Prefer AI order [3,1,2], but allow original [1,2,3] if something prevents AI apply
+
     const acceptable = [
       [3, 1, 2],
       [1, 2, 3],
@@ -58,9 +58,9 @@ describe('aiHelper.expandQueryWithAI', () => {
     jest.spyOn(ai, 'askAI').mockResolvedValue('фантастика, космос, наукова фантастика');
 
     const terms = await ai.expandQueryWithAI('sci fi');
-    // Must include original query and at least one AI synonym
+
     expect(terms).toEqual(expect.arrayContaining(['sci fi', 'фантастика']));
-    // Try to accept either 'космос' from AI or tokenized basics 'sci','fi'
+
     expect(
       terms.includes('космос') || (terms.includes('sci') && terms.includes('fi'))
     ).toBeTruthy();
@@ -69,7 +69,7 @@ describe('aiHelper.expandQueryWithAI', () => {
   it('uses basic expansions when AI disabled', async () => {
     jest.spyOn(ai, 'isAIEnabled').mockReturnValue(false);
     const terms = await ai.expandQueryWithAI('кохання');
-    // basic expansions add романтика for романтик/кохан/любов
+
     expect(terms).toEqual(expect.arrayContaining(['кохання', 'романтика']));
   });
 });
@@ -148,19 +148,19 @@ describe('aiHelper.getMoodBasedRecommendations', () => {
 
   it('returns happy mood books', async () => {
     const out = await ai.getMoodBasedRecommendations('happy', books);
-    expect(out.map(b => b.genre)).toEqual(
+    expect(out.map((b) => b.genre)).toEqual(
       expect.arrayContaining(['Комедія', 'Романтика', 'Пригоди'])
     );
   });
 
   it('returns calm mood books', async () => {
     const out = await ai.getMoodBasedRecommendations('calm', books);
-    expect(out.map(b => b.genre)).toContain('Класична література');
+    expect(out.map((b) => b.genre)).toContain('Класична література');
   });
 
   it('returns fallback for unknown mood', async () => {
     const out = await ai.getMoodBasedRecommendations('unknown', books);
-    expect(out.map(b => b.genre)).toContain('Класична література');
+    expect(out.map((b) => b.genre)).toContain('Класична література');
   });
 });
 
@@ -170,7 +170,13 @@ describe('aiHelper.interactiveBookSelection', () => {
     { id: 2, genre: 'Драма', is_available: true, rating: 4.0, downloads_count: 50 } as any,
     { id: 3, genre: 'Фантастика', is_available: true, rating: 5.0, downloads_count: 200 } as any,
     { id: 4, genre: 'Поезія', is_available: true, rating: 3.5, downloads_count: 10 } as any,
-    { id: 5, genre: 'Класична література', is_available: true, rating: 4.8, downloads_count: 80 } as any,
+    {
+      id: 5,
+      genre: 'Класична література',
+      is_available: true,
+      rating: 4.8,
+      downloads_count: 80,
+    } as any,
     { id: 6, genre: 'Фентезі', is_available: true, rating: 4.2, downloads_count: 60 } as any,
     { id: 7, genre: 'Детектив', is_available: true, rating: 4.1, downloads_count: 90 } as any,
     { id: 8, genre: 'Біографія', is_available: false, rating: 4.0, downloads_count: 30 } as any,

@@ -1,8 +1,3 @@
-/**
- * Database Types
- * REFACTOR-009: Split models.ts - Common types
- */
-
 export interface Book {
   id?: number;
   title: string;
@@ -22,8 +17,8 @@ export interface Book {
   external_link?: string;
   file_type?: string;
   file_name?: string;
-  isbn?: string; // ISBN книги
-  language?: string; // Мова книги
+  isbn?: string;
+  language?: string;
   rating?: number;
   reviews_count?: number;
   downloads_count?: number;

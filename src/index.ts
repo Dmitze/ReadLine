@@ -1,4 +1,3 @@
-// src/index.ts - Основний файл бота
 import { Telegraf, session, Markup } from 'telegraf';
 import { BotContext } from './types/telegraf';
 import { logger } from './utils/logger';
@@ -20,7 +19,6 @@ bootstrapContainer(container).catch((error) => {
 
 const bot = new Telegraf<BotContext>(env.BOT_TOKEN);
 
-// Встановлюємо Menu Button - відкриває сайт Yakaboo
 bot.telegram.setChatMenuButton({
   menuButton: {
     type: 'web_app',
@@ -70,12 +68,10 @@ process.on('uncaughtException', (error) => {
 
 const stage = createStage();
 
-// Імпорт клавіатур (потрібно для middleware)
 import { getMainMenuKeyboard } from './keyboards/mainKeyboards';
 
 bot.use(session());
 
-// КРИТИЧНО ВАЖЛИВО: Middleware для виходу зі scene ПЕРЕД stage.middleware()
 bot.use(async (ctx, next) => {
   if (ctx.message && 'text' in ctx.message) {
     const text = ctx.message.text;
@@ -95,13 +91,12 @@ bot.use(async (ctx, next) => {
       BUTTONS.HOME,
     ];
 
-    // Якщо натиснута кнопка головного меню і користувач в scene - виходимо
     if (menuButtons.includes(text) && ctx.scene) {
       logger.info('User pressed menu button while in scene', { text, userId: ctx.from?.id });
 
       try {
         await ctx.scene.leave();
-        // Очищаємо session
+
         if (ctx.session) {
           ctx.session = {};
         }
@@ -120,10 +115,8 @@ bot.use(async (ctx, next) => {
 
 bot.use(stage.middleware());
 
-// Імпорт user functions
 import { getOrCreateUser, isNewUser } from './database/userFunctions';
 
-// Базові команди
 bot.start(async (ctx) => {
   const userId = ctx.from?.id;
   const username = ctx.from?.username;
@@ -136,14 +129,11 @@ bot.start(async (ctx) => {
   }
 
   try {
-    // Отримуємо або створюємо користувача
     await getOrCreateUser(userId, username, firstName, lastName);
 
-    // Перевіряємо чи користувач новий
     const isNew = await isNewUser(userId);
 
     if (isNew) {
-      // Новий користувач - запускаємо онбординг
       logger.info('New user detected, starting onboarding', { userId, username });
       if (ctx.scene) {
         return ctx.scene.enter('ONBOARDING_SCENE');
@@ -152,7 +142,6 @@ bot.start(async (ctx) => {
       }
     }
 
-    // Існуючий користувач - показуємо коротке привітання
     const welcomeMessage = UX.welcomeBack(escapeHtml(firstName));
 
     return ctx.reply(welcomeMessage, {
@@ -169,7 +158,6 @@ bot.start(async (ctx) => {
   }
 });
 
-// Команда допомоги з навігацією
 bot.help((ctx) => {
   const helpMessage = UX.helpHubHtml;
 
@@ -185,7 +173,6 @@ bot.help((ctx) => {
   return ctx.reply(helpMessage, { ...keyboard, parse_mode: 'HTML' });
 });
 
-// Обробник кнопки Yakaboo
 bot.hears('🌐 Yakaboo', async (ctx) => {
   const message = `${UX.yakabooTeaserHtml}\n\n👇 Відкрити в браузері:`;
 
@@ -196,7 +183,6 @@ bot.hears('🌐 Yakaboo', async (ctx) => {
   return ctx.reply(message, { ...keyboard, parse_mode: 'HTML' });
 });
 
-// ООбробники розділів довідки
 bot.action('help_buttons', async (ctx) => {
   const message =
     '<b>📚 ОСНОВНІ КНОПКИ МЕНЮ</b>\n\n' +
@@ -224,7 +210,7 @@ bot.action('help_buttons', async (ctx) => {
     '⚙️ <b>Налаштування</b>\n' +
     '  Клавіатура (мобіль/планшет/ПК)\n' +
     '  Сповіщення про новинки\n\n' +
-    '📞 <b>Зворотний зв\'язок</b>\n' +
+    "📞 <b>Зворотний зв'язок</b>\n" +
     '  Напиши адміну, якщо є проблеми\n\n' +
     '<i>← Назад в меню</i>';
 
@@ -325,7 +311,7 @@ bot.action('help_faq', async (ctx) => {
     '<b>Q: Як отримувати сповіщення?</b>\n' +
     'A: ⚙️ Налаштування → включи сповіщення\n\n' +
     '<b>Q: Як написати адміну?</b>\n' +
-    'A: Натисни 📞 Зворотний зв\'язок\n\n' +
+    "A: Натисни 📞 Зворотний зв'язок\n\n" +
     '<i>← Назад в меню</i>';
 
   const backButton = Markup.inlineKeyboard([
@@ -425,13 +411,11 @@ bot.action('back_to_help', async (ctx) => {
   return ctx.editMessageText(helpMessage, { ...keyboard, parse_mode: 'HTML' });
 });
 
-// Команда /settings
 bot.command('settings', async (ctx) => {
   logger.userAction(ctx.from.id, 'settings_command');
   return ctx.scene.enter('SETTINGS_SCENE');
 });
 
-// Команда /catalog
 bot.command('catalog', async (ctx) => {
   logger.userAction(ctx.from.id, 'catalog_command');
   return ctx.scene.enter('CATALOG_SCENE');
@@ -442,7 +426,6 @@ bot.hears(BUTTONS.CATALOG, async (ctx) => {
   return ctx.scene.enter('CATALOG_SCENE');
 });
 
-// Команда /library
 bot.command('library', async (ctx) => {
   logger.userAction(ctx.from.id, 'library_command');
   const { getSavedBooks } = await import('./database/models');
@@ -456,19 +439,16 @@ bot.command('library', async (ctx) => {
   return displaySavedBooks(ctx, savedBooks);
 });
 
-// Команда /profile
 bot.command('profile', async (ctx) => {
   logger.userAction(ctx.from.id, 'profile_command');
   return ctx.scene.enter('PROFILE_SCENE');
 });
 
-// Команда /ai
 bot.command('ai', async (ctx) => {
   logger.userAction(ctx.from.id, 'ai_command');
   return ctx.scene.enter('AI_SCENE');
 });
 
-// Команда /top
 bot.command('top', async (ctx) => {
   logger.userAction(ctx.from.id, 'top_command');
   const { getTopBooks } = await import('./database/models');
@@ -477,7 +457,6 @@ bot.command('top', async (ctx) => {
   return displayTopBooks(ctx, topBooks);
 });
 
-// Команда /new
 bot.command('new', async (ctx) => {
   logger.userAction(ctx.from.id, 'new_command');
   const { getNewestBooks } = await import('./database/models');
@@ -490,19 +469,16 @@ bot.command('new', async (ctx) => {
   return displayNewBooks(ctx, newBooks);
 });
 
-// Команда /feedback
 bot.command('feedback', async (ctx) => {
   logger.userAction(ctx.from.id, 'feedback_command');
   return ctx.scene.enter('FEEDBACK_SCENE');
 });
 
-// Команда /search
 bot.command('search', async (ctx) => {
   logger.userAction(ctx.from.id, 'search_command');
   return ctx.scene.enter('SEARCH_SCENE');
 });
 
-// Команда /website
 bot.command('website', async (ctx) => {
   logger.userAction(ctx.from.id, 'website_command');
   return ctx.reply('🌐 Сайт Yakaboo — найбільший книжковий магазин України:', {
@@ -512,38 +488,33 @@ bot.command('website', async (ctx) => {
   });
 });
 
-// Реєстрація команд у меню Telegram (бокове меню "/")
 bot.telegram.setMyCommands([
-  { command: 'start',    description: '🏠 Головне меню' },
-  { command: 'catalog',  description: '📖 Каталог книг' },
-  { command: 'search',   description: '🔍 Пошук книг' },
-  { command: 'library',  description: '💾 Моя бібліотека' },
-  { command: 'top',      description: '🏆 Топ книги' },
-  { command: 'new',      description: '🆕 Новинки' },
-  { command: 'ai',       description: '🤖 AI Помічник' },
-  { command: 'profile',  description: '👤 Мій профіль' },
+  { command: 'start', description: '🏠 Головне меню' },
+  { command: 'catalog', description: '📖 Каталог книг' },
+  { command: 'search', description: '🔍 Пошук книг' },
+  { command: 'library', description: '💾 Моя бібліотека' },
+  { command: 'top', description: '🏆 Топ книги' },
+  { command: 'new', description: '🆕 Новинки' },
+  { command: 'ai', description: '🤖 AI Помічник' },
+  { command: 'profile', description: '👤 Мій профіль' },
   { command: 'settings', description: '⚙️ Налаштування' },
   { command: 'feedback', description: BUTTONS.FEEDBACK },
-  { command: 'website',  description: '🌐 Сайт Yakaboo' },
-  { command: 'help',     description: 'ℹ️ Допомога' },
-  { command: 'admin',    description: '🛠️ Адмін панель' },
+  { command: 'website', description: '🌐 Сайт Yakaboo' },
+  { command: 'help', description: 'ℹ️ Допомога' },
+  { command: 'admin', description: '🛠️ Адмін панель' },
 ]);
 
-// Імпорт та реєстрація обробників
 import userHandlers from './handlers/userHandlers';
 import adminHandlers from './handlers/adminHandlers';
 
 logger.info('Registering handlers...');
 
-// Реєструємо adminHandlers ПЕРЕД userHandlers
-// щоб команди оброблялися першими
 adminHandlers(bot);
 logger.info('Admin handlers registered');
 
 userHandlers(bot);
 logger.info('User handlers registered');
 
-// Обробники для сповіщень (Завдання 31)
 bot.action('notification_settings', async (ctx) => {
   await ctx.answerCbQuery();
   return ctx.scene.enter('SETTINGS_SCENE');
@@ -551,13 +522,13 @@ bot.action('notification_settings', async (ctx) => {
 
 bot.action('view_new_books', async (ctx) => {
   await ctx.answerCbQuery('📚 Показую новинки');
-  // Тут можна додати логіку показу новинок
+
   await ctx.reply('📚 Новинки будуть тут незабаром!');
 });
 
 bot.action('random_book', async (ctx) => {
   await ctx.answerCbQuery('🎲 Вибираю випадкову книгу');
-  // Викликаємо обробник випадкової книги
+
   const { getRandomBook } = await import('./database/recommendationFunctions');
   const book = await getRandomBook();
 
@@ -583,14 +554,13 @@ bot.action('random_book', async (ctx) => {
   }
 });
 
-// Глобальний обробник "Назад до меню"
 bot.action('back_to_menu', async (ctx) => {
   try {
     await ctx.answerCbQuery();
-    await ctx.reply(
-      `<b>${UX.navHomeTitle}</b>\n${UX.navHomeBody}`,
-      { parse_mode: 'HTML', reply_markup: getMainMenuKeyboard() }
-    );
+    await ctx.reply(`<b>${UX.navHomeTitle}</b>\n${UX.navHomeBody}`, {
+      parse_mode: 'HTML',
+      reply_markup: getMainMenuKeyboard(),
+    });
     logger.userAction(ctx.from!.id, 'back_to_menu');
   } catch (error) {
     logger.error(
@@ -600,7 +570,6 @@ bot.action('back_to_menu', async (ctx) => {
   }
 });
 
-// Глобальний обробник "Назад до адмін-панелі"
 bot.action('back_to_admin', async (ctx) => {
   try {
     await ctx.answerCbQuery();
@@ -630,20 +599,14 @@ bot.action('back_to_admin', async (ctx) => {
         ? `📞 Нових повідомлень: <b>${pendingFeedback.length}</b> 🔔`
         : '✅ Всі повідомлення прочитані';
 
-    // Видаляємо попереднє повідомлення
     try {
       await ctx.deleteMessage();
-    } catch (_error) {
-      // ✅ ВИПРАВЛЕНО #12: Префіксу '_' для невикористаної змінної
-      // Ігноруємо помилку видалення повідомлення
-    }
+    } catch (_error) {}
 
-    // Спочатку прибираємо reply клавіатуру
     await ctx.reply('🔄 Повертаємось до адмін-панелі...', {
       reply_markup: { remove_keyboard: true },
     });
 
-    // Потім показуємо адмін-панель з inline клавіатурою
     await ctx.reply(
       '🛠️ <b>Панель адміністратора</b>\n\n' +
         '📊 <b>Статистика:</b>\n' +
@@ -664,23 +627,19 @@ bot.action('back_to_admin', async (ctx) => {
   }
 });
 
-// Graceful shutdown
 let notificationScheduler: NodeJS.Timeout | null = null;
 
 const shutdown = async (signal: string) => {
   logger.info(`Received ${signal}, shutting down gracefully`);
 
-  // Зупиняємо планувальник сповіщень
   if (notificationScheduler) {
     const { stopNotificationScheduler } = await import('./utils/notifications');
     stopNotificationScheduler(notificationScheduler);
   }
 
-  // Очищаємо rate limiters
   const { cleanupRateLimiters } = await import('./middleware/rateLimit');
   cleanupRateLimiters();
 
-  // ✅ ВИПРАВЛЕНО: Закриваємо БД перед виходом
   try {
     await new Promise<void>((resolve, reject) => {
       db.close((err) => {
@@ -707,20 +666,15 @@ const shutdown = async (signal: string) => {
 process.once('SIGINT', () => shutdown('SIGINT'));
 process.once('SIGTERM', () => shutdown('SIGTERM'));
 
-// Запуск бота
 logger.info('Starting bot launch');
-// ✅ ВИПРАВЛЕНО #14: видалено дублювання логів (вже логуються в handlers)
 
-// Асинхронний запуск без блокування
 (async () => {
   try {
-    // ✅ ВИПРАВЛЕНО #1: Ініціалізація БД перед запуском бота
     logger.info('Initializing database...');
     const { initDatabase } = await import('./database/models');
     await initDatabase();
     logger.info('Database initialized successfully');
-    
-    // ✅ Запускаємо міграції для створення всіх таблиць
+
     logger.info('Running database migrations...');
     const { MigrationManager } = await import('./database/MigrationManager');
     const { db } = await import('./database/models');
@@ -735,12 +689,10 @@ logger.info('Starting bot launch');
     });
     logger.info('Bot launched successfully', { username: bot.botInfo?.username });
 
-    // Запускаємо планувальник сповіщень (Завдання 31)
     const { startNotificationScheduler } = await import('./utils/notifications');
     notificationScheduler = startNotificationScheduler(bot);
     logger.info('Notification scheduler started');
 
-    // ✅ ВИПРАВЛЕНО #70: запускаємо автоматичний backup
     const { startAutoBackup } = await import('./utils/autoBackup');
     startAutoBackup();
     logger.info('Automatic backup scheduler started');

@@ -1,10 +1,3 @@
-/**
- * Miscellaneous Handlers
- * REFACTOR-009: Split userHandlers.ts
- *
- * Обработчики для профиля, помощи, обратной связи, AI, промокодов
- */
-
 import { Telegraf, Markup } from 'telegraf';
 import { BotContext } from '../../types/telegraf';
 import { logger } from '../../utils/logger';
@@ -17,11 +10,7 @@ import {
   returnPromoCode,
 } from '../../database/promoCodeFunctions';
 
-/**
- * Register miscellaneous handlers
- */
 export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
-  // Промокод - початкове повідомлення
   bot.hears(BUTTONS.PROMO, async (ctx: BotContext) => {
     try {
       const userId = ctx.from?.id;
@@ -31,7 +20,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      // Показуємо детальну інформацію про Yakaboo Unlimited
       await ctx.reply(
         '🎁 <b>ПРОМОКОД YAKABOO UNLIMITED</b>\n\n' +
           '━━━━━━━━━━━━━━━━━━━\n\n' +
@@ -72,7 +60,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Кнопка: Так, отримати промокод
   bot.action('confirm_get_promocode', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -83,7 +70,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      // Перевіряємо чи користувач вже отримував промокод
       const hasReceived = await hasUserReceivedPromoCode(userId);
 
       if (hasReceived) {
@@ -101,7 +87,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      // Отримуємо доступний промокод
       const promoCode = await getAvailablePromoCodeForUser();
 
       if (!promoCode) {
@@ -119,10 +104,8 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      // Позначаємо промокод як використаний
       await markPromoCodeAsUsed(userId, promoCode.id!);
 
-      // Відправляємо промокод користувачу
       await ctx.editMessageText(
         '🎉 <b>ВАШ ПРОМОКОД YAKABOO UNLIMITED</b>\n\n' +
           `🎫 Код: <code>${promoCode.code}</code>\n` +
@@ -134,7 +117,7 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
           '3️⃣ Введіть промокод у розділі підписки\n' +
           '4️⃣ Насолоджуйтесь 75 000+ книгами! 📚\n\n' +
           '━━━━━━━━━━━━━━━━━━━\n\n' +
-          '⚠️ <b>Пам\'ятайте:</b>\n' +
+          "⚠️ <b>Пам'ятайте:</b>\n" +
           '• Промокод діє для ОДНОЇ реєстрації\n' +
           '• Якщо НЕ використали - поверніть його!\n' +
           '• Інші зможуть ним скористатися\n\n' +
@@ -159,7 +142,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Кнопка: Повернути промокод
   bot.action('return_promocode', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -170,7 +152,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      // Перевіряємо чи користувач отримував промокод
       const hasReceived = await hasUserReceivedPromoCode(userId);
 
       if (!hasReceived) {
@@ -188,7 +169,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      // Отримуємо промокод користувача
       const userPromoCode = await getUserPromoCode(userId);
 
       if (!userPromoCode) {
@@ -206,7 +186,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      // Показуємо підтвердження повернення
       await ctx.editMessageText(
         '🔄 <b>ПОВЕРНЕННЯ ПРОМОКОДУ</b>\n\n' +
           `🎫 Ваш промокод: <code>${userPromoCode.code}</code>\n\n` +
@@ -214,7 +193,7 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
           'Якщо ви повернете промокод:\n' +
           '✅ Він стане доступним для інших користувачів\n' +
           '✅ Ви зможете отримати новий промокод пізніше\n' +
-          '❌ Цей промокод більше не буде прив\'язаний до вас\n\n' +
+          "❌ Цей промокод більше не буде прив'язаний до вас\n\n" +
           '💡 Поверніть промокод тільки якщо ви НЕ зареєструвалися на Yakaboo!',
         {
           parse_mode: 'HTML',
@@ -233,7 +212,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Кнопка: Підтвердити повернення
   bot.action('confirm_return_promocode', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -244,7 +222,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      // Повертаємо промокод
       const result = await returnPromoCode(userId);
 
       if (!result) {
@@ -286,7 +263,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Кнопка: Скасувати повернення
   bot.action('cancel_return_promocode', async (ctx: BotContext) => {
     await ctx.answerCbQuery('Промокод залишається у вас');
     await ctx.editMessageText(
@@ -307,7 +283,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
     );
   });
 
-  // Кнопка: Скасувати отримання
   bot.action('cancel_promocode', async (ctx: BotContext) => {
     await ctx.answerCbQuery('Скасовано');
     await ctx.editMessageText(
@@ -319,19 +294,16 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
     );
   });
 
-  // Пошук
   bot.hears('🔍 Пошук', async (ctx: BotContext) => {
     await ctx.scene.enter('SEARCH_SCENE');
     logger.userAction(ctx.from!.id, 'search_from_menu');
   });
 
-  // Налаштування
   bot.hears('⚙️ Налаштування', async (ctx: BotContext) => {
     await ctx.scene.enter('SETTINGS_SCENE');
     logger.userAction(ctx.from!.id, 'view_settings');
   });
 
-  // Action handler для налаштувань (для inline клавіатури)
   bot.action('settings_scene', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -343,25 +315,21 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Профиль
   bot.hears([BUTTONS.PROFILE_OLD, BUTTONS.PROFILE], async (ctx: BotContext) => {
     await ctx.scene.enter('PROFILE_SCENE');
     logger.userAction(ctx.from!.id, 'view_profile');
   });
 
-  // Обратная связь
   bot.hears(BUTTONS.FEEDBACK, async (ctx: BotContext) => {
     await ctx.scene.enter('FEEDBACK_SCENE');
     logger.userAction(ctx.from!.id, 'start_feedback');
   });
 
-  // AI Ассистент
   bot.hears(BUTTONS.AI_ASSISTANT, async (ctx: BotContext) => {
     await ctx.scene.enter('AI_SCENE');
     logger.userAction(ctx.from!.id, 'start_ai');
   });
 
-  // Помощь — делегуємо до /help команди (повний контент в index.ts)
   bot.hears(BUTTONS.HELP, async (ctx) => {
     const helpMessage =
       '╔════════════════════════════════════════╗\n' +
@@ -389,7 +357,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
     logger.userAction(ctx.from!.id, 'view_help');
   });
 
-  // Actions для help
   bot.action('start_search', async (ctx) => {
     try {
       await ctx.answerCbQuery();
@@ -420,7 +387,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Обработчик feedback callback
   bot.action('feedback', async (ctx) => {
     try {
       await ctx.answerCbQuery();
@@ -431,7 +397,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Обработчик catalog callback
   bot.action('catalog', async (ctx) => {
     try {
       await ctx.answerCbQuery();
@@ -451,7 +416,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Обработчик для динамічних меню кнопок (menu_* callbacks з адаптивної клавіатури)
   bot.action(/^menu_/, async (ctx) => {
     try {
       await ctx.answerCbQuery();
@@ -478,7 +442,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
         [BUTTONS.FEEDBACK]: 'feedback',
       };
 
-      // Отримуємо дію з маппінгу
       const action = menuMap[buttonName];
 
       if (!action) {
@@ -487,7 +450,6 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      // Виходимо зі сцени перед входом в нову
       if (ctx.scene) {
         await ctx.scene.leave();
       }
@@ -495,23 +457,17 @@ export function registerMiscHandlers(bot: Telegraf<BotContext>): void {
       if (action === 'catalog_books') {
         await ctx.scene.enter('CATALOG_SCENE');
       } else if (action === 'top_books') {
-        await ctx.reply(
-          '🏆 <b>ТОП КНИГИ</b>\n\n' +
-            'Завантаження топ книг за рейтингом...',
-          { parse_mode: 'HTML' }
-        );
+        await ctx.reply('🏆 <b>ТОП КНИГИ</b>\n\n' + 'Завантаження топ книг за рейтингом...', {
+          parse_mode: 'HTML',
+        });
       } else if (action === 'new_books') {
-        await ctx.reply(
-          '🆕 <b>НОВИНКИ</b>\n\n' +
-            'Завантаження нових книг...',
-          { parse_mode: 'HTML' }
-        );
+        await ctx.reply('🆕 <b>НОВИНКИ</b>\n\n' + 'Завантаження нових книг...', {
+          parse_mode: 'HTML',
+        });
       } else if (action === 'saved_books') {
-        await ctx.reply(
-          '❤️ <b>МОЇ УЛЮБЛЕНІ</b>\n\n' +
-            'Завантаження ваших улюблених книг...',
-          { parse_mode: 'HTML' }
-        );
+        await ctx.reply('❤️ <b>МОЇ УЛЮБЛЕНІ</b>\n\n' + 'Завантаження ваших улюблених книг...', {
+          parse_mode: 'HTML',
+        });
       } else if (action === 'settings_scene') {
         await ctx.scene.enter('SETTINGS_SCENE');
       } else if (action === 'feedback') {

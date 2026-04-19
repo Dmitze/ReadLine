@@ -1,24 +1,12 @@
-/**
- * DTOs (Data Transfer Objects) for Audio entity
- * Used for API contracts and data validation
- * @module dtos/AudioDTO
- */
-
-/**
- * Request DTO for creating an audio chapter
- */
 export interface CreateAudioChapterDTO {
   book_id: number;
   chapter_number: number;
   title: string;
   audio_url: string;
-  duration: number; // in seconds
-  file_size?: number; // in bytes
+  duration: number;
+  file_size?: number;
 }
 
-/**
- * Request DTO for updating an audio chapter
- */
 export interface UpdateAudioChapterDTO {
   title?: string;
   audio_url?: string;
@@ -26,9 +14,6 @@ export interface UpdateAudioChapterDTO {
   file_size?: number;
 }
 
-/**
- * Response DTO for audio chapter details
- */
 export interface AudioChapterResponseDTO {
   id: number;
   book_id: number;
@@ -41,23 +26,17 @@ export interface AudioChapterResponseDTO {
   updated_at?: string;
 }
 
-/**
- * Response DTO for listening progress
- */
 export interface ListeningProgressDTO {
   id: number;
   user_id: number;
   book_id: number;
   chapter_id: number;
-  current_position: number; // in seconds
-  total_duration: number; // in seconds
+  current_position: number;
+  total_duration: number;
   completed: boolean;
   last_listened: string;
 }
 
-/**
- * Request DTO for saving listening progress
- */
 export interface SaveListeningProgressDTO {
   user_id: number;
   book_id: number;
@@ -67,34 +46,25 @@ export interface SaveListeningProgressDTO {
   completed?: boolean;
 }
 
-/**
- * Response DTO for user listening statistics
- */
 export interface UserListeningStatsDTO {
   user_id: number;
-  total_listening_time: number; // in seconds
+  total_listening_time: number;
   books_in_progress: number;
   completed_books: number;
-  average_completion: number; // percentage
+  average_completion: number;
   favorite_genres: string[];
 }
 
-/**
- * Response DTO for audiobook with chapters
- */
 export interface AudiobookWithChaptersDTO {
   book_id: number;
   title: string;
   author: string;
   cover_url?: string;
   total_chapters: number;
-  total_duration: number; // in seconds
+  total_duration: number;
   chapters: AudioChapterResponseDTO[];
 }
 
-/**
- * Query DTO for audiobook search
- */
 export interface AudiobookSearchDTO {
   query?: string;
   genre?: string;
@@ -105,9 +75,6 @@ export interface AudiobookSearchDTO {
   order?: 'asc' | 'desc';
 }
 
-/**
- * Response DTO for most listened audiobooks
- */
 export interface MostListenedAudiobookDTO {
   book_id: number;
   title: string;
@@ -117,9 +84,6 @@ export interface MostListenedAudiobookDTO {
   average_completion: number;
 }
 
-/**
- * Response DTO for audio library item
- */
 export interface AudioLibraryItemDTO {
   book_id: number;
   title: string;
@@ -134,9 +98,6 @@ export interface AudioLibraryItemDTO {
   last_listened: string;
 }
 
-/**
- * Response DTO for audio statistics
- */
 export interface AudioStatsDTO {
   total_audiobooks: number;
   total_chapters: number;
@@ -150,28 +111,22 @@ export interface AudioStatsDTO {
   };
 }
 
-/**
- * DTO for audio playback state
- */
 export interface AudioPlaybackStateDTO {
   user_id: number;
   book_id: number;
   chapter_id: number;
   current_position: number;
   is_playing: boolean;
-  playback_speed: number; // 0.5, 1.0, 1.5, 2.0
+  playback_speed: number;
   timestamp: string;
 }
 
-/**
- * DTO for user listening session
- */
 export interface ListeningSessionDTO {
   user_id: number;
   book_id: number;
   session_start: string;
   session_end: string;
-  duration_listened: number; // in seconds
+  duration_listened: number;
   chapters_listened: number;
   completion_progress: number;
 }

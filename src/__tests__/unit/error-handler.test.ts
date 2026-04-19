@@ -1,7 +1,3 @@
-/**
- * Error Handler Tests
- */
-
 import {
   AppError,
   ErrorType,

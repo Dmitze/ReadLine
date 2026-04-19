@@ -1,10 +1,3 @@
-/**
- * Catalog Handlers
- * REFACTOR-009: Split userHandlers.ts
- *
- * Обработчики для каталога книг
- */
-
 import { Telegraf, Markup } from 'telegraf';
 import { BotContext } from '../../types/telegraf';
 import { logger } from '../../utils/logger';
@@ -26,15 +19,15 @@ import {
   getBooksWithAudioWithPagination,
   getMostDownloadedBooksWithPagination,
 } from '../../database/catalogFunctions';
-import { getAllTags, searchBooksByTag, searchBooksByTagWithPagination } from '../../database/tagFunctions';
+import {
+  getAllTags,
+  searchBooksByTag,
+  searchBooksByTagWithPagination,
+} from '../../database/tagFunctions';
 import { getGenreKeyboard } from '../../keyboards/mainKeyboards';
 import { formatBookCaption, getBookIdText } from '../../utils/helpers';
 
-/**
- * Register catalog-related handlers
- */
 export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
-  // Каталог - главное меню
   bot.hears([BUTTONS.CATALOG_OLD, BUTTONS.CATALOG], async (ctx) => {
     try {
       await ctx.reply('📚 <b>КАТАЛОГ</b>\n\n' + 'Оберіть розділ:', {
@@ -54,14 +47,14 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Каталог книг
   bot.action('catalog_books', async (ctx: BotContext) => {
     try {
-      // ✅ ВИПРАВЛЕНО #8: Додано try-catch для callback query
       try {
         await ctx.answerCbQuery();
       } catch (cbError) {
-        logger.debug('Failed to answer callback query', { error: cbError instanceof Error ? cbError.message : String(cbError) });
+        logger.debug('Failed to answer callback query', {
+          error: cbError instanceof Error ? cbError.message : String(cbError),
+        });
       }
       await ctx.editMessageText('📚 <b>КАТАЛОГ КНИГ</b>\n\n' + 'Оберіть спосіб перегляду:', {
         parse_mode: 'HTML',
@@ -90,7 +83,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Назад до головного каталогу
   bot.action('catalog_back_main', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -109,7 +101,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Каталог по жанрам
   bot.action('catalog_genres', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -121,11 +112,10 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      // Розділяємо жанри які зберігаються зі символом \n на окремі жанри
       genres = genres
         .flatMap((genre: string) => genre.split('\n').map((g: string) => g.trim()))
         .filter((genre: string) => genre.length > 0)
-        .filter((genre: string, index: number, self: string[]) => self.indexOf(genre) === index); // Видаляємо дублікати
+        .filter((genre: string, index: number, self: string[]) => self.indexOf(genre) === index);
 
       if (!genres || genres.length === 0) {
         await ctx.editMessageText('❌ Виникла помилка при отриманні жанрів.');
@@ -144,7 +134,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Обробник вибору жанру
   bot.action(/genre_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -152,23 +141,20 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
 
       await ctx.answerCbQuery();
 
-      // Отримуємо індекс жанру
       const genreIndex = parseInt(match[1], 10);
-      
-      // Отримуємо список жанрів з кешу
+
       let genres = await cache.getOrSet(CACHE_KEYS.GENRES, () => getGenres(), CACHE_TTL.LONG);
-      
-      // Розділяємо жанри які зберігаються зі символом \n на окремі жанри
+
       genres = genres
         .flatMap((genre: string) => genre.split('\n').map((g: string) => g.trim()))
         .filter((genre: string) => genre.length > 0)
-        .filter((genre: string, index: number, self: string[]) => self.indexOf(genre) === index); // Видаляємо дублікати
-      
+        .filter((genre: string, index: number, self: string[]) => self.indexOf(genre) === index);
+
       if (!genres || genreIndex >= genres.length) {
         await ctx.answerCbQuery('❌ Жанр не знайдено', { show_alert: true });
         return;
       }
-      
+
       const genre = genres[genreIndex];
       const books = await getBooksByGenre(genre);
 
@@ -178,8 +164,8 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
           {
             parse_mode: 'HTML',
             reply_markup: Markup.inlineKeyboard([
-              [Markup.button.callback('⬅️ Назад до жанрів', 'catalog_genres')]
-            ]).reply_markup
+              [Markup.button.callback('⬅️ Назад до жанрів', 'catalog_genres')],
+            ]).reply_markup,
           }
         );
         return;
@@ -188,15 +174,17 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       let message = `📖 <b>ЖАНР: ${genre.toUpperCase()}</b>\n\n`;
       message += `Знайдено ${books.length} ${books.length === 1 ? 'книга' : books.length < 5 ? 'книги' : 'книг'}:\n\n`;
 
-      const keyboard = books.slice(0, 10).map((book) => [
-        Markup.button.callback(`📖 ${book.title} - ${book.author}`, `view_book_${book.id}`)
-      ]);
+      const keyboard = books
+        .slice(0, 10)
+        .map((book) => [
+          Markup.button.callback(`📖 ${book.title} - ${book.author}`, `view_book_${book.id}`),
+        ]);
 
       keyboard.push([Markup.button.callback('⬅️ Назад до жанрів', 'catalog_genres')]);
 
       await ctx.editMessageText(message, {
         parse_mode: 'HTML',
-        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup
+        reply_markup: Markup.inlineKeyboard(keyboard).reply_markup,
       });
 
       logger.userAction(ctx.from!.id, 'view_genre_books', { genre, count: books.length });
@@ -206,7 +194,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Каталог по рейтингу
   bot.action('catalog_rating', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -229,7 +216,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       });
 
       const keyboard = books.map((book) => [
-        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
       ]);
 
       const navButtons = [];
@@ -254,7 +241,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Каталог новинок
   bot.action('catalog_new', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -280,7 +266,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       });
 
       const keyboard = books.map((book) => [
-        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
       ]);
 
       const navButtons = [];
@@ -305,7 +291,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Пагінація по завантаженням
   bot.action(/downloads_page_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -335,7 +320,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       });
 
       const keyboard = books.map((book) => [
-        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
       ]);
 
       const navButtons = [];
@@ -364,7 +349,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Каталог по тегам
   bot.action('catalog_tags', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -396,7 +380,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Каталог по алфавиту
   bot.action('catalog_alpha', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -418,7 +401,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       });
 
       const keyboard = books.map((book) => [
-        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
       ]);
 
       const navButtons = [];
@@ -443,7 +426,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Каталог аудиокниг
   bot.action('catalog_audio', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -465,7 +447,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       });
 
       const keyboard = books.map((book) => [
-        Markup.button.callback(`🎧 ${book.title}`, `view_book_${book.id}`)
+        Markup.button.callback(`🎧 ${book.title}`, `view_book_${book.id}`),
       ]);
 
       const navButtons = [];
@@ -490,7 +472,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Каталог по завантаженням
   bot.action('catalog_downloads', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -513,7 +494,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       });
 
       const keyboard = books.map((book) => [
-        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
       ]);
 
       const navButtons = [];
@@ -538,7 +519,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Назад к каталогу
   bot.action('catalog_back', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -566,7 +546,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Пагінація по новинкам
   bot.action(/new_page_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -599,7 +578,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       });
 
       const keyboard = books.map((book) => [
-        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
       ]);
 
       const navButtons = [];
@@ -628,7 +607,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Пагінація по алфавіту
   bot.action(/alpha_page_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -657,7 +635,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       });
 
       const keyboard = books.map((book) => [
-        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
       ]);
 
       const navButtons = [];
@@ -686,7 +664,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Пагінація по рейтингу
   bot.action(/rating_page_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -716,7 +693,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       });
 
       const keyboard = books.map((book) => [
-        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
       ]);
 
       const navButtons = [];
@@ -745,7 +722,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Пагінація по аудіокнигам
   bot.action(/audio_page_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -774,7 +750,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       });
 
       const keyboard = books.map((book) => [
-        Markup.button.callback(`🎧 ${book.title}`, `view_book_${book.id}`)
+        Markup.button.callback(`🎧 ${book.title}`, `view_book_${book.id}`),
       ]);
 
       const navButtons = [];
@@ -803,7 +779,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Pagination для жанров
   bot.action(/genre_page_(.+)_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -872,7 +847,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Просмотр книг по тегу
   bot.action(/view_tag_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -911,7 +885,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       });
 
       const keyboard = books.map((book) => [
-        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
       ]);
 
       const navButtons = [];
@@ -939,7 +913,6 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Пагінація по тегам
   bot.action(/tag_page_(\d+)_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -977,7 +950,7 @@ export function registerCatalogHandlers(bot: Telegraf<BotContext>): void {
       });
 
       const keyboard = books.map((book) => [
-        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`)
+        Markup.button.callback(`📖 ${book.title}`, `view_book_${book.id}`),
       ]);
 
       const navButtons = [];

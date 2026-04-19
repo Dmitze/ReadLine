@@ -134,22 +134,22 @@ class BookManagementService {
     validateBookData(bookData) {
         const errors = [];
         if (!bookData.title?.trim()) {
-            errors.push('Назва книги обов\'язкова');
+            errors.push("Назва книги обов'язкова");
         }
         if (!bookData.author?.trim()) {
-            errors.push('Автор обов\'язковий');
+            errors.push("Автор обов'язковий");
         }
         if (!bookData.genre?.trim()) {
-            errors.push('Жанр обов\'язковий');
+            errors.push("Жанр обов'язковий");
         }
         if (!bookData.description?.trim()) {
-            errors.push('Опис обов\'язковий');
+            errors.push("Опис обов'язковий");
         }
         if (bookData.title && bookData.title.length > 500) {
             errors.push('Назва книги занадто довга (макс. 500 символів)');
         }
         if (bookData.author && bookData.author.length > 300) {
-            errors.push('Ім\'я автора занадто довге (макс. 300 символів)');
+            errors.push("Ім'я автора занадто довге (макс. 300 символів)");
         }
         if (bookData.description && bookData.description.length > 5000) {
             errors.push('Опис занадто довгий (макс. 5000 символів)');

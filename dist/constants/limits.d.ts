@@ -56,8 +56,8 @@ export declare const LIMITS: {
     readonly QUEUE_BATCH_SIZE: 10;
     readonly MAX_LOG_FILES: 10;
     readonly LOG_MAX_SIZE: number;
-    readonly AI_SEARCH_TIMEOUT: 10000;
-    readonly AI_REQUEST_TIMEOUT: 30000;
+    readonly AI_SEARCH_TIMEOUT: 15000;
+    readonly AI_REQUEST_TIMEOUT: 45000;
     readonly CACHE_DEFAULT_TTL: 3600000;
     readonly RATE_LIMIT_WINDOW: 60000;
     readonly CLEANUP_INTERVAL: 300000;

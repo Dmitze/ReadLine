@@ -1,10 +1,3 @@
-/**
- * Optimized Repository
- * REFACTOR-012: Database Query Optimization
- *
- * Enhanced repository with query optimization, caching, and batch operations
- */
-
 import { DatabaseWrapper, SQLParameters } from '../database/dbWrapper';
 import { QueryOptimizer } from '../database/QueryOptimizer';
 import { logger } from '../utils/logger';
@@ -34,9 +27,6 @@ export interface FilterOptions {
   cacheTtl?: number;
 }
 
-/**
- * Optimized base repository with advanced query features
- */
 export abstract class OptimizedRepository<T extends { id?: number }> {
   protected tableName: string;
   protected queryOptimizer: QueryOptimizer;
@@ -50,9 +40,6 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
     this.queryOptimizer = optimizer || new QueryOptimizer(db);
   }
 
-  /**
-   * Get entity by ID with caching
-   */
   async getById(id: number, cacheTtl: number = 600000): Promise<T | undefined> {
     try {
       const cacheKey = `${this.tableName}:id:${id}`;
@@ -68,9 +55,6 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Get multiple entities by IDs
-   */
   async getByIds(ids: number[], cacheKey?: string): Promise<T[]> {
     try {
       if (ids.length === 0) return [];
@@ -89,16 +73,12 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Get paginated results with optimized count query
-   */
   async getPaginated(params: PaginationParams): Promise<PaginatedResult<T>> {
     try {
       const cacheKey =
         params.cacheKey || `${this.tableName}:paginated:${params.limit}:${params.offset}`;
       const cacheTtl = params.cacheTtl || 300000;
 
-      // Get count and data in parallel
       const [data, total] = await Promise.all([
         this.queryOptimizer.executeOptimized<T>(
           `SELECT * FROM ${this.tableName} ORDER BY id DESC LIMIT ? OFFSET ?`,
@@ -135,15 +115,11 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Get filtered results with optimization
-   */
   async getFiltered(options: FilterOptions): Promise<T[]> {
     try {
       const whereClauses: string[] = [];
       const params: any[] = [];
 
-      // Build WHERE clause
       if (options.where) {
         for (const [key, value] of Object.entries(options.where)) {
           whereClauses.push(`${key} = ?`);
@@ -185,9 +161,6 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Check if entity exists
-   */
   async exists(id: number): Promise<boolean> {
     try {
       const cacheKey = `${this.tableName}:exists:${id}`;
@@ -208,9 +181,6 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Count entities
-   */
   async count(where?: Record<string, any>): Promise<number> {
     try {
       const whereClauses: string[] = [];
@@ -247,14 +217,10 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Batch insert with optimization
-   */
   async batchInsert(rows: Omit<T, 'id'>[]): Promise<number[]> {
     try {
       if (rows.length === 0) return [];
 
-      // Invalidate cache
       this.queryOptimizer.invalidateTableCache(this.tableName);
 
       return await this.queryOptimizer.batchInsert<Omit<T, 'id'>>(this.tableName, rows, 500);
@@ -267,14 +233,10 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Batch update with optimization
-   */
   async batchUpdate(rows: Array<T & { id: number }>): Promise<number> {
     try {
       if (rows.length === 0) return 0;
 
-      // Invalidate cache
       this.queryOptimizer.invalidateTableCache(this.tableName);
 
       return await this.queryOptimizer.batchUpdate<T & { id: number }>(this.tableName, rows, 500);
@@ -287,9 +249,6 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Insert single entity
-   */
   async insert(data: Omit<T, 'id'>): Promise<number> {
     try {
       const keys = Object.keys(data);
@@ -297,7 +256,6 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
       const placeholders = keys.map(() => '?').join(', ');
       const query = `INSERT INTO ${this.tableName} (${keys.join(', ')}) VALUES (${placeholders})`;
 
-      // Invalidate cache
       this.queryOptimizer.invalidateTableCache(this.tableName);
 
       return await this.db.insert(query, values as SQLParameters);
@@ -310,9 +268,6 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Update single entity
-   */
   async update(id: number, data: Partial<Omit<T, 'id'>>): Promise<number> {
     try {
       const keys = Object.keys(data);
@@ -321,7 +276,6 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
       const setClause = keys.map((key) => `${key} = ?`).join(', ');
       const query = `UPDATE ${this.tableName} SET ${setClause} WHERE id = ?`;
 
-      // Invalidate cache for this entity
       this.queryOptimizer.invalidateTableCache(`${this.tableName}:id:${id}`);
       this.queryOptimizer.invalidateTableCache(this.tableName);
 
@@ -335,14 +289,10 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Delete entity
-   */
   async delete(id: number): Promise<number> {
     try {
       const query = `DELETE FROM ${this.tableName} WHERE id = ?`;
 
-      // Invalidate cache
       this.queryOptimizer.invalidateTableCache(`${this.tableName}:id:${id}`);
       this.queryOptimizer.invalidateTableCache(this.tableName);
 
@@ -356,14 +306,10 @@ export abstract class OptimizedRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Execute transaction
-   */
   async transaction<R>(callback: () => Promise<R>): Promise<R> {
     try {
       const result = await this.db.transaction(callback);
 
-      // Invalidate cache after transaction
       this.queryOptimizer.invalidateTableCache(this.tableName);
 
       return result;

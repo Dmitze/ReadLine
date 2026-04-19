@@ -43,6 +43,8 @@ const middlewareSetup_1 = require("./bootstrap/middlewareSetup");
 const sceneSetup_1 = require("./bootstrap/sceneSetup");
 const ContainerBootstrap_1 = require("./core/ContainerBootstrap");
 const models_1 = require("./database/models");
+const constants_1 = require("./constants");
+const helpers_1 = require("./utils/helpers");
 const env = (0, environmentSetup_1.setupEnvironment)();
 const container = (0, ContainerBootstrap_1.getContainer)();
 (0, ContainerBootstrap_1.bootstrapContainer)(container).catch((error) => {
@@ -72,11 +74,7 @@ bot.catch(async (err, ctx) => {
         }
     }
     try {
-        await ctx.reply('❌ Виникла помилка при обробці вашого запиту.\n\n' +
-            'Спробуйте:\n' +
-            '• Надіслати /start для перезапуску\n' +
-            '• Повторити дію пізніше\n' +
-            "• Зв'язатися з адміністратором");
+        await ctx.reply(constants_1.UX.errorGlobalHtml, { parse_mode: 'HTML' });
     }
     catch (replyError) {
         logger_1.logger.error('Failed to send error message to user', replyError instanceof Error ? replyError : new Error(String(replyError)));
@@ -97,19 +95,19 @@ bot.use(async (ctx, next) => {
     if (ctx.message && 'text' in ctx.message) {
         const text = ctx.message.text;
         const menuButtons = [
-            '📖 Каталог',
-            '🔍 Пошук',
-            '🏆 Топ книги',
-            '🆕 Новинки',
-            '💾 Моя бібліотека',
-            '👤 Профіль',
-            '🤖 AI Помічник',
-            '🎁 Отримати промокод',
-            '⚙️ Налаштування',
-            'ℹ️ Допомога',
-            "📞 Зворотній зв'язок",
-            '🌐 Yakaboo',
-            '🏠 На головну',
+            constants_1.BUTTONS.CATALOG,
+            constants_1.BUTTONS.SEARCH,
+            constants_1.BUTTONS.TOP_BOOKS,
+            constants_1.BUTTONS.NEW_BOOKS,
+            constants_1.BUTTONS.MY_LIBRARY,
+            constants_1.BUTTONS.PROFILE,
+            constants_1.BUTTONS.AI_ASSISTANT,
+            constants_1.BUTTONS.PROMO,
+            constants_1.BUTTONS.SETTINGS,
+            constants_1.BUTTONS.HELP,
+            constants_1.BUTTONS.FEEDBACK,
+            constants_1.BUTTONS.YAKABOO,
+            constants_1.BUTTONS.HOME,
         ];
         if (menuButtons.includes(text) && ctx.scene) {
             logger_1.logger.info('User pressed menu button while in scene', { text, userId: ctx.from?.id });
@@ -150,9 +148,7 @@ bot.start(async (ctx) => {
                 logger_1.logger.error('Scene context not available for onboarding', { userId });
             }
         }
-        const welcomeMessage = `⚔️ <b>Warrior's Library</b>\n\n` +
-            `👋 З поверненням, <b>${firstName}</b>!\n\n` +
-            '👇 Оберіть дію:';
+        const welcomeMessage = constants_1.UX.welcomeBack((0, helpers_1.escapeHtml)(firstName));
         return ctx.reply(welcomeMessage, {
             parse_mode: 'HTML',
             reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)(),
@@ -164,17 +160,7 @@ bot.start(async (ctx) => {
     }
 });
 bot.help((ctx) => {
-    const helpMessage = '╔════════════════════════════════════════╗\n' +
-        '  ⚔️ <b>ДОВІДКА ВОЇНА</b> 🗡️\n' +
-        '╚════════════════════════════════════════╝\n\n' +
-        'Виберіть розділ для детальної інформації:\n\n' +
-        '📚 Основні кнопки меню\n' +
-        '📖 Дії з книгою\n' +
-        '⚡ Швидкий старт\n' +
-        '❓ Популярні питання\n' +
-        '🎁 Як отримати 75K книг\n' +
-        '💡 Поради та трюки\n\n' +
-        'Натискай кнопки внизу для перегляду 👇';
+    const helpMessage = constants_1.UX.helpHubHtml;
     const keyboard = telegraf_1.Markup.inlineKeyboard([
         [telegraf_1.Markup.button.callback('📚 Основні кнопки', 'help_buttons')],
         [telegraf_1.Markup.button.callback('📖 Дії з книгою', 'help_actions')],
@@ -186,10 +172,7 @@ bot.help((ctx) => {
     return ctx.reply(helpMessage, { ...keyboard, parse_mode: 'HTML' });
 });
 bot.hears('🌐 Yakaboo', async (ctx) => {
-    const message = '<b>📚 НАЦІОНАЛЬНА КНИЖКОВА ПЛАТФОРМА YAKABOO</b>\n\n' +
-        'Yakaboo — це найбільший книжковий інтернет-магазин в Україні.\n\n' +
-        'Тут ви можете знайти понад 75,000 електронних та паперових книг на будь-який смак!\n\n' +
-        '👇 Перейдіть за посиланням нижче:';
+    const message = `${constants_1.UX.yakabooTeaserHtml}\n\n👇 Відкрити в браузері:`;
     const keyboard = telegraf_1.Markup.inlineKeyboard([
         [telegraf_1.Markup.button.url('🌐 Перейти на Yakaboo.ua', 'https://www.yakaboo.ua/')],
     ]);
@@ -198,11 +181,7 @@ bot.hears('🌐 Yakaboo', async (ctx) => {
 bot.action('help_buttons', async (ctx) => {
     const message = '<b>📚 ОСНОВНІ КНОПКИ МЕНЮ</b>\n\n' +
         '📖 <b>Каталог</b>\n' +
-        '  Головна бібліотека. Шукай книги по:\n' +
-        '  • Жанрами (24+ варіантів)\n' +
-        '  • Алфавіту\n' +
-        '  • Рейтингу\n' +
-        '  • Новинкам та подкастам\n\n' +
+        '  Усе в одному повідомленні: жанри, алфавіт, рейтинг, новинки, аудіо, теги, підкасти — з пагінацією.\n\n' +
         '🏆 <b>Топ книги</b>\n' +
         '  Найкраще оцінені твори від читачів\n' +
         '  Шедеври та популярні книги\n\n' +
@@ -225,7 +204,7 @@ bot.action('help_buttons', async (ctx) => {
         '⚙️ <b>Налаштування</b>\n' +
         '  Клавіатура (мобіль/планшет/ПК)\n' +
         '  Сповіщення про новинки\n\n' +
-        '📞 <b>Зворотний зв\'язок</b>\n' +
+        "📞 <b>Зворотний зв'язок</b>\n" +
         '  Напиши адміну, якщо є проблеми\n\n' +
         '<i>← Назад в меню</i>';
     const backButton = telegraf_1.Markup.inlineKeyboard([
@@ -314,7 +293,7 @@ bot.action('help_faq', async (ctx) => {
         '<b>Q: Як отримувати сповіщення?</b>\n' +
         'A: ⚙️ Налаштування → включи сповіщення\n\n' +
         '<b>Q: Як написати адміну?</b>\n' +
-        'A: Натисни 📞 Зворотний зв\'язок\n\n' +
+        "A: Натисни 📞 Зворотний зв'язок\n\n" +
         '<i>← Назад в меню</i>';
     const backButton = telegraf_1.Markup.inlineKeyboard([
         telegraf_1.Markup.button.callback('← Назад в меню', 'back_to_help'),
@@ -389,17 +368,7 @@ bot.action('help_tips', async (ctx) => {
     return ctx.editMessageText(message, { ...backButton, parse_mode: 'HTML' });
 });
 bot.action('back_to_help', async (ctx) => {
-    const helpMessage = '╔════════════════════════════════════════╗\n' +
-        '  ⚔️ <b>ДОВІДКА ВОЇНА</b> 🗡️\n' +
-        '╚════════════════════════════════════════╝\n\n' +
-        'Виберіть розділ для детальної інформації:\n\n' +
-        '📚 Основні кнопки меню\n' +
-        '📖 Дії з книгою\n' +
-        '⚡ Швидкий старт\n' +
-        '❓ Популярні питання\n' +
-        '🎁 Як отримати 75K книг\n' +
-        '💡 Поради та трюки\n\n' +
-        'Натискай кнопки внизу для перегляду 👇';
+    const helpMessage = constants_1.UX.helpHubHtml;
     const keyboard = telegraf_1.Markup.inlineKeyboard([
         [telegraf_1.Markup.button.callback('📚 Основні кнопки', 'help_buttons')],
         [telegraf_1.Markup.button.callback('📖 Дії з книгою', 'help_actions')],
@@ -418,6 +387,10 @@ bot.command('catalog', async (ctx) => {
     logger_1.logger.userAction(ctx.from.id, 'catalog_command');
     return ctx.scene.enter('CATALOG_SCENE');
 });
+bot.hears(constants_1.BUTTONS.CATALOG, async (ctx) => {
+    logger_1.logger.userAction(ctx.from.id, 'catalog_button');
+    return ctx.scene.enter('CATALOG_SCENE');
+});
 bot.command('library', async (ctx) => {
     logger_1.logger.userAction(ctx.from.id, 'library_command');
     const { getSavedBooks } = await Promise.resolve().then(() => __importStar(require('./database/models')));
@@ -425,7 +398,7 @@ bot.command('library', async (ctx) => {
     const userId = ctx.from.id;
     const savedBooks = await getSavedBooks(userId);
     if (savedBooks.length === 0) {
-        await ctx.reply("💾 Ваша бібліотека порожня. Збережіть книги, щоб вони з'явились тут.");
+        await ctx.reply(constants_1.UX.emptyLibraryHtml, { parse_mode: 'HTML' });
         return;
     }
     return displaySavedBooks(ctx, savedBooks);
@@ -451,7 +424,7 @@ bot.command('new', async (ctx) => {
     const { displayNewBooks } = await Promise.resolve().then(() => __importStar(require('./utils/bookDisplay')));
     const newBooks = await getNewestBooks(5);
     if (newBooks.length === 0) {
-        await ctx.reply('📭 В бібліотеці поки що немає книг.');
+        await ctx.reply(constants_1.UX.emptyNew);
         return;
     }
     return displayNewBooks(ctx, newBooks);
@@ -482,7 +455,7 @@ bot.telegram.setMyCommands([
     { command: 'ai', description: '🤖 AI Помічник' },
     { command: 'profile', description: '👤 Мій профіль' },
     { command: 'settings', description: '⚙️ Налаштування' },
-    { command: 'feedback', description: "📞 Зворотній зв'язок" },
+    { command: 'feedback', description: constants_1.BUTTONS.FEEDBACK },
     { command: 'website', description: '🌐 Сайт Yakaboo' },
     { command: 'help', description: 'ℹ️ Допомога' },
     { command: 'admin', description: '🛠️ Адмін панель' },
@@ -531,7 +504,8 @@ bot.action('random_book', async (ctx) => {
 bot.action('back_to_menu', async (ctx) => {
     try {
         await ctx.answerCbQuery();
-        await ctx.reply('👋 Повертаємось до головного меню', {
+        await ctx.reply(`<b>${constants_1.UX.navHomeTitle}</b>\n${constants_1.UX.navHomeBody}`, {
+            parse_mode: 'HTML',
             reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)(),
         });
         logger_1.logger.userAction(ctx.from.id, 'back_to_menu');
@@ -562,8 +536,7 @@ bot.action('back_to_admin', async (ctx) => {
         try {
             await ctx.deleteMessage();
         }
-        catch (_error) {
-        }
+        catch (_error) { }
         await ctx.reply('🔄 Повертаємось до адмін-панелі...', {
             reply_markup: { remove_keyboard: true },
         });

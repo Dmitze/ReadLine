@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deletePodcast = exports.getPodcastReviews = exports.addPodcastReview = exports.incrementPodcastListens = exports.getPodcastById = exports.getAllPodcastsWithPagination = exports.getAllPodcasts = exports.addPodcast = void 0;
+exports.updatePodcast = exports.deletePodcast = exports.getPodcastReviews = exports.addPodcastReview = exports.incrementPodcastListens = exports.getPodcastById = exports.getAllPodcastsWithPagination = exports.getAllPodcasts = exports.addPodcast = void 0;
 const db_1 = require("./db");
 const logger_1 = require("../../utils/logger");
 const addPodcast = (podcast) => {
@@ -162,4 +162,27 @@ const deletePodcast = (podcastId) => {
     });
 };
 exports.deletePodcast = deletePodcast;
+const updatePodcast = (podcastId, updates) => {
+    return new Promise((resolve, reject) => {
+        const fields = Object.keys(updates).filter((key) => key !== 'id');
+        const setClause = fields.map((field) => `${field} = ?`).join(', ');
+        const values = fields.map((field) => updates[field]);
+        if (fields.length === 0) {
+            resolve();
+            return;
+        }
+        const query = `UPDATE podcasts SET ${setClause}, updated_at = CURRENT_TIMESTAMP WHERE id = ?`;
+        db_1.db.run(query, [...values, podcastId], function (err) {
+            if (err) {
+                logger_1.logger.error('Error updating podcast', err, { podcastId, updates });
+                reject(err);
+            }
+            else {
+                logger_1.logger.info('Podcast updated successfully', { podcastId, changes: this.changes });
+                resolve();
+            }
+        });
+    });
+};
+exports.updatePodcast = updatePodcast;
 //# sourceMappingURL=podcasts.js.map

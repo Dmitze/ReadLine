@@ -1,10 +1,3 @@
-/**
- * Saved Book Repository
- * REFACTOR-002: Repository Layer Separation
- *
- * All database operations related to user's saved/favorite books
- */
-
 import { DatabaseWrapper } from '../database/dbWrapper';
 import { BaseRepository } from './BaseRepository';
 import { SavedBook } from '../database/models';
@@ -15,12 +8,8 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
     super(db, 'saved_books');
   }
 
-  /**
-   * Save a book for a user
-   */
   async save(userId: number, bookId: number): Promise<number> {
     try {
-      // Check if already saved
       const existing = await this.getBySavedId(userId, bookId);
       if (existing) {
         return existing.id!;
@@ -40,9 +29,6 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
     }
   }
 
-  /**
-   * Get saved books for a user
-   */
   async getByUserId(userId: number): Promise<SavedBook[]> {
     try {
       const query = `
@@ -60,9 +46,6 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
     }
   }
 
-  /**
-   * Remove a saved book
-   */
   async remove(userId: number, bookId: number): Promise<number> {
     try {
       const query = 'DELETE FROM saved_books WHERE user_id = ? AND book_id = ?';
@@ -80,9 +63,6 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
     }
   }
 
-  /**
-   * Check if a book is saved by user
-   */
   async isSaved(userId: number, bookId: number): Promise<boolean> {
     try {
       const query = `
@@ -100,9 +80,6 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
     }
   }
 
-  /**
-   * Get count of saved books for user
-   */
   async getCountByUserId(userId: number): Promise<number> {
     try {
       return await this.count('user_id = ?', [userId]);
@@ -115,9 +92,6 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
     }
   }
 
-  /**
-   * Clear all saved books for a user
-   */
   async clearByUserId(userId: number): Promise<number> {
     try {
       const query = 'DELETE FROM saved_books WHERE user_id = ?';
@@ -131,9 +105,6 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
     }
   }
 
-  /**
-   * Get saved book by composite key
-   */
   private async getBySavedId(userId: number, bookId: number): Promise<SavedBook | undefined> {
     try {
       const query = 'SELECT * FROM saved_books WHERE user_id = ? AND book_id = ?';
@@ -147,9 +118,6 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
     }
   }
 
-  /**
-   * Get most saved books
-   */
   async getMostSaved(limit: number = 10): Promise<Array<{ bookId: number; saveCount: number }>> {
     try {
       const query = `
@@ -168,9 +136,6 @@ export class SavedBookRepository extends BaseRepository<SavedBook> {
     }
   }
 
-  /**
-   * Aliases for compatibility with services
-   */
   async findByUserId(userId: number): Promise<SavedBook[]> {
     return this.getByUserId(userId);
   }

@@ -46,8 +46,7 @@ async function getOrCreateUser(userId, username, firstName, lastName) {
         await dbWrapper.insert(`INSERT OR IGNORE INTO users (user_id, username, first_name, last_name, has_completed_onboarding, last_active_at)
        VALUES (?, ?, ?, ?, 0, CURRENT_TIMESTAMP)`, [userId, username || null, firstName || null, lastName || null]);
     }
-    catch (error) {
-    }
+    catch (error) { }
     await updateLastActive(userId);
     const user = await getUserByTelegramId(userId);
     return user;

@@ -1,34 +1,10 @@
-/**
- * BaseService - Abstract base class for all application services
- *
- * Provides common functionality for business logic services:
- * - Access to repositories
- * - Logging capabilities
- * - Caching support
- * - Error handling with Result pattern
- */
-
 import { BaseRepository } from '../repositories/BaseRepository';
 import { ILogger } from '../core/types';
 import { Result, ok, err, asyncResult } from '../core/Result';
 
-/**
- * Abstract base service class
- * All domain services should extend this class
- */
 export abstract class BaseService {
-  /**
-   * Create a new service instance
-   * @param logger - Logger instance for logging operations
-   */
   protected constructor(protected logger: ILogger) {}
 
-  /**
-   * Wrap an async operation with Result pattern and logging
-   * @param operation - Async operation to execute
-   * @param operationName - Name of operation for logging
-   * @returns Result containing the operation result or error
-   */
   protected async executeAsync<T>(
     operation: () => Promise<T>,
     operationName: string
@@ -51,12 +27,6 @@ export abstract class BaseService {
     }
   }
 
-  /**
-   * Execute a sync operation with Result pattern and logging
-   * @param operation - Sync operation to execute
-   * @param operationName - Name of operation for logging
-   * @returns Result containing the operation result or error
-   */
   protected executeSync<T>(operation: () => T, operationName: string): Result<T> {
     try {
       this.logger.debug(`[${this.constructor.name}] Starting: ${operationName}`);
@@ -70,12 +40,6 @@ export abstract class BaseService {
     }
   }
 
-  /**
-   * Validate input data
-   * @param data - Data to validate
-   * @param rules - Validation rules
-   * @returns Result with validation errors or ok
-   */
   protected validate<T extends Record<string, any>>(
     data: T,
     rules: Record<keyof T, (value: any) => string | null>

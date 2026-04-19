@@ -1,8 +1,3 @@
-/**
- * Input Sanitization System
- * REFACTOR-014: Comprehensive Input Validation
- */
-
 export interface SanitizeOptions {
   trim?: boolean;
   lowercase?: boolean;
@@ -80,9 +75,6 @@ export class InputSanitizer {
       .replace(/\\/g, '\\\\');
   }
 
-  /**
-   * Санітизувати для HTML виводу
-   */
   static sanitizeForHtml(value: string): string {
     return String(value)
       .replace(/&/g, '&amp;')
@@ -111,16 +103,10 @@ export class InputSanitizer {
     return JSON.stringify(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\//g, '\\/');
   }
 
-  /**
-   * Перевірити на SQL injection
-   */
   static checkSqlInjection(value: string): boolean {
     return this.sqlInjectionPatterns.some((pattern) => pattern.test(value));
   }
 
-  /**
-   * Перевірити на XSS
-   */
   static checkXss(value: string): boolean {
     const xssPatterns = [
       this.scriptTags,
@@ -136,9 +122,6 @@ export class InputSanitizer {
     return xssPatterns.some((pattern) => pattern.test(value));
   }
 
-  /**
-   * Санітизувати об'єкт
-   */
   static sanitizeObject(obj: unknown, options: SanitizeOptions = {}): unknown {
     if (obj === null || obj === undefined) {
       return obj;
@@ -163,9 +146,6 @@ export class InputSanitizer {
     return obj;
   }
 
-  /**
-   * Видалити невидимі символи
-   */
   static removeInvisibleChars(value: string): string {
     return String(value)
       .replace(/[\u200B-\u200D\uFEFF]/g, '')
@@ -180,9 +160,6 @@ export class InputSanitizer {
     return String(value).normalize('NFKC');
   }
 
-  /**
-   * Видалити контрольні символи
-   */
   static removeControlChars(value: string): string {
     return String(value).replace(/[\x00-\x1F\x7F]/g, '');
   }
@@ -199,9 +176,6 @@ export class InputSanitizer {
       .replace(/'/g, '&#x27;');
   }
 
-  /**
-   * Повна санітизація для вводу з Телеграму
-   */
   static sanitizeTelegramInput(value: unknown): string {
     if (typeof value !== 'string') {
       return '';

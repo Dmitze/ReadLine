@@ -6,11 +6,15 @@ exports.getEnv = getEnv;
 const zod_1 = require("zod");
 exports.envSchema = zod_1.z.object({
     BOT_TOKEN: zod_1.z.string().min(20, 'BOT_TOKEN must be at least 20 characters'),
-    ADMIN_ID: zod_1.z.string().regex(/^\d+(\s*,\s*\d+)*$/, 'ADMIN_ID must be numeric IDs separated by commas (e.g., "123456789" or "123456789, 987654321"'),
+    ADMIN_ID: zod_1.z
+        .string()
+        .regex(/^\d+(\s*,\s*\d+)*$/, 'ADMIN_ID must be numeric IDs separated by commas (e.g., "123456789" or "123456789, 987654321"'),
     DB_PATH: zod_1.z.string().default('./database/library.db'),
     GEMINI_API_KEY: zod_1.z.string().optional(),
     GEMINI_MODEL: zod_1.z.string().default('gemini-1.5-flash'),
-    AI_PROVIDER: zod_1.z.enum(['gemini', 'openai']).default('gemini'),
+    GROQ_API_KEY: zod_1.z.string().optional(),
+    GROQ_MODEL: zod_1.z.string().default('llama-3.3-70b-versatile'),
+    AI_PROVIDER: zod_1.z.enum(['gemini', 'openai', 'groq']).default('gemini'),
     REDIS_HOST: zod_1.z.string().default('localhost'),
     REDIS_PORT: zod_1.z
         .string()

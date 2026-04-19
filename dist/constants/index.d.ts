@@ -1,5 +1,6 @@
 export declare const BUTTONS: {
     readonly CATALOG: "📖 Каталог";
+    readonly SEARCH: "🔍 Пошук";
     readonly CATALOG_OLD: "📖 Перегляд каталогу";
     readonly TOP_BOOKS: "🏆 Топ книги";
     readonly NEW_BOOKS: "🆕 Новинки";
@@ -8,10 +9,13 @@ export declare const BUTTONS: {
     readonly PROFILE_OLD: "👤 Мій профіль";
     readonly HELP: "ℹ️ Допомога";
     readonly AI_ASSISTANT: "🤖 AI Помічник";
-    readonly FEEDBACK: "📞 Зворотній зв'язок";
+    readonly SETTINGS: "⚙️ Налаштування";
+    readonly PROMO: "🎁 Отримати промокод";
+    readonly YAKABOO: "🌐 Yakaboo";
+    readonly FEEDBACK: "📞 Зворотний зв'язок";
     readonly REQUEST_PHYSICAL_BOOK: "📚 Замовити фізичну книгу";
-    readonly BACK: "⬅️ Назад";
     readonly HOME: "🏠 На головну";
+    readonly BACK: "⬅️ Назад";
     readonly QUICK_SEARCH: "⚡ Швидкий пошук";
     readonly MY_FAVORITES: "⭐ Мої улюблені";
     readonly RANDOM_BOOK: "🎲 Випадкова книга";
@@ -57,6 +61,25 @@ export declare const EMOJI: {
     readonly LOADING: "🤔";
     readonly TROPHY: "🏆";
     readonly BELL: "🔔";
+};
+export declare const UX: {
+    readonly welcomeBack: (nameSafe: string) => string;
+    readonly errorGlobalHtml: string;
+    readonly navHomeTitle: "🏠 На головній";
+    readonly navHomeBody: "Оберіть дію в меню нижче.";
+    readonly navBackTitle: "Назад";
+    readonly navBackBody: "Повернулись на крок назад.";
+    readonly cancelStep: "Скасовано. Далі — оберіть дію в меню знизу.";
+    readonly helpHubHtml: string;
+    readonly yakabooTeaserHtml: string;
+    readonly listOpenCardHint: "Торкніться рядка — відкриється картка з файлами та відгуками.";
+    readonly topListTitle: "Топ за рейтингом";
+    readonly newListTitle: "Новинки";
+    readonly savedListTitle: "Моя бібліотека";
+    readonly emptyTop: "📭 Поки немає оцінених книг.\n\nСтаньте першим — відкрийте будь-яку книгу та поставте ⭐.";
+    readonly emptyNew: "📭 Новинок ще немає. Загляньте в Каталог або натисніть «Топ книги».";
+    readonly emptyLibraryHtml: string;
+    readonly searchEmptyHtml: (querySafe: string) => string;
 };
 export declare const STATUS: {
     readonly PENDING: "pending";

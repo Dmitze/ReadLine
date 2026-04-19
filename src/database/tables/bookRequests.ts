@@ -1,14 +1,6 @@
-/**
- * Book Requests Table
- * Таблиця для заявок на фізичні книги
- */
-
 import { db } from './db';
 import { logger } from '../../utils/logger';
 
-/**
- * Book Request Status
- */
 export enum BookRequestStatus {
   PENDING = 'pending',
   APPROVED = 'approved',
@@ -18,9 +10,6 @@ export enum BookRequestStatus {
   OVERDUE = 'overdue',
 }
 
-/**
- * Book Request Priority
- */
 export enum BookRequestPriority {
   LOW = 'low',
   MEDIUM = 'medium',
@@ -28,9 +17,6 @@ export enum BookRequestPriority {
   URGENT = 'urgent',
 }
 
-/**
- * Book Request Interface
- */
 export interface BookRequest {
   id?: number;
   user_id: number;
@@ -50,9 +36,6 @@ export interface BookRequest {
   reviewed_at?: string;
 }
 
-/**
- * Book Request Statistics Interface
- */
 export interface BookRequestStats {
   total: number;
   pending: number;
@@ -63,9 +46,6 @@ export interface BookRequestStats {
   overdue: number;
 }
 
-/**
- * Створити таблицю book_requests
- */
 export const createBookRequestsTable = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     db.exec(
@@ -110,10 +90,9 @@ export const createBookRequestsTable = (): Promise<void> => {
   });
 };
 
-/**
- * Створити нову заявку
- */
-export const createBookRequest = (request: Omit<BookRequest, 'id' | 'created_at' | 'updated_at'>): Promise<number> => {
+export const createBookRequest = (
+  request: Omit<BookRequest, 'id' | 'created_at' | 'updated_at'>
+): Promise<number> => {
   return new Promise((resolve, reject) => {
     const query = `
       INSERT INTO book_requests (
@@ -145,9 +124,6 @@ export const createBookRequest = (request: Omit<BookRequest, 'id' | 'created_at'
   });
 };
 
-/**
- * Отримати заявку за ID
- */
 export const getBookRequestById = (requestId: number): Promise<BookRequest | undefined> => {
   return new Promise((resolve, reject) => {
     db.get('SELECT * FROM book_requests WHERE id = ?', [requestId], (err, row: BookRequest) => {
@@ -157,9 +133,6 @@ export const getBookRequestById = (requestId: number): Promise<BookRequest | und
   });
 };
 
-/**
- * Отримати всі заявки користувача
- */
 export const getUserBookRequests = (userId: number): Promise<BookRequest[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -173,9 +146,6 @@ export const getUserBookRequests = (userId: number): Promise<BookRequest[]> => {
   });
 };
 
-/**
- * Отримати заявки за статусом
- */
 export const getBookRequestsByStatus = (status: BookRequestStatus): Promise<BookRequest[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -189,9 +159,6 @@ export const getBookRequestsByStatus = (status: BookRequestStatus): Promise<Book
   });
 };
 
-/**
- * Отримати всі заявки (для адміна)
- */
 export const getAllBookRequests = (limit?: number): Promise<BookRequest[]> => {
   return new Promise((resolve, reject) => {
     const query = limit
@@ -207,9 +174,6 @@ export const getAllBookRequests = (limit?: number): Promise<BookRequest[]> => {
   });
 };
 
-/**
- * Оновити статус заявки
- */
 export const updateBookRequestStatus = (
   requestId: number,
   status: BookRequestStatus,
@@ -239,10 +203,11 @@ export const updateBookRequestStatus = (
   });
 };
 
-/**
- * Видати книгу (встановити статус "issued")
- */
-export const issueBook = (requestId: number, daysToReturn: number, adminId: number): Promise<void> => {
+export const issueBook = (
+  requestId: number,
+  daysToReturn: number,
+  adminId: number
+): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query = `
       UPDATE book_requests 
@@ -267,9 +232,6 @@ export const issueBook = (requestId: number, daysToReturn: number, adminId: numb
   });
 };
 
-/**
- * Повернути книгу
- */
 export const returnBook = (requestId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -292,9 +254,6 @@ export const returnBook = (requestId: number): Promise<void> => {
   });
 };
 
-/**
- * Отримати статистику заявок
- */
 export const getBookRequestsStats = (): Promise<BookRequestStats> => {
   return new Promise((resolve, reject) => {
     db.get(
@@ -312,15 +271,23 @@ export const getBookRequestsStats = (): Promise<BookRequestStats> => {
       [],
       (err, row: BookRequestStats) => {
         if (err) reject(err);
-        else resolve(row || { total: 0, pending: 0, approved: 0, rejected: 0, issued: 0, returned: 0, overdue: 0 });
+        else
+          resolve(
+            row || {
+              total: 0,
+              pending: 0,
+              approved: 0,
+              rejected: 0,
+              issued: 0,
+              returned: 0,
+              overdue: 0,
+            }
+          );
       }
     );
   });
 };
 
-/**
- * Отримати прострочені заявки
- */
 export const getOverdueRequests = (): Promise<BookRequest[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -337,9 +304,6 @@ export const getOverdueRequests = (): Promise<BookRequest[]> => {
   });
 };
 
-/**
- * Позначити прострочені заявки
- */
 export const markOverdueRequests = (): Promise<number> => {
   return new Promise((resolve, reject) => {
     db.run(
@@ -361,9 +325,6 @@ export const markOverdueRequests = (): Promise<number> => {
   });
 };
 
-/**
- * Видалити заявку
- */
 export const deleteBookRequest = (requestId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     db.run('DELETE FROM book_requests WHERE id = ?', [requestId], function (err) {

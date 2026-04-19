@@ -1,15 +1,7 @@
-/**
- * Database Tables Index
- * REFACTOR-009: Split models.ts - Main export file
- */
-
-// Export types
 export * from './types';
 
-// Export database connection and initialization
 export { db, initDatabase } from './db';
 
-// Export books functions
 export {
   addBook,
   getBooksByGenre,
@@ -29,7 +21,6 @@ export {
   searchBooks,
 } from './books';
 
-// Export reviews functions
 export {
   addReview,
   getBookReviews,
@@ -40,10 +31,8 @@ export {
   updateBookRating,
 } from './reviews';
 
-// Export saved books functions
 export { saveBook, unsaveBook, isBookSaved, getSavedBooks, getSavedBooksCount } from './savedBooks';
 
-// Export admins functions
 export {
   addAdmin,
   isAdmin,
@@ -53,7 +42,6 @@ export {
   removeAdmin,
 } from './admins';
 
-// Export feedback functions
 export {
   addFeedbackMessage,
   getPendingFeedbackMessages,
@@ -63,10 +51,8 @@ export {
   deleteFeedback,
 } from './feedback';
 
-// Export stats functions
 export { getBookDetailedStats } from './stats';
 
-// Export podcasts functions
 export {
   addPodcast,
   getAllPodcasts,

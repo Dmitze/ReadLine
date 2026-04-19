@@ -413,11 +413,16 @@ const searchBooks = (query, limit = 20) => {
       LIMIT ?
     `;
         db_1.db.all(sql, [
-            pattern, patternLower,
-            pattern, patternLower,
-            pattern, patternLower,
-            pattern, patternLower,
-            pattern, pattern,
+            pattern,
+            patternLower,
+            pattern,
+            patternLower,
+            pattern,
+            patternLower,
+            pattern,
+            patternLower,
+            pattern,
+            pattern,
             limit,
         ], (err, rows) => {
             if (err) {

@@ -1,8 +1,3 @@
-/**
- * Create Book Request Scene
- * Scene для створення заявки на фізичну книгу
- */
-
 import { Scenes, Markup } from 'telegraf';
 import { BotContext } from '../types/telegraf';
 import { logger } from '../utils/logger';
@@ -23,7 +18,6 @@ interface CreateRequestState {
 
 const createBookRequestScene = new Scenes.BaseScene<BotContext>('CREATE_BOOK_REQUEST_SCENE');
 
-// Крок 1: Початок - запитуємо назву книги
 createBookRequestScene.enter(async (ctx: BotContext) => {
   const state = (ctx.scene as any).state as CreateRequestState;
   state.step = 'title';
@@ -43,12 +37,10 @@ createBookRequestScene.enter(async (ctx: BotContext) => {
   logger.userAction(ctx.from?.id || 0, 'start_create_request');
 });
 
-// Обробник текстових повідомлень
 createBookRequestScene.on('text', async (ctx: BotContext) => {
   const state = (ctx.scene as any).state as CreateRequestState;
   const text = ctx.message.text.trim();
 
-  // Скасування
   if (text === '❌ Скасувати') {
     await ctx.reply('❌ Створення заявки скасовано.', {
       reply_markup: getMainMenuKeyboard(),
@@ -56,7 +48,6 @@ createBookRequestScene.on('text', async (ctx: BotContext) => {
     return ctx.scene.leave();
   }
 
-  // Крок 1: Назва книги
   if (state.step === 'title') {
     if (text.length < 2) {
       await ctx.reply('❌ Назва занадто коротка. Мінімум 2 символи. Спробуйте ще раз:');
@@ -77,10 +68,9 @@ createBookRequestScene.on('text', async (ctx: BotContext) => {
     return;
   }
 
-  // Крок 2: Автор
   if (state.step === 'author') {
     if (text.length < 2) {
-      await ctx.reply('❌ Ім\'я автора занадто коротке. Мінімум 2 символи. Спробуйте ще раз:');
+      await ctx.reply("❌ Ім'я автора занадто коротке. Мінімум 2 символи. Спробуйте ще раз:");
       return;
     }
 
@@ -95,15 +85,12 @@ createBookRequestScene.on('text', async (ctx: BotContext) => {
         '💡 <i>Приклад: "Поезія", "Роман", "Фантастика"</i>',
       {
         parse_mode: 'HTML',
-        reply_markup: Markup.keyboard([['⏭️ Пропустити'], ['❌ Скасувати']])
-          .resize()
-          .reply_markup,
+        reply_markup: Markup.keyboard([['⏭️ Пропустити'], ['❌ Скасувати']]).resize().reply_markup,
       }
     );
     return;
   }
 
-  // Крок 3: Жанр
   if (state.step === 'genre') {
     if (text === '⏭️ Пропустити') {
       state.book_genre = undefined;
@@ -121,15 +108,12 @@ createBookRequestScene.on('text', async (ctx: BotContext) => {
         '💡 <i>Наприклад, вкажіть видання, рік випуску, чи інші деталі</i>',
       {
         parse_mode: 'HTML',
-        reply_markup: Markup.keyboard([['⏭️ Пропустити'], ['❌ Скасувати']])
-          .resize()
-          .reply_markup,
+        reply_markup: Markup.keyboard([['⏭️ Пропустити'], ['❌ Скасувати']]).resize().reply_markup,
       }
     );
     return;
   }
 
-  // Крок 4: Коментар
   if (state.step === 'comment') {
     if (text === '⏭️ Пропустити') {
       state.comment = undefined;
@@ -137,15 +121,11 @@ createBookRequestScene.on('text', async (ctx: BotContext) => {
       state.comment = text;
     }
 
-    // Показуємо підтвердження
     await showConfirmation(ctx, state);
     return;
   }
 });
 
-/**
- * Показати підтвердження перед створенням заявки
- */
 async function showConfirmation(ctx: BotContext, state: CreateRequestState) {
   let message = '📋 <b>ПІДТВЕРДЖЕННЯ ЗАЯВКИ</b>\n\n';
   message += '━━━━━━━━━━━━━━━━━━━\n\n';
@@ -174,7 +154,6 @@ async function showConfirmation(ctx: BotContext, state: CreateRequestState) {
   state.step = 'confirmation';
 }
 
-// Підтвердити створення
 createBookRequestScene.action('confirm_create_request', async (ctx: BotContext) => {
   try {
     await ctx.answerCbQuery('📤 Створення заявки...');
@@ -187,7 +166,6 @@ createBookRequestScene.action('confirm_create_request', async (ctx: BotContext) 
       return ctx.scene.reenter();
     }
 
-    // Створюємо заявку
     const requestId = await createBookRequest({
       user_id: userId,
       book_title: state.book_title,
@@ -218,7 +196,6 @@ createBookRequestScene.action('confirm_create_request', async (ctx: BotContext) 
 
     logger.userAction(userId, 'create_request', { requestId, title: state.book_title });
 
-    // Показуємо головне меню
     await ctx.reply('Виберіть дію:', {
       reply_markup: getMainMenuKeyboard(),
     });
@@ -231,7 +208,6 @@ createBookRequestScene.action('confirm_create_request', async (ctx: BotContext) 
   }
 });
 
-// Скасувати створення
 createBookRequestScene.action('cancel_create_request', async (ctx: BotContext) => {
   await ctx.answerCbQuery('❌ Скасовано');
   await ctx.editMessageText('❌ Створення заявки скасовано.');

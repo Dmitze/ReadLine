@@ -1,18 +1,11 @@
-/**
- * Queue System Integration Tests
- * @jest-environment node
- */
-
 import { JobQueueRegistry, JobHandlers } from '../../queue/Jobs';
 
-// Skip this test suite if Redis is not available
 const REDIS_AVAILABLE = process.env.REDIS_URL || process.env.CI !== 'true';
 
 describe.skip('Queue System', () => {
   let queueRegistry: JobQueueRegistry;
 
   beforeEach(() => {
-    // Use in-memory Redis for testing
     queueRegistry = new JobQueueRegistry({
       host: 'localhost',
       port: 6379,
@@ -24,17 +17,16 @@ describe.skip('Queue System', () => {
   });
 
   afterAll(async () => {
-    // Force cleanup of any remaining connections
     if (queueRegistry) {
       await queueRegistry.closeAll();
     }
-    // Clear all timers
+
     jest.clearAllTimers();
     jest.useRealTimers();
-    // Give time for cleanup
+
     await new Promise((resolve) => {
       const timer = setTimeout(resolve, 100);
-      timer.unref(); // Prevent timer from keeping process alive
+      timer.unref();
     });
   });
 
@@ -96,7 +88,6 @@ describe.skip('Queue System', () => {
     it('should get queue statistics', async () => {
       const exportQueue = queueRegistry.getExportQueue();
 
-      // Add multiple jobs
       await exportQueue.addJob('export', {
         userId: 1,
         format: 'csv',

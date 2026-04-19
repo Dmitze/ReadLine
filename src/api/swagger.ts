@@ -1,16 +1,12 @@
-/**
- * Swagger/OpenAPI Documentation Setup
- */
-
 const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Warrior\'s Library Bot API',
+      title: "Warrior's Library Bot API",
       description: 'Telegram bot API for military library management',
       version: '1.0.0',
       contact: {
-        name: 'Warrior\'s Library Support',
+        name: "Warrior's Library Support",
         email: 'support@warriorslibrary.local',
       },
     },
@@ -26,9 +22,6 @@ const swaggerOptions = {
     ],
     components: {
       schemas: {
-        /**
-         * User Schema
-         */
         User: {
           type: 'object',
           required: ['id', 'telegram_id'],
@@ -82,9 +75,6 @@ const swaggerOptions = {
           },
         },
 
-        /**
-         * Book Schema
-         */
         Book: {
           type: 'object',
           required: ['title', 'author'],
@@ -155,9 +145,6 @@ const swaggerOptions = {
           },
         },
 
-        /**
-         * Review Schema
-         */
         Review: {
           type: 'object',
           required: ['book_id', 'user_id', 'rating'],
@@ -193,9 +180,6 @@ const swaggerOptions = {
           },
         },
 
-        /**
-         * Error Response Schema
-         */
         Error: {
           type: 'object',
           required: ['code', 'message'],
@@ -215,9 +199,6 @@ const swaggerOptions = {
           },
         },
 
-        /**
-         * Job Status Schema
-         */
         JobStatus: {
           type: 'object',
           properties: {
@@ -263,9 +244,6 @@ const swaggerOptions = {
     },
 
     paths: {
-      /**
-       * Books Endpoints
-       */
       '/api/books': {
         get: {
           tags: ['Books'],
@@ -409,9 +387,6 @@ const swaggerOptions = {
         },
       },
 
-      /**
-       * Reviews Endpoints
-       */
       '/api/books/{id}/reviews': {
         get: {
           tags: ['Reviews'],
@@ -472,9 +447,6 @@ const swaggerOptions = {
         },
       },
 
-      /**
-       * Jobs Endpoints
-       */
       '/api/jobs/{jobId}': {
         get: {
           tags: ['Jobs'],

@@ -1,10 +1,3 @@
-/**
- * Index Manager
- * REFACTOR-012: Database Query Optimization
- *
- * Manages database indexes for all tables
- */
-
 import { DatabaseWrapper } from './dbWrapper';
 import { logger } from '../utils/logger';
 
@@ -16,11 +9,7 @@ export interface IndexSpec {
   description?: string;
 }
 
-/**
- * Index definitions for Warrior's Library database
- */
 export const INDEX_SPECS: IndexSpec[] = [
-  // Books table indexes
   {
     tableName: 'books',
     indexName: 'idx_books_genre',
@@ -58,7 +47,6 @@ export const INDEX_SPECS: IndexSpec[] = [
     description: 'Composite index for genre + rating queries',
   },
 
-  // Users table indexes
   {
     tableName: 'users',
     indexName: 'idx_users_telegram_id',
@@ -79,7 +67,6 @@ export const INDEX_SPECS: IndexSpec[] = [
     description: 'Fast filtering by language',
   },
 
-  // Reviews table indexes
   {
     tableName: 'reviews',
     indexName: 'idx_reviews_book_id',
@@ -112,7 +99,6 @@ export const INDEX_SPECS: IndexSpec[] = [
     description: 'Fast filtering by approval status',
   },
 
-  // Saved books table indexes
   {
     tableName: 'saved_books',
     indexName: 'idx_saved_books_user_id',
@@ -133,7 +119,6 @@ export const INDEX_SPECS: IndexSpec[] = [
     description: 'Prevent duplicate saved books',
   },
 
-  // Audio books table indexes
   {
     tableName: 'audio_books',
     indexName: 'idx_audio_books_book_id',
@@ -147,7 +132,6 @@ export const INDEX_SPECS: IndexSpec[] = [
     description: 'Fast filtering by processing status',
   },
 
-  // Tags table indexes
   {
     tableName: 'tags',
     indexName: 'idx_tags_name',
@@ -156,7 +140,6 @@ export const INDEX_SPECS: IndexSpec[] = [
     description: 'Fast tag lookup by name',
   },
 
-  // Feedback table indexes
   {
     tableName: 'feedback',
     indexName: 'idx_feedback_user_id',
@@ -176,7 +159,6 @@ export const INDEX_SPECS: IndexSpec[] = [
     description: 'Fast filtering by read status',
   },
 
-  // Promo codes table indexes
   {
     tableName: 'promo_codes',
     indexName: 'idx_promo_codes_code',
@@ -191,8 +173,6 @@ export const INDEX_SPECS: IndexSpec[] = [
     description: 'Fast filtering by active status',
   },
 
-  // ✅ ВИПРАВЛЕНО #16: Додані недостатні індекси для оптимізації
-  // Book tags table indexes
   {
     tableName: 'book_tags',
     indexName: 'idx_book_tags_tag_id',
@@ -206,7 +186,6 @@ export const INDEX_SPECS: IndexSpec[] = [
     description: 'Fast lookup of tags for a book',
   },
 
-  // Listening progress table indexes
   {
     tableName: 'listening_progress',
     indexName: 'idx_listening_progress_user_id_book_id',
@@ -221,7 +200,6 @@ export const INDEX_SPECS: IndexSpec[] = [
     description: 'Fast cleanup of old listening records',
   },
 
-  // Book requests table indexes (if exists)
   {
     tableName: 'book_requests',
     indexName: 'idx_book_requests_user_id_status',
@@ -236,15 +214,9 @@ export const INDEX_SPECS: IndexSpec[] = [
   },
 ];
 
-/**
- * Manager for creating and maintaining database indexes
- */
 export class IndexManager {
   constructor(private db: DatabaseWrapper) {}
 
-  /**
-   * Create all recommended indexes
-   */
   async createAllIndexes(): Promise<{ created: number; skipped: number; errors: number }> {
     let created = 0;
     let skipped = 0;
@@ -275,9 +247,6 @@ export class IndexManager {
     return { created, skipped, errors };
   }
 
-  /**
-   * Create a single index
-   */
   async createIndex(spec: IndexSpec): Promise<boolean> {
     try {
       const columnList = spec.columns.join(', ');
@@ -303,9 +272,6 @@ export class IndexManager {
     }
   }
 
-  /**
-   * Get list of indexes for a table
-   */
   async getTableIndexes(tableName: string): Promise<string[]> {
     try {
       const query = `PRAGMA index_list(${tableName})`;
@@ -321,9 +287,6 @@ export class IndexManager {
     }
   }
 
-  /**
-   * Vacuum database (cleanup and optimize)
-   */
   async vacuum(): Promise<void> {
     try {
       await this.db.run('VACUUM', []);
@@ -337,9 +300,6 @@ export class IndexManager {
     }
   }
 
-  /**
-   * Analyze database statistics
-   */
   async analyze(): Promise<void> {
     try {
       await this.db.run('ANALYZE', []);
@@ -353,9 +313,6 @@ export class IndexManager {
     }
   }
 
-  /**
-   * Get database size and usage information
-   */
   async getDatabaseStats(): Promise<{
     pageCount: number;
     pageSize: number;
@@ -370,7 +327,7 @@ export class IndexManager {
         []
       );
 
-      const totalSize = ((pageCount?.count || 0) * (pageSize?.page_size || 4096)) / 1024 / 1024; // MB
+      const totalSize = ((pageCount?.count || 0) * (pageSize?.page_size || 4096)) / 1024 / 1024;
 
       return {
         pageCount: pageCount?.count || 0,

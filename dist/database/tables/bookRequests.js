@@ -224,7 +224,15 @@ const getBookRequestsStats = () => {
             if (err)
                 reject(err);
             else
-                resolve(row || { total: 0, pending: 0, approved: 0, rejected: 0, issued: 0, returned: 0, overdue: 0 });
+                resolve(row || {
+                    total: 0,
+                    pending: 0,
+                    approved: 0,
+                    rejected: 0,
+                    issued: 0,
+                    returned: 0,
+                    overdue: 0,
+                });
         });
     });
 };

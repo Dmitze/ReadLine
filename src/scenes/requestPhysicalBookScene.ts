@@ -1,8 +1,3 @@
-/**
- * Request Physical Book Scene
- * Сценарій заявки на отримання фізичної книги
- */
-
 import { Scenes, Markup } from 'telegraf';
 import { BotContext } from '../types/telegraf';
 import { logger } from '../utils/logger';
@@ -20,10 +15,6 @@ interface RequestState {
 }
 
 const requestPhysicalBookScene = new Scenes.BaseScene<BotContext>('REQUEST_PHYSICAL_BOOK_SCENE');
-
-// ==========================================
-// SCENE ENTRY
-// ==========================================
 
 requestPhysicalBookScene.enter(async (ctx: BotContext) => {
   const state = (ctx.scene as any).state as RequestState;
@@ -44,15 +35,10 @@ requestPhysicalBookScene.enter(async (ctx: BotContext) => {
   logger.userAction(ctx.from?.id || 0, 'start_physical_book_request');
 });
 
-// ==========================================
-// TEXT HANDLER
-// ==========================================
-
 requestPhysicalBookScene.on('text', async (ctx: BotContext) => {
   const state = (ctx.scene as any).state as RequestState;
   const text = ctx.message.text.trim();
 
-  // Скасування
   if (text === '❌ Скасувати') {
     await ctx.reply('❌ Заявку скасовано.', {
       reply_markup: getMainMenuKeyboard(),
@@ -60,7 +46,6 @@ requestPhysicalBookScene.on('text', async (ctx: BotContext) => {
     return ctx.scene.leave();
   }
 
-  // Крок 1: Назва книги
   if (state.step === 'title') {
     if (text.length < 2) {
       await ctx.reply('❌ Назва книги занадто коротка. Мінімум 2 символи. Спробуйте ще раз:');
@@ -81,7 +66,6 @@ requestPhysicalBookScene.on('text', async (ctx: BotContext) => {
     return;
   }
 
-  // Крок 2: Автор
   if (state.step === 'author') {
     if (text.length < 2) {
       await ctx.reply("❌ Ім'я автора занадто коротке. Мінімум 2 символи. Спробуйте ще раз:");
@@ -105,7 +89,6 @@ requestPhysicalBookScene.on('text', async (ctx: BotContext) => {
     return;
   }
 
-  // Крок 3: Жанр
   if (state.step === 'genre') {
     if (text === '⏭️ Пропустити') {
       state.book_genre = undefined;
@@ -129,7 +112,6 @@ requestPhysicalBookScene.on('text', async (ctx: BotContext) => {
     return;
   }
 
-  // Крок 4: Примітки
   if (state.step === 'notes') {
     if (text === '⏭️ Пропустити') {
       state.notes = undefined;
@@ -137,15 +119,10 @@ requestPhysicalBookScene.on('text', async (ctx: BotContext) => {
       state.notes = text;
     }
 
-    // Показуємо підтвердження
     await showConfirmation(ctx, state);
     return;
   }
 });
-
-// ==========================================
-// CONFIRMATION
-// ==========================================
 
 async function showConfirmation(ctx: BotContext, state: RequestState) {
   const message =
@@ -168,10 +145,6 @@ async function showConfirmation(ctx: BotContext, state: RequestState) {
 
   state.step = 'confirmation';
 }
-
-// ==========================================
-// ACTIONS
-// ==========================================
 
 requestPhysicalBookScene.action('confirm_request', async (ctx: BotContext) => {
   await ctx.answerCbQuery('📤 Відправка заявки...');
@@ -221,7 +194,6 @@ requestPhysicalBookScene.action('confirm_request', async (ctx: BotContext) => {
       author: request.book_author,
     });
 
-    // Показуємо головне меню
     await ctx.reply('Виберіть дію:', {
       reply_markup: getMainMenuKeyboard(),
     });
@@ -243,12 +215,7 @@ requestPhysicalBookScene.action('cancel_request', async (ctx: BotContext) => {
   return ctx.scene.leave();
 });
 
-// ==========================================
-// LEAVE HANDLER
-// ==========================================
-
 requestPhysicalBookScene.leave(async (ctx: BotContext) => {
-  // Cleanup якщо потрібно
   const state = (ctx.scene as any).state as RequestState;
   Object.keys(state).forEach((key) => delete state[key as keyof RequestState]);
 });

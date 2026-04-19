@@ -9,9 +9,8 @@ import { getMainMenuKeyboard } from '../keyboards/mainKeyboards';
 
 const rateBookScene = new Scenes.WizardScene(
   'RATE_BOOK_SCENE',
-  // Крок 1: Вибір рейтингу
+
   async (ctx: BotContext) => {
-    // Отримуємо bookId з різних можливих джерел
     const bookId =
       ctx.session?.bookToRate ||
       (ctx.scene?.state as any)?.bookId ||
@@ -27,7 +26,6 @@ const rateBookScene = new Scenes.WizardScene(
       return ctx.scene?.leave();
     }
 
-    // Зберігаємо bookId в wizard state для наступних кроків
     if (ctx.wizard?.state) {
       (ctx.wizard.state as any).bookId = bookId;
     }
@@ -61,7 +59,7 @@ const rateBookScene = new Scenes.WizardScene(
 
     return ctx.wizard.next();
   },
-  // Крок 2: Коментар (опціонально)
+
   async (ctx: BotContext) => {
     if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) return;
 
@@ -75,7 +73,6 @@ const rateBookScene = new Scenes.WizardScene(
       return ctx.scene?.leave();
     }
 
-    // ✅ Валідація rating з safeParseInt
     const rating = safeParseInt(action.replace('rating_', ''), 1);
     if (rating < 1 || rating > 5) {
       await ctx.answerCbQuery('❌ Некоректний рейтинг');
@@ -96,7 +93,7 @@ const rateBookScene = new Scenes.WizardScene(
 
     return ctx.wizard.next();
   },
-  // Крок 3: Збереження відгуку
+
   async (ctx: BotContext) => {
     const bookId =
       (ctx.wizard?.state as any)?.bookId ||
@@ -134,10 +131,9 @@ const rateBookScene = new Scenes.WizardScene(
       user_name: ctx.from!.first_name || 'Користувач',
       rating: rating,
       comment: comment,
-      is_published: false, // Модерація адміном
+      is_published: false,
     };
 
-    // Валідація даних
     const validation = validateReviewData(reviewData);
     if (!validation.isValid) {
       await ctx.reply(

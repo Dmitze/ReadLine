@@ -61,8 +61,7 @@ const addTag = async (name) => {
                     const { invalidateTagsCache } = require('../scenes/addBook/utils');
                     invalidateTagsCache();
                 }
-                catch (err) {
-                }
+                catch (err) { }
                 resolve(this.lastID);
             }
         });

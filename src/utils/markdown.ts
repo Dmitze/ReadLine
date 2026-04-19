@@ -1,11 +1,3 @@
-/**
- * Markdown Utilities
- * ✅ ВИПРАВЛЕНО #17: централізоване екранування Markdown
- */
-
-/**
- * Екранує спеціальні символи Markdown V2
- */
 export function escapeMarkdownV2(text: string): string {
   if (!text) return '';
 
@@ -39,9 +31,6 @@ export function escapeMarkdownV2(text: string): string {
   return escaped;
 }
 
-/**
- * Екранує спеціальні символи Markdown V1 (legacy)
- */
 export function escapeMarkdown(text: string): string {
   if (!text) return '';
 
@@ -110,18 +99,12 @@ export function safeFormat(
   }
 }
 
-/**
- * Обрізає текст до максимальної довжини
- */
 export function truncateText(text: string, maxLength: number = 4096): string {
   if (!text || text.length <= maxLength) return text;
 
   return text.substring(0, maxLength - 3) + '...';
 }
 
-/**
- * Форматує ім'я користувача безпечно
- */
 export function formatUserName(firstName?: string, lastName?: string, username?: string): string {
   const parts: string[] = [];
 

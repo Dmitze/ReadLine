@@ -1,13 +1,6 @@
-/**
- * Podcasts Database Functions
- */
-
 import { db } from './db';
 import { logger } from '../../utils/logger';
 
-/**
- * Podcast interface
- */
 export interface Podcast {
   id?: number;
   theme: string;
@@ -27,9 +20,6 @@ export interface Podcast {
   updated_at?: string;
 }
 
-/**
- * Podcast Review interface
- */
 export interface PodcastReview {
   id?: number;
   podcast_id: number;
@@ -40,9 +30,6 @@ export interface PodcastReview {
   created_at?: string;
 }
 
-/**
- * Podcast Listen interface
- */
 export interface PodcastListen {
   id?: number;
   podcast_id: number;
@@ -50,9 +37,6 @@ export interface PodcastListen {
   listened_at?: string;
 }
 
-/**
- * Додати підкаст
- */
 export const addPodcast = (podcast: Podcast): Promise<number> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -89,9 +73,6 @@ export const addPodcast = (podcast: Podcast): Promise<number> => {
   });
 };
 
-/**
- * Отримати всі підкасти
- */
 export const getAllPodcasts = (): Promise<Podcast[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -105,9 +86,6 @@ export const getAllPodcasts = (): Promise<Podcast[]> => {
   });
 };
 
-/**
- * Отримати всі підкасти з пагінацією
- */
 export const getAllPodcastsWithPagination = (
   limit: number = 10,
   offset: number = 0
@@ -135,9 +113,6 @@ export const getAllPodcastsWithPagination = (
   });
 };
 
-/**
- * Отримати підкаст за ID
- */
 export const getPodcastById = (podcastId: number): Promise<Podcast | undefined> => {
   return new Promise((resolve, reject) => {
     db.get('SELECT * FROM podcasts WHERE id = ?', [podcastId], (err, row: Podcast) => {
@@ -147,9 +122,6 @@ export const getPodcastById = (podcastId: number): Promise<Podcast | undefined> 
   });
 };
 
-/**
- * Збільшити лічильник прослуховувань
- */
 export const incrementPodcastListens = (podcastId: number, userId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     db.run(
@@ -180,9 +152,6 @@ export const incrementPodcastListens = (podcastId: number, userId: number): Prom
   });
 };
 
-/**
- * Додати відгук на підкаст
- */
 export const addPodcastReview = (review: PodcastReview): Promise<number> => {
   return new Promise((resolve, reject) => {
     db.run(
@@ -209,9 +178,6 @@ export const addPodcastReview = (review: PodcastReview): Promise<number> => {
   });
 };
 
-/**
- * Оновити середній рейтинг підкасту
- */
 const updatePodcastRating = (podcastId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     db.get(
@@ -238,9 +204,6 @@ const updatePodcastRating = (podcastId: number): Promise<void> => {
   });
 };
 
-/**
- * Отримати відгуки підкасту
- */
 export const getPodcastReviews = (podcastId: number): Promise<PodcastReview[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -254,9 +217,6 @@ export const getPodcastReviews = (podcastId: number): Promise<PodcastReview[]> =
   });
 };
 
-/**
- * Видалити підкаст
- */
 export const deletePodcast = (podcastId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     db.run('DELETE FROM podcasts WHERE id = ?', [podcastId], function (err) {
@@ -271,9 +231,6 @@ export const deletePodcast = (podcastId: number): Promise<void> => {
   });
 };
 
-/**
- * Оновити підкаст
- */
 export const updatePodcast = (podcastId: number, updates: Partial<Podcast>): Promise<void> => {
   return new Promise((resolve, reject) => {
     const fields = Object.keys(updates).filter((key) => key !== 'id');

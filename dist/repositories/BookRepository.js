@@ -42,10 +42,21 @@ class BookRepository extends BaseRepository_1.BaseRepository {
                 return 0;
             }
             const allowedFields = [
-                'title', 'author', 'genre', 'description', 'photo_file_id',
-                'file_url', 'audio_file_id', 'online_link', 'file_type', 'file_name',
-                'rating', 'reviews_count', 'downloads_count', 'is_available',
-                'is_physically_available'
+                'title',
+                'author',
+                'genre',
+                'description',
+                'photo_file_id',
+                'file_url',
+                'audio_file_id',
+                'online_link',
+                'file_type',
+                'file_name',
+                'rating',
+                'reviews_count',
+                'downloads_count',
+                'is_available',
+                'is_physically_available',
             ];
             const validUpdates = {};
             for (const [key, value] of Object.entries(updates)) {

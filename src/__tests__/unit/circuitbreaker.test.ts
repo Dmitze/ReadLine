@@ -1,10 +1,4 @@
-/**
- * CircuitBreaker Pattern Tests
- * Tests for circuit breaker resilience pattern
- */
-
 describe('Circuit Breaker Pattern', () => {
-  // Simple circuit breaker implementation for testing
   enum CircuitState {
     CLOSED = 'CLOSED',
     OPEN = 'OPEN',
@@ -75,17 +69,14 @@ describe('Circuit Breaker Pattern', () => {
     const breaker = new SimpleCircuitBreaker();
     const failingFn = jest.fn().mockRejectedValue(new Error('fail'));
 
-    // First failure
     try {
       await breaker.execute(failingFn);
     } catch {}
 
-    // Second failure
     try {
       await breaker.execute(failingFn);
     } catch {}
 
-    // Third failure - should open circuit
     try {
       await breaker.execute(failingFn);
     } catch {}
@@ -97,14 +88,12 @@ describe('Circuit Breaker Pattern', () => {
     const breaker = new SimpleCircuitBreaker();
     const failingFn = jest.fn().mockRejectedValue(new Error('fail'));
 
-    // Open the circuit
     for (let i = 0; i < 3; i++) {
       try {
         await breaker.execute(failingFn);
       } catch {}
     }
 
-    // Next call should be rejected immediately
     await expect(breaker.execute(() => Promise.resolve('test'))).rejects.toThrow(
       'Circuit breaker is OPEN'
     );
@@ -122,7 +111,6 @@ describe('Circuit Breaker Pattern', () => {
       return 'success';
     });
 
-    // Two failures
     try {
       await breaker.execute(fn);
     } catch {}
@@ -130,7 +118,6 @@ describe('Circuit Breaker Pattern', () => {
       await breaker.execute(fn);
     } catch {}
 
-    // One success
     const result = await breaker.execute(fn);
 
     expect(result).toBe('success');
@@ -202,7 +189,7 @@ describe('Retry Strategy', () => {
 
     await expect(strategy.execute(fn)).rejects.toThrow('always fails');
 
-    expect(fn).toHaveBeenCalledTimes(3); // initial + 2 retries
+    expect(fn).toHaveBeenCalledTimes(3);
   });
 });
 

@@ -1,4 +1,3 @@
-// Script to initialize the first admin user
 import dotenv from 'dotenv';
 import { addAdmin } from './database/models';
 import { logger } from './utils/logger';
@@ -15,7 +14,6 @@ const initAdmin = async () => {
       process.exit(1);
     }
 
-    // Parse multiple admin IDs (comma-separated)
     const adminIdStr = process.env.ADMIN_ID;
     const adminIds = adminIdStr
       .split(',')
@@ -47,14 +45,15 @@ const initAdmin = async () => {
           existingCount++;
         }
       } catch (error) {
-        // Перевіряємо чи це помилка про дублікат
         const errorMsg = error instanceof Error ? error.message : String(error);
         if (errorMsg.includes('UNIQUE constraint failed')) {
           logger.info('Admin already exists (database constraint)', { adminId });
           existingCount++;
         } else {
-          logger.error('Error adding admin', error instanceof Error ? error : new Error(String(error)));
-          // Продовжуємо попри помилку для інших адмінів
+          logger.error(
+            'Error adding admin',
+            error instanceof Error ? error : new Error(String(error))
+          );
         }
       }
     }
@@ -65,10 +64,11 @@ const initAdmin = async () => {
       totalCount: adminIds.length,
       message: `${addedCount} added, ${existingCount} already exist`,
     });
-
-    // Не виходимо з помилкою - ініціалізація успішна
   } catch (error) {
-    logger.error('Fatal error during admin initialization', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      'Fatal error during admin initialization',
+      error instanceof Error ? error : new Error(String(error))
+    );
     process.exit(1);
   }
 };

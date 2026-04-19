@@ -1,8 +1,3 @@
-/**
- * Reset onboarding for a user
- * Allows testing onboarding flow again
- */
-
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import fs from 'fs';
@@ -11,7 +6,6 @@ const dbPath = path.join(__dirname, '../../database/library.db');
 
 async function initializeDatabase() {
   return new Promise<void>((resolve, reject) => {
-    // Перевіряємо чи файл БД існує
     if (!fs.existsSync(dbPath)) {
       console.log('⚠️ БД не існує. Спочатку запустіть бота: npm start');
       reject(new Error('Database file not found'));
@@ -24,21 +18,17 @@ async function initializeDatabase() {
         return;
       }
 
-      // Перевіряємо чи таблиця users існує
-      db.get(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name='users'",
-        (err, row) => {
-          if (!row) {
-            console.log('⚠️ Таблиця users не знайдена. БД не ініціалізована.');
-            console.log('Запустіть бота спочатку: npm start');
-            db.close();
-            reject(new Error('users table not found'));
-            return;
-          }
+      db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='users'", (err, row) => {
+        if (!row) {
+          console.log('⚠️ Таблиця users не знайдена. БД не ініціалізована.');
+          console.log('Запустіть бота спочатку: npm start');
           db.close();
-          resolve();
+          reject(new Error('users table not found'));
+          return;
         }
-      );
+        db.close();
+        resolve();
+      });
     });
   });
 }
@@ -64,7 +54,6 @@ async function resetOnboarding(telegramId: number) {
           db.close();
           reject(err);
         } else {
-          // Також отримаємо інформацію про користувача для перевірки
           db.get(
             'SELECT telegram_id, username, is_completed_onboarding FROM users WHERE telegram_id = ?',
             [telegramId],
@@ -76,14 +65,14 @@ async function resetOnboarding(telegramId: number) {
                 resolve({
                   message: `⚠️ Користувач ${telegramId} не знайдений в БД`,
                   changedRows: 0,
-                  found: false
+                  found: false,
                 });
               } else {
                 resolve({
                   message: `✅ Онбординг скинутий для @${row.username || telegramId}`,
                   changedRows: this.changes,
                   found: true,
-                  user: row
+                  user: row,
                 });
               }
             }
@@ -94,7 +83,6 @@ async function resetOnboarding(telegramId: number) {
   });
 }
 
-// Get telegram_id from command line argument
 const telegramId = parseInt(process.argv[2], 10);
 
 if (!telegramId || isNaN(telegramId)) {
@@ -108,12 +96,12 @@ if (!telegramId || isNaN(telegramId)) {
   try {
     console.log('🔍 Перевіряю БД...');
     await initializeDatabase();
-    
+
     console.log(`🔄 Скидаю онбординг для ${telegramId}...`);
     const result: any = await resetOnboarding(telegramId);
-    
+
     console.log(result.message);
-    
+
     if (!result.found) {
       console.warn('⚠️ Користувач не знайдений в БД');
       console.log('\n💡 Може, ви ще не входили в бота?');

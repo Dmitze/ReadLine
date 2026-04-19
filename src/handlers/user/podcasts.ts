@@ -1,8 +1,3 @@
-/**
- * Podcast Handlers
- * Обробники для роботи з підкастами
- */
-
 import { Telegraf, Markup } from 'telegraf';
 import { BotContext } from '../../types/telegraf';
 import { logger } from '../../utils/logger';
@@ -15,18 +10,15 @@ import {
   incrementPodcastListens,
 } from '../../database/tables/podcasts';
 
-/**
- * Register podcast-related handlers
- */
 export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
-  // Каталог підкастів
   bot.action('catalog_podcasts', async (ctx: BotContext) => {
     try {
-      // ✅ ВИПРАВЛЕНО #8: Додано try-catch для callback query
       try {
         await ctx.answerCbQuery();
       } catch (cbError) {
-        logger.debug('Failed to answer callback query', { error: cbError instanceof Error ? cbError.message : String(cbError) });
+        logger.debug('Failed to answer callback query', {
+          error: cbError instanceof Error ? cbError.message : String(cbError),
+        });
       }
 
       const podcastsPerPage = 5;
@@ -83,7 +75,6 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Перегляд конкретного підкасту
   bot.action(/view_podcast_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -122,9 +113,7 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
         [Markup.button.callback('⬅️ Назад до списку', 'catalog_podcasts')],
       ];
 
-      // Якщо є обкладинка
       if (podcast.cover_photo_id) {
-        // ✅ ВИПРАВЛЕНО #7: Додано логування для помилок при видаленні
         await ctx.deleteMessage().catch((error: unknown) => {
           logger.debug('Failed to delete message', {
             error: error instanceof Error ? error.message : String(error),
@@ -150,7 +139,6 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Слухати підкаст
   bot.action(/listen_podcast_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -173,10 +161,8 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      // Збільшуємо лічильник
       await incrementPodcastListens(podcastId, userId);
 
-      // Відправляємо файл
       if (podcast.file_type === 'audio' && podcast.file_id) {
         await ctx.replyWithAudio(podcast.file_id, {
           caption: `🎙️ ${podcast.theme}\n\n📝 ${podcast.description}`,
@@ -205,7 +191,6 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Переглянути відгуки
   bot.action(/podcast_reviews_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -267,7 +252,6 @@ export function registerPodcastHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Пагінація по подкастам
   bot.action(/podcast_page_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;

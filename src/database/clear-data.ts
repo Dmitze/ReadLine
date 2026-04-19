@@ -1,8 +1,3 @@
-/**
- * Script to clear all user data from database
- * Keeps only schema, removes all records
- */
-
 import sqlite3 from 'sqlite3';
 import path from 'path';
 import fs from 'fs';
@@ -12,7 +7,6 @@ const uploadsDir = path.join(__dirname, '../../uploads');
 const logsDir = path.join(__dirname, '../../logs');
 
 async function clearAllData() {
-  // 1. Clear database records
   await new Promise((resolve, reject) => {
     const db = new sqlite3.Database(dbPath, (err) => {
       if (err) {
@@ -45,7 +39,6 @@ async function clearAllData() {
 
       db.exec(clearSQL, (err) => {
         if (err) {
-          // Ignore errors for non-existent tables
           if (err.message.includes('no such table')) {
             console.log('Some tables do not exist yet (will be created on startup)');
             db.close();
@@ -62,7 +55,6 @@ async function clearAllData() {
     });
   });
 
-  // 2. Clear local files in uploads directory
   if (fs.existsSync(uploadsDir)) {
     const files = fs.readdirSync(uploadsDir);
     for (const file of files) {
@@ -78,7 +70,6 @@ async function clearAllData() {
     console.log('Uploads directory cleared');
   }
 
-  // 3. Clear logs (optional but clean)
   if (fs.existsSync(logsDir)) {
     const logFiles = fs.readdirSync(logsDir);
     for (const file of logFiles) {

@@ -1,28 +1,15 @@
-/**
- * Retry Strategy Implementation
- * REFACTOR-009: Circuit Breaker for AI API
- *
- * Implements exponential backoff and customizable retry logic
- */
-
 import { logger } from './logger';
 
-/**
- * Retry policy configuration
- */
 export interface RetryPolicy {
-  maxAttempts?: number; // Maximum retry attempts (default: 3)
-  initialDelay?: number; // Initial delay in ms (default: 100)
-  maxDelay?: number; // Maximum delay in ms (default: 10000)
-  backoffMultiplier?: number; // Exponential backoff multiplier (default: 2)
-  jitter?: boolean; // Add random jitter to delays (default: true)
-  retryableErrors?: (error: Error) => boolean; // Custom error check
-  name?: string; // Name for logging
+  maxAttempts?: number;
+  initialDelay?: number;
+  maxDelay?: number;
+  backoffMultiplier?: number;
+  jitter?: boolean;
+  retryableErrors?: (error: Error) => boolean;
+  name?: string;
 }
 
-/**
- * Retry statistics
- */
 export interface RetryStats {
   totalAttempts: number;
   successfulRetries: number;
@@ -31,9 +18,6 @@ export interface RetryStats {
   lastAttemptTime?: number;
 }
 
-/**
- * Retry strategy implementation
- */
 export class RetryStrategy {
   private readonly maxAttempts: number;
   private readonly initialDelay: number;
@@ -57,7 +41,6 @@ export class RetryStrategy {
     this.jitter = policy.jitter !== false;
     this.name = policy.name || 'RetryStrategy';
 
-    // Default: retry on network errors and 5xx
     this.retryableErrors =
       policy.retryableErrors ||
       ((error) => {
@@ -73,9 +56,6 @@ export class RetryStrategy {
       });
   }
 
-  /**
-   * Execute function with retry logic
-   */
   async execute<T>(fn: () => Promise<T>, context?: string): Promise<T> {
     let lastError: Error | null = null;
     let totalDelay = 0;
@@ -252,25 +232,16 @@ export class RetryStrategy {
   }
 }
 
-/**
- * Retry helper for one-off usage
- */
 export async function retryAsync<T>(fn: () => Promise<T>, options: RetryPolicy = {}): Promise<T> {
   const strategy = new RetryStrategy(options);
   return strategy.execute(fn);
 }
 
-/**
- * Retry helper for sync functions
- */
 export function retrySync<T>(fn: () => T, options: RetryPolicy = {}): T {
   const strategy = new RetryStrategy(options);
   return strategy.executeSync(fn);
 }
 
-/**
- * Retry with exponential backoff
- */
 export async function retryWithBackoff<T>(
   fn: () => Promise<T>,
   maxAttempts: number = 3,

@@ -1,8 +1,3 @@
-/**
- * Safe Query Executor with Parameterized Queries
- * REFACTOR-016: SQL Injection Protection
- */
-
 import { Result, Ok, Err } from '../core/Result';
 import { InputSanitizer } from '../validation/InputSanitizer';
 import { logger } from '../utils/logger';
@@ -45,16 +40,12 @@ export class SafeQueryExecutor {
     }
   ) {}
 
-  /**
-   * Виконати SELECT запит безпечно
-   */
   async executeSelect<T>(
     query: string,
     parameters: SQLParameters = [],
     options: ExecutionOptions = {}
   ): Promise<Result<T[]>> {
     try {
-      // Перевірити на SQL injection
       if (options.checkInjection !== false) {
         for (const param of parameters) {
           if (typeof param === 'string' && InputSanitizer.checkSqlInjection(param)) {
@@ -63,12 +54,10 @@ export class SafeQueryExecutor {
         }
       }
 
-      // Логувати запит
       if (options.logQuery) {
         this.logQuery(query, parameters);
       }
 
-      // Виконати запит з таймаутом
       const startTime = Date.now();
       const rows = await this.executeWithTimeout(
         query,
@@ -88,16 +77,12 @@ export class SafeQueryExecutor {
     }
   }
 
-  /**
-   * Виконати INSERT запит безпечно
-   */
   async executeInsert(
     query: string,
     parameters: SQLParameters = [],
     options: ExecutionOptions = {}
   ): Promise<Result<{ lastId: number; changes: number }>> {
     try {
-      // Перевірити на SQL injection
       if (options.checkInjection !== false) {
         this.validateParameters(parameters);
       }
@@ -128,9 +113,6 @@ export class SafeQueryExecutor {
     }
   }
 
-  /**
-   * Виконати UPDATE запит безпечно
-   */
   async executeUpdate(
     query: string,
     parameters: SQLParameters = [],
@@ -164,9 +146,6 @@ export class SafeQueryExecutor {
     }
   }
 
-  /**
-   * Виконати DELETE запит безпечно
-   */
   async executeDelete(
     query: string,
     parameters: SQLParameters = [],
@@ -175,39 +154,30 @@ export class SafeQueryExecutor {
     return this.executeUpdate(query, parameters, options);
   }
 
-  /**
-   * Виконати транзакцію
-   */
   async executeTransaction<T>(operations: Array<() => Promise<Result<any>>>): Promise<Result<T>> {
     try {
-      // Почати транзакцію
       await this.execute('BEGIN TRANSACTION', []);
 
       const results: any[] = [];
 
-      // Виконати всі операції
       for (const operation of operations) {
         const result = await operation();
         if (!result.ok) {
-          // Откатити транзакцію при помилці
           await this.execute('ROLLBACK', []);
           return result as any;
         }
         results.push(result);
       }
 
-      // Закомітити транзакцію
       await this.execute('COMMIT', []);
 
       return new Ok(results as T);
     } catch (error) {
-      // Откатити при критичній помилці
       try {
         await this.execute('ROLLBACK', []);
       } catch (rollbackError) {
-        // ✅ ВИПРАВЛЕНО: Логувати помилку rollback через logger
         logger.warn('Failed to rollback transaction', {
-          error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError)
+          error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
         });
       }
 
@@ -216,9 +186,6 @@ export class SafeQueryExecutor {
     }
   }
 
-  /**
-   * Виконати запит з таймаутом
-   */
   private executeWithTimeout(
     query: string,
     parameters: SQLParameters,
@@ -232,9 +199,6 @@ export class SafeQueryExecutor {
     ]);
   }
 
-  /**
-   * Низькорівневе виконання запиту
-   */
   private execute(query: string, parameters: SQLParameters): Promise<unknown> {
     return new Promise((resolve, reject) => {
       if (query.trim().toUpperCase().startsWith('SELECT')) {
@@ -255,9 +219,6 @@ export class SafeQueryExecutor {
     });
   }
 
-  /**
-   * Валідувати параметри на SQL injection
-   */
   private validateParameters(parameters: SQLParameters): void {
     for (const param of parameters) {
       if (typeof param === 'string') {
@@ -268,17 +229,8 @@ export class SafeQueryExecutor {
     }
   }
 
-  /**
-   * Логувати запит
-   */
-  private logQuery(query: string, parameters: SQLParameters): void {
-    // Use logger instead of console
-    // console.log has been replaced with structured logging
-  }
+  private logQuery(query: string, parameters: SQLParameters): void {}
 
-  /**
-   * Записати в журнал
-   */
   private recordQueryLog(
     query: string,
     parameters: SQLParameters,
@@ -297,34 +249,23 @@ export class SafeQueryExecutor {
 
     this.queryLogs.push(log);
 
-    // ✅ ВИПРАВЛЕНО: Обрізаємо старі логи щоб уникнути memory leak
     if (this.queryLogs.length > this.maxQueryLogs) {
       this.queryLogs = this.queryLogs.slice(-this.maxQueryLogs);
     }
 
-    // Обмежити розмір логів
     if (this.queryLogs.length > this.maxQueryLogs) {
       this.queryLogs.shift();
     }
   }
 
-  /**
-   * Отримати журнал запитів
-   */
   getQueryLogs(limit: number = 100): QueryLog[] {
     return this.queryLogs.slice(-limit);
   }
 
-  /**
-   * Очистити журнал
-   */
   clearLogs(): void {
     this.queryLogs = [];
   }
 
-  /**
-   * Отримати статистику запитів
-   */
   getStats(): {
     totalQueries: number;
     totalErrors: number;

@@ -127,8 +127,9 @@ exports.default = (bot) => {
             const order = await (0, bookOrderFunctions_1.getBookOrderWithBookInfo)(orderId);
             if (!order) {
                 await ctx.editMessageText('❌ Замовлення не знайдено', {
-                    reply_markup: telegraf_1.Markup.inlineKeyboard([[telegraf_1.Markup.button.callback('⬅️ Назад', 'admin_orders')]])
-                        .reply_markup,
+                    reply_markup: telegraf_1.Markup.inlineKeyboard([
+                        [telegraf_1.Markup.button.callback('⬅️ Назад', 'admin_orders')],
+                    ]).reply_markup,
                 });
                 return;
             }
@@ -152,7 +153,7 @@ exports.default = (bot) => {
                 `📅 Дата замовлення: ${dateStr}\n` +
                 `🆔 ID користувача: <code>${order.user_id}</code>\n\n` +
                 '━━━━━━━━━━━━━━━━━━━\n\n' +
-                '💡 Зв\'яжіться з користувачем для узгодження деталей.';
+                "💡 Зв'яжіться з користувачем для узгодження деталей.";
             await ctx.editMessageText(message, {
                 parse_mode: 'HTML',
                 reply_markup: telegraf_1.Markup.inlineKeyboard([
@@ -211,10 +212,12 @@ exports.default = (bot) => {
             try {
                 await (0, bookOrderFunctions_1.deleteBookOrder)(orderId);
                 await ctx.answerCbQuery('✅ Замовлення видалено');
-                await ctx.editMessageText(`✅ <b>ЗАМОВЛЕННЯ #${orderId} ВИДАЛЕНО</b>\n\n` + 'Замовлення успішно видалено з бази даних.', {
+                await ctx.editMessageText(`✅ <b>ЗАМОВЛЕННЯ #${orderId} ВИДАЛЕНО</b>\n\n` +
+                    'Замовлення успішно видалено з бази даних.', {
                     parse_mode: 'HTML',
-                    reply_markup: telegraf_1.Markup.inlineKeyboard([[telegraf_1.Markup.button.callback('⬅️ Назад до списку', 'admin_orders')]])
-                        .reply_markup,
+                    reply_markup: telegraf_1.Markup.inlineKeyboard([
+                        [telegraf_1.Markup.button.callback('⬅️ Назад до списку', 'admin_orders')],
+                    ]).reply_markup,
                 });
                 logger_1.logger.info(`Book order ${orderId} deleted by admin ${ctx.from.id}`);
             }

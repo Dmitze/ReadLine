@@ -1,8 +1,3 @@
-/**
- * Mock Database for Testing
- * Provides in-memory database simulation for unit and integration tests
- */
-
 export class MockDatabase {
   private tables: Map<string, any[]> = new Map();
   private lastInsertId = 0;
@@ -28,9 +23,6 @@ export class MockDatabase {
     });
   }
 
-  /**
-   * Insert a row into a table
-   */
   async insert(table: string, data: Record<string, any>): Promise<number> {
     if (!this.tables.has(table)) {
       throw new Error(`Table ${table} does not exist`);
@@ -42,17 +34,11 @@ export class MockDatabase {
     return this.lastInsertId;
   }
 
-  /**
-   * Get a single row
-   */
   async get(table: string, where: Record<string, any>): Promise<any | null> {
     const rows = this.tables.get(table) || [];
     return rows.find((row) => this.matchesWhere(row, where)) || null;
   }
 
-  /**
-   * Get all rows matching criteria
-   */
   async all(table: string, where?: Record<string, any>): Promise<any[]> {
     const rows = this.tables.get(table) || [];
 
@@ -63,9 +49,6 @@ export class MockDatabase {
     return rows.filter((row) => this.matchesWhere(row, where));
   }
 
-  /**
-   * Update rows
-   */
   async update(
     table: string,
     data: Record<string, any>,
@@ -84,9 +67,6 @@ export class MockDatabase {
     return count;
   }
 
-  /**
-   * Delete rows
-   */
   async delete(table: string, where: Record<string, any>): Promise<number> {
     const rows = this.tables.get(table) || [];
     const beforeLength = rows.length;
@@ -97,32 +77,17 @@ export class MockDatabase {
     return beforeLength - filtered.length;
   }
 
-  /**
-   * Execute raw query (for testing)
-   */
-  async run(_sql: string, _params?: any[]): Promise<void> {
-    // Simplified - just mark as executed
-    // In real tests, use structured methods
-  }
+  async run(_sql: string, _params?: any[]): Promise<void> {}
 
-  /**
-   * Count rows in table
-   */
   async count(table: string, where?: Record<string, any>): Promise<number> {
     const rows = await this.all(table, where);
     return rows.length;
   }
 
-  /**
-   * Clear a table
-   */
   async clearTable(table: string): Promise<void> {
     this.tables.set(table, []);
   }
 
-  /**
-   * Clear all tables
-   */
   async clear(): Promise<void> {
     this.tables.forEach((_, table) => {
       this.tables.set(table, []);
@@ -130,16 +95,10 @@ export class MockDatabase {
     this.lastInsertId = 0;
   }
 
-  /**
-   * Get table for inspection (testing only)
-   */
   getTableData(table: string): any[] {
     return this.tables.get(table) || [];
   }
 
-  /**
-   * Check if row matches where clause
-   */
   private matchesWhere(row: any, where: Record<string, any>): boolean {
     return Object.entries(where).every(([key, value]) => {
       if (value === undefined) return true;
@@ -148,9 +107,6 @@ export class MockDatabase {
   }
 }
 
-/**
- * Create a mock database for testing
- */
 export function createMockDatabase(): MockDatabase {
   return new MockDatabase();
 }

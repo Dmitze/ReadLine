@@ -9,7 +9,7 @@ export interface Tag {
 
 let cachedTags: Tag[] = [];
 let tagsLastUpdated = 0;
-const TAGS_CACHE_DURATION = 5 * 60 * 1000; // 5 хвилин
+const TAGS_CACHE_DURATION = 5 * 60 * 1000;
 
 export async function getCachedTags(): Promise<Tag[]> {
   const now = Date.now();

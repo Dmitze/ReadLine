@@ -1,17 +1,13 @@
-/**
- * Books Table Operations
- * REFACTOR-009: Split models.ts - Books module
- */
-
 import { db } from './db';
 import { Book } from './types';
 import { logger } from '../../utils/logger';
 
-/**
- * Add a new book
- */
 export const addBook = (
-  bookData: Omit<Book, 'id' | 'is_available' | 'created_at'> & { isbn?: string; language?: string; is_physically_available?: boolean }
+  bookData: Omit<Book, 'id' | 'is_available' | 'created_at'> & {
+    isbn?: string;
+    language?: string;
+    is_physically_available?: boolean;
+  }
 ): Promise<number> => {
   return new Promise((resolve, reject) => {
     const {
@@ -71,12 +67,8 @@ export const addBook = (
   });
 };
 
-/**
- * Get books by genre
- */
 export const getBooksByGenre = (genre: string): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
-    // Шукаємо книги де жанр містить вибраний жанр (оскільки може бути кілька жанрів розділених новим рядком)
     const query = 'SELECT * FROM books WHERE genre LIKE ?';
     db.all(query, [`%${genre}%`], (err, rows: Book[]) => {
       if (err) {
@@ -89,9 +81,6 @@ export const getBooksByGenre = (genre: string): Promise<Book[]> => {
   });
 };
 
-/**
- * Get all books
- */
 export const getAllBooks = (): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     const query = 'SELECT * FROM books';
@@ -106,9 +95,6 @@ export const getAllBooks = (): Promise<Book[]> => {
   });
 };
 
-/**
- * Get all available books
- */
 export const getAllAvailableBooks = (): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     const query = 'SELECT * FROM books WHERE (is_available = 1 OR is_available IS NULL)';
@@ -123,9 +109,6 @@ export const getAllAvailableBooks = (): Promise<Book[]> => {
   });
 };
 
-/**
- * Get multiple books by IDs (batch operation to prevent N+1 queries)
- */
 export const getBooksByIds = (ids: number[]): Promise<Map<number, Book>> => {
   return new Promise((resolve, reject) => {
     if (ids.length === 0) {
@@ -142,7 +125,6 @@ export const getBooksByIds = (ids: number[]): Promise<Map<number, Book>> => {
       } else {
         const bookMap = new Map<number, Book>();
         for (const book of rows) {
-          // ✅ ВИПРАВЛЕНО #11: Додано непорожню перевірку
           if (book.id !== undefined) {
             bookMap.set(book.id, book);
           }
@@ -153,9 +135,6 @@ export const getBooksByIds = (ids: number[]): Promise<Map<number, Book>> => {
   });
 };
 
-/**
- * Get book by ID
- */
 export const getBookById = (id: number): Promise<Book | undefined> => {
   return new Promise((resolve, reject) => {
     const query = 'SELECT * FROM books WHERE id = ?';
@@ -170,9 +149,6 @@ export const getBookById = (id: number): Promise<Book | undefined> => {
   });
 };
 
-/**
- * Get all genres
- */
 export const getGenres = (): Promise<string[]> => {
   return new Promise((resolve, reject) => {
     const query = 'SELECT DISTINCT genre FROM books WHERE genre IS NOT NULL ORDER BY genre';
@@ -187,9 +163,6 @@ export const getGenres = (): Promise<string[]> => {
   });
 };
 
-/**
- * Get books by genre with pagination
- */
 export const getBooksByGenreWithPagination = (
   genre: string,
   page: number = 1,
@@ -227,9 +200,6 @@ export const getBooksByGenreWithPagination = (
   });
 };
 
-/**
- * Get books with pagination
- */
 export const getBooksWithPagination = (
   page: number = 1,
   limit: number = 10,
@@ -278,9 +248,6 @@ export const getBooksWithPagination = (
   });
 };
 
-/**
- * Update book
- */
 export const updateBook = (bookId: number, updates: Partial<Book>): Promise<number> => {
   return new Promise((resolve, reject) => {
     const fields = Object.keys(updates).filter((key) => key !== 'id');
@@ -301,9 +268,6 @@ export const updateBook = (bookId: number, updates: Partial<Book>): Promise<numb
   });
 };
 
-/**
- * Delete book
- */
 export const deleteBook = (bookId: number): Promise<number> => {
   return new Promise((resolve, reject) => {
     const query = 'DELETE FROM books WHERE id = ?';
@@ -320,9 +284,6 @@ export const deleteBook = (bookId: number): Promise<number> => {
   });
 };
 
-/**
- * Get top books by rating
- */
 export const getTopBooks = (limit: number = 10): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -343,9 +304,6 @@ export const getTopBooks = (limit: number = 10): Promise<Book[]> => {
   });
 };
 
-/**
- * Get most downloaded books
- */
 export const getMostDownloadedBooks = (limit: number = 10): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -366,9 +324,6 @@ export const getMostDownloadedBooks = (limit: number = 10): Promise<Book[]> => {
   });
 };
 
-/**
- * Get newest books
- */
 export const getNewestBooks = (limit: number = 10): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -388,9 +343,6 @@ export const getNewestBooks = (limit: number = 10): Promise<Book[]> => {
   });
 };
 
-/**
- * Increment book downloads count
- */
 export const incrementDownloads = (bookId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -411,9 +363,6 @@ export const incrementDownloads = (bookId: number): Promise<void> => {
   });
 };
 
-/**
- * Update book info (complex updates)
- */
 export const updateBookInfo = (bookId: number, field: string, value: any): Promise<number> => {
   return new Promise((resolve, reject) => {
     const allowedFields = [
@@ -457,17 +406,12 @@ export const updateBookInfo = (bookId: number, field: string, value: any): Promi
   });
 };
 
-/**
- * Search books by a specific field (title or author) with partial match
- */
 export const searchBooksByField = (
   field: 'title' | 'author',
   query: string,
   limit: number = 20
 ): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
-    // SQLite COLLATE NOCASE не працює для кирилиці — використовуємо lower() тільки для ASCII
-    // Для кирилиці шукаємо і оригінал і lowercase варіант
     const sql = `
       SELECT * FROM books
       WHERE ${field} LIKE ? OR lower(${field}) LIKE lower(?)
@@ -488,13 +432,8 @@ export const searchBooksByField = (
   });
 };
 
-/**
- * Search books with case-insensitive and partial match support
- */
 export const searchBooks = (query: string, limit: number = 20): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
-    // Не робимо toLowerCase() — SQLite COLLATE NOCASE не працює для кирилиці
-    // Використовуємо lower() для ASCII і оригінал для кирилиці через OR
     const pattern = `%${query}%`;
     const patternLower = `%${query.toLowerCase()}%`;
     const sql = `
@@ -516,11 +455,16 @@ export const searchBooks = (query: string, limit: number = 20): Promise<Book[]> 
     db.all(
       sql,
       [
-        pattern, patternLower,
-        pattern, patternLower,
-        pattern, patternLower,
-        pattern, patternLower,
-        pattern, pattern,
+        pattern,
+        patternLower,
+        pattern,
+        patternLower,
+        pattern,
+        patternLower,
+        pattern,
+        patternLower,
+        pattern,
+        pattern,
         limit,
       ],
       (err, rows: Book[]) => {

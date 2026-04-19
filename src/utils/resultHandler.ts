@@ -1,10 +1,6 @@
 import { BotContext } from '../types/telegraf';
 import { Result } from '../core/Result';
 
-/**
- * Helper to handle Result pattern in scenes
- * Returns true if Result is Ok, false if Err
- */
 export async function handleResult<T>(
   ctx: BotContext,
   result: Result<T>,
@@ -34,9 +30,6 @@ function getDefaultErrorMessage(error: Error): string {
   return 'Сталась помилка';
 }
 
-/**
- * Async result handler with automatic error reply
- */
 export async function withResultHandler<T>(
   ctx: BotContext,
   operation: () => Promise<Result<T>>,

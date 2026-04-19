@@ -1,8 +1,3 @@
-/**
- * Book Management Service
- * Handles business logic for book operations
- */
-
 import { Book, addBook } from '../database/models';
 import { addBookTag } from '../database/tagFunctions';
 import { TagRepository } from '../repositories/TagRepository';
@@ -39,30 +34,23 @@ export class BookManagementService {
     this.tagRepository = new TagRepository(db);
   }
 
-  /**
-   * Create a new book with all associated data
-   */
   async createBook(bookData: BookCreationData): Promise<Result<BookCreationResult, Error>> {
     try {
-      // Validate book data
       const validation = validateBookData(bookData);
       if (!validation.isValid) {
         return err(new Error(`Validation failed: ${validation.errors.join(', ')}`));
       }
 
-      // Create the book
       const bookDataForDb: any = {
         ...bookData,
         photo_file_id: bookData.photo_file_id || 'default_book_cover',
       };
       const bookId = await addBook(bookDataForDb);
 
-      // Add tags if provided
       if (bookData.selectedTags && bookData.selectedTags.length > 0) {
         await this.tagRepository.addBookTags(bookId, bookData.selectedTags);
       }
 
-      // Create book object for response
       const book: Book = {
         ...bookData,
         id: bookId,
@@ -93,17 +81,17 @@ export class BookManagementService {
     }
   }
 
-  /**
-   * Bulk update book availability
-   */
-  async bulkUpdateAvailability(bookIds: number[], available: boolean, adminId?: number): Promise<Result<{ success: boolean; count: number; errors: string[] }, Error>> {
+  async bulkUpdateAvailability(
+    bookIds: number[],
+    available: boolean,
+    adminId?: number
+  ): Promise<Result<{ success: boolean; count: number; errors: string[] }, Error>> {
     try {
       const errors: string[] = [];
       let successCount = 0;
 
       for (const bookId of bookIds) {
         try {
-          // Update book availability
           await this.db.run(
             'UPDATE books SET is_available = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
             [available ? 1 : 0, bookId]
@@ -118,11 +106,15 @@ export class BookManagementService {
         } catch (error) {
           const errMsg = error instanceof Error ? error.message : String(error);
           errors.push(`Book ${bookId}: ${errMsg}`);
-          logger.error('Failed to update book availability', error instanceof Error ? error : new Error(String(error)), {
-            bookId,
-            available,
-            adminId,
-          });
+          logger.error(
+            'Failed to update book availability',
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              bookId,
+              available,
+              adminId,
+            }
+          );
         }
       }
 
@@ -142,17 +134,16 @@ export class BookManagementService {
     }
   }
 
-  /**
-   * Bulk delete books
-   */
-  async bulkDeleteBooks(bookIds: number[], adminId?: number): Promise<Result<{ success: boolean; count: number; errors: string[] }, Error>> {
+  async bulkDeleteBooks(
+    bookIds: number[],
+    adminId?: number
+  ): Promise<Result<{ success: boolean; count: number; errors: string[] }, Error>> {
     try {
       const errors: string[] = [];
       let successCount = 0;
 
       for (const bookId of bookIds) {
         try {
-          // Delete book (cascade will handle related records)
           await this.db.run('DELETE FROM books WHERE id = ?', [bookId]);
           successCount++;
 
@@ -163,10 +154,14 @@ export class BookManagementService {
         } catch (error) {
           const errMsg = error instanceof Error ? error.message : String(error);
           errors.push(`Book ${bookId}: ${errMsg}`);
-          logger.error('Failed to delete book', error instanceof Error ? error : new Error(String(error)), {
-            bookId,
-            adminId,
-          });
+          logger.error(
+            'Failed to delete book',
+            error instanceof Error ? error : new Error(String(error)),
+            {
+              bookId,
+              adminId,
+            }
+          );
         }
       }
 
@@ -185,26 +180,23 @@ export class BookManagementService {
     }
   }
 
-  /**
-   * Validate book creation data
-   */
   validateBookData(bookData: Partial<BookCreationData>): Result<boolean, string[]> {
     const errors: string[] = [];
 
     if (!bookData.title?.trim()) {
-      errors.push('Назва книги обов\'язкова');
+      errors.push("Назва книги обов'язкова");
     }
 
     if (!bookData.author?.trim()) {
-      errors.push('Автор обов\'язковий');
+      errors.push("Автор обов'язковий");
     }
 
     if (!bookData.genre?.trim()) {
-      errors.push('Жанр обов\'язковий');
+      errors.push("Жанр обов'язковий");
     }
 
     if (!bookData.description?.trim()) {
-      errors.push('Опис обов\'язковий');
+      errors.push("Опис обов'язковий");
     }
 
     if (bookData.title && bookData.title.length > 500) {
@@ -212,7 +204,7 @@ export class BookManagementService {
     }
 
     if (bookData.author && bookData.author.length > 300) {
-      errors.push('Ім\'я автора занадто довге (макс. 300 символів)');
+      errors.push("Ім'я автора занадто довге (макс. 300 символів)");
     }
 
     if (bookData.description && bookData.description.length > 5000) {
@@ -226,25 +218,21 @@ export class BookManagementService {
     return ok(true);
   }
 
-  /**
-   * Check if user can add more books (rate limiting logic)
-   */
   async canUserAddBook(userId: number): Promise<Result<boolean, string>> {
-    // Implementation for rate limiting
-    // This could check user's book count, time limits, etc.
     return ok(true);
   }
 
-  /**
-   * Get user's book statistics
-   */
-  async getUserBookStats(userId: number): Promise<Result<{
-    totalBooks: number;
-    publishedBooks: number;
-    pendingBooks: number;
-  }, Error>> {
+  async getUserBookStats(userId: number): Promise<
+    Result<
+      {
+        totalBooks: number;
+        publishedBooks: number;
+        pendingBooks: number;
+      },
+      Error
+    >
+  > {
     try {
-      // Implementation to get user statistics
       return ok({
         totalBooks: 0,
         publishedBooks: 0,
@@ -256,11 +244,6 @@ export class BookManagementService {
   }
 }
 
-/**
- * Create a new BookManagementService instance
- * @param db - Database connection
- * @returns BookManagementService instance
- */
 export function createBookManagementService(db: any): BookManagementService {
   return new BookManagementService(db);
 }

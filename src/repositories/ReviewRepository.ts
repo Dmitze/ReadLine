@@ -1,10 +1,3 @@
-/**
- * Review Repository
- * REFACTOR-002: Repository Layer Separation
- *
- * All database operations related to book reviews
- */
-
 import { DatabaseWrapper } from '../database/dbWrapper';
 import { BaseRepository } from './BaseRepository';
 import { Review } from '../database/models';
@@ -15,9 +8,6 @@ export class ReviewRepository extends BaseRepository<Review> {
     super(db, 'reviews');
   }
 
-  /**
-   * Create a new review
-   */
   async create(reviewData: Omit<Review, 'id' | 'created_at'>): Promise<number> {
     try {
       const { book_id, user_id, user_name, rating, comment, is_published = false } = reviewData;
@@ -47,9 +37,6 @@ export class ReviewRepository extends BaseRepository<Review> {
     }
   }
 
-  /**
-   * Get reviews for a book (published only)
-   */
   async getByBookId(bookId: number): Promise<Review[]> {
     try {
       const query = `
@@ -67,9 +54,6 @@ export class ReviewRepository extends BaseRepository<Review> {
     }
   }
 
-  /**
-   * Get all pending reviews (not published)
-   */
   async getPending(): Promise<Review[]> {
     try {
       const query = `
@@ -87,9 +71,6 @@ export class ReviewRepository extends BaseRepository<Review> {
     }
   }
 
-  /**
-   * Publish a review
-   */
   async publish(reviewId: number): Promise<number> {
     try {
       const query = 'UPDATE reviews SET is_published = 1 WHERE id = ?';
@@ -103,9 +84,6 @@ export class ReviewRepository extends BaseRepository<Review> {
     }
   }
 
-  /**
-   * Reject a review (delete it)
-   */
   async reject(reviewId: number): Promise<number> {
     try {
       return await this.delete(reviewId);
@@ -118,9 +96,6 @@ export class ReviewRepository extends BaseRepository<Review> {
     }
   }
 
-  /**
-   * Get reviews by user
-   */
   async getByUserId(userId: number): Promise<Review[]> {
     try {
       const query = `
@@ -138,9 +113,6 @@ export class ReviewRepository extends BaseRepository<Review> {
     }
   }
 
-  /**
-   * Get average rating for a book
-   */
   async getAverageRating(bookId: number): Promise<number> {
     try {
       const query = `
@@ -158,9 +130,6 @@ export class ReviewRepository extends BaseRepository<Review> {
     }
   }
 
-  /**
-   * Get review count for a book
-   */
   async getCountForBook(bookId: number): Promise<number> {
     try {
       const query = `
@@ -178,9 +147,6 @@ export class ReviewRepository extends BaseRepository<Review> {
     }
   }
 
-  /**
-   * Check if user has reviewed a book
-   */
   async hasUserReviewedBook(userId: number, bookId: number): Promise<boolean> {
     try {
       const query = `
@@ -198,9 +164,6 @@ export class ReviewRepository extends BaseRepository<Review> {
     }
   }
 
-  /**
-   * Get pending review count
-   */
   async getPendingCount(): Promise<number> {
     try {
       return await this.count('is_published = 0');
@@ -213,9 +176,6 @@ export class ReviewRepository extends BaseRepository<Review> {
     }
   }
 
-  /**
-   * Get recent reviews
-   */
   async getRecent(limit: number = 20): Promise<Review[]> {
     try {
       const query = `
@@ -234,9 +194,6 @@ export class ReviewRepository extends BaseRepository<Review> {
     }
   }
 
-  /**
-   * Get highly rated reviews (rating >= 4)
-   */
   async getHighlyRated(limit: number = 20): Promise<Review[]> {
     try {
       const query = `
@@ -255,9 +212,6 @@ export class ReviewRepository extends BaseRepository<Review> {
     }
   }
 
-  /**
-   * Update a review
-   */
   async update(
     reviewId: number,
     updates: Partial<Omit<Review, 'id' | 'created_at'>>
@@ -267,12 +221,15 @@ export class ReviewRepository extends BaseRepository<Review> {
         return 0;
       }
 
-      // ✅ Whitelist разрешенных полей для защиты от SQL injection
       const allowedFields = [
-        'book_id', 'user_id', 'user_name', 'rating', 'comment', 'is_published'
+        'book_id',
+        'user_id',
+        'user_name',
+        'rating',
+        'comment',
+        'is_published',
       ];
 
-      // Фильтруем только разрешенные поля
       const validUpdates: Record<string, any> = {};
       for (const [key, value] of Object.entries(updates)) {
         if (allowedFields.includes(key)) {
@@ -286,9 +243,8 @@ export class ReviewRepository extends BaseRepository<Review> {
         return 0;
       }
 
-      // Экранируем названия полей через whitelist
       const fields = Object.keys(validUpdates)
-        .map((key) => `"${key}" = ?`)  // ✅ Используем whitelist
+        .map((key) => `"${key}" = ?`)
         .join(', ');
       const values = Object.values(validUpdates);
 
@@ -308,9 +264,6 @@ export class ReviewRepository extends BaseRepository<Review> {
     }
   }
 
-  /**
-   * Aliases for compatibility with services
-   */
   async findByBookId(bookId: number): Promise<Review[]> {
     return this.getByBookId(bookId);
   }

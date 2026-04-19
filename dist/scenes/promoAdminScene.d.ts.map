@@ -1,1 +1,1 @@
-{"version":3,"file":"promoAdminScene.d.ts","sourceRoot":"","sources":["../../src/scenes/promoAdminScene.ts"],"names":[],"mappings":"AAIA,OAAO,EAAE,MAAM,EAAE,MAAM,UAAU,CAAC;AAWlC,QAAA,MAAM,eAAe,uBAAwD,CAAC;AAoR9E,eAAe,eAAe,CAAC"}
+{"version":3,"file":"promoAdminScene.d.ts","sourceRoot":"","sources":["../../src/scenes/promoAdminScene.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAE,MAAM,UAAU,CAAC;AAWlC,QAAA,MAAM,eAAe,uBAAwD,CAAC;AAiQ9E,eAAe,eAAe,CAAC"}

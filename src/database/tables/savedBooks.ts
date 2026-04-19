@@ -1,15 +1,7 @@
-/**
- * Saved Books Table Operations
- * REFACTOR-009: Split models.ts - Saved Books module
- */
-
 import { db } from './db';
 import { Book } from './types';
 import { logger } from '../../utils/logger';
 
-/**
- * Save a book to user's library
- */
 export const saveBook = (userId: number, bookId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query = 'INSERT OR IGNORE INTO saved_books (user_id, book_id) VALUES (?, ?)';
@@ -26,9 +18,6 @@ export const saveBook = (userId: number, bookId: number): Promise<void> => {
   });
 };
 
-/**
- * Remove book from user's library
- */
 export const unsaveBook = (userId: number, bookId: number): Promise<void> => {
   return new Promise((resolve, reject) => {
     const query = 'DELETE FROM saved_books WHERE user_id = ? AND book_id = ?';
@@ -45,9 +34,6 @@ export const unsaveBook = (userId: number, bookId: number): Promise<void> => {
   });
 };
 
-/**
- * Check if book is saved by user
- */
 export const isBookSaved = (userId: number, bookId: number): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     const query = 'SELECT COUNT(*) as count FROM saved_books WHERE user_id = ? AND book_id = ?';
@@ -63,9 +49,6 @@ export const isBookSaved = (userId: number, bookId: number): Promise<boolean> =>
   });
 };
 
-/**
- * Get all saved books for a user
- */
 export const getSavedBooks = (userId: number): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     const query = `
@@ -87,9 +70,6 @@ export const getSavedBooks = (userId: number): Promise<Book[]> => {
   });
 };
 
-/**
- * Get saved books count for a user
- */
 export const getSavedBooksCount = (userId: number): Promise<number> => {
   return new Promise((resolve, reject) => {
     const query = 'SELECT COUNT(*) as count FROM saved_books WHERE user_id = ?';

@@ -1,8 +1,3 @@
-/**
- * Seed Data for Demo Books
- * Используется для инициализации БД при первом запуске
- */
-
 import { ALL_GENRES } from '../../constants/genres';
 
 export const DEMO_TAGS = [

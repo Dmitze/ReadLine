@@ -1,16 +1,6 @@
-/**
- * Base Repository Class
- * REFACTOR-002: Repository Layer Separation
- *
- * Provides common database operations for all repositories
- */
-
 import { DatabaseWrapper, SQLParameters } from '../database/dbWrapper';
 import { logger } from '../utils/logger';
 
-/**
- * Base repository with common CRUD operations
- */
 export abstract class BaseRepository<T extends { id?: number }> {
   protected tableName: string;
 
@@ -21,9 +11,6 @@ export abstract class BaseRepository<T extends { id?: number }> {
     this.tableName = tableName;
   }
 
-  /**
-   * Get entity by ID
-   */
   async getById(id: number): Promise<T | undefined> {
     try {
       const query = `SELECT * FROM ${this.tableName} WHERE id = ?`;
@@ -37,9 +24,6 @@ export abstract class BaseRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Get all entities
-   */
   async getAll(limit?: number, offset?: number): Promise<T[]> {
     try {
       let query = `SELECT * FROM ${this.tableName}`;
@@ -60,13 +44,9 @@ export abstract class BaseRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Count total entities
-   */
   async count(where?: string | Record<string, any>, params?: any[]): Promise<number> {
     try {
       if (typeof where === 'object' && where !== null) {
-        // If where is an object, convert to WHERE clause
         const whereClauses = Object.keys(where)
           .map((key) => `${key} = ?`)
           .join(' AND ');
@@ -89,9 +69,6 @@ export abstract class BaseRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Check if entity exists
-   */
   async exists(id: number): Promise<boolean> {
     try {
       const query = `SELECT COUNT(*) as count FROM ${this.tableName} WHERE id = ?`;
@@ -105,9 +82,6 @@ export abstract class BaseRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Delete entity
-   */
   async delete(id: number): Promise<number> {
     try {
       const query = `DELETE FROM ${this.tableName} WHERE id = ?`;
@@ -121,9 +95,6 @@ export abstract class BaseRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Execute a custom query
-   */
   async query<R>(query: string, params?: any[]): Promise<R[]> {
     try {
       return await this.db.all<R>(query, params);
@@ -136,9 +107,6 @@ export abstract class BaseRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Insert a new entity
-   */
   async insert(data: Omit<T, 'id'>): Promise<number> {
     try {
       const keys = Object.keys(data);
@@ -155,15 +123,8 @@ export abstract class BaseRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Update an entity
-   * ⚠️  WARNING: This base implementation is vulnerable to SQL injection
-   * Child classes should override this method with proper field whitelisting
-   */
   async update(id: number, data: Partial<Omit<T, 'id'>>): Promise<number> {
     try {
-      // ⚠️  SECURITY RISK: No field validation in base class
-      // Child classes must override this method with proper whitelisting
       const keys = Object.keys(data);
       const values = Object.values(data) as SQLParameters;
       values.push(id);
@@ -179,9 +140,6 @@ export abstract class BaseRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Execute a transaction
-   */
   async transaction<R>(callback: () => Promise<R>): Promise<R> {
     try {
       return await this.db.transaction(callback);
@@ -194,16 +152,10 @@ export abstract class BaseRepository<T extends { id?: number }> {
     }
   }
 
-  /**
-   * Alias for getById for compatibility
-   */
   async findById(id: number): Promise<T | undefined> {
     return this.getById(id);
   }
 
-  /**
-   * Alias for getAll for compatibility
-   */
   async findAll(limit?: number, offset?: number): Promise<T[]> {
     return this.getAll(limit, offset);
   }

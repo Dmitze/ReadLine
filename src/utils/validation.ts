@@ -1,26 +1,14 @@
-/**
- * Validation Utilities - валідація вхідних даних
- */
-
 import { Book, Review } from '../database/models';
 import { VALIDATION, CONFIG } from '../constants';
 
-/**
- * Результат валідації
- */
 export interface ValidationResult {
   isValid: boolean;
   errors: string[];
 }
 
-/**
- * Валідація даних книги
- * ✅ ВИПРАВЛЕНО: використовуємо константи
- */
 export function validateBookData(data: Partial<Omit<Book, 'id' | 'created_at'>>): ValidationResult {
   const errors: string[] = [];
 
-  // Обов'язкові поля
   if (!data.title || data.title.trim().length === 0) {
     errors.push("Назва книги обов'язкова");
   } else if (data.title.length < VALIDATION.TITLE_MIN) {
@@ -53,12 +41,10 @@ export function validateBookData(data: Partial<Omit<Book, 'id' | 'created_at'>>)
     errors.push("Фото обкладинки обов'язкове");
   }
 
-  // Валідація file_type
   if (data.file_type && !['physical', 'link', 'file'].includes(data.file_type)) {
     errors.push('Невірний тип файлу');
   }
 
-  // Якщо тип 'link', перевіряємо URL
   if (data.file_type === 'link' && data.file_url) {
     if (!isValidUrl(data.file_url)) {
       errors.push('Невірний формат посилання');
@@ -71,10 +57,6 @@ export function validateBookData(data: Partial<Omit<Book, 'id' | 'created_at'>>)
   };
 }
 
-/**
- * Валідація даних відгуку
- * ✅ ВИПРАВЛЕНО: використовуємо константи
- */
 export function validateReviewData(
   data: Partial<Omit<Review, 'id' | 'created_at'>>
 ): ValidationResult {
@@ -107,10 +89,6 @@ export function validateReviewData(
   };
 }
 
-/**
- * Валідація пошукового запиту
- * ✅ ВИПРАВЛЕНО: використовуємо константи
- */
 export function validateSearchQuery(query: string): ValidationResult {
   const errors: string[] = [];
 
@@ -132,9 +110,6 @@ export function validateSearchQuery(query: string): ValidationResult {
   };
 }
 
-/**
- * Перевірка чи рядок є валідним URL
- */
 export function isValidUrl(url: string): boolean {
   try {
     const urlObject = new URL(url);
@@ -144,11 +119,7 @@ export function isValidUrl(url: string): boolean {
   }
 }
 
-/**
- * Перевірка чи рядок є валідним номером телефону
- */
 export function isValidPhoneNumber(phone: string): boolean {
-  // Український формат: +380501234567, 0501234567, 050-123-45-67
   const phoneRegex = /^(\+?38)?0\d{9}$|^(\+?38)?0\d{2}-\d{3}-\d{2}-\d{2}$/;
   return phoneRegex.test(phone.replace(/\s/g, ''));
 }

@@ -1,12 +1,3 @@
-/**
- * DTOs (Data Transfer Objects) for Book entity
- * Used for API contracts and data validation
- * @module dtos/BookDTO
- */
-
-/**
- * Request DTO for creating a book
- */
 export interface CreateBookDTO {
   title: string;
   author: string;
@@ -20,9 +11,6 @@ export interface CreateBookDTO {
   download_count?: number;
 }
 
-/**
- * Class-based DTO for creating a book with validation
- */
 export class CreateBookDTOClass implements CreateBookDTO {
   title: string;
   author: string;
@@ -36,7 +24,6 @@ export class CreateBookDTOClass implements CreateBookDTO {
   download_count?: number;
 
   constructor(data: CreateBookDTO) {
-    // ✅ Валідація в конструкторі
     if (!data.title || data.title.trim().length < 2) {
       throw new Error('Title is required and must be at least 2 characters');
     }
@@ -66,9 +53,6 @@ export class CreateBookDTOClass implements CreateBookDTO {
   }
 }
 
-/**
- * Request DTO for updating a book
- */
 export interface UpdateBookDTO {
   title?: string;
   author?: string;
@@ -82,9 +66,6 @@ export interface UpdateBookDTO {
   download_count?: number;
 }
 
-/**
- * Class-based DTO for updating a book with validation
- */
 export class UpdateBookDTOClass implements UpdateBookDTO {
   title?: string;
   author?: string;
@@ -98,7 +79,6 @@ export class UpdateBookDTOClass implements UpdateBookDTO {
   download_count?: number;
 
   constructor(data: UpdateBookDTO) {
-    // ✅ Валідація в конструкторі
     if (data.title !== undefined && data.title.trim().length < 2) {
       throw new Error('Title must be at least 2 characters');
     }
@@ -128,9 +108,6 @@ export class UpdateBookDTOClass implements UpdateBookDTO {
   }
 }
 
-/**
- * Response DTO for book details
- */
 export interface BookResponseDTO {
   id: number;
   title: string;
@@ -147,9 +124,6 @@ export interface BookResponseDTO {
   updated_at?: string;
 }
 
-/**
- * Response DTO for book list items
- */
 export interface BookListItemDTO {
   id: number;
   title: string;
@@ -160,9 +134,6 @@ export interface BookListItemDTO {
   download_count: number;
 }
 
-/**
- * Response DTO for book with rating details
- */
 export interface BookWithRatingDTO extends BookResponseDTO {
   average_rating: number;
   review_count: number;
@@ -170,9 +141,6 @@ export interface BookWithRatingDTO extends BookResponseDTO {
   is_saved?: boolean;
 }
 
-/**
- * Query DTO for book search
- */
 export interface BookSearchDTO {
   query?: string;
   genre?: string;
@@ -183,9 +151,6 @@ export interface BookSearchDTO {
   order?: 'asc' | 'desc';
 }
 
-/**
- * Response DTO for book statistics
- */
 export interface BookStatsDTO {
   total_books: number;
   available_books: number;
@@ -195,9 +160,6 @@ export interface BookStatsDTO {
   total_downloads: number;
 }
 
-/**
- * DTO for book genre filter
- */
 export interface GenreFilterDTO {
   genre: string;
   limit?: number;
@@ -205,17 +167,11 @@ export interface GenreFilterDTO {
   sort_by?: 'rating' | 'downloads' | 'title';
 }
 
-/**
- * DTO for saving a book
- */
 export interface SaveBookDTO {
   user_id: number;
   book_id: number;
 }
 
-/**
- * DTO for book download tracking
- */
 export interface BookDownloadDTO {
   book_id: number;
   user_id: number;

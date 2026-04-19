@@ -1,14 +1,6 @@
-/**
- * Централізований Error Handler
- * Забезпечує єдиний підхід до обробки помилок по всьому проекту
- */
-
 import { Context } from 'telegraf';
 import { logger } from './logger';
 
-/**
- * Типи помилок
- */
 export enum ErrorType {
   DATABASE = 'DATABASE_ERROR',
   VALIDATION = 'VALIDATION_ERROR',
@@ -20,9 +12,6 @@ export enum ErrorType {
   UNKNOWN = 'UNKNOWN_ERROR',
 }
 
-/**
- * Кастомна помилка з типом
- */
 export class AppError extends Error {
   constructor(
     public type: ErrorType,
@@ -35,9 +24,6 @@ export class AppError extends Error {
   }
 }
 
-/**
- * Обгортка для async функцій з автоматичною обробкою помилок
- */
 export function asyncHandler<T extends unknown[], R>(
   fn: (...args: T) => Promise<R>,
   errorType: ErrorType = ErrorType.UNKNOWN
@@ -52,9 +38,6 @@ export function asyncHandler<T extends unknown[], R>(
   };
 }
 
-/**
- * Обробка помилки з логуванням
- */
 export function handleError(
   error: unknown,
   type: ErrorType = ErrorType.UNKNOWN,
@@ -64,21 +47,14 @@ export function handleError(
 
   logger.error(`[${type}] ${err.message}`, err, context);
 
-  // Додаткова обробка залежно від типу
   switch (type) {
     case ErrorType.DATABASE:
-      // Можна додати спеціальну логіку для DB помилок
       break;
     case ErrorType.RATE_LIMIT:
-      // Можна додати логіку для rate limiting
       break;
-    // ... інші типи
   }
 }
 
-/**
- * Відправити повідомлення про помилку користувачу
- */
 export async function sendErrorToUser(
   ctx: Context,
   error: unknown,
@@ -93,7 +69,6 @@ export async function sendErrorToUser(
 
     await ctx.reply(message);
   } catch (replyError) {
-    // Якщо не вдалося відправити повідомлення - логуємо
     logger.error(
       'Failed to send error message to user',
       replyError instanceof Error ? replyError : new Error(String(replyError))
@@ -101,9 +76,6 @@ export async function sendErrorToUser(
   }
 }
 
-/**
- * Middleware для обробки помилок в handlers
- */
 export function errorMiddleware(
   handler: (ctx: Context) => Promise<void>,
   errorType: ErrorType = ErrorType.UNKNOWN
@@ -118,9 +90,6 @@ export function errorMiddleware(
   };
 }
 
-/**
- * Retry логіка для нестабільних операцій
- */
 export async function retryOperation<T>(
   operation: () => Promise<T>,
   maxRetries: number = 3,
@@ -146,9 +115,6 @@ export async function retryOperation<T>(
   throw lastError || new Error('Operation failed after retries');
 }
 
-/**
- * Graceful degradation - fallback при помилці
- */
 export async function withFallback<T>(
   primary: () => Promise<T>,
   fallback: () => Promise<T>,
@@ -163,9 +129,6 @@ export async function withFallback<T>(
   }
 }
 
-/**
- * Timeout wrapper для операцій
- */
 export async function withTimeout<T>(
   operation: () => Promise<T>,
   timeoutMs: number,

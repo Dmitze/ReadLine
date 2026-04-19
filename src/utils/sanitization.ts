@@ -1,12 +1,3 @@
-/**
- * Sanitization Utilities - санітизація та очищення вхідних даних
- * Захист від SQL injection, XSS та інших атак
- */
-
-/**
- * Санітизація SQL параметрів
- * Видаляє небезпечні символи для SQL запитів
- */
 export function sanitizeSqlParam(value: string): string {
   if (!value) return '';
 
@@ -201,16 +192,11 @@ export function sanitizeBoolean(value: unknown): boolean {
   return false;
 }
 
-/**
- * Санітизація масиву
- * Видаляє дублікати та порожні значення
- */
 export function sanitizeArray<T>(arr: T[], maxLength?: number): T[] {
   if (!Array.isArray(arr)) {
     return [];
   }
 
-  // Видаляємо дублікати та порожні значення
   const unique = [...new Set(arr)].filter(
     (item) => item !== null && item !== undefined && item !== ''
   );

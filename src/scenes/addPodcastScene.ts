@@ -1,8 +1,3 @@
-/**
- * Add Podcast Scene
- * Scene для додавання нового підкасту адміном
- */
-
 import { Scenes, Markup } from 'telegraf';
 import { BotContext } from '../types/telegraf';
 import { logger } from '../utils/logger';
@@ -24,7 +19,6 @@ interface AddPodcastState {
 
 const addPodcastScene = new Scenes.BaseScene<BotContext>('ADD_PODCAST_SCENE');
 
-// Початок сцени
 addPodcastScene.enter(async (ctx: BotContext) => {
   const state = (ctx.scene as any).state as AddPodcastState;
   state.step = 'theme';
@@ -43,7 +37,6 @@ addPodcastScene.enter(async (ctx: BotContext) => {
   logger.adminAction(ctx.from?.id || 0, 'start_add_podcast');
 });
 
-// Обробник текстових повідомлень
 addPodcastScene.on('text', async (ctx: BotContext) => {
   const state = (ctx.scene as any).state as AddPodcastState;
   const text = ctx.message.text.trim();
@@ -55,7 +48,6 @@ addPodcastScene.on('text', async (ctx: BotContext) => {
     return ctx.scene.leave();
   }
 
-  // Крок 1: Тема
   if (state.step === 'theme') {
     if (text.length < 3) {
       await ctx.reply('❌ Тема занадто коротка. Мінімум 3 символи.');
@@ -69,7 +61,6 @@ addPodcastScene.on('text', async (ctx: BotContext) => {
     return;
   }
 
-  // Крок 2: Опис
   if (state.step === 'description') {
     if (text.length < 10) {
       await ctx.reply('❌ Опис занадто короткий. Мінімум 10 символів.');
@@ -88,7 +79,6 @@ addPodcastScene.on('text', async (ctx: BotContext) => {
     return;
   }
 
-  // Якщо чекаємо посилання
   if (state.step === 'waiting_link') {
     if (!text.startsWith('http://') && !text.startsWith('https://')) {
       await ctx.reply('❌ Невірний формат. Має починатися з http:// або https://');
@@ -101,7 +91,6 @@ addPodcastScene.on('text', async (ctx: BotContext) => {
   }
 });
 
-// Обробник аудіо
 addPodcastScene.on('audio', async (ctx: BotContext) => {
   const state = (ctx.scene as any).state as AddPodcastState;
   if (state.step !== 'waiting_audio') return;
@@ -117,7 +106,6 @@ addPodcastScene.on('audio', async (ctx: BotContext) => {
   await confirmPodcast(ctx, state);
 });
 
-// Підтвердження
 async function confirmPodcast(ctx: BotContext, state: AddPodcastState) {
   const message =
     '📝 <b>ПОПЕРЕДНІЙ ПЕРЕГЛЯД</b>\n\n' +
@@ -135,7 +123,6 @@ async function confirmPodcast(ctx: BotContext, state: AddPodcastState) {
   state.step = 'preview';
 }
 
-// Кнопки
 addPodcastScene.action('podcast_type_audio', async (ctx: BotContext) => {
   await ctx.answerCbQuery();
   const state = (ctx.scene as any).state as AddPodcastState;
@@ -176,17 +163,16 @@ addPodcastScene.action('podcast_publish', async (ctx: BotContext) => {
 
     await ctx.editMessageText(
       '✅ <b>ПІДКАСТ ОПУБЛІКОВАНО!</b>\n\n' + `🎙️ ${podcast.theme}\n` + `🆔 ID: ${podcastId}`,
-      { 
+      {
         parse_mode: 'HTML',
         reply_markup: Markup.inlineKeyboard([
-          [Markup.button.callback('🔙 Повернутись в адмін-панель', 'back_to_admin')]
-        ]).reply_markup
+          [Markup.button.callback('🔙 Повернутись в адмін-панель', 'back_to_admin')],
+        ]).reply_markup,
       }
     );
 
     logger.adminAction(ctx.from?.id || 0, 'add_podcast', { podcastId });
-    
-    // Return to main menu
+
     return ctx.scene.leave();
   } catch (error) {
     logger.error('Error adding podcast', error);
@@ -204,8 +190,8 @@ addPodcastScene.action('podcast_cancel', async (ctx: BotContext) => {
 
 addPodcastScene.action('back_to_admin', async (ctx: BotContext) => {
   await ctx.answerCbQuery('🔙 Повертаємось...');
-  await ctx.reply('Виберіть дію:', { 
-    reply_markup: getMainMenuKeyboard()
+  await ctx.reply('Виберіть дію:', {
+    reply_markup: getMainMenuKeyboard(),
   });
   return ctx.scene.leave();
 });

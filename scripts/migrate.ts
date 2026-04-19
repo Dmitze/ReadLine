@@ -1,23 +1,10 @@
 #!/usr/bin/env ts-node
-/**
- * Database Migration CLI
- * Usage: ts-node scripts/migrate.ts [command] [options]
- *
- * Commands:
- *   migrate              Run pending migrations
- *   rollback [version]   Rollback migrations
- *   status              Show migration status
- *   reset               Reset database (dev only)
- *   fresh               Reset and migrate (dev only)
- *   validate            Validate migration integrity
- */
 
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { Database } from '../src/database/dbWrapper';
 import { MigrationManager } from '../src/database/MigrationManager';
 
-// Load environment variables
 dotenv.config();
 
 const dbPath = process.env.DATABASE_URL || path.join(__dirname, '../database.sqlite');
@@ -70,7 +57,7 @@ async function main() {
           console.log('✅ All migrations are valid');
         } else {
           console.log('❌ Migration errors found:');
-          validation.errors.forEach(err => console.log(`  - ${err}`));
+          validation.errors.forEach((err) => console.log(`  - ${err}`));
           process.exit(1);
         }
         break;

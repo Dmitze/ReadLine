@@ -47,7 +47,6 @@ feedbackScene.on('text', async (ctx: BotContext) => {
     return ctx.scene?.leave();
   }
 
-  // Зберігаємо повідомлення в БД
   const { addFeedbackMessage, getAllAdmins } = await import('../database/models');
 
   await addFeedbackMessage({
@@ -67,7 +66,6 @@ feedbackScene.on('text', async (ctx: BotContext) => {
       );
     });
 
-  // Отримуємо всіх адмінів
   const admins = await getAllAdmins();
 
   if (admins.length === 0) {
@@ -82,8 +80,6 @@ feedbackScene.on('text', async (ctx: BotContext) => {
     return ctx.scene?.leave();
   }
 
-  // Формуємо повідомлення для адміна
-  // Екрануємо спецсимволи Markdown
   const escapeMarkdown = (text: string) => {
     return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
   };
@@ -101,7 +97,6 @@ feedbackScene.on('text', async (ctx: BotContext) => {
     `"${safeMessage}"\n\n` +
     `📅 Дата: ${escapeMarkdown(new Date().toLocaleString('uk-UA'))}`;
 
-  // Відправляємо всім адмінам
   let sentCount = 0;
   for (const admin of admins) {
     await ctx.telegram
@@ -148,7 +143,6 @@ feedbackScene.on('text', async (ctx: BotContext) => {
     );
   }
 
-  // Повертаємось до головного меню після відправки
   await ctx.scene?.leave();
   const { getMainMenuKeyboard } = await import('../keyboards/mainKeyboards');
   await ctx.reply('🏠 Повертаємось до головного меню', {
@@ -157,7 +151,6 @@ feedbackScene.on('text', async (ctx: BotContext) => {
   return;
 });
 
-// Обробка скасування
 feedbackScene.command('cancel', async (ctx: BotContext) => {
   const { getMainMenuKeyboard } = await import('../keyboards/mainKeyboards');
   await ctx.reply('❌ Відправка повідомлення скасована.', {
@@ -166,10 +159,6 @@ feedbackScene.command('cancel', async (ctx: BotContext) => {
   return ctx.scene?.leave();
 });
 
-// Обробка кнопки "Назад"
-// Removed obsolete keyboard handler - use /cancel command instead
-
-// Обробка команди /cancel
 feedbackScene.hears('/cancel', async (ctx: BotContext) => {
   await ctx.scene?.leave();
   const { getMainMenuKeyboard } = await import('../keyboards/mainKeyboards');

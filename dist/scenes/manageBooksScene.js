@@ -215,7 +215,9 @@ manageBooksScene.action(/confirm_delete_(\d+)/, async (ctx) => {
     }
     await (0, models_1.deleteBook)(bookId);
     await ctx.answerCbQuery('✅ Книгу видалено');
-    await ctx.editMessageText('✅ <b>Книгу видалено</b>\n\n' + `📖 ${book.title}${(0, helpers_1.getBookIdText)(book.id)}\n` + `👤 ${book.author}`, { parse_mode: 'HTML' });
+    await ctx.editMessageText('✅ <b>Книгу видалено</b>\n\n' +
+        `📖 ${book.title}${(0, helpers_1.getBookIdText)(book.id)}\n` +
+        `👤 ${book.author}`, { parse_mode: 'HTML' });
     logger_1.logger.adminAction(ctx.from.id, 'delete_book', { bookId, title: book.title });
 });
 manageBooksScene.action('cancel_delete', async (ctx) => {
@@ -357,8 +359,9 @@ manageBooksScene.action('confirm_bulk_available', async (ctx) => {
         }
     }
     else {
-        await ctx.editMessageText('❌ *Помилка при оновленні*\n\n' +
-            result.error.message, { parse_mode: 'Markdown' });
+        await ctx.editMessageText('❌ *Помилка при оновленні*\n\n' + result.error.message, {
+            parse_mode: 'Markdown',
+        });
     }
     state.selectedBooks = [];
 });
@@ -394,8 +397,9 @@ manageBooksScene.action('confirm_bulk_unavailable', async (ctx) => {
         }
     }
     else {
-        await ctx.editMessageText('❌ *Помилка при оновленні*\n\n' +
-            result.error.message, { parse_mode: 'Markdown' });
+        await ctx.editMessageText('❌ *Помилка при оновленні*\n\n' + result.error.message, {
+            parse_mode: 'Markdown',
+        });
     }
     state.selectedBooks = [];
 });

@@ -1,40 +1,19 @@
-/**
- * Validation schemas for DTO validation
- * Provides reusable validation rules for all entities
- * @module dtos/ValidationSchemas
- */
-
-/**
- * Validation error result
- */
 export interface ValidationError {
   field: string;
   message: string;
 }
 
-/**
- * Validation result
- */
 export interface ValidationResult {
   isValid: boolean;
   errors: ValidationError[];
 }
 
-/**
- * Validator interface
- */
 export interface Validator<T> {
   validate(data: unknown): ValidationResult;
   validateAsync(data: unknown): Promise<ValidationResult>;
 }
 
-/**
- * Common validation rules
- */
 export const ValidationRules = {
-  /**
-   * Validate string field
-   */
   string: (value: unknown, options?: { minLength?: number; maxLength?: number }): boolean => {
     if (typeof value !== 'string') return false;
     if (options?.minLength && value.length < options.minLength) return false;
@@ -42,9 +21,6 @@ export const ValidationRules = {
     return true;
   },
 
-  /**
-   * Validate number field
-   */
   number: (
     value: unknown,
     options?: { min?: number; max?: number; integer?: boolean }
@@ -56,25 +32,16 @@ export const ValidationRules = {
     return true;
   },
 
-  /**
-   * Validate boolean field
-   */
   boolean: (value: unknown): boolean => {
     return typeof value === 'boolean';
   },
 
-  /**
-   * Validate email
-   */
   email: (value: unknown): boolean => {
     if (typeof value !== 'string') return false;
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(value);
   },
 
-  /**
-   * Validate URL
-   */
   url: (value: unknown): boolean => {
     if (typeof value !== 'string') return false;
     try {
@@ -85,16 +52,10 @@ export const ValidationRules = {
     }
   },
 
-  /**
-   * Validate rating (1-5)
-   */
   rating: (value: unknown): boolean => {
     return ValidationRules.number(value, { min: 1, max: 5, integer: true });
   },
 
-  /**
-   * Validate genre
-   */
   genre: (value: unknown): boolean => {
     const validGenres = [
       'fiction',
@@ -114,9 +75,6 @@ export const ValidationRules = {
     return typeof value === 'string' && validGenres.includes(value.toLowerCase());
   },
 
-  /**
-   * Validate array
-   */
   array: (value: unknown, options?: { minLength?: number; maxLength?: number }): boolean => {
     if (!Array.isArray(value)) return false;
     if (options?.minLength && value.length < options.minLength) return false;
@@ -124,9 +82,6 @@ export const ValidationRules = {
     return true;
   },
 
-  /**
-   * Validate required field
-   */
   required: (value: unknown): boolean => {
     if (value === null || value === undefined) return false;
     if (typeof value === 'string' && value.trim() === '') return false;
@@ -234,9 +189,6 @@ export const UserValidationSchema = {
   },
 };
 
-/**
- * Review validation schema
- */
 export const ReviewValidationSchema = {
   book_id: (value: unknown): boolean => {
     return ValidationRules.number(value, { min: 1, integer: true });
@@ -259,9 +211,6 @@ export const ReviewValidationSchema = {
   },
 };
 
-/**
- * Audio validation schema
- */
 export const AudioValidationSchema = {
   book_id: (value: unknown): boolean => {
     return ValidationRules.number(value, { min: 1, integer: true });
@@ -292,9 +241,6 @@ export const AudioValidationSchema = {
   },
 };
 
-/**
- * Utility function to validate data against schema
- */
 export function validateAgainstSchema<T extends Record<string, unknown>>(
   data: unknown,
   schema: Record<string, (value: unknown) => boolean>
@@ -325,9 +271,6 @@ export function validateAgainstSchema<T extends Record<string, unknown>>(
   };
 }
 
-/**
- * Utility function to sanitize string input
- */
 export function sanitizeString(input: string): string {
   return input
     .trim()
@@ -357,9 +300,8 @@ export function validateSortParams(
 ): { sortBy: string; order: 'asc' | 'desc' } {
   const defaultSort = allowedFields?.[0] || 'id';
   const candidate = sortBy ?? '';
-  const validSort: string = allowedFields && allowedFields.includes(candidate)
-    ? candidate
-    : defaultSort;
+  const validSort: string =
+    allowedFields && allowedFields.includes(candidate) ? candidate : defaultSort;
   const validOrder = (order?.toLowerCase() === 'desc' ? 'desc' : 'asc') as 'asc' | 'desc';
   return { sortBy: validSort, order: validOrder };
 }

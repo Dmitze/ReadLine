@@ -1,1 +1,1 @@
-{"version":3,"file":"editBookScene.d.ts","sourceRoot":"","sources":["../../src/scenes/editBookScene.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAU,MAAM,UAAU,CAAC;AAe1C,QAAA,MAAM,aAAa,yBAmnBlB,CAAC;AAEF,eAAe,aAAa,CAAC"}
+{"version":3,"file":"editBookScene.d.ts","sourceRoot":"","sources":["../../src/scenes/editBookScene.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,MAAM,EAAU,MAAM,UAAU,CAAC;AAe1C,QAAA,MAAM,aAAa,yBA8kBlB,CAAC;AAEF,eAAe,aAAa,CAAC"}

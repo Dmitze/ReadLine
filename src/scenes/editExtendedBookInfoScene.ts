@@ -1,8 +1,3 @@
-/**
- * Edit Extended Book Info Scene - сцена редагування розширеної інформації про книги
- * Дозволяє адміністраторам встановлювати вікові обмеження та варнінги вмісту
- */
-
 import { Scenes } from 'telegraf';
 import { BotContext } from '../types/telegraf';
 import { logger } from '../utils/logger';
@@ -12,7 +7,6 @@ import { getBookIdText } from '../utils/helpers';
 
 const editExtendedBookInfoScene = new Scenes.BaseScene<BotContext>('EDIT_EXTENDED_BOOK_INFO_SCENE');
 
-// Список всіх варнінгів
 const CONTENT_WARNINGS = [
   { id: 'violence', label: 'Насильство' },
   { id: 'explicit_content', label: 'Експліцитний контент' },
@@ -26,7 +20,6 @@ const CONTENT_WARNINGS = [
   { id: 'self_harm', label: 'Самопошкодження' },
 ];
 
-// Функція показу клавіатури варнінгів
 async function showWarningsKeyboard(ctx: BotContext, state: any) {
   const selectedWarnings = state.selectedWarnings || [];
 
@@ -36,7 +29,6 @@ async function showWarningsKeyboard(ctx: BotContext, state: any) {
     return [Markup.button.callback(`${icon} ${warning.label}`, `toggle_warning_${warning.id}`)];
   });
 
-  // Додаємо кнопки керування
   buttons.push(
     [Markup.button.callback('💾 Зберегти', 'save_warnings')],
     [Markup.button.callback('❌ Скасувати', 'cancel_warnings')]
@@ -54,10 +46,8 @@ async function showWarningsKeyboard(ctx: BotContext, state: any) {
   });
 }
 
-// Вхід в сцену
 editExtendedBookInfoScene.enter(async (ctx) => {
   try {
-    // Перевіряємо чи користувач админ
     const adminCheck = await isAdmin(ctx.from!.id);
     if (!adminCheck) {
       await ctx.reply('❌ У вас немає доступу до цієї функції');
@@ -80,7 +70,6 @@ editExtendedBookInfoScene.enter(async (ctx) => {
   }
 });
 
-// Обробка вводу
 editExtendedBookInfoScene.on('message', async (ctx) => {
   try {
     const state = (ctx.scene as any).state;
@@ -91,7 +80,6 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
       return;
     }
 
-    // Крок 1: Очікуємо ID книги
     if (state.step === 'waiting_for_book_id') {
       const bookId = parseInt(message);
 
@@ -130,9 +118,6 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
       return;
     }
 
-
-
-    // Крок 3: Встановлення варнінгів
     if (state.step === 'waiting_for_warnings') {
       let warnings: string[] = [];
 
@@ -155,7 +140,6 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
           .map((w) => w.trim())
           .filter(Boolean);
 
-        // Перевіряємо кожен варнінг
         const invalidWarnings = warnings.filter((w) => !validWarnings.includes(w));
         if (invalidWarnings.length > 0) {
           await ctx.reply(
@@ -168,7 +152,6 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
 
       state.contentWarnings = warnings;
 
-      // Збереження
       await updateBookInfo(state.bookId, 'recommended_age', state.recommendedAge);
       await updateBookInfo(
         state.bookId,
@@ -224,7 +207,6 @@ editExtendedBookInfoScene.on('message', async (ctx) => {
   }
 });
 
-// Кнопка: Редагувати вік
 editExtendedBookInfoScene.action('edit_age', async (ctx) => {
   await ctx.answerCbQuery();
   const state = (ctx.scene as any).state;
@@ -260,12 +242,10 @@ editExtendedBookInfoScene.action('edit_age', async (ctx) => {
   state.step = 'selecting_age';
 });
 
-// Кнопка: Редагувати варнінги
 editExtendedBookInfoScene.action('edit_warnings', async (ctx) => {
   await ctx.answerCbQuery();
   const state = (ctx.scene as any).state;
 
-  // Отримуємо поточні варнінги з бази
   const book = await getBookById(state.bookId);
   state.selectedWarnings = [];
 
@@ -283,14 +263,11 @@ editExtendedBookInfoScene.action('edit_warnings', async (ctx) => {
 
   try {
     await ctx.deleteMessage();
-  } catch (e) {
-    // Ігноруємо помилку видалення
-  }
+  } catch (e) {}
 
   await showWarningsKeyboard(ctx, state);
 });
 
-// Обробники toggle варнінгів
 CONTENT_WARNINGS.forEach((warning) => {
   editExtendedBookInfoScene.action(`toggle_warning_${warning.id}`, async (ctx) => {
     await ctx.answerCbQuery();
@@ -309,15 +286,12 @@ CONTENT_WARNINGS.forEach((warning) => {
 
     try {
       await ctx.deleteMessage();
-    } catch (e) {
-      // Ігноруємо
-    }
+    } catch (e) {}
 
     await showWarningsKeyboard(ctx, state);
   });
 });
 
-// Кнопка: Зберегти варнінги
 editExtendedBookInfoScene.action('save_warnings', async (ctx) => {
   try {
     await ctx.answerCbQuery('Збереження...');
@@ -325,12 +299,9 @@ editExtendedBookInfoScene.action('save_warnings', async (ctx) => {
 
     const warnings = state.selectedWarnings || [];
 
-    // Якщо ми вже встановили вік раніше - зберігаємо все
     if (state.recommendedAge !== undefined) {
-      // Зберігаємо рекомендований вік
       await updateBookInfo(state.bookId, 'recommended_age', state.recommendedAge);
-      
-      // Зберігаємо варнінги
+
       await updateBookInfo(
         state.bookId,
         'content_warnings',
@@ -370,9 +341,7 @@ editExtendedBookInfoScene.action('save_warnings', async (ctx) => {
 
       try {
         await ctx.deleteMessage();
-      } catch (e) {
-        // Ігноруємо
-      }
+      } catch (e) {}
 
       await ctx.reply(successMsg, {
         parse_mode: 'HTML',
@@ -384,7 +353,6 @@ editExtendedBookInfoScene.action('save_warnings', async (ctx) => {
 
       state.step = 'done';
     } else {
-      // Якщо тільки варнінги - просто зберігаємо їх
       await updateBookInfo(
         state.bookId,
         'content_warnings',
@@ -393,9 +361,7 @@ editExtendedBookInfoScene.action('save_warnings', async (ctx) => {
 
       try {
         await ctx.deleteMessage();
-      } catch (e) {
-        // Ігноруємо
-      }
+      } catch (e) {}
 
       await ctx.reply('✅ Варнінги успішно оновлено!', {
         reply_markup: Markup.inlineKeyboard([
@@ -412,16 +378,13 @@ editExtendedBookInfoScene.action('save_warnings', async (ctx) => {
   }
 });
 
-// Кнопка: Скасувати варнінги
 editExtendedBookInfoScene.action('cancel_warnings', async (ctx) => {
   await ctx.answerCbQuery('Скасовано');
   const state = (ctx.scene as any).state;
 
   try {
     await ctx.deleteMessage();
-  } catch (e) {
-    // Ігноруємо
-  }
+  } catch (e) {}
 
   await ctx.reply(
     `✅ Знайшли книгу: <b>${state.book.title}</b>${getBookIdText(state.book.id)}\n` +
@@ -441,7 +404,6 @@ editExtendedBookInfoScene.action('cancel_warnings', async (ctx) => {
   state.step = 'selecting_action';
 });
 
-// Кнопка: Перегляд поточних значень
 editExtendedBookInfoScene.action('view_current', async (ctx) => {
   await ctx.answerCbQuery('Завантаження...');
   const state = (ctx.scene as any).state;
@@ -505,27 +467,23 @@ editExtendedBookInfoScene.action('view_current', async (ctx) => {
   });
 });
 
-// Кнопка: Скасувати
 editExtendedBookInfoScene.action('cancel_edit', async (ctx) => {
   await ctx.answerCbQuery();
   await ctx.reply('❌ Скасовано');
   return ctx.scene?.leave();
 });
 
-// Кнопка: Редагувати іншу книгу
 editExtendedBookInfoScene.action('edit_another', async (ctx) => {
   await ctx.answerCbQuery();
   (ctx.scene as any).state = {};
   return ctx.scene?.reenter();
 });
 
-// Кнопка: Назад до меню
 editExtendedBookInfoScene.action('back_to_menu', async (ctx) => {
   await ctx.answerCbQuery();
   return ctx.scene?.leave();
 });
 
-// Кнопка: Назад до вибору дії
 editExtendedBookInfoScene.action('back_to_selection', async (ctx) => {
   await ctx.answerCbQuery();
   const state = (ctx.scene as any).state;
@@ -547,7 +505,6 @@ editExtendedBookInfoScene.action('back_to_selection', async (ctx) => {
   );
 });
 
-// Обработчики выбора возраста
 const ageOptions = [
   { id: 'set_age_0', age: 0, label: 'Для всіх' },
   { id: 'set_age_6', age: 6, label: '6+' },
@@ -567,9 +524,7 @@ ageOptions.forEach((option) => {
 
     try {
       await ctx.deleteMessage();
-    } catch (e) {
-      // Ігноруємо
-    }
+    } catch (e) {}
 
     await showWarningsKeyboard(ctx, state);
   });

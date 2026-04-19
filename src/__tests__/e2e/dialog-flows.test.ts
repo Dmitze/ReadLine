@@ -1,13 +1,6 @@
-/**
- * E2E Dialog Flows Tests
- * Tests for complete user dialog flows
- */
-
-// Increase timeout for E2E tests
 jest.setTimeout(30000);
 
 describe('User Dialog Flows', () => {
-  // Simulate bot command handlers
   interface BotContext {
     userId: number;
     message: string;
@@ -40,22 +33,19 @@ describe('User Dialog Flows', () => {
     const simulator = new DialogSimulator();
     const ctx = simulator.createContext(12345);
 
-    // User sends /start
     ctx.message = '/start';
 
-    // Bot should reply with greeting
     if (ctx.message === '/start') {
-      await ctx.reply('Welcome to Warrior\'s Library Bot');
+      await ctx.reply("Welcome to Warrior's Library Bot");
     }
 
-    expect(ctx.reply).toHaveBeenCalledWith('Welcome to Warrior\'s Library Bot');
+    expect(ctx.reply).toHaveBeenCalledWith("Welcome to Warrior's Library Bot");
   });
 
   it('should handle book search flow', async () => {
     const simulator = new DialogSimulator();
     const ctx = simulator.createContext(12345);
 
-    // User initiates search
     ctx.message = '/search';
     if (ctx.message === '/search') {
       ctx.state.searchMode = true;
@@ -64,7 +54,6 @@ describe('User Dialog Flows', () => {
 
     expect(ctx.state.searchMode).toBe(true);
 
-    // User provides search query
     ctx.message = 'Harry Potter';
     if (ctx.state.searchMode) {
       const results = [
@@ -82,17 +71,14 @@ describe('User Dialog Flows', () => {
     const simulator = new DialogSimulator();
     const ctx = simulator.createContext(12345);
 
-    // Initialize library
     ctx.state.library = [];
 
-    // User saves a book
     const bookId = 1;
     ctx.state.library.push(bookId);
     await ctx.reply(`Book #${bookId} saved to library`);
 
     expect(ctx.state.library).toContain(bookId);
 
-    // User views library
     await ctx.reply(`Your library has ${ctx.state.library.length} books`);
 
     expect(ctx.reply).toHaveBeenCalledWith('Your library has 1 books');
@@ -102,7 +88,6 @@ describe('User Dialog Flows', () => {
     const simulator = new DialogSimulator();
     const ctx = simulator.createContext(12345);
 
-    // Step 1: Ask for title
     ctx.state.wizardStep = 1;
     ctx.state.book = {};
     await ctx.reply('Step 1: Enter book title');
@@ -111,20 +96,17 @@ describe('User Dialog Flows', () => {
     ctx.state.book.title = ctx.message;
     ctx.state.wizardStep = 2;
 
-    // Step 2: Ask for author
     await ctx.reply('Step 2: Enter author name');
 
     ctx.message = 'F. Scott Fitzgerald';
     ctx.state.book.author = ctx.message;
     ctx.state.wizardStep = 3;
 
-    // Step 3: Ask for genre
     await ctx.reply('Step 3: Select genre');
 
     ctx.message = 'Fiction';
     ctx.state.book.genre = ctx.message;
 
-    // Confirm submission
     await ctx.reply('Book added successfully');
 
     expect(ctx.state.book).toEqual({
@@ -138,7 +120,6 @@ describe('User Dialog Flows', () => {
     const simulator = new DialogSimulator();
     const ctx = simulator.createContext(12345);
 
-    // User inputs invalid data
     ctx.message = 'invalid_command';
 
     if (!ctx.message.startsWith('/')) {
@@ -154,13 +135,11 @@ describe('User Dialog Flows', () => {
     const simulator = new DialogSimulator();
     const ctx = simulator.createContext(12345);
 
-    // Set user preferences
     ctx.state.preferences = {
       genre: 'Fiction',
       language: 'English',
     };
 
-    // Simulate context preservation
     const userId = ctx.userId;
     const savedContext = simulator.getContext(userId);
 
@@ -175,15 +154,12 @@ describe('Concurrent Dialog Flows', () => {
   it('should handle multiple users independently', async () => {
     const users: Map<number, { userId: number; library: number[] }> = new Map();
 
-    // User 1 saves a book
     const user1 = { userId: 111, library: [1, 2, 3] };
     users.set(111, user1);
 
-    // User 2 saves different books
     const user2 = { userId: 222, library: [4, 5] };
     users.set(222, user2);
 
-    // Verify isolation
     expect(users.get(111)!.library).toEqual([1, 2, 3]);
     expect(users.get(222)!.library).toEqual([4, 5]);
     expect(users.get(111)!.library).not.toEqual(users.get(222)!.library);

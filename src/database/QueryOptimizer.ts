@@ -1,10 +1,3 @@
-/**
- * Query Optimizer
- * REFACTOR-012: Database Query Optimization
- *
- * Optimizes database queries, analyzes performance, manages indexes and caching
- */
-
 import { DatabaseWrapper } from './dbWrapper';
 import { MultiLayerCache } from '../cache/MultiLayerCache';
 import { logger } from '../utils/logger';
@@ -32,15 +25,12 @@ export interface QueryPlan {
   };
 }
 
-/**
- * Query Optimizer for performance monitoring and optimization
- */
 export class QueryOptimizer {
   private metrics: QueryMetrics[] = [];
   private indexCache: Map<string, IndexDefinition[]> = new Map();
   private queryCache: MultiLayerCache;
   private readonly maxMetrics = 10000;
-  private readonly slowQueryThreshold = 100; // ms
+  private readonly slowQueryThreshold = 100;
 
   constructor(
     private db: DatabaseWrapper,
@@ -49,17 +39,13 @@ export class QueryOptimizer {
     this.queryCache = cache || new MultiLayerCache();
   }
 
-  /**
-   * Execute query with optimization and caching
-   */
   async executeOptimized<T>(
     query: string,
     params: any[] = [],
     cacheKey?: string,
-    cacheTtl: number = 300000 // 5 minutes
+    cacheTtl: number = 300000
   ): Promise<T[]> {
     try {
-      // Check cache first
       if (cacheKey) {
         const cached = this.queryCache.get<T[]>(cacheKey);
         if (cached) {
@@ -68,20 +54,16 @@ export class QueryOptimizer {
         }
       }
 
-      // Execute query with metrics
       const startTime = Date.now();
       const result = await this.db.all<T>(query, params);
       const executionTime = Date.now() - startTime;
 
-      // Log slow queries
       if (executionTime > this.slowQueryThreshold) {
         logger.warn(`Slow query detected (${executionTime}ms): ${this.sanitizeQuery(query)}`);
       }
 
-      // Record metrics
       this.recordMetric(query, executionTime, result.length);
 
-      // Cache result if key provided
       if (cacheKey) {
         this.queryCache.set(cacheKey, result, cacheTtl);
       }
@@ -96,9 +78,6 @@ export class QueryOptimizer {
     }
   }
 
-  /**
-   * Execute single row query with optimization
-   */
   async getOptimized<T>(
     query: string,
     params: any[] = [],
@@ -106,7 +85,6 @@ export class QueryOptimizer {
     cacheTtl: number = 300000
   ): Promise<T | undefined> {
     try {
-      // Check cache first
       if (cacheKey) {
         const cached = this.queryCache.get<T>(cacheKey);
         if (cached) {
@@ -115,20 +93,16 @@ export class QueryOptimizer {
         }
       }
 
-      // Execute query
       const startTime = Date.now();
       const result = await this.db.get<T>(query, params);
       const executionTime = Date.now() - startTime;
 
-      // Log slow queries
       if (executionTime > this.slowQueryThreshold) {
         logger.warn(`Slow single query (${executionTime}ms): ${this.sanitizeQuery(query)}`);
       }
 
-      // Record metrics
       this.recordMetric(query, executionTime, result ? 1 : 0);
 
-      // Cache result
       if (cacheKey && result) {
         this.queryCache.set(cacheKey, result, cacheTtl);
       }
@@ -143,9 +117,6 @@ export class QueryOptimizer {
     }
   }
 
-  /**
-   * Batch insert with optimization
-   */
   async batchInsert<T extends Record<string, any>>(
     tableName: string,
     rows: T[],
@@ -179,9 +150,6 @@ export class QueryOptimizer {
     }
   }
 
-  /**
-   * Batch update with optimization
-   */
   async batchUpdate<T extends Record<string, any>>(
     tableName: string,
     updates: Array<T & { id: number }>,
@@ -218,9 +186,6 @@ export class QueryOptimizer {
     }
   }
 
-  /**
-   * Create index for faster queries
-   */
   async createIndex(definition: IndexDefinition): Promise<boolean> {
     try {
       const indexName =
@@ -246,9 +211,6 @@ export class QueryOptimizer {
     }
   }
 
-  /**
-   * Get existing indexes for table
-   */
   async getIndexes(tableName: string): Promise<IndexDefinition[]> {
     try {
       if (this.indexCache.has(tableName)) {
@@ -260,7 +222,7 @@ export class QueryOptimizer {
 
       const indexDefs: IndexDefinition[] = indexes.map((idx) => ({
         tableName,
-        columns: [idx.name], // Simplified for SQLite
+        columns: [idx.name],
         unique: idx.unique === 1,
         name: idx.name,
       }));
@@ -276,19 +238,14 @@ export class QueryOptimizer {
     }
   }
 
-  /**
-   * Analyze table for optimization suggestions
-   */
   async analyzeTable(tableName: string): Promise<{
     tableName: string;
     rowCount: number;
     suggestions: string[];
   }> {
     try {
-      // Run ANALYZE
       await this.db.run(`ANALYZE ${tableName}`, []);
 
-      // Get row count
       const countResult = await this.db.get<{ count: number }>(
         `SELECT COUNT(*) as count FROM ${tableName}`,
         []
@@ -297,7 +254,6 @@ export class QueryOptimizer {
 
       const suggestions: string[] = [];
 
-      // Get indexes
       const indexes = await this.getIndexes(tableName);
 
       if (indexes.length === 0 && rowCount > 10000) {
@@ -326,9 +282,6 @@ export class QueryOptimizer {
     }
   }
 
-  /**
-   * Get query execution plan
-   */
   async getQueryPlan(query: string): Promise<QueryPlan> {
     try {
       const plan = await this.db.all<any>(`EXPLAIN QUERY PLAN ${query}`, []);
@@ -351,9 +304,6 @@ export class QueryOptimizer {
     }
   }
 
-  /**
-   * Record query metrics
-   */
   private recordMetric(query: string, executionTime: number, rowsAffected: number): void {
     this.metrics.push({
       query: this.sanitizeQuery(query),
@@ -362,29 +312,19 @@ export class QueryOptimizer {
       timestamp: Date.now(),
     });
 
-    // Keep only recent metrics
     if (this.metrics.length > this.maxMetrics) {
       this.metrics = this.metrics.slice(-this.maxMetrics);
     }
   }
 
-  /**
-   * Get performance metrics
-   */
   getMetrics(limit: number = 100): QueryMetrics[] {
     return this.metrics.slice(-limit);
   }
 
-  /**
-   * Get slow queries
-   */
   getSlowQueries(threshold: number = 100, limit: number = 20): QueryMetrics[] {
     return this.metrics.filter((m) => m.executionTime > threshold).slice(-limit);
   }
 
-  /**
-   * Get most frequent queries
-   */
   getMostFrequentQueries(
     limit: number = 10
   ): Array<{ query: string; count: number; avgTime: number }> {
@@ -411,26 +351,17 @@ export class QueryOptimizer {
     return sorted.slice(0, limit);
   }
 
-  /**
-   * Clear metrics
-   */
   clearMetrics(): void {
     this.metrics = [];
     logger.info('Query metrics cleared');
   }
 
-  /**
-   * Invalidate cache for table
-   */
   invalidateTableCache(tableName: string): void {
     this.queryCache.invalidateByPrefix(tableName);
     logger.debug(`Cache invalidated for table: ${tableName}`);
   }
 
-  /**
-   * Sanitize query for logging (remove sensitive data)
-   */
   private sanitizeQuery(query: string): string {
-    return query.replace(/[?]/g, '*').substring(0, 200); // Limit length
+    return query.replace(/[?]/g, '*').substring(0, 200);
   }
 }

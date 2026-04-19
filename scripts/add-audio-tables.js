@@ -14,12 +14,10 @@ const db = new sqlite3.Database(dbPath, (err) => {
   console.log('✅ Підключено до БД');
 });
 
-// Додаємо поле narrator до books
 const addNarratorField = `
   ALTER TABLE books ADD COLUMN narrator TEXT;
 `;
 
-// Створюємо таблицю audio_chapters
 const createAudioChaptersTable = `
   CREATE TABLE IF NOT EXISTS audio_chapters (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,7 +31,6 @@ const createAudioChaptersTable = `
   );
 `;
 
-// Створюємо таблицю listening_progress
 const createListeningProgressTable = `
   CREATE TABLE IF NOT EXISTS listening_progress (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,16 +47,13 @@ const createListeningProgressTable = `
   );
 `;
 
-// Створюємо індекси для швидкого пошуку
 const createIndexes = [
   'CREATE INDEX IF NOT EXISTS idx_audio_chapters_book_id ON audio_chapters(book_id);',
   'CREATE INDEX IF NOT EXISTS idx_listening_progress_user_book ON listening_progress(user_id, book_id);',
-  'CREATE INDEX IF NOT EXISTS idx_listening_progress_book_id ON listening_progress(book_id);'
+  'CREATE INDEX IF NOT EXISTS idx_listening_progress_book_id ON listening_progress(book_id);',
 ];
 
-// Виконуємо міграцію
 db.serialize(() => {
-  // Створюємо таблицю audio_chapters
   db.run(createAudioChaptersTable, (err) => {
     if (err) {
       console.error('❌ Помилка створення таблиці audio_chapters:', err.message);
@@ -67,8 +61,7 @@ db.serialize(() => {
       console.log('✅ Створено таблицю audio_chapters');
     }
   });
-  
-  // Створюємо таблицю listening_progress
+
   db.run(createListeningProgressTable, (err) => {
     if (err) {
       console.error('❌ Помилка створення таблиці listening_progress:', err.message);
@@ -76,8 +69,7 @@ db.serialize(() => {
       console.log('✅ Створено таблицю listening_progress');
     }
   });
-  
-  // Створюємо індекси
+
   createIndexes.forEach((indexSQL, i) => {
     db.run(indexSQL, (err) => {
       if (err) {
@@ -87,16 +79,15 @@ db.serialize(() => {
       }
     });
   });
-  
-  // Перевіряємо чи існує поле narrator
-  db.all("PRAGMA table_info(books)", (err, columns) => {
+
+  db.all('PRAGMA table_info(books)', (err, columns) => {
     if (err) {
       console.error('❌ Помилка перевірки структури таблиці:', err.message);
       return;
     }
-    
-    const hasNarrator = columns.some(col => col.name === 'narrator');
-    
+
+    const hasNarrator = columns.some((col) => col.name === 'narrator');
+
     if (!hasNarrator) {
       db.run(addNarratorField, (err) => {
         if (err) {
@@ -104,8 +95,7 @@ db.serialize(() => {
         } else {
           console.log('✅ Додано поле narrator до таблиці books');
         }
-        
-        // Закриваємо з'єднання після завершення
+
         closeDatabase();
       });
     } else {
@@ -122,6 +112,6 @@ function closeDatabase() {
       process.exit(1);
     }
     console.log('🎉 Міграція завершена успішно!');
-    console.log('✅ З\'єднання з БД закрито');
+    console.log("✅ З'єднання з БД закрито");
   });
 }

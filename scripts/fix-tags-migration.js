@@ -1,6 +1,3 @@
-// Скрипт для исправления неправильных тегов в базе данных
-// Удаляет теги с пробелами и добавляет правильные однослівні теги
-
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
@@ -9,10 +6,9 @@ const db = new sqlite3.Database(dbPath);
 
 console.log('🏷️ Исправление системы тегов...\n');
 
-// Используем promise-based подход для правильного порядка операций
 const runAsync = (sql, params = []) => {
   return new Promise((resolve, reject) => {
-    db.run(sql, params, function(err) {
+    db.run(sql, params, function (err) {
       if (err) reject(err);
       else resolve({ lastID: this.lastID, changes: this.changes });
     });
@@ -30,9 +26,8 @@ const allAsync = (sql, params = []) => {
 
 (async () => {
   try {
-    // Шаг 1: Создаем таблицы если их еще нет
     console.log('📋 Проверка таблиц...');
-    
+
     await runAsync(`
       CREATE TABLE IF NOT EXISTS tags (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,27 +49,25 @@ const allAsync = (sql, params = []) => {
     `);
     console.log('✅ Таблица book_tags готова\n');
 
-    // Шаг 2: Показываем текущие теги с пробелами
     console.log('📋 Текущие теги с пробелами (неправильные):');
-    const wrongTags = await allAsync('SELECT id, name FROM tags WHERE name LIKE "% %" ORDER BY name');
-    
+    const wrongTags = await allAsync(
+      'SELECT id, name FROM tags WHERE name LIKE "% %" ORDER BY name'
+    );
+
     if (wrongTags && wrongTags.length > 0) {
-      wrongTags.forEach(tag => {
+      wrongTags.forEach((tag) => {
         console.log(`  - "${tag.name}" (id: ${tag.id})`);
       });
     } else {
       console.log('  ✅ Неправильных тегов не найдено!');
     }
 
-    // Шаг 3: Удаляем теги с пробелами
     console.log('\n🗑️ Удаляем неправильные теги с пробелами...');
     const deleteResult = await runAsync('DELETE FROM tags WHERE name LIKE "% %"');
     console.log(`✅ Удалено ${deleteResult.changes} неправильных тегов`);
 
-    // Шаг 4: Добавляем новые правильные теги
     console.log('\n➕ Добавляем новые правильные теги...');
     const baseTags = [
-      // Жанри
       'Класика',
       'Фентезі',
       'Детектив',
@@ -85,44 +78,38 @@ const allAsync = (sql, params = []) => {
       'Жахи',
       'Комедія',
       'Драма',
-      
-      // Спеціалізовані жанри
+
       'Психологія',
       'Філософія',
       'Історія',
       'Наука',
       'Бізнес',
       'Саморозвиток',
-      
-      // Цільова аудиторія
+
       'Діти',
       'Підлітки',
       'Дорослі',
       'Молодь',
-      
-      // Популярність
+
       'Бестселер',
       'Новинка',
       'Рекомендовано',
       'ТОП10',
-      
-      // Стиль
+
       'Простий',
       'Складний',
       'Гумористичний',
       'Драматичний',
       'Романтичний',
-      
-      // Походження
+
       'Українська',
       'Іноземна',
       'Сучасна',
       'Класична',
       'Переклад',
-      
-      // Теми
+
       'Дружба',
-      'Сім\'я',
+      "Сім'я",
       'Кохання',
       'Успіх',
       'Природа',
@@ -131,14 +118,13 @@ const allAsync = (sql, params = []) => {
       'Справедливість',
       'Мужність',
       'Відповідальність',
-      
-      // Інше
+
       'Ілюстрована',
       'Графічний_роман',
       'Поезія',
       'Антологія',
       'Спінофф',
-      'Серія'
+      'Серія',
     ];
 
     let addedCount = 0;
@@ -152,7 +138,6 @@ const allAsync = (sql, params = []) => {
       }
     }
 
-    // Шаг 5: Показываем итоговую статистику
     console.log('\n📊 Статистика тегов:');
     const stats = await allAsync('SELECT COUNT(*) as count FROM tags');
     console.log(`  📌 Всього тегів: ${stats[0].count}`);
@@ -161,7 +146,6 @@ const allAsync = (sql, params = []) => {
     console.log(`  ⚠️  Неправильних тегів: ${wrongStats[0].count}`);
 
     console.log('\n✨ Міграція завершена успішно!');
-    
   } catch (err) {
     console.error('\n❌ Помилка:', err.message);
   } finally {

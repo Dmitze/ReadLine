@@ -1,8 +1,3 @@
-/**
- * Input Validation System
- * REFACTOR-014: Comprehensive Input Validation
- */
-
 export interface ValidationRule {
   field: string;
   rules: string[];
@@ -231,9 +226,6 @@ export class Validator {
     return null;
   }
 
-  /**
-   * Перевірити на підозрілі паттерни
-   */
   private static hasSuspiciousPatterns(value: string): boolean {
     const suspiciousPatterns = [
       /<script[^>]*>.*?<\/script>/gi,
@@ -246,9 +238,6 @@ export class Validator {
     return suspiciousPatterns.some((pattern) => pattern.test(value));
   }
 
-  /**
-   * Санітизувати значення
-   */
   static sanitize(value: unknown, type: string = 'string'): unknown {
     if (value === null || value === undefined) {
       return null;
@@ -294,9 +283,6 @@ export class Validator {
     }
   }
 
-  /**
-   * Валідувати об'єкт по схемі
-   */
   static validateObject(
     data: Record<string, unknown>,
     schema: Record<string, string[]>
@@ -322,9 +308,6 @@ export class Validator {
     };
   }
 
-  /**
-   * Валідувати і санітизувати об'єкт
-   */
   static validateAndSanitize(
     data: Record<string, unknown>,
     schema: Record<string, { rules: string[]; type?: string }>
@@ -359,9 +342,6 @@ export class Validator {
   }
 }
 
-/**
- * Fluent Validation Builder
- */
 export class ValidationBuilder {
   private rules: Record<string, string[]> = {};
 

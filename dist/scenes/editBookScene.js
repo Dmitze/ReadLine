@@ -43,7 +43,7 @@ const editBookScene = new telegraf_1.Scenes.WizardScene('EDIT_BOOK_SCENE', async
     logger_1.logger.info('EditBookScene step 1 entered', {
         bookId: state.bookId,
         hasSceneState: !!ctx.scene.state,
-        userId: ctx.from?.id
+        userId: ctx.from?.id,
     });
     if (!state.bookId) {
         logger_1.logger.error('EditBookScene: bookId not found in state', {
@@ -155,7 +155,8 @@ const editBookScene = new telegraf_1.Scenes.WizardScene('EDIT_BOOK_SCENE', async
         photo: 'фото',
         availability: 'доступність',
     };
-    const fieldName = (state.editingField && fieldNames[state.editingField]) || 'значення';
+    const fieldName = (state.editingField && fieldNames[state.editingField]) ||
+        'значення';
     if (state.editingField === 'availability') {
         await ctx.editMessageReplyMarkup({
             inline_keyboard: [
@@ -169,9 +170,7 @@ const editBookScene = new telegraf_1.Scenes.WizardScene('EDIT_BOOK_SCENE', async
         await ctx.reply('🖼️ Надішліть нове фото обкладинки або натисніть /skip щоб пропустити');
     }
     else if (state.editingField === 'genre') {
-        state.selectedGenres = state.book?.genre
-            ? state.book.genre.split('\n').filter(Boolean)
-            : [];
+        state.selectedGenres = state.book?.genre ? state.book.genre.split('\n').filter(Boolean) : [];
         const selectedGenres = state.selectedGenres || [];
         const popularGenres = genres_1.POPULAR_GENRES;
         const otherGenres = genres_1.OTHER_GENRES;

@@ -128,8 +128,8 @@ addPodcastScene.action('podcast_publish', async (ctx) => {
         await ctx.editMessageText('✅ <b>ПІДКАСТ ОПУБЛІКОВАНО!</b>\n\n' + `🎙️ ${podcast.theme}\n` + `🆔 ID: ${podcastId}`, {
             parse_mode: 'HTML',
             reply_markup: telegraf_1.Markup.inlineKeyboard([
-                [telegraf_1.Markup.button.callback('🔙 Повернутись в адмін-панель', 'back_to_admin')]
-            ]).reply_markup
+                [telegraf_1.Markup.button.callback('🔙 Повернутись в адмін-панель', 'back_to_admin')],
+            ]).reply_markup,
         });
         logger_1.logger.adminAction(ctx.from?.id || 0, 'add_podcast', { podcastId });
         return ctx.scene.leave();
@@ -149,7 +149,7 @@ addPodcastScene.action('podcast_cancel', async (ctx) => {
 addPodcastScene.action('back_to_admin', async (ctx) => {
     await ctx.answerCbQuery('🔙 Повертаємось...');
     await ctx.reply('Виберіть дію:', {
-        reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)()
+        reply_markup: (0, mainKeyboards_1.getMainMenuKeyboard)(),
     });
     return ctx.scene.leave();
 });

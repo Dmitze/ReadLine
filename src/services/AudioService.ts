@@ -1,8 +1,3 @@
-/**
- * Audio Service - Бізнес-логіка для роботи з аудіокнигами
- * REFACTOR-003: Service Layer
- */
-
 import { AudioRepository } from '../repositories/AudioRepository';
 import { BookRepository } from '../repositories/BookRepository';
 import { Result, Ok, Err } from '../core/Result';
@@ -27,9 +22,6 @@ export class AudioService {
     private bookRepository: BookRepository
   ) {}
 
-  /**
-   * Додати аудіоверсію книги
-   */
   async addAudioVersion(input: CreateAudioInput): Promise<Result<number>> {
     try {
       const book = await this.bookRepository.findById(input.book_id);
@@ -59,9 +51,6 @@ export class AudioService {
     }
   }
 
-  /**
-   * Отримати аудіоверсію за ID
-   */
   async getAudioById(audioId: number): Promise<Result<any>> {
     try {
       const audio = await this.audioRepository.findById(audioId);
@@ -74,9 +63,6 @@ export class AudioService {
     }
   }
 
-  /**
-   * Отримати аудіоверсії книги
-   */
   async getBookAudio(bookId: number): Promise<Result<any[]>> {
     try {
       const book = await this.bookRepository.findById(bookId);
@@ -91,9 +77,6 @@ export class AudioService {
     }
   }
 
-  /**
-   * Оновити аудіоверсію
-   */
   async updateAudio(audioId: number, input: UpdateAudioInput): Promise<Result<void>> {
     try {
       const audio = await this.audioRepository.findById(audioId);
@@ -115,9 +98,6 @@ export class AudioService {
     }
   }
 
-  /**
-   * Видалити аудіоверсію
-   */
   async deleteAudio(audioId: number): Promise<Result<void>> {
     try {
       const audio = await this.audioRepository.findById(audioId);
@@ -132,9 +112,6 @@ export class AudioService {
     }
   }
 
-  /**
-   * Отримати аудіо за автором/наратором
-   */
   async getAudioByNarrator(narrator: string): Promise<Result<any[]>> {
     try {
       const audioVersions = await this.audioRepository.findByNarrator(narrator);
@@ -146,9 +123,6 @@ export class AudioService {
     }
   }
 
-  /**
-   * Отримати всі аудіоверсії з якістю
-   */
   async getAudioByQuality(quality: 'low' | 'medium' | 'high'): Promise<Result<any[]>> {
     try {
       const audioVersions = await this.audioRepository.findByQuality(quality);
@@ -160,9 +134,6 @@ export class AudioService {
     }
   }
 
-  /**
-   * Отримати загальну тривалість всіх аудіокниг
-   */
   async getTotalAudioDuration(): Promise<Result<number>> {
     try {
       const allAudio = await this.audioRepository.findAll();
@@ -175,9 +146,6 @@ export class AudioService {
     }
   }
 
-  /**
-   * Отримати статистику аудіокниг
-   */
   async getAudioStats(): Promise<Result<any>> {
     try {
       const allAudio = await this.audioRepository.findAll();

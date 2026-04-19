@@ -1,4 +1,3 @@
-// Admin keyboards
 import { Markup } from 'telegraf';
 
 export const getAdminMenuKeyboard = (pendingReviews: number = 0, pendingFeedback: number = 0) => {
@@ -9,27 +8,22 @@ export const getAdminMenuKeyboard = (pendingReviews: number = 0, pendingFeedback
     pendingFeedback > 0 ? `💬 Повідомлення (${pendingFeedback}) 🔴` : '💬 Повідомлення';
 
   return Markup.inlineKeyboard([
-    // ============ УПРАВЛІННЯ КОНТЕНТОМ ============
     [
       Markup.button.callback('➕ Додати книгу', 'add_book'),
       Markup.button.callback('🎙️ Підкаст', 'add_podcast'),
     ],
     [Markup.button.callback('📚 Редагування', 'manage_books')],
     [Markup.button.callback('✨ Деталі', 'manage_extended_book_info')],
-    
-    // ============ ЗАМОВЛЕННЯ ТА ПРОМОКОДИ ============
+
     [Markup.button.callback('📋 Замовлення', 'admin_orders')],
     [Markup.button.callback('🎁 Промокоди', 'manage_promo_codes')],
-    
-    // ============ МОДЕРАЦІЯ ============
+
     [Markup.button.callback(reviewsButtonText, 'moderate_reviews')],
     [Markup.button.callback(feedbackButtonText, 'view_feedback')],
-    
-    // ============ АНАЛІТИКА ============
+
     [Markup.button.callback('📊 Статистика', 'admin_stats')],
     [Markup.button.callback('📖 Інструкції', 'admin_help')],
-    
-    // ============ СИСТЕМА ============
+
     [Markup.button.callback('🔄 Перезавантажити бота', 'restart_bot')],
   ]).reply_markup;
 };

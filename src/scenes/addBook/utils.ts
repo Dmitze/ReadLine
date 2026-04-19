@@ -4,15 +4,13 @@ import { MemoryCache } from '../../cache/MemoryCache';
 import { RateLimiter } from '../../middleware/RateLimiter';
 import { LIMITS } from '../../constants/limits';
 
-// Прогрес бар для кроків
 export function getProgress(step: number): string {
-  const totalSteps = LIMITS.ADD_BOOK_STEPS_TOTAL; // 8 кроків: назва, автор, жанр, опис, фото, тип, теги, фізична наявність, підтвердження
+  const totalSteps = LIMITS.ADD_BOOK_STEPS_TOTAL;
   const filled = '█'.repeat(step);
   const empty = '░'.repeat(totalSteps - step);
   return `[${filled}${empty}] ${step}/${totalSteps} кроків`;
 }
 
-// Приклади для користувача
 export const examples = {
   title: '💡 Приклад: "Кобзар", "Тіні забутих предків"',
   author: '💡 Приклад: "Тарас Шевченко", "Михайло Коцюбинський"',
@@ -21,7 +19,6 @@ export const examples = {
   link: '💡 Приклад: https://example.com/book.pdf',
 };
 
-// Популярні жанри
 export const popularGenres = [
   'Художня література',
   'Наукова література',
@@ -33,7 +30,6 @@ export const popularGenres = [
   'Біографія',
 ];
 
-// Інші жанри
 export const otherGenres = [
   'Пригоди',
   'Роман',
@@ -53,26 +49,21 @@ export const otherGenres = [
   'Енциклопедія',
 ];
 
-// Логування дій користувача
 export function logUserAction(ctx: BotContext, action: string, data?: Record<string, unknown>) {
   if (ctx.from?.id) {
     logger.userAction(ctx.from.id, action, data);
   }
 }
 
-// Автозбереження стану
 export function autoSaveState(state: WizardState) {
-  // Можна додати логіку збереження в Redis або файл
   logger.debug('State auto-saved', state);
 }
 
-// ✅ Кешовані теги з TTL
-const tagsCache = new MemoryCache(5 * 60 * 1000); // 5 хвилин TTL
+const tagsCache = new MemoryCache(5 * 60 * 1000);
 
-// ✅ Rate limiter для завантаження файлів
 const fileUploadLimiter = new RateLimiter({
-  windowMs: 60000, // 1 хвилина
-  maxRequests: 5, // 5 файлів на хвилину
+  windowMs: 60000,
+  maxRequests: 5,
   keyGenerator: (ctx) => `file_upload:${ctx.from?.id || 'unknown'}`,
 });
 
@@ -83,13 +74,11 @@ export async function getCachedTags(): Promise<Array<{ id: number; name: string 
   });
 }
 
-// ✅ Функція для інвалідації кеша тегів
 export function invalidateTagsCache(): void {
   tagsCache.delete('all_tags');
   logger.debug('Tags cache invalidated');
 }
 
-// Показати вибір формату (без прогрес бару, бо це не окремий крок)
 export async function showFormatSelection(ctx: BotContext, _state: WizardState) {
   const userId = ctx.from?.id;
   if (!userId) {
@@ -113,7 +102,6 @@ export async function showFormatSelection(ctx: BotContext, _state: WizardState) 
   });
 }
 
-// Перейти до тегів
 export async function proceedToTags(ctx: BotContext) {
   const tags = await getCachedTags();
   const userId = ctx.from?.id;
@@ -137,7 +125,6 @@ export async function proceedToTags(ctx: BotContext) {
   });
 }
 
-// Показати попередній перегляд книги
 export async function showBookPreview(ctx: BotContext, state: WizardState) {
   const { getAllTags } = await import('../../database/tagFunctions');
   const { escapeHtml } = await import('../../utils/helpers');
@@ -153,7 +140,7 @@ export async function showBookPreview(ctx: BotContext, state: WizardState) {
     const selectedTags = state.selectedTags || [];
     const tagNames = tags
       .filter((t) => selectedTags.includes(t.id))
-      .map((t) => `#${escapeHtml(t.name)}`)  // ✅ Екрануємо HTML
+      .map((t) => `#${escapeHtml(t.name)}`)
       .join(' ');
 
     const tagsText = tagNames ? `\n🏷️ <b>Теги:</b> ${tagNames}` : '';
@@ -180,7 +167,8 @@ export async function showBookPreview(ctx: BotContext, state: WizardState) {
     // ✅ Екрануємо всі user input від XSS
     const safeTitle = escapeHtml(state.title || 'Невідома назва');
     const safeAuthor = escapeHtml(state.author || 'Невідомий автор');
-    const safeGenres = state.selectedGenres?.map(g => escapeHtml(g)).join(', ') || 'Невідомий жанр';
+    const safeGenres =
+      state.selectedGenres?.map((g) => escapeHtml(g)).join(', ') || 'Невідомий жанр';
     const safeDescription = escapeHtml(state.description || 'Без опису');
 
     const preview =
@@ -215,12 +203,10 @@ export async function showBookPreview(ctx: BotContext, state: WizardState) {
   }
 }
 
-// Обробка завантаження файлів
 export async function handleFileUpload(
   ctx: BotContext,
   uploadCallback: () => Promise<void>
 ): Promise<boolean> {
-  // ✅ Перевірка rate limiting для завантаження файлів
   const { allowed } = await fileUploadLimiter.check(ctx);
   if (!allowed) {
     await ctx.reply('❌ Занадто багато завантажень файлів. Зачекайте хвилину та спробуйте ще раз.');

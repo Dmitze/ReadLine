@@ -1,10 +1,3 @@
-/**
- * Middleware barrel export
- * REFACTOR-013: Rate Limiting
- * REFACTOR-015: CORS + Security Headers
- */
-
-// REFACTOR-013: Rate Limiting Middleware
 export {
   RateLimiter,
   PerUserRateLimiter,
@@ -19,7 +12,6 @@ export {
   type RateLimitStats,
 } from './RateLimiter';
 
-// REFACTOR-015: CORS + Security Headers
 export {
   securityHeadersMiddleware,
   corsMiddleware,

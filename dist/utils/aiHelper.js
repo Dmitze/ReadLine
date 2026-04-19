@@ -245,35 +245,24 @@ function checkAiRateLimitPerUser(userId) {
     aiRequestsByUser.set(userId, recent);
     return true;
 }
-async function askAI(question, userId) {
-    const { LIMITS } = await Promise.resolve().then(() => __importStar(require('../constants/limits')));
-    if (userId && !checkAiRateLimitPerUser(userId)) {
-        throw new Error(`Занадто багато запитів до AI. Ліміт: ${AI_RATE_LIMIT} запитів за хвилину. Спробуйте через хвилину.`);
-    }
-    const apiKey = process.env.GEMINI_API_KEY;
-    const model = process.env.GEMINI_MODEL || 'gemini-flash-latest';
-    if (!apiKey) {
-        throw new Error('GEMINI_API_KEY не налаштований');
-    }
+async function callGeminiAPI(apiKey, model, question, timeoutMs) {
+    const apiBaseUrl = process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta';
+    const url = `${apiBaseUrl}/models/${model}:generateContent?key=${apiKey}`;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     try {
-        const apiBaseUrl = process.env.GEMINI_API_URL || 'https://generativelanguage.googleapis.com/v1beta';
-        const url = `${apiBaseUrl}/models/${model}:generateContent?key=${apiKey}`;
-        const controller = new AbortController();
-        const timeoutMs = LIMITS.AI_REQUEST_TIMEOUT;
-        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-        const response = await Promise.race([
-            fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                signal: controller.signal,
-                body: JSON.stringify({
-                    contents: [
-                        {
-                            parts: [
-                                {
-                                    text: `Ти - помічник бібліотеки Warrior's Library. Відповідай українською мовою на будь-які питання користувача. Ти можеш:
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            signal: controller.signal,
+            body: JSON.stringify({
+                contents: [
+                    {
+                        parts: [
+                            {
+                                text: `Ти - помічник бібліотеки Warrior's Library. Відповідай українською мовою на будь-які питання користувача. Ти можеш:
 - Рекомендувати книги (наприклад "дай топ 10 фантастичних книг")
 - Розповідати про авторів (наприклад "хто такий Гоголь")
 - Відповідати на загальні питання про літературу
@@ -281,61 +270,169 @@ async function askAI(question, userId) {
 - Обговорювати жанри та стилі
 
 Відповідай детально та корисно. Питання користувача: ${question}`,
-                                },
-                            ],
-                        },
-                    ],
-                    generationConfig: {
-                        temperature: 0.9,
-                        maxOutputTokens: 2000,
+                            },
+                        ],
                     },
-                }),
+                ],
+                generationConfig: {
+                    temperature: 0.9,
+                    maxOutputTokens: 2000,
+                },
             }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('AI request timeout')), timeoutMs)),
-        ]);
+        });
         clearTimeout(timeoutId);
         if (!response.ok) {
             const errorText = await response.text();
-            logger_1.logger.error('Gemini API error response', new Error(errorText));
-            throw new Error(`Gemini API помилка: ${response.status} - ${errorText}`);
+            throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
         }
         const data = (await response.json());
-        if (!data) {
-            throw new Error('Порожня відповідь від Gemini API');
+        if (!data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+            typeof data.candidates[0].content.parts[0].text !== 'string') {
+            throw new Error('Invalid response structure from Gemini API');
         }
-        if (!data.candidates || !Array.isArray(data.candidates) || data.candidates.length === 0) {
-            throw new Error('Відсутні candidates у відповіді Gemini API');
-        }
-        const candidate = data.candidates[0];
-        if (!candidate || !candidate.content) {
-            throw new Error('Відсутній content у candidate');
-        }
-        if (!candidate.content.parts ||
-            !Array.isArray(candidate.content.parts) ||
-            candidate.content.parts.length === 0) {
-            throw new Error('Відсутні parts у content');
-        }
-        const text = candidate.content.parts[0]?.text;
-        if (!text || typeof text !== 'string') {
-            throw new Error('Відсутній text у parts');
-        }
-        return text;
+        return {
+            text: data.candidates[0].content.parts[0].text,
+            model: model,
+        };
     }
     catch (error) {
-        logger_1.logger.error('Gemini API error', error instanceof Error ? error : new Error(String(error)));
-        const { AI_MESSAGES } = await Promise.resolve().then(() => __importStar(require('../constants')));
-        const lowerQuestion = question.toLowerCase();
-        if (lowerQuestion.includes('рекоменд') || lowerQuestion.includes('пораді')) {
-            return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[0];
-        }
-        if (lowerQuestion.includes('жанр') || lowerQuestion.includes('що читати')) {
-            return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[1];
-        }
-        if (lowerQuestion.includes('автор')) {
-            return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[2];
-        }
-        return AI_MESSAGES.FALLBACK_RECOMMENDATIONS[3];
+        clearTimeout(timeoutId);
+        throw error;
     }
+}
+async function callGroqAPI(apiKey, model, question, timeoutMs) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                'Content-Type': 'application/json',
+            },
+            signal: controller.signal,
+            body: JSON.stringify({
+                model,
+                messages: [
+                    {
+                        role: 'system',
+                        content: "Ти - помічник бібліотеки Warrior's Library. Відповідай українською мовою на будь-які питання користувача.",
+                    },
+                    {
+                        role: 'user',
+                        content: question,
+                    },
+                ],
+                temperature: 0.7,
+                max_tokens: 2000,
+            }),
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Groq API error: ${response.status} - ${errorText}`);
+        }
+        const data = (await response.json());
+        if (!data?.choices?.[0]?.message?.content) {
+            throw new Error('Invalid response structure from Groq API');
+        }
+        return {
+            text: data.choices[0].message.content,
+            model: model,
+        };
+    }
+    catch (error) {
+        clearTimeout(timeoutId);
+        throw error;
+    }
+}
+async function askAI(question, userId) {
+    const { LIMITS } = await Promise.resolve().then(() => __importStar(require('../constants/limits')));
+    if (userId && !checkAiRateLimitPerUser(userId)) {
+        throw new Error(`Занадто багато запитів до AI. Ліміт: ${AI_RATE_LIMIT} запитів за хвилину. Спробуйте через хвилину.`);
+    }
+    const apiKeys = [
+        process.env.GEMINI_API_KEY,
+        ...(process.env.GEMINI_FALLBACK_KEYS ? process.env.GEMINI_FALLBACK_KEYS.split(',') : []),
+    ].filter(Boolean);
+    const model = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+    if (apiKeys.length === 0) {
+        throw new Error('Жоден GEMINI_API_KEY не налаштований');
+    }
+    let lastError = null;
+    for (let i = 0; i < apiKeys.length; i++) {
+        const currentKey = apiKeys[i].trim();
+        try {
+            logger_1.logger.info(`Спроба AI запиту з ключем #${i + 1}...`);
+            const result = await callGeminiAPI(currentKey, model, question, LIMITS.AI_REQUEST_TIMEOUT);
+            return {
+                ...result,
+                provider: 'Gemini',
+            };
+        }
+        catch (error) {
+            lastError = error;
+            const isLastKey = i === apiKeys.length - 1;
+            if (error.message?.includes('503') || error.message?.includes('429')) {
+                logger_1.logger.warn(`Ключ #${i + 1} перевантажений, спроба наступного...`);
+                continue;
+            }
+            if (error.message?.includes('403') || error.message?.includes('401')) {
+                logger_1.logger.error(`Ключ #${i + 1} недійсний або заблокований!`);
+                continue;
+            }
+            if (error.name === 'AbortError' || error.message?.includes('timeout')) {
+                logger_1.logger.warn(`Ключ #${i + 1} відхилено по тайм-ауту, спроба наступного...`);
+                continue;
+            }
+            if (isLastKey)
+                break;
+        }
+    }
+    const groqKey = process.env.GROQ_API_KEY;
+    const groqModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    if (groqKey) {
+        try {
+            logger_1.logger.info('Спроба AI запиту через Groq (fallback)...');
+            const result = await callGroqAPI(groqKey, groqModel, question, LIMITS.AI_REQUEST_TIMEOUT);
+            return {
+                ...result,
+                provider: 'Groq',
+            };
+        }
+        catch (error) {
+            logger_1.logger.error('Groq API error', error instanceof Error ? error : new Error(String(error)));
+            lastError = error;
+        }
+    }
+    const error = lastError || new Error('All AI keys failed');
+    const lowerQuestion = question.toLowerCase();
+    let fallbackText = '';
+    if (error.message?.includes('503')) {
+        fallbackText = `Зараз на серверах Google Gemini велика кількість запитів. Спробуйте, будь ласка, ще раз через кілька хвилин.`;
+    }
+    else {
+        const commonPersonalities = [
+            'шевченко',
+            'франко',
+            'українка',
+            'грушевський',
+            'сковорода',
+            'котляревський',
+        ];
+        if (commonPersonalities.some((p) => lowerQuestion.includes(p))) {
+            fallbackText = `Це видатна постать української культури. На жаль, зараз у мене тимчасові технічні труднощі з доступом до бази знань AI, але ви можете знайти книги про цю особу в нашому каталозі за допомогою пошуку.`;
+        }
+        else {
+            const { AI_MESSAGES } = await Promise.resolve().then(() => __importStar(require('../constants')));
+            fallbackText = AI_MESSAGES.FALLBACK_RECOMMENDATIONS[3];
+        }
+    }
+    return {
+        text: fallbackText,
+        model: 'Local Fallback',
+        provider: 'Fallback',
+    };
 }
 async function getBookRecommendations(_userPreferences) {
     return [];
@@ -348,12 +445,13 @@ async function rerankBooksWithAI(query, candidates) {
         return candidates;
     }
     try {
-        const rankingPrompt = `Given the search query "${query}", rank these books by relevance. Return only a JSON array of book IDs in the preferred order: [${candidates.map(b => b.id).join(',')}]`;
+        const rankingPrompt = `Given the search query "${query}", rank these books by relevance. Return only a JSON array of book IDs in the preferred order: [${candidates.map((b) => b.id).join(',')}]`;
         const aiResponse = await askAI(rankingPrompt);
+        const text = aiResponse.text;
         try {
-            const parsed = JSON.parse(aiResponse);
+            const parsed = JSON.parse(text);
             if (Array.isArray(parsed) && parsed.length > 0) {
-                const idToBook = new Map(candidates.map(book => [book.id, book]));
+                const idToBook = new Map(candidates.map((book) => [book.id, book]));
                 const reordered = [];
                 for (const id of parsed) {
                     const book = idToBook.get(id);
@@ -367,57 +465,66 @@ async function rerankBooksWithAI(query, candidates) {
             }
         }
         catch (parseError) {
-            logger_1.logger.warn('Failed to parse AI ranking response', { error: parseError instanceof Error ? parseError.message : String(parseError) });
+            logger_1.logger.warn('Failed to parse AI ranking response', {
+                error: parseError instanceof Error ? parseError.message : String(parseError),
+            });
         }
         return candidates;
     }
     catch (error) {
-        logger_1.logger.warn('AI reranking failed, using original order', { error: error instanceof Error ? error.message : String(error) });
+        logger_1.logger.warn('AI reranking failed, using original order', {
+            error: error instanceof Error ? error.message : String(error),
+        });
         return candidates;
     }
 }
 async function expandQueryWithAI(query) {
     const lowerQuery = query.toLowerCase();
-    const baseTerms = lowerQuery.split(/\s+/).filter(term => term.length > 0);
+    const baseTerms = lowerQuery.split(/\s+/).filter((term) => term.length > 0);
     if (!isAIEnabled()) {
         return Array.from(new Set([lowerQuery, ...expandQueryBasic(query)]));
     }
     try {
         const expansionPrompt = `Given the search query "${query}", suggest related search terms, synonyms, and alternative phrasings in Ukrainian. Return only a comma-separated list of terms.`;
         const aiResponse = await askAI(expansionPrompt);
-        const aiTerms = aiResponse
+        const aiTerms = aiResponse.text
             .split(',')
-            .map(term => term.trim().toLowerCase())
-            .filter(term => term.length > 0);
+            .map((term) => term.trim().toLowerCase())
+            .filter((term) => term.length > 0);
         const termSet = new Set([lowerQuery, ...baseTerms, ...aiTerms]);
         return Array.from(termSet);
     }
     catch (error) {
-        logger_1.logger.warn('AI query expansion failed, using basic expansion', { error: error instanceof Error ? error.message : String(error) });
+        logger_1.logger.warn('AI query expansion failed, using basic expansion', {
+            error: error instanceof Error ? error.message : String(error),
+        });
         return Array.from(new Set([lowerQuery, ...expandQueryBasic(query)]));
     }
 }
 function expandQueryBasic(query) {
-    const terms = query.toLowerCase().split(/\s+/).filter(term => term.length > 0);
+    const terms = query
+        .toLowerCase()
+        .split(/\s+/)
+        .filter((term) => term.length > 0);
     const expansions = {
-        'sci': ['наукова', 'технології', 'інновації'],
-        'fi': ['фантастика', 'майбутнє', 'космос'],
-        'любов': ['романтика', 'кохання', 'відносини'],
-        'кохання': ['романтика', 'любов', 'відносини'],
-        'романтик': ['романтика', 'любов', 'відносини'],
-        'детектив': ['кримінал', 'розслідування', 'таємниця'],
-        'фантастика': ['sci-fi', 'майбутнє', 'космос', 'технології'],
-        'жахи': ['хорор', 'страх', 'напруга'],
-        'історія': ['минуле', 'історичний', 'епоха'],
-        'романтика': ['любов', 'відносини', 'кохання'],
-        'пригоди': ['подорожі', 'екшн', 'ризико'],
-        'класика': ['література', 'традиція', 'майстри'],
+        sci: ['наукова', 'технології', 'інновації'],
+        fi: ['фантастика', 'майбутнє', 'космос'],
+        любов: ['романтика', 'кохання', 'відносини'],
+        кохання: ['романтика', 'любов', 'відносини'],
+        романтик: ['романтика', 'любов', 'відносини'],
+        детектив: ['кримінал', 'розслідування', 'таємниця'],
+        фантастика: ['sci-fi', 'майбутнє', 'космос', 'технології'],
+        жахи: ['хорор', 'страх', 'напруга'],
+        історія: ['минуле', 'історичний', 'епоха'],
+        романтика: ['любов', 'відносини', 'кохання'],
+        пригоди: ['подорожі', 'екшн', 'ризико'],
+        класика: ['література', 'традиція', 'майстри'],
     };
     const expanded = new Set(terms);
     for (const term of terms) {
         const related = expansions[term];
         if (related) {
-            related.forEach(r => expanded.add(r));
+            related.forEach((r) => expanded.add(r));
         }
     }
     return Array.from(expanded);
@@ -436,7 +543,7 @@ if (typeof global !== 'undefined' && !cleanupInterval) {
                 aiRequestsByUser.set(userId, recent);
             }
         });
-        toDelete.forEach(userId => aiRequestsByUser.delete(userId));
+        toDelete.forEach((userId) => aiRequestsByUser.delete(userId));
         if (toDelete.length > 0) {
             logger_1.logger.debug('AI rate limiter cleanup', { removedUsers: toDelete.length });
         }

@@ -189,7 +189,9 @@ function registerProfileHandlers(bot) {
             await ctx.reply(ordersText, {
                 parse_mode: 'HTML',
                 reply_markup: {
-                    inline_keyboard: [[{ text: '⬅️ Назад до профілю', callback_data: 'back_to_profile_from_orders' }]],
+                    inline_keyboard: [
+                        [{ text: '⬅️ Назад до профілю', callback_data: 'back_to_profile_from_orders' }],
+                    ],
                 },
             });
             logger_1.logger.userAction(userId, 'view_my_orders', { ordersCount: orders.length });

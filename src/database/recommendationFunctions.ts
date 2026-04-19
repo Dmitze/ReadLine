@@ -1,14 +1,8 @@
-/**
- * Recommendation and personalization functions
- */
-
 import { db, Book, getTopBooks } from './models';
 import { logger } from '../utils/logger';
 
-// Get random book - ВИПРАВЛЕНО
 export const getRandomBook = (): Promise<Book | null> => {
   return new Promise((resolve, reject) => {
-    // ✅ ВИПРАВЛЕНО #37: один запит замість двох
     logger.debug('Getting random book');
 
     db.get(
@@ -36,7 +30,6 @@ export const getRandomBook = (): Promise<Book | null> => {
   });
 };
 
-// Get recently viewed books (based on saved books)
 export const getRecentlyViewedBooks = (userId: number, limit: number = 5): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -54,7 +47,6 @@ export const getRecentlyViewedBooks = (userId: number, limit: number = 5): Promi
   });
 };
 
-// Get user's favorite genres (based on saved books)
 export const getUserFavoriteGenres = (userId: number, limit: number = 3): Promise<string[]> => {
   return new Promise((resolve, reject) => {
     db.all(
@@ -74,7 +66,6 @@ export const getUserFavoriteGenres = (userId: number, limit: number = 3): Promis
   });
 };
 
-// Get recommended books based on user's favorite genres
 export const getRecommendedBooks = (userId: number, limit: number = 5): Promise<Book[]> => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -107,11 +98,6 @@ export const getRecommendedBooks = (userId: number, limit: number = 5): Promise<
   });
 };
 
-/**
- * Advanced recommendation functions based on user behavior
- */
-
-// Get user's reading statistics
 export const getUserReadingStats = (
   userId: number
 ): Promise<{
@@ -121,7 +107,6 @@ export const getUserReadingStats = (
 }> => {
   return new Promise(async (resolve, reject) => {
     try {
-      // Count saved books
       const savedCount = await new Promise<number>((res, rej) => {
         db.get(
           'SELECT COUNT(*) as count FROM saved_books WHERE user_id = ?',
@@ -133,7 +118,6 @@ export const getUserReadingStats = (
         );
       });
 
-      // Count reviews
       const reviewsCount = await new Promise<number>((res, rej) => {
         db.get(
           'SELECT COUNT(*) as count FROM reviews WHERE user_id = ?',
@@ -145,7 +129,6 @@ export const getUserReadingStats = (
         );
       });
 
-      // Get favorite genres
       const favoriteGenres = await getUserFavoriteGenres(userId, 5);
 
       resolve({ savedCount, reviewsCount, favoriteGenres });
@@ -155,11 +138,8 @@ export const getUserReadingStats = (
   });
 };
 
-// Get books based on user behavior (saved + highly rated)
-// ✅ ВИПРАВЛЕНО: Улучшена логика для новых пользователей без сохраненных книг
 export const getBooksBasedOnBehavior = (userId: number, limit: number = 10): Promise<Book[]> => {
   return new Promise((resolve, reject) => {
-    // Спочатку спробуємо отримати книги за жанрами які користувач вже зберіг
     db.all(
       `SELECT b.*, 
               (SELECT COUNT(*) FROM saved_books WHERE book_id = b.id) as save_count,
@@ -182,11 +162,9 @@ export const getBooksBasedOnBehavior = (userId: number, limit: number = 10): Pro
           return;
         }
 
-        // Якщо знайшли достатньо - повертаємо
         if (rows && rows.length > 0) {
           resolve(rows);
         } else {
-          // Якщо користувач новий або немає збережених книг - повертаємо топ книги
           db.all(
             `SELECT b.*, 
                     (SELECT COUNT(*) FROM saved_books WHERE book_id = b.id) as save_count,
@@ -208,7 +186,6 @@ export const getBooksBasedOnBehavior = (userId: number, limit: number = 10): Pro
   });
 };
 
-// Collaborative filtering - find similar users and their books
 export const getCollaborativeRecommendations = (
   userId: number,
   limit: number = 10
@@ -243,7 +220,6 @@ export const getCollaborativeRecommendations = (
   });
 };
 
-// Get contextual recommendations based on time of day
 export const getContextualRecommendations = (
   userId: number,
   limit: number = 5
@@ -253,20 +229,13 @@ export const getContextualRecommendations = (
     const { TIME_OF_DAY } = await import('../constants');
     let genrePreference: string[] = [];
 
-    // Morning (6-12): Motivational, Business, Self-help
     if (hour >= TIME_OF_DAY.MORNING_START && hour < TIME_OF_DAY.AFTERNOON_START) {
       genrePreference = ['Мотиваційна', 'Бізнес', 'Саморозвиток', 'Наукова'];
-    }
-    // Afternoon (12-18): Any genre
-    else if (hour >= TIME_OF_DAY.AFTERNOON_START && hour < TIME_OF_DAY.EVENING_START) {
+    } else if (hour >= TIME_OF_DAY.AFTERNOON_START && hour < TIME_OF_DAY.EVENING_START) {
       genrePreference = ['Історична', 'Біографія', 'Пригоди', 'Детектив'];
-    }
-    // Evening (18-22): Light reading, Fiction
-    else if (hour >= TIME_OF_DAY.EVENING_START && hour < TIME_OF_DAY.NIGHT_START) {
+    } else if (hour >= TIME_OF_DAY.EVENING_START && hour < TIME_OF_DAY.NIGHT_START) {
       genrePreference = ['Романтика', 'Комедія', 'Фентезі', 'Сучасна проза'];
-    }
-    // Night (22-6): Calm, relaxing books
-    else {
+    } else {
       genrePreference = ['Поезія', 'Філософія', 'Класична література'];
     }
 
@@ -290,7 +259,6 @@ export const getContextualRecommendations = (
   })();
 };
 
-// Get smart recommendations combining all methods
 export const getSmartRecommendations = async (
   userId: number,
   limit: number = 10
@@ -299,13 +267,10 @@ export const getSmartRecommendations = async (
     const allRecommendations: Book[] = [];
     const seenIds = new Set<number>();
 
-    // Розраховуємо точний розподіл книг для запиту
-    // 40% - Behavior, 30% - Collaborative, 30% - Contextual
     const behaviorCount = Math.ceil(limit * 0.4);
     const collaborativeCount = Math.ceil(limit * 0.3);
-    const contextualCount = limit - behaviorCount - collaborativeCount; // Решта
+    const contextualCount = limit - behaviorCount - collaborativeCount;
 
-    // 1. Get behavior-based recommendations (40%)
     const behaviorBooks = await getBooksBasedOnBehavior(userId, behaviorCount);
     for (const book of behaviorBooks) {
       if (!seenIds.has(book.id!)) {
@@ -314,7 +279,6 @@ export const getSmartRecommendations = async (
       }
     }
 
-    // 2. Get collaborative recommendations (30%)
     const collaborativeBooks = await getCollaborativeRecommendations(userId, collaborativeCount);
     for (const book of collaborativeBooks) {
       if (!seenIds.has(book.id!)) {
@@ -323,7 +287,6 @@ export const getSmartRecommendations = async (
       }
     }
 
-    // 3. Get contextual recommendations (30%)
     const contextualBooks = await getContextualRecommendations(userId, contextualCount);
     for (const book of contextualBooks) {
       if (!seenIds.has(book.id!)) {
@@ -332,7 +295,6 @@ export const getSmartRecommendations = async (
       }
     }
 
-    // If not enough, fill with top books
     if (allRecommendations.length < limit) {
       const topBooks = await getTopBooks(limit - allRecommendations.length);
       for (const book of topBooks) {
@@ -343,7 +305,6 @@ export const getSmartRecommendations = async (
       }
     }
 
-    // Якщо все ще не вистачає - додаємо свіжі книги
     if (allRecommendations.length < limit) {
       const newestBooks = await new Promise<Book[]>((resolve, reject) => {
         db.all(
@@ -374,7 +335,7 @@ export const getSmartRecommendations = async (
       'Error getting smart recommendations',
       error instanceof Error ? error : new Error(String(error))
     );
-    // Fallback to simple recommendations
+
     return getRecommendedBooks(userId, limit);
   }
 };

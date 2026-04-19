@@ -1,15 +1,7 @@
-/**
- * Admins Table Operations
- * REFACTOR-009: Split models.ts - Admins module
- */
-
 import { db } from './db';
 import { Admin, AdminStats, ExtendedAdminStats } from './types';
 import { logger } from '../../utils/logger';
 
-/**
- * Add admin
- */
 export const addAdmin = (userId: number, username?: string): Promise<number> => {
   return new Promise((resolve, reject) => {
     const query = 'INSERT INTO admins (user_id, username) VALUES (?, ?)';
@@ -26,9 +18,6 @@ export const addAdmin = (userId: number, username?: string): Promise<number> => 
   });
 };
 
-/**
- * Check if user is admin
- */
 export const isAdmin = (userId: number): Promise<boolean> => {
   return new Promise((resolve, reject) => {
     const query = 'SELECT COUNT(*) as count FROM admins WHERE user_id = ?';
@@ -44,9 +33,6 @@ export const isAdmin = (userId: number): Promise<boolean> => {
   });
 };
 
-/**
- * Get all admins
- */
 export const getAllAdmins = (): Promise<Admin[]> => {
   return new Promise((resolve, reject) => {
     const query = 'SELECT * FROM admins ORDER BY created_at DESC';
@@ -62,9 +48,6 @@ export const getAllAdmins = (): Promise<Admin[]> => {
   });
 };
 
-/**
- * Get basic admin stats
- */
 export const getAdminStats = (): Promise<AdminStats> => {
   return new Promise((resolve, reject) => {
     const query = 'SELECT COUNT(*) as totalBooks FROM books';
@@ -80,9 +63,6 @@ export const getAdminStats = (): Promise<AdminStats> => {
   });
 };
 
-/**
- * Get extended admin stats
- */
 export const getExtendedAdminStats = (): Promise<ExtendedAdminStats> => {
   return new Promise((resolve, reject) => {
     const queries = {
@@ -177,9 +157,6 @@ export const getExtendedAdminStats = (): Promise<ExtendedAdminStats> => {
   });
 };
 
-/**
- * Remove admin
- */
 export const removeAdmin = (userId: number): Promise<number> => {
   return new Promise((resolve, reject) => {
     const query = 'DELETE FROM admins WHERE user_id = ?';

@@ -94,7 +94,11 @@ profileScene.action('show_personal_collection', async (ctx) => {
         const caption = `📖 <b>${(0, helpers_1.escapeHtml)(book.title)}</b>\n👤 ${(0, helpers_1.escapeHtml)(book.author || '')}\n📚 ${(0, helpers_1.escapeHtml)(book.genre || '')}`;
         const replyMarkup = (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, false);
         if (book.photo_url) {
-            await ctx.replyWithPhoto(book.photo_url, { caption, parse_mode: 'HTML', reply_markup: replyMarkup });
+            await ctx.replyWithPhoto(book.photo_url, {
+                caption,
+                parse_mode: 'HTML',
+                reply_markup: replyMarkup,
+            });
         }
         else {
             await ctx.reply(caption, { parse_mode: 'HTML', reply_markup: replyMarkup });

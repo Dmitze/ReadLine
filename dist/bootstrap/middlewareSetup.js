@@ -4,6 +4,7 @@ exports.setupMiddleware = setupMiddleware;
 const logger_1 = require("../utils/logger");
 const rateLimit_1 = require("../middleware/rateLimit");
 const mainKeyboards_1 = require("../keyboards/mainKeyboards");
+const constants_1 = require("../constants");
 function setupMiddleware(bot) {
     bot.use(async (ctx, next) => {
         logger_1.logger.info('Processing update', { updateId: ctx.update.update_id });
@@ -37,7 +38,7 @@ function setupMiddleware(bot) {
             if (text === '/cancel') {
                 if (ctx.scene) {
                     await ctx.scene.leave();
-                    await ctx.reply('❌ Дію скасовано. Ви повернулися в головне меню.');
+                    await ctx.reply(constants_1.UX.cancelStep);
                     return;
                 }
             }

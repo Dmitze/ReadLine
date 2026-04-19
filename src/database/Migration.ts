@@ -1,8 +1,3 @@
-/**
- * Database Migration System
- * Manages versioning and execution of database schema migrations
- */
-
 import { Database, DatabaseWrapper } from './dbWrapper';
 import { logger } from '../utils/logger';
 
@@ -30,23 +25,14 @@ export class MigrationRunner {
     this.db = db instanceof DatabaseWrapper ? db : new DatabaseWrapper(db);
   }
 
-  /**
-   * Register a migration
-   */
   register(migration: IMigration): void {
     this.migrations.set(migration.version, migration);
   }
 
-  /**
-   * Register multiple migrations at once
-   */
   registerAll(...migrations: IMigration[]): void {
     migrations.forEach((m) => this.register(m));
   }
 
-  /**
-   * Initialize migrations table
-   */
   async initialize(): Promise<void> {
     const sql = `
       CREATE TABLE IF NOT EXISTS ${this.tableName} (
@@ -70,26 +56,17 @@ export class MigrationRunner {
     }
   }
 
-  /**
-   * Get executed migrations
-   */
   async getExecuted(): Promise<MigrationRecord[]> {
     const sql = `SELECT * FROM ${this.tableName} ORDER BY version`;
     return (await this.db.all(sql)) as MigrationRecord[];
   }
 
-  /**
-   * Check if migration is executed
-   */
   async isExecuted(version: string): Promise<boolean> {
     const sql = `SELECT 1 FROM ${this.tableName} WHERE version = ?`;
     const result = await this.db.get(sql, [version]);
     return !!result;
   }
 
-  /**
-   * Run pending migrations
-   */
   async runPending(): Promise<{ version: string; name: string; duration: number }[]> {
     await this.initialize();
 
@@ -129,9 +106,6 @@ export class MigrationRunner {
     return results;
   }
 
-  /**
-   * Rollback to specific version
-   */
   async rollback(targetVersion?: string): Promise<{ version: string; name: string }[]> {
     await this.initialize();
 
@@ -142,7 +116,6 @@ export class MigrationRunner {
 
     const rolledBack = [];
 
-    // Rollback in reverse order
     for (let i = toRollback.length - 1; i >= 0; i--) {
       const record = toRollback[i];
       const migration = this.migrations.get(record.version);
@@ -177,9 +150,6 @@ export class MigrationRunner {
     return rolledBack;
   }
 
-  /**
-   * Get migration status
-   */
   async getStatus(): Promise<{
     executed: string[];
     pending: string[];
@@ -195,9 +165,6 @@ export class MigrationRunner {
     };
   }
 
-  /**
-   * Reset database (rollback all migrations)
-   */
   async reset(): Promise<void> {
     logger.info('\n⚠️  Resetting database - rolling back all migrations...');
     const executed = await this.getExecuted();
@@ -225,9 +192,6 @@ export class MigrationRunner {
   }
 }
 
-/**
- * Create migrations table if not exists
- */
 export async function initializeMigrations(db: Database): Promise<MigrationRunner> {
   const runner = new MigrationRunner(db);
   await runner.initialize();

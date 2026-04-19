@@ -1,10 +1,3 @@
-/**
- * Optimized Book Repository
- * REFACTOR-012: Database Query Optimization
- *
- * High-performance book repository with caching, indexes, and batch operations
- */
-
 import { DatabaseWrapper } from '../database/dbWrapper';
 import { OptimizedRepository, PaginatedResult } from './OptimizedRepository';
 import { QueryOptimizer } from '../database/QueryOptimizer';
@@ -16,9 +9,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     super(db, 'books', optimizer);
   }
 
-  /**
-   * Initialize indexes for books table
-   */
   async initializeIndexes(): Promise<void> {
     try {
       await this.queryOptimizer.createIndex({
@@ -66,9 +56,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     }
   }
 
-  /**
-   * Create book with optimization
-   */
   async create(book: Omit<Book, 'id' | 'created_at'>): Promise<number> {
     try {
       const {
@@ -104,7 +91,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
         file_name || null,
       ]);
 
-      // Invalidate relevant caches
       this.queryOptimizer.invalidateTableCache('books');
 
       logger.info(`Book created: ${title}`, { bookId });
@@ -118,9 +104,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     }
   }
 
-  /**
-   * Get books by genre with pagination and caching
-   */
   async getByGenrePaginated(
     genre: string,
     limit: number = 5,
@@ -129,7 +112,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     try {
       const cacheKey = `books:genre:${genre}:${limit}:${offset}`;
 
-      // Parallel queries for count and data
       const [data, total] = await Promise.all([
         this.queryOptimizer.executeOptimized<Book>(
           'SELECT * FROM books WHERE genre = ? ORDER BY rating DESC LIMIT ? OFFSET ?',
@@ -166,9 +148,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     }
   }
 
-  /**
-   * Search books with optimization
-   */
   async searchOptimized(searchTerm: string, limit: number = 10): Promise<Book[]> {
     try {
       const pattern = `%${searchTerm}%`;
@@ -199,9 +178,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     }
   }
 
-  /**
-   * Get top rated books with caching
-   */
   async getTopRated(limit: number = 10): Promise<Book[]> {
     try {
       const cacheKey = `books:top_rated:${limit}`;
@@ -213,12 +189,7 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
         LIMIT ?
       `;
 
-      return await this.queryOptimizer.executeOptimized<Book>(
-        query,
-        [limit],
-        cacheKey,
-        600000 // 10 minutes
-      );
+      return await this.queryOptimizer.executeOptimized<Book>(query, [limit], cacheKey, 600000);
     } catch (error) {
       logger.error(
         'Error getting top rated books',
@@ -228,9 +199,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     }
   }
 
-  /**
-   * Get newest books with caching
-   */
   async getNewest(limit: number = 10): Promise<Book[]> {
     try {
       const cacheKey = `books:newest:${limit}`;
@@ -252,9 +220,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     }
   }
 
-  /**
-   * Get random book with caching
-   */
   async getRandom(): Promise<Book | undefined> {
     try {
       const cacheKey = 'books:random';
@@ -276,9 +241,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     }
   }
 
-  /**
-   * Get all genres with caching
-   */
   async getAllGenres(): Promise<string[]> {
     try {
       const cacheKey = 'books:all_genres';
@@ -293,7 +255,7 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
         query,
         [],
         cacheKey,
-        3600000 // 1 hour - genres change infrequently
+        3600000
       );
 
       return results.map((r) => r.genre);
@@ -306,15 +268,11 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     }
   }
 
-  /**
-   * Increment downloads count
-   */
   async incrementDownloads(bookId: number): Promise<void> {
     try {
       const query = 'UPDATE books SET downloads_count = downloads_count + 1 WHERE id = ?';
       await this.db.update(query, [bookId]);
 
-      // Invalidate caches
       this.queryOptimizer.invalidateTableCache(`books:id:${bookId}`);
       this.queryOptimizer.invalidateTableCache('books:top_rated');
     } catch (error) {
@@ -326,9 +284,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     }
   }
 
-  /**
-   * Get low rated books for review
-   */
   async getLowRatedBooks(maxRating: number = 2, limit: number = 20): Promise<Book[]> {
     try {
       const query = `
@@ -353,9 +308,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     }
   }
 
-  /**
-   * Get books by author with pagination
-   */
   async getByAuthorPaginated(
     author: string,
     limit: number = 10,
@@ -400,15 +352,11 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     }
   }
 
-  /**
-   * Update rating for a book
-   */
   async updateRating(bookId: number, newRating: number, reviewsCount: number): Promise<number> {
     try {
       const query = 'UPDATE books SET rating = ?, reviews_count = ? WHERE id = ?';
       const changes = await this.db.update(query, [newRating, reviewsCount, bookId]);
 
-      // Invalidate relevant caches
       this.queryOptimizer.invalidateTableCache(`books:id:${bookId}`);
       this.queryOptimizer.invalidateTableCache('books:top_rated');
 
@@ -422,9 +370,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     }
   }
 
-  /**
-   * Get books summary for dashboard
-   */
   async getDashboardSummary(): Promise<{
     totalBooks: number;
     availableBooks: number;
@@ -434,7 +379,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     try {
       const cacheKey = 'books:dashboard_summary';
 
-      // Check if we have cached summary
       const queryResult = await this.queryOptimizer.getOptimized<any>(
         'SELECT 1',
         [],
@@ -443,11 +387,9 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
       );
 
       if (queryResult) {
-        // Return cached result
         return JSON.parse(JSON.stringify(queryResult));
       }
 
-      // Fetch all data in parallel
       const [totalBooks, availableBooks, topRated, newest] = await Promise.all([
         this.count(),
         this.count({ is_available: 1 }),
@@ -472,9 +414,6 @@ export class OptimizedBookRepository extends OptimizedRepository<Book> {
     }
   }
 
-  /**
-   * Analyze books table for optimization
-   */
   async analyzeTableOptimization(): Promise<void> {
     try {
       const analysis = await this.queryOptimizer.analyzeTable('books');

@@ -1,8 +1,3 @@
-/**
- * Admin Book Requests Handlers
- * Обробники для управління заявками на книги (адмін)
- */
-
 import { Telegraf, Markup } from 'telegraf';
 import { BotContext } from '../../types/telegraf';
 import { logger } from '../../utils/logger';
@@ -21,11 +16,7 @@ import {
   BookRequestStats,
 } from '../../database/tables/bookRequests';
 
-/**
- * Зареєструвати адмін-обробники заявок
- */
 export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): void {
-  // Головне меню заявок для адміна
   bot.action('admin_book_requests', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -67,7 +58,6 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
     }
   });
 
-  // Заявки на розгляді
   bot.action('admin_requests_pending', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -78,7 +68,6 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
     }
   });
 
-  // Видані книги
   bot.action('admin_requests_issued', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -89,12 +78,10 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
     }
   });
 
-  // Прострочені книги
   bot.action('admin_requests_overdue', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
 
-      // Спочатку позначаємо прострочені
       await markOverdueRequests();
 
       const overdueRequests = await getOverdueRequests();
@@ -140,7 +127,6 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
     }
   });
 
-  // Всі заявки
   bot.action('admin_requests_all', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -184,7 +170,6 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
     }
   });
 
-  // Переглянути заявку (адмін)
   bot.action(/admin_view_request_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -245,7 +230,6 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
 
       const keyboard = [];
 
-      // Кнопки залежно від статусу
       if (request.status === BookRequestStatus.PENDING) {
         keyboard.push([
           Markup.button.callback('✅ Схвалити', `approve_request_${request.id}`),
@@ -257,8 +241,13 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
         keyboard.push([Markup.button.callback('📖 Видати книгу', `issue_request_${request.id}`)]);
       }
 
-      if (request.status === BookRequestStatus.ISSUED || request.status === BookRequestStatus.OVERDUE) {
-        keyboard.push([Markup.button.callback('✔️ Повернути книгу', `return_request_${request.id}`)]);
+      if (
+        request.status === BookRequestStatus.ISSUED ||
+        request.status === BookRequestStatus.OVERDUE
+      ) {
+        keyboard.push([
+          Markup.button.callback('✔️ Повернути книгу', `return_request_${request.id}`),
+        ]);
       }
 
       keyboard.push([Markup.button.callback('⬅️ Назад', 'admin_book_requests')]);
@@ -275,7 +264,6 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
     }
   });
 
-  // Схвалити заявку
   bot.action(/approve_request_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -289,11 +277,15 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
         return;
       }
 
-      await updateBookRequestStatus(requestId, BookRequestStatus.APPROVED, adminId, 'Книга доступна до видачі');
+      await updateBookRequestStatus(
+        requestId,
+        BookRequestStatus.APPROVED,
+        adminId,
+        'Книга доступна до видачі'
+      );
 
       await ctx.answerCbQuery('✅ Заявку схвалено');
 
-      // Оновлюємо повідомлення
       await ctx.scene.reenter();
 
       logger.adminAction(adminId, 'approve_request', { requestId });
@@ -303,7 +295,6 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
     }
   });
 
-  // Відхилити заявку
   bot.action(/reject_request_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -317,13 +308,17 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
         return;
       }
 
-      await updateBookRequestStatus(requestId, BookRequestStatus.REJECTED, adminId, 'Книги немає у наявності');
+      await updateBookRequestStatus(
+        requestId,
+        BookRequestStatus.REJECTED,
+        adminId,
+        'Книги немає у наявності'
+      );
 
       await ctx.answerCbQuery('❌ Заявку відхилено');
 
       logger.adminAction(adminId, 'reject_request', { requestId });
 
-      // Повертаємось до списку
       await ctx.answerCbQuery();
       await ctx.editMessageText('✅ Заявку відхилено', {
         reply_markup: Markup.inlineKeyboard([
@@ -336,7 +331,6 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
     }
   });
 
-  // Видати книгу
   bot.action(/issue_request_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -346,26 +340,21 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
 
       const requestId = parseInt(match[1], 10);
 
-      await ctx.editMessageText(
-        '📖 <b>ВИДАЧА КНИГИ</b>\n\n' +
-          'Оберіть термін видачі:',
-        {
-          parse_mode: 'HTML',
-          reply_markup: Markup.inlineKeyboard([
-            [Markup.button.callback('7 днів', `issue_book_${requestId}_7`)],
-            [Markup.button.callback('14 днів', `issue_book_${requestId}_14`)],
-            [Markup.button.callback('30 днів', `issue_book_${requestId}_30`)],
-            [Markup.button.callback('⬅️ Назад', `admin_view_request_${requestId}`)],
-          ]).reply_markup,
-        }
-      );
+      await ctx.editMessageText('📖 <b>ВИДАЧА КНИГИ</b>\n\n' + 'Оберіть термін видачі:', {
+        parse_mode: 'HTML',
+        reply_markup: Markup.inlineKeyboard([
+          [Markup.button.callback('7 днів', `issue_book_${requestId}_7`)],
+          [Markup.button.callback('14 днів', `issue_book_${requestId}_14`)],
+          [Markup.button.callback('30 днів', `issue_book_${requestId}_30`)],
+          [Markup.button.callback('⬅️ Назад', `admin_view_request_${requestId}`)],
+        ]).reply_markup,
+      });
     } catch (error) {
       logger.error('Error showing issue options', error);
       await ctx.answerCbQuery('❌ Помилка');
     }
   });
 
-  // Видати книгу з терміном
   bot.action(/issue_book_(\d+)_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -386,7 +375,6 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
 
       logger.adminAction(adminId, 'issue_book', { requestId, days });
 
-      // Оновлюємо повідомлення
       await ctx.editMessageText(
         '✅ <b>КНИГУ ВИДАНО</b>\n\n' +
           `📅 Термін повернення: ${days} днів\n\n` +
@@ -404,7 +392,6 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
     }
   });
 
-  // Повернути книгу
   bot.action(/return_request_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -424,7 +411,6 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
 
       logger.adminAction(adminId, 'return_book', { requestId });
 
-      // Оновлюємо повідомлення
       await ctx.editMessageText('✅ <b>КНИГУ ПОВЕРНЕНО</b>\n\n' + 'Статус заявки оновлено.', {
         parse_mode: 'HTML',
         reply_markup: Markup.inlineKeyboard([
@@ -438,9 +424,6 @@ export function registerAdminBookRequestHandlers(bot: Telegraf<BotContext>): voi
   });
 }
 
-/**
- * Показати список заявок за статусом
- */
 async function showRequestsList(ctx: BotContext, status: BookRequestStatus) {
   const requests = await getBookRequestsByStatus(status);
 
@@ -450,7 +433,9 @@ async function showRequestsList(ctx: BotContext, status: BookRequestStatus) {
   if (requests.length === 0) {
     await ctx.editMessageText(`📭 <b>НЕМАЄ ЗАЯВОК</b>\n\n${statusEmoji} Статус: ${statusText}`, {
       parse_mode: 'HTML',
-      reply_markup: Markup.inlineKeyboard([[Markup.button.callback('⬅️ Назад', 'admin_book_requests')]]).reply_markup,
+      reply_markup: Markup.inlineKeyboard([
+        [Markup.button.callback('⬅️ Назад', 'admin_book_requests')],
+      ]).reply_markup,
     });
     return;
   }
@@ -462,7 +447,10 @@ async function showRequestsList(ctx: BotContext, status: BookRequestStatus) {
 
   requests.slice(0, 10).forEach((request, index) => {
     keyboard.push([
-      Markup.button.callback(`${index + 1}. ${request.book_title}`, `admin_view_request_${request.id}`),
+      Markup.button.callback(
+        `${index + 1}. ${request.book_title}`,
+        `admin_view_request_${request.id}`
+      ),
     ]);
   });
 
@@ -474,9 +462,6 @@ async function showRequestsList(ctx: BotContext, status: BookRequestStatus) {
   });
 }
 
-/**
- * Отримати емодзі статусу
- */
 function getStatusEmoji(status: BookRequestStatus): string {
   switch (status) {
     case BookRequestStatus.PENDING:
@@ -496,9 +481,6 @@ function getStatusEmoji(status: BookRequestStatus): string {
   }
 }
 
-/**
- * Отримати текст статусу
- */
 function getStatusText(status: BookRequestStatus): string {
   switch (status) {
     case BookRequestStatus.PENDING:
@@ -518,9 +500,6 @@ function getStatusText(status: BookRequestStatus): string {
   }
 }
 
-/**
- * Форматувати дату
- */
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleString('uk-UA', {
@@ -532,9 +511,6 @@ function formatDate(dateString: string): string {
   });
 }
 
-/**
- * Отримати кількість днів до дати
- */
 function getDaysLeft(dueDateString: string): number {
   const dueDate = new Date(dueDateString);
   const now = new Date();

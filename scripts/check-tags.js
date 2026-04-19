@@ -1,5 +1,3 @@
-// Скрипт для проверки состояния тегов в БД
-
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
@@ -19,31 +17,29 @@ const allAsync = (sql, params = []) => {
   try {
     console.log('🔍 Проверка системы тегов...\n');
 
-    // Общее количество тегов
     const allTags = await allAsync('SELECT COUNT(*) as count FROM tags');
     console.log(`📌 Всього тегів: ${allTags[0].count}`);
 
-    // Теги с пробелами (неправильные)
-    const wrongTags = await allAsync('SELECT id, name FROM tags WHERE name LIKE "% %" ORDER BY name');
+    const wrongTags = await allAsync(
+      'SELECT id, name FROM tags WHERE name LIKE "% %" ORDER BY name'
+    );
     console.log(`⚠️  Теги с пробелами: ${wrongTags.length}`);
     if (wrongTags.length > 0) {
       console.log('❌ ОШИБКА! Найдены неправильные теги:');
-      wrongTags.forEach(tag => {
+      wrongTags.forEach((tag) => {
         console.log(`  - "${tag.name}" (id: ${tag.id})`);
       });
     } else {
       console.log('✅ Нет тегов с пробелами');
     }
 
-    // Все теги
     console.log('\n📋 Все теги в БД:');
     const tags = await allAsync('SELECT id, name FROM tags ORDER BY name');
-    tags.forEach(tag => {
+    tags.forEach((tag) => {
       console.log(`  ${tag.id}. "${tag.name}"`);
     });
 
     console.log('\n✅ Проверка завершена!');
-    
   } catch (err) {
     console.error('❌ Помилка:', err.message);
   } finally {

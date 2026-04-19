@@ -1,7 +1,3 @@
-/**
- * Complete database reset - deletes all DB files
- */
-
 import fs from 'fs';
 import path from 'path';
 

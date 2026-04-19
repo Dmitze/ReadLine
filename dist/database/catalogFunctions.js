@@ -1,19 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getBooksSortedByTitle = exports.getMostDownloadedBooksWithPagination = exports.getBooksWithAudioWithPagination = exports.getNewestBooksWithPagination = exports.getHighRatedBooksWithPagination = exports.getHighRatedBooks = exports.getBooksWithAudio = exports.getBooksWithFilters = void 0;
+exports.getTopBooksWithPagination = exports.getBooksSortedByTitle = exports.getMostDownloadedBooksWithPagination = exports.getMostDownloadedBooks = exports.getBooksWithAudioWithPagination = exports.getNewestBooksWithPagination = exports.getHighRatedBooksWithPagination = exports.getHighRatedBooks = exports.getBooksWithAudio = exports.getBooksWithFilters = void 0;
 const models_1 = require("./models");
 const helpers_1 = require("../utils/helpers");
 const QueryBuilder_1 = require("./QueryBuilder");
+const logger_1 = require("../utils/logger");
 const getBooksWithFilters = async (filters) => {
-    const qb = new QueryBuilder_1.QueryBuilder()
-        .from('books')
-        .where('is_available', '=', 1);
+    const qb = new QueryBuilder_1.QueryBuilder().from('books').where('is_available', '=', 1);
     if (filters.genre) {
         qb.where('genre', '=', filters.genre);
     }
     if (filters.hasAudio) {
-        qb.where('audio_file_id', 'IS NOT NULL')
-            .or('audio_external_link', 'IS NOT NULL');
+        qb.where('audio_file_id', 'IS NOT NULL').or('audio_external_link', 'IS NOT NULL');
     }
     if (filters.minRating !== undefined) {
         const safeMinRating = (0, helpers_1.safeParseFloat)(filters.minRating, 0);
@@ -25,8 +23,7 @@ const getBooksWithFilters = async (filters) => {
     const sortOrder = (filters.sortOrder || 'desc').toUpperCase();
     switch (sortBy) {
         case 'rating':
-            qb.orderBy('rating', sortOrder)
-                .orderBy('reviews_count', 'DESC');
+            qb.orderBy('rating', sortOrder).orderBy('reviews_count', 'DESC');
             break;
         case 'date':
             qb.orderBy('created_at', sortOrder);
@@ -41,9 +38,7 @@ const getBooksWithFilters = async (filters) => {
             qb.orderBy('created_at', 'DESC');
     }
     const countQuery = qb.clone().columns('COUNT(*) as total');
-    const dataQuery = qb
-        .limit(filters.limit || 10)
-        .offset(filters.offset || 0);
+    const dataQuery = qb.limit(filters.limit || 10).offset(filters.offset || 0);
     const [totalResult, books] = await Promise.all([
         new Promise((resolve, reject) => {
             models_1.db.get(countQuery.build().sql, countQuery.getParameters(), (err, row) => {
@@ -60,7 +55,7 @@ const getBooksWithFilters = async (filters) => {
                 else
                     resolve(rows || []);
             });
-        })
+        }),
     ]);
     return { books, total: totalResult?.total || 0 };
 };
@@ -151,6 +146,26 @@ const getBooksWithAudioWithPagination = (limit = 10, offset = 0) => {
     });
 };
 exports.getBooksWithAudioWithPagination = getBooksWithAudioWithPagination;
+const getMostDownloadedBooks = (limit = 10) => {
+    return new Promise((resolve, reject) => {
+        const query = `
+      SELECT * FROM books 
+      WHERE downloads_count IS NOT NULL AND downloads_count > 0 
+      ORDER BY downloads_count DESC 
+      LIMIT ?
+    `;
+        models_1.db.all(query, [limit], (err, rows) => {
+            if (err) {
+                logger_1.logger.error('Error getting most downloaded books', err, { limit });
+                reject(err);
+            }
+            else {
+                resolve(rows || []);
+            }
+        });
+    });
+};
+exports.getMostDownloadedBooks = getMostDownloadedBooks;
 const getMostDownloadedBooksWithPagination = (limit = 10, offset = 0) => {
     return new Promise((resolve, reject) => {
         models_1.db.get('SELECT COUNT(*) as total FROM books WHERE is_available = 1', [], (err, countRow) => {
@@ -179,10 +194,27 @@ const getBooksSortedByTitle = (limit = 10, offset = 0) => {
                 if (err)
                     reject(err);
                 else
-                    resolve({ books: rows, total: countRow?.total || 0 });
+                    resolve({ books: rows || [], total: countRow?.total || 0 });
             });
         });
     });
 };
 exports.getBooksSortedByTitle = getBooksSortedByTitle;
+const getTopBooksWithPagination = (limit = 10, offset = 0) => {
+    return new Promise((resolve, reject) => {
+        models_1.db.get('SELECT COUNT(*) as total FROM books WHERE rating IS NOT NULL AND rating > 0', [], (err, countRow) => {
+            if (err) {
+                reject(err);
+                return;
+            }
+            models_1.db.all('SELECT * FROM books WHERE rating IS NOT NULL AND rating > 0 ORDER BY rating DESC, reviews_count DESC LIMIT ? OFFSET ?', [limit, offset], (err, rows) => {
+                if (err)
+                    reject(err);
+                else
+                    resolve({ books: rows || [], total: countRow?.total || 0 });
+            });
+        });
+    });
+};
+exports.getTopBooksWithPagination = getTopBooksWithPagination;
 //# sourceMappingURL=catalogFunctions.js.map

@@ -1,13 +1,5 @@
-/**
- * Mock Telegraf Context for Testing
- * Simulates Telegraf BotContext for scene and handler tests
- */
-
 import { BotContext } from '../../types/telegraf';
 
-/**
- * Create a mock Telegraf context for testing
- */
 export function createMockContext(overrides?: Partial<BotContext>): BotContext {
   const mockReply = jest.fn().mockResolvedValue({ message_id: 1 });
   const mockEditMessageText = jest.fn().mockResolvedValue({ message_id: 1 });
@@ -16,7 +8,6 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
   const mockAnswerCallbackQuery = jest.fn().mockResolvedValue(true);
 
   const baseContext: BotContext = {
-    // Basic properties
     botInfo: {
       id: 999999,
       is_bot: true,
@@ -24,7 +15,6 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
       username: 'test_bot',
     },
 
-    // User properties
     from: {
       id: 12345,
       is_bot: false,
@@ -34,7 +24,6 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
       language_code: 'en',
     },
 
-    // Chat properties
     chat: {
       id: 12345,
       type: 'private',
@@ -43,7 +32,6 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
       username: 'testuser',
     },
 
-    // Message properties
     message: {
       message_id: 1,
       date: Math.floor(Date.now() / 1000),
@@ -59,10 +47,8 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
       },
     },
 
-    // Callback query
     callbackQuery: undefined,
 
-    // Update
     update: {
       update_id: 1,
       message: {
@@ -74,18 +60,15 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
       },
     },
 
-    // State
     state: {
       scene: {},
     },
 
-    // Session
     session: {
       userId: 12345,
       userData: {},
     },
 
-    // Scene context (from telegraf-scenes)
     scene: {
       enter: jest.fn(),
       exit: jest.fn(),
@@ -93,7 +76,6 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
       current: 'testScene',
     } as any,
 
-    // Wizard context
     wizard: {
       state: {},
       cursor: 0,
@@ -102,10 +84,8 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
       steps: [],
     } as any,
 
-    // Match (for regex routes)
     match: null,
 
-    // Methods
     reply: mockReply,
     replyWithHTML: jest.fn().mockResolvedValue({ message_id: 1 }),
     replyWithMarkdown: jest.fn().mockResolvedValue({ message_id: 1 }),
@@ -124,7 +104,6 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
     getMe: jest.fn().mockResolvedValue({ id: 999999, is_bot: true }),
     getChatMember: jest.fn().mockResolvedValue({ user: { id: 12345 }, status: 'member' }),
 
-    // Action methods
     action: jest.fn(),
     on: jest.fn(),
     hears: jest.fn(),
@@ -134,9 +113,6 @@ export function createMockContext(overrides?: Partial<BotContext>): BotContext {
   return { ...baseContext, ...overrides };
 }
 
-/**
- * Create mock context with custom message
- */
 export function createMockContextWithMessage(
   text: string,
   overrides?: Partial<BotContext>
@@ -147,9 +123,6 @@ export function createMockContextWithMessage(
   });
 }
 
-/**
- * Create mock context with callback query
- */
 export function createMockContextWithCallback(
   data: string,
   overrides?: Partial<BotContext>
@@ -171,17 +144,11 @@ export function createMockContextWithCallback(
   } as any);
 }
 
-/**
- * Get all replies from context
- */
 export function getContextReplies(context: BotContext): any[] {
   const reply = context.reply as jest.Mock;
   return reply.mock.calls.map((call) => call[0]);
 }
 
-/**
- * Check if context has replied
- */
 export function contextHasReplied(context: BotContext, searchText?: string): boolean {
   const reply = context.reply as jest.Mock;
   if (reply.mock.calls.length === 0) return false;
@@ -194,9 +161,6 @@ export function contextHasReplied(context: BotContext, searchText?: string): boo
   });
 }
 
-/**
- * Clear context mocks
- */
 export function clearContextMocks(context: BotContext): void {
   (context.reply as jest.Mock).mockClear();
   (context.editMessageText as jest.Mock).mockClear();

@@ -140,7 +140,9 @@ function registerBookRequestHandlers(bot) {
             message += `\n📅 <b>Створено:</b> ${formatDate(request.created_at)}\n`;
             const keyboard = [];
             if (request.status === bookRequests_1.BookRequestStatus.PENDING) {
-                keyboard.push([telegraf_1.Markup.button.callback('❌ Скасувати заявку', `cancel_request_${request.id}`)]);
+                keyboard.push([
+                    telegraf_1.Markup.button.callback('❌ Скасувати заявку', `cancel_request_${request.id}`),
+                ]);
             }
             keyboard.push([telegraf_1.Markup.button.callback('⬅️ До списку заявок', 'my_book_requests')]);
             await ctx.editMessageText(message, {
@@ -192,8 +194,7 @@ function registerBookRequestHandlers(bot) {
     bot.action('back_to_requests_menu', async (ctx) => {
         try {
             await ctx.answerCbQuery();
-            await ctx.editMessageText('📚 <b>ЗАМОВЛЕННЯ ФІЗИЧНОЇ КНИГИ</b>\n\n' +
-                'Оберіть дію:', {
+            await ctx.editMessageText('📚 <b>ЗАМОВЛЕННЯ ФІЗИЧНОЇ КНИГИ</b>\n\n' + 'Оберіть дію:', {
                 parse_mode: 'HTML',
                 reply_markup: telegraf_1.Markup.inlineKeyboard([
                     [telegraf_1.Markup.button.callback('➕ Нова заявка', 'create_book_request')],

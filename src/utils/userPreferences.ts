@@ -1,12 +1,9 @@
-// Налаштування користувача для адаптивних клавіатур (Завдання 30)
 import { db } from '../database/models';
 import { DeviceType } from '../keyboards/mainKeyboards';
 import { logger } from './logger';
 
-// Отримати налаштування клавіатури користувача
 export const getUserKeyboardPreference = (userId: number): DeviceType => {
   try {
-    // ✅ ВИПРАВЛЕНО: telegram_id → user_id
     const result = db
       .prepare(
         `
@@ -19,7 +16,6 @@ export const getUserKeyboardPreference = (userId: number): DeviceType => {
       return result.keyboard_type as DeviceType;
     }
 
-    // За замовчуванням - мобільний
     return 'mobile';
   } catch (error) {
     logger.error(
@@ -30,11 +26,8 @@ export const getUserKeyboardPreference = (userId: number): DeviceType => {
   }
 };
 
-// Зберегти налаштування клавіатури користувача
 export const setUserKeyboardPreference = (userId: number, deviceType: DeviceType): boolean => {
   try {
-    // ✅ ВИПРАВЛЕНО: telegram_id → user_id
-    // Спочатку перевіряємо чи існує користувач
     const user = db
       .prepare(
         `
@@ -44,7 +37,6 @@ export const setUserKeyboardPreference = (userId: number, deviceType: DeviceType
       .get(userId);
 
     if (!user) {
-      // Створюємо користувача якщо не існує
       db.prepare(
         `
         INSERT INTO users (user_id, keyboard_type, created_at)
@@ -52,7 +44,6 @@ export const setUserKeyboardPreference = (userId: number, deviceType: DeviceType
       `
       ).run(userId, deviceType);
     } else {
-      // Оновлюємо налаштування
       db.prepare(
         `
         UPDATE users SET keyboard_type = ? WHERE user_id = ?
@@ -71,22 +62,19 @@ export const setUserKeyboardPreference = (userId: number, deviceType: DeviceType
   }
 };
 
-// Перевірити чи існує колонка keyboard_type в таблиці users
 export const ensureKeyboardTypeColumn = (): Promise<void> => {
   return new Promise((resolve, reject) => {
     try {
-      // Перевіряємо чи існує колонка
       db.all('PRAGMA table_info(users)', [], (err, columns: Array<{ name: string }>) => {
         if (err) {
           logger.error('Error checking keyboard_type column', err);
-          resolve(); // Не блокуємо запуск бота
+          resolve();
           return;
         }
 
         const hasKeyboardType = columns.some((col) => col.name === 'keyboard_type');
 
         if (!hasKeyboardType) {
-          // Додаємо колонку якщо не існує
           db.run(
             `
             ALTER TABLE users ADD COLUMN keyboard_type TEXT DEFAULT 'mobile'
@@ -110,7 +98,7 @@ export const ensureKeyboardTypeColumn = (): Promise<void> => {
         'Error ensuring keyboard_type column',
         error instanceof Error ? error : new Error(String(error))
       );
-      resolve(); // Не блокуємо запуск бота
+      resolve();
     }
   });
 };

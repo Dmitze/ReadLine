@@ -1,24 +1,11 @@
-/**
- * Circuit Breaker Pattern Implementation
- * REFACTOR-009: Circuit Breaker for AI API
- *
- * Prevents cascading failures by stopping requests when service is unhealthy
- */
-
 import { logger } from './logger';
 
-/**
- * Circuit breaker states
- */
 export enum CircuitState {
-  CLOSED = 'CLOSED', // Normal operation
-  OPEN = 'OPEN', // Failing, reject all requests
-  HALF_OPEN = 'HALF_OPEN', // Testing if service recovered
+  CLOSED = 'CLOSED',
+  OPEN = 'OPEN',
+  HALF_OPEN = 'HALF_OPEN',
 }
 
-/**
- * Circuit breaker metrics
- */
 export interface CircuitMetrics {
   totalRequests: number;
   successfulRequests: number;
@@ -30,21 +17,15 @@ export interface CircuitMetrics {
   stateChangeTime: number;
 }
 
-/**
- * Circuit breaker options
- */
 export interface CircuitBreakerOptions {
-  failureThreshold?: number; // Number of failures to open circuit (default: 5)
-  successThreshold?: number; // Number of successes in half-open to close (default: 2)
-  timeout?: number; // Time in ms to wait before attempting recovery (default: 60000)
-  monitoringPeriod?: number; // Period to reset metrics (default: 120000)
-  name?: string; // Circuit breaker name for logging
+  failureThreshold?: number;
+  successThreshold?: number;
+  timeout?: number;
+  monitoringPeriod?: number;
+  name?: string;
   onStateChange?: (state: CircuitState, metrics: CircuitMetrics) => void;
 }
 
-/**
- * Generic Circuit Breaker implementation
- */
 export class CircuitBreaker<T = any> {
   private state: CircuitState = CircuitState.CLOSED;
   private metrics: CircuitMetrics;
@@ -79,15 +60,10 @@ export class CircuitBreaker<T = any> {
     this.startMonitoring();
   }
 
-  /**
-   * Execute async function with circuit breaker protection
-   */
   async execute<R>(fn: () => Promise<R>): Promise<R> {
     this.metrics.totalRequests++;
 
-    // Check if circuit is open
     if (this.state === CircuitState.OPEN) {
-      // Check if timeout has passed to try half-open
       if (Date.now() - this.lastFailureTime >= this.timeout) {
         this.transitionTo(CircuitState.HALF_OPEN);
         logger.debug(`${this.name}: Transitioning to HALF_OPEN state`);
@@ -107,9 +83,6 @@ export class CircuitBreaker<T = any> {
     }
   }
 
-  /**
-   * Execute sync function with circuit breaker protection
-   */
   executeSync<R>(fn: () => R): R {
     this.metrics.totalRequests++;
 
@@ -133,9 +106,6 @@ export class CircuitBreaker<T = any> {
     }
   }
 
-  /**
-   * Handle successful request
-   */
   private onSuccess(): void {
     this.consecutiveFailures = 0;
     this.metrics.successfulRequests++;
@@ -151,9 +121,6 @@ export class CircuitBreaker<T = any> {
     }
   }
 
-  /**
-   * Handle failed request
-   */
   private onFailure(): void {
     this.consecutiveSuccesses = 0;
     this.consecutiveFailures++;
@@ -175,9 +142,6 @@ export class CircuitBreaker<T = any> {
     }
   }
 
-  /**
-   * Transition to new state
-   */
   private transitionTo(newState: CircuitState): void {
     if (this.state === newState) return;
 
@@ -200,23 +164,14 @@ export class CircuitBreaker<T = any> {
     }
   }
 
-  /**
-   * Get current metrics
-   */
   getMetrics(): CircuitMetrics {
     return { ...this.metrics };
   }
 
-  /**
-   * Get current state
-   */
   getState(): CircuitState {
     return this.state;
   }
 
-  /**
-   * Reset circuit breaker
-   */
   reset(): void {
     this.state = CircuitState.CLOSED;
     this.consecutiveFailures = 0;
@@ -232,12 +187,8 @@ export class CircuitBreaker<T = any> {
     logger.info(`${this.name}: Circuit breaker reset`);
   }
 
-  /**
-   * Start monitoring and periodic reset
-   */
   private startMonitoring(): void {
     this.monitoringTimer = setInterval(() => {
-      // Log metrics
       const successRate =
         this.metrics.totalRequests > 0
           ? ((this.metrics.successfulRequests / this.metrics.totalRequests) * 100).toFixed(2)
@@ -253,18 +204,12 @@ export class CircuitBreaker<T = any> {
     }, this.monitoringPeriod);
   }
 
-  /**
-   * Stop monitoring
-   */
   stop(): void {
     if (this.monitoringTimer) {
       clearInterval(this.monitoringTimer);
     }
   }
 
-  /**
-   * Get formatted status for logging
-   */
   getStatus(): string {
     const successRate =
       this.metrics.totalRequests > 0
@@ -275,21 +220,15 @@ export class CircuitBreaker<T = any> {
   }
 }
 
-/**
- * Specialized Circuit Breaker for HTTP requests
- */
 export class HttpCircuitBreaker extends CircuitBreaker {
   private readonly httpErrorCodes: Set<number>;
 
   constructor(options: CircuitBreakerOptions = {}) {
     super(options);
-    // Consider 5xx and specific 4xx errors as failures
+
     this.httpErrorCodes = new Set([408, 429, 500, 502, 503, 504]);
   }
 
-  /**
-   * Execute HTTP request with circuit breaker protection
-   */
   async executeRequest<T>(url: string, options: RequestInit = {}): Promise<T> {
     return this.execute(async () => {
       const response = await fetch(url, options);

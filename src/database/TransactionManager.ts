@@ -1,17 +1,7 @@
-/**
- * Transaction Manager
- * REFACTOR-006: Transaction Handling
- *
- * Provides transaction utilities and patterns
- */
-
 import { DatabaseWrapper } from './dbWrapper';
 import { logger } from '../utils/logger';
 import { Result, Ok, Err } from '../core/Result';
 
-/**
- * Transaction isolation levels
- */
 export enum IsolationLevel {
   READ_UNCOMMITTED = 'READ UNCOMMITTED',
   READ_COMMITTED = 'READ COMMITTED',
@@ -19,9 +9,6 @@ export enum IsolationLevel {
   SERIALIZABLE = 'SERIALIZABLE',
 }
 
-/**
- * Transaction options
- */
 export interface TransactionOptions {
   isolationLevel?: IsolationLevel;
   timeout?: number;
@@ -29,9 +16,6 @@ export interface TransactionOptions {
   maxRetries?: number;
 }
 
-/**
- * Transaction statistics
- */
 export interface TransactionStats {
   startTime: Date;
   endTime?: Date;
@@ -41,17 +25,11 @@ export interface TransactionStats {
   error?: Error;
 }
 
-/**
- * Transaction Manager for complex database operations
- */
 export class TransactionManager {
   private stats: Map<string, TransactionStats> = new Map();
 
   constructor(private db: DatabaseWrapper) {}
 
-  /**
-   * Execute operation in transaction with Result pattern
-   */
   async executeTransaction<T>(
     operation: () => Promise<T>,
     options: TransactionOptions = {}
@@ -67,15 +45,12 @@ export class TransactionManager {
 
     try {
       const result = await this.db.transaction(async () => {
-        // Set isolation level if specified
         if (options.isolationLevel) {
-          // SQLite doesn't support SET TRANSACTION, using PRAGMA instead
           await this.db.run(
             `PRAGMA read_uncommitted = ${options.isolationLevel === IsolationLevel.READ_UNCOMMITTED ? 1 : 0}`
           );
         }
 
-        // Execute operation with timeout if specified
         if (options.timeout) {
           return await this.withTimeout(operation, options.timeout);
         }
@@ -105,7 +80,6 @@ export class TransactionManager {
         duration: stats.duration,
       });
 
-      // Retry on deadlock if enabled
       if (options.retryOnDeadlock && this.isDeadlock(err) && (options.maxRetries ?? 3) > 0) {
         logger.warn('Retrying transaction after deadlock', { transactionId });
         return this.executeTransaction(operation, {
@@ -118,9 +92,6 @@ export class TransactionManager {
     }
   }
 
-  /**
-   * Batch operations in a single transaction
-   */
   async batch<T>(operations: Array<() => Promise<T>>): Promise<Result<T[]>> {
     return this.executeTransaction(async () => {
       const results: T[] = [];
@@ -134,19 +105,12 @@ export class TransactionManager {
     });
   }
 
-  /**
-   * Execute multiple operations in parallel within transaction
-   * Note: SQLite doesn't support true parallel operations in same connection
-   */
   async parallel<T>(operations: Array<() => Promise<T>>): Promise<Result<T[]>> {
     return this.executeTransaction(async () => {
       return await Promise.all(operations.map((op) => op()));
     });
   }
 
-  /**
-   * Savepoint support for nested transactions
-   */
   async savepoint<T>(name: string, operation: () => Promise<T>): Promise<Result<T>> {
     try {
       await this.db.run(`SAVEPOINT ${name}`);
@@ -172,23 +136,14 @@ export class TransactionManager {
     }
   }
 
-  /**
-   * Get transaction statistics
-   */
   getStats(transactionId: string): TransactionStats | undefined {
     return this.stats.get(transactionId);
   }
 
-  /**
-   * Clear old statistics
-   */
   clearStats(): void {
     this.stats.clear();
   }
 
-  /**
-   * Private helpers
-   */
   private generateTransactionId(): string {
     return `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
@@ -207,15 +162,9 @@ export class TransactionManager {
   }
 }
 
-/**
- * Common transaction patterns
- */
 export class TransactionPatterns {
   constructor(private manager: TransactionManager) {}
 
-  /**
-   * Create with related entities
-   */
   async createWithRelated<T, R>(
     mainCreate: () => Promise<T>,
     relatedCreates: Array<(mainId: T) => Promise<R>>
@@ -233,27 +182,19 @@ export class TransactionPatterns {
     });
   }
 
-  /**
-   * Update with cascade
-   */
   async updateWithCascade<T>(updates: Array<() => Promise<T>>): Promise<Result<T[]>> {
     return this.manager.batch(updates);
   }
 
-  /**
-   * Delete with cascade
-   */
   async deleteWithCascade(
     mainDelete: () => Promise<void>,
     cascadeDeletes: Array<() => Promise<void>>
   ): Promise<Result<void>> {
     return this.manager.executeTransaction(async () => {
-      // Delete related first
       for (const deleteRelated of cascadeDeletes) {
         await deleteRelated();
       }
 
-      // Then delete main
       await mainDelete();
     });
   }

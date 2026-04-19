@@ -62,7 +62,8 @@ const getPersonalizedRecommendations = async (userId) => {
             '💡 Чому ця книга підійде\n' +
             '🎯 Жанр\n\n' +
             `Контекст: ${context}`;
-        const recommendations = await (0, aiHelper_1.askAI)(question, userId);
+        const aiResponse = await (0, aiHelper_1.askAI)(question, userId);
+        const recommendations = aiResponse.text;
         logger_1.logger.info('AI recommendations generated', { userId, hasHistory: savedBooks.length > 0 });
         return recommendations;
     }
@@ -91,7 +92,8 @@ const getContextualRecommendations = async () => {
     const question = `${timeContext}\n` +
         'Дай 3-4 рекомендації українською мовою з назвою, автором та коротким поясненням.';
     try {
-        const recommendations = await (0, aiHelper_1.askAI)(question);
+        const aiResponse = await (0, aiHelper_1.askAI)(question);
+        const recommendations = aiResponse.text;
         logger_1.logger.info('Contextual recommendations generated', { hour });
         return recommendations;
     }
@@ -116,7 +118,8 @@ const getMoodBasedRecommendations = async (mood) => {
         `Порекомендуй 3-4 ${moodDescription} українською мовою. ` +
         'Для кожної книги вкажи назву, автора та чому вона підійде.';
     try {
-        const recommendations = await (0, aiHelper_1.askAI)(question);
+        const aiResponse = await (0, aiHelper_1.askAI)(question);
+        const recommendations = aiResponse.text;
         logger_1.logger.info('Mood-based recommendations generated', { mood });
         return recommendations;
     }
@@ -131,7 +134,8 @@ const getSimilarBookRecommendations = async (bookTitle, bookAuthor) => {
         'Порекомендуй 4-5 схожих книг українською мовою. ' +
         'Для кожної вкажи назву, автора та чому вона схожа.';
     try {
-        const recommendations = await (0, aiHelper_1.askAI)(question);
+        const aiResponse = await (0, aiHelper_1.askAI)(question);
+        const recommendations = aiResponse.text;
         logger_1.logger.info('Similar book recommendations generated', { bookTitle, bookAuthor });
         return recommendations;
     }

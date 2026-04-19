@@ -45,13 +45,14 @@ searchScene.enter(async (ctx) => {
 });
 const SEARCH_TYPE_PROMPTS = {
     title: '📖 <b>ПОШУК ЗА НАЗВОЮ</b>\n\nВведіть назву книги:\n\n💡 Приклад: <i>Кобзар</i>',
-    author: '👤 <b>ПОШУК ЗА АВТОРОМ</b>\n\nВведіть ім\'я автора:\n\n💡 Приклад: <i>Шевченко</i>',
+    author: "👤 <b>ПОШУК ЗА АВТОРОМ</b>\n\nВведіть ім'я автора:\n\n💡 Приклад: <i>Шевченко</i>",
     genre: '📚 <b>ПОШУК ЗА ЖАНРОМ</b>\n\nВведіть жанр:\n\n💡 Приклад: <i>Фантастика</i>',
     general: '🔍 <b>ЗАГАЛЬНИЙ ПОШУК</b>\n\nВведіть будь-яке слово (назву, автора, жанр):\n\n💡 Знаходить навіть з помилками: "Кобзарь" → "Кобзар"',
     ai: '🤖 <b>РОЗУМНИЙ ПОШУК (AI)</b>\n\nОпишіть що ви шукаєте:\n\n💡 Приклади:\n• "Романтична книга про море"\n• "Детектив з крутою розв\'язкою"\n• "Щось легке для читання перед сном"',
 };
 const backToSearchTypeKeyboard = telegraf_1.Markup.inlineKeyboard([
-    [{ text: '⬅️ Змінити тип пошуку', callback_data: 'search_choose_type' }],
+    [{ text: '🔄 Змінити тип пошуку', callback_data: 'search_choose_type' }],
+    [{ text: '⬅️ Назад', callback_data: 'search_back' }],
 ]).reply_markup;
 async function showSearchTypeMenu(ctx, edit = false) {
     const text = '🔍 <b>Розширений пошук книг</b>\n\nОберіть тип пошуку:';
@@ -74,7 +75,13 @@ async function showSearchTypeMenu(ctx, edit = false) {
         await ctx.reply(text, { parse_mode: 'HTML', reply_markup: keyboard });
     }
 }
-for (const type of ['search_by_title', 'search_by_author', 'search_by_genre', 'search_general', 'search_ai']) {
+for (const type of [
+    'search_by_title',
+    'search_by_author',
+    'search_by_genre',
+    'search_general',
+    'search_ai',
+]) {
     searchScene.action(type, async (ctx) => {
         await ctx.answerCbQuery();
         const key = type.replace('search_by_', '').replace('search_', '');
@@ -92,6 +99,11 @@ searchScene.action('search_choose_type', async (ctx) => {
 });
 searchScene.action('search_back', async (ctx) => {
     await ctx.answerCbQuery();
+    const fromCatalog = ctx.scene.state?.fromCatalog;
+    if (fromCatalog) {
+        await ctx.scene.enter('CATALOG_SCENE');
+        return;
+    }
     await ctx.scene?.leave();
     const { getMainMenuKeyboard } = await Promise.resolve().then(() => __importStar(require('../keyboards/mainKeyboards')));
     await ctx.reply('🏠 Повернувся до головного меню:', {
@@ -121,11 +133,15 @@ searchScene.on('text', async (ctx) => {
             const prompt = `У нас є бібліотека книг. Користувач шукає: "${query}".\n` +
                 `Визнач 3-5 коротких ключових слів (тільки назви книг або імена авторів або один жанр) для пошуку в базі даних SQLite. ` +
                 `Відповідай ТІЛЬКИ списком через кому, без пояснень, без лапок. Наприклад: Козачка, Марко Вовчок, Фантастика`;
-            const keywords = await (0, aiHelper_1.askAI)(prompt, ctx.from?.id);
+            const keywordsResponse = await (0, aiHelper_1.askAI)(prompt, ctx.from?.id);
+            const keywords = keywordsResponse.text;
             await ctx.telegram.deleteMessage(ctx.chat.id, thinkingMsg.message_id).catch(() => { });
             const keywordList = [
                 query,
-                ...keywords.split(',').map((k) => k.trim()).filter(Boolean),
+                ...keywords
+                    .split(',')
+                    .map((k) => k.trim())
+                    .filter(Boolean),
             ].slice(0, 5);
             const seenIds = new Set();
             const foundBooks = [];
@@ -160,7 +176,11 @@ searchScene.on('text', async (ctx) => {
                 const isSaved = ctx.from?.id ? await isBookSaved(ctx.from.id, book.id) : false;
                 const keyboard = (0, mainKeyboards_1.getEnhancedBookKeyboard)(book, isSaved);
                 if (book.photo_file_id && book.photo_file_id !== 'default_book_cover') {
-                    await ctx.replyWithPhoto(book.photo_file_id, { caption, parse_mode: 'HTML', reply_markup: keyboard });
+                    await ctx.replyWithPhoto(book.photo_file_id, {
+                        caption,
+                        parse_mode: 'HTML',
+                        reply_markup: keyboard,
+                    });
                 }
                 else {
                     await ctx.reply(caption, { parse_mode: 'HTML', reply_markup: keyboard });
@@ -228,7 +248,11 @@ searchScene.on('text', async (ctx) => {
                 [{ text: '⬅️ Назад до меню', callback_data: 'search_back' }],
             ]).reply_markup,
         });
-        logger_1.logger.userAction(ctx.from?.id || 0, 'search', { query, type: searchType, results: books.length });
+        logger_1.logger.userAction(ctx.from?.id || 0, 'search', {
+            query,
+            type: searchType,
+            results: books.length,
+        });
     }
     catch (error) {
         await ctx.telegram.deleteMessage(ctx.chat.id, thinkingMsg.message_id).catch(() => { });

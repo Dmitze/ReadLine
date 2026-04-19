@@ -1,10 +1,3 @@
-/**
- * Book Repository
- * REFACTOR-002: Repository Layer Separation
- *
- * All database operations related to books
- */
-
 import { DatabaseWrapper } from '../database/dbWrapper';
 import { BaseRepository } from './BaseRepository';
 import { Book } from '../database/models';
@@ -15,12 +8,6 @@ export class BookRepository extends BaseRepository<Book> {
     super(db, 'books');
   }
 
-  /**
-   * Create a new book
-   * @param book - Book data without id and created_at
-   * @returns Promise with the new book ID
-   * @throws Error if creation fails
-   */
   async create(book: Omit<Book, 'id' | 'created_at'>): Promise<number> {
     try {
       const {
@@ -67,28 +54,30 @@ export class BookRepository extends BaseRepository<Book> {
     }
   }
 
-  /**
-   * Update a book
-   * @param bookId - The ID of the book to update
-   * @param updates - Partial book data to update
-   * @returns Promise with number of rows changed
-   * @throws Error if update fails
-   */
   async update(bookId: number, updates: Partial<Omit<Book, 'id' | 'created_at'>>): Promise<number> {
     try {
       if (Object.keys(updates).length === 0) {
         return 0;
       }
 
-      // Валідний список дозволених полів
       const allowedFields = [
-        'title', 'author', 'genre', 'description', 'photo_file_id',
-        'file_url', 'audio_file_id', 'online_link', 'file_type', 'file_name',
-        'rating', 'reviews_count', 'downloads_count', 'is_available',
-        'is_physically_available'
+        'title',
+        'author',
+        'genre',
+        'description',
+        'photo_file_id',
+        'file_url',
+        'audio_file_id',
+        'online_link',
+        'file_type',
+        'file_name',
+        'rating',
+        'reviews_count',
+        'downloads_count',
+        'is_available',
+        'is_physically_available',
       ];
 
-      // Фільтруємо тільки дозволені поля
       const validUpdates: Record<string, any> = {};
       for (const [key, value] of Object.entries(updates)) {
         if (allowedFields.includes(key)) {
@@ -100,9 +89,8 @@ export class BookRepository extends BaseRepository<Book> {
         return 0;
       }
 
-      // Екранюємо назви полів через whitelist
       const fields = Object.keys(validUpdates)
-        .map((key) => `"${key}" = ?`)  // ✅ Використовуємо whitelist
+        .map((key) => `"${key}" = ?`)
         .join(', ');
       const values = Object.values(validUpdates);
 
@@ -122,12 +110,6 @@ export class BookRepository extends BaseRepository<Book> {
     }
   }
 
-  /**
-   * Get books by genre
-   * @param genre - Genre name to filter by
-   * @returns Promise with array of books
-   * @throws Error if query fails
-   */
   async getByGenre(genre: string): Promise<Book[]> {
     try {
       const query = 'SELECT * FROM books WHERE genre = ? ORDER BY rating DESC';
@@ -141,14 +123,6 @@ export class BookRepository extends BaseRepository<Book> {
     }
   }
 
-  /**
-   * Get books by genre with pagination
-   * @param genre - Genre name to filter by
-   * @param limit - Maximum number of books to return (default: 5)
-   * @param offset - Number of books to skip (default: 0)
-   * @returns Promise with books array and total count
-   * @throws Error if query fails
-   */
   async getByGenreWithPagination(
     genre: string,
     limit: number = 5,
@@ -173,9 +147,6 @@ export class BookRepository extends BaseRepository<Book> {
     }
   }
 
-  /**
-   * Get all books with pagination
-   */
   async getAllWithPagination(
     limit: number = 5,
     offset: number = 0
@@ -198,13 +169,6 @@ export class BookRepository extends BaseRepository<Book> {
     }
   }
 
-  /**
-   * Search books by title, author, or genre
-   * @param searchTerm - Search term to match against
-   * @param limit - Maximum number of results (default: 10)
-   * @returns Promise with array of matching books
-   * @throws Error if search fails
-   */
   async search(searchTerm: string, limit: number = 10): Promise<Book[]> {
     try {
       const pattern = `%${searchTerm}%`;
@@ -227,9 +191,6 @@ export class BookRepository extends BaseRepository<Book> {
     }
   }
 
-  /**
-   * Get top rated books
-   */
   async getTopRated(limit: number = 10): Promise<Book[]> {
     try {
       const query = `
@@ -248,9 +209,6 @@ export class BookRepository extends BaseRepository<Book> {
     }
   }
 
-  /**
-   * Get newest books
-   */
   async getNewest(limit: number = 10): Promise<Book[]> {
     try {
       const query = `
@@ -269,9 +227,6 @@ export class BookRepository extends BaseRepository<Book> {
     }
   }
 
-  /**
-   * Get random book
-   */
   async getRandom(): Promise<Book | undefined> {
     try {
       const query = `
@@ -290,9 +245,6 @@ export class BookRepository extends BaseRepository<Book> {
     }
   }
 
-  /**
-   * Get all genres
-   */
   async getAllGenres(): Promise<string[]> {
     try {
       const query = `
@@ -311,9 +263,6 @@ export class BookRepository extends BaseRepository<Book> {
     }
   }
 
-  /**
-   * Increment downloads count
-   */
   async incrementDownloads(bookId: number): Promise<void> {
     try {
       const query = 'UPDATE books SET downloads_count = downloads_count + 1 WHERE id = ?';
@@ -327,9 +276,6 @@ export class BookRepository extends BaseRepository<Book> {
     }
   }
 
-  /**
-   * Get books with low rating for manual review
-   */
   async getLowRatedBooks(maxRating: number = 2, limit: number = 20): Promise<Book[]> {
     try {
       const query = `
@@ -348,9 +294,6 @@ export class BookRepository extends BaseRepository<Book> {
     }
   }
 
-  /**
-   * Get books by author
-   */
   async getByAuthor(author: string, limit?: number): Promise<Book[]> {
     try {
       let query = `
@@ -375,9 +318,6 @@ export class BookRepository extends BaseRepository<Book> {
     }
   }
 
-  /**
-   * Aliases for compatibility with services
-   */
   async findByQuery(searchTerm: string, limit?: number): Promise<Book[]> {
     return this.search(searchTerm, limit || 10);
   }

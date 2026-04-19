@@ -18,27 +18,23 @@ export default (bot: Telegraf<BotContext>) => {
 
       let statsText = '📊 <b>РОЗШИРЕНА СТАТИСТИКА БІБЛІОТЕКИ</b>\n\n';
 
-      // Основна статистика
       statsText += '📈 <b>Основні показники:</b>\n';
       statsText += `📚 Всього книг: ${stats.totalBooks}\n`;
       statsText += `👥 Унікальних користувачів: ${stats.totalUsers}\n`;
       statsText += `💾 Збережено книг: ${stats.totalSavedBooks}\n`;
       statsText += `⭐ Середня оцінка: ${stats.avgRating}\n\n`;
 
-      // Відгуки та зворотний зв'язок
       statsText += '📝 <b>Контент:</b>\n';
       statsText += `💬 Всього відгуків: ${stats.totalReviews}\n`;
       statsText += `❌ На модерацію: ${stats.pendingReviews}\n`;
       statsText += `📞 Повідомлень зворотного зв'язку: ${stats.totalFeedback}\n`;
       statsText += `🔔 Нових повідомлень: ${stats.pendingFeedback}\n\n`;
 
-      // Активність за період
       statsText += '📅 <b>Активність:</b>\n';
       statsText += `🆕 Нових користувачів сьогодні: ${stats.newUsersToday}\n`;
       statsText += `📖 Нових книг цього місяця: ${stats.newBooksThisMonth}\n`;
       statsText += `✅ Активних користувачів (30 днів): ${stats.activeUsersThisMonth}\n\n`;
 
-      // Топ жанри
       if (stats.topGenres.length > 0) {
         statsText += '📂 <b>Топ жанри:</b>\n';
         stats.topGenres.forEach((g, i) => {
@@ -47,7 +43,6 @@ export default (bot: Telegraf<BotContext>) => {
         statsText += '\n';
       }
 
-      // Топ-рейтингові книги
       if (stats.topRatedBooks.length > 0 && stats.topRatedBooks.some((b) => b.rating)) {
         statsText += '⭐ <b>Топ книги за рейтингом:</b>\n';
         stats.topRatedBooks.forEach((b, i) => {

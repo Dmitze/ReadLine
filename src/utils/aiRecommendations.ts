@@ -1,24 +1,14 @@
-/**
- * AI-рекомендації на основі історії користувача
- */
-
 import { askAI } from './aiHelper';
 import { getSavedBooks } from '../database/models';
 import { getUserFavoriteGenres } from '../database/recommendationFunctions';
 import { logger } from './logger';
 
-/**
- * Отримати персональні рекомендації на основі історії користувача
- */
 export const getPersonalizedRecommendations = async (userId: number): Promise<string> => {
   try {
-    // Отримуємо збережені книги користувача
     const savedBooks = await getSavedBooks(userId);
 
-    // Отримуємо улюблені жанри
     const favoriteGenres = await getUserFavoriteGenres(userId, 3);
 
-    // Формуємо контекст для AI
     let context = '';
 
     if (favoriteGenres.length > 0) {
@@ -61,9 +51,6 @@ export const getPersonalizedRecommendations = async (userId: number): Promise<st
   }
 };
 
-/**
- * Контекстні рекомендації на основі часу доби
- */
 export const getContextualRecommendations = async (): Promise<string> => {
   const { TIME_OF_DAY } = await import('../constants');
   const hour = new Date().getHours();
@@ -98,9 +85,6 @@ export const getContextualRecommendations = async (): Promise<string> => {
   }
 };
 
-/**
- * Рекомендації на основі настрою
- */
 export const getMoodBasedRecommendations = async (mood: string): Promise<string> => {
   const moodMap: Record<string, string> = {
     щасливий: 'веселі, позитивні книги',
@@ -134,9 +118,6 @@ export const getMoodBasedRecommendations = async (mood: string): Promise<string>
   }
 };
 
-/**
- * Рекомендації схожих книг
- */
 export const getSimilarBookRecommendations = async (
   bookTitle: string,
   bookAuthor: string

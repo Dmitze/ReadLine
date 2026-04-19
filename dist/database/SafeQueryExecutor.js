@@ -105,7 +105,7 @@ class SafeQueryExecutor {
             }
             catch (rollbackError) {
                 logger_1.logger.warn('Failed to rollback transaction', {
-                    error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError)
+                    error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
                 });
             }
             const err = error instanceof Error ? error : new Error(String(error));
@@ -147,8 +147,7 @@ class SafeQueryExecutor {
             }
         }
     }
-    logQuery(query, parameters) {
-    }
+    logQuery(query, parameters) { }
     recordQueryLog(query, parameters, duration, rowsAffected, error) {
         const log = {
             query,

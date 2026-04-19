@@ -1,7 +1,3 @@
-/**
- * Script to clear all books, podcasts, reviews and feedback
- */
-
 import sqlite3 from 'sqlite3';
 import path from 'path';
 
@@ -30,7 +26,6 @@ async function cleanupData() {
           db.close();
           reject(err);
         } else {
-          // Check count
           db.get('SELECT COUNT(*) as count FROM books', (err, row: any) => {
             db.close();
             if (err) {

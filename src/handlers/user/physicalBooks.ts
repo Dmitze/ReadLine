@@ -1,8 +1,3 @@
-/**
- * Physical Books Handlers
- * Обробники для роботи з заявками на фізичні книги
- */
-
 import { Telegraf, Markup } from 'telegraf';
 import { BotContext } from '../../types/telegraf';
 import { logger } from '../../utils/logger';
@@ -14,11 +9,7 @@ import {
   PhysicalBookRequest,
 } from '../../database/tables/physicalBooks';
 
-/**
- * Реєстрація обробників фізичних книг
- */
 export function registerPhysicalBooksHandlers(bot: Telegraf<BotContext>): void {
-  // Кнопка "📚 Замовити фізичну книгу"
   bot.hears(BUTTONS.REQUEST_PHYSICAL_BOOK, async (ctx: BotContext) => {
     try {
       const userId = ctx.from?.id;
@@ -60,13 +51,11 @@ export function registerPhysicalBooksHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Створити заявку
   bot.action('create_physical_request', async (ctx: BotContext) => {
     await ctx.answerCbQuery();
     await ctx.scene.enter('REQUEST_PHYSICAL_BOOK_SCENE');
   });
 
-  // Мої заявки
   bot.action('my_physical_requests', async (ctx: BotContext) => {
     try {
       await ctx.answerCbQuery();
@@ -101,7 +90,6 @@ export function registerPhysicalBooksHandlers(bot: Telegraf<BotContext>): void {
 
       const keyboard = [];
 
-      // Показуємо останні 10 заявок
       requests.slice(0, 10).forEach((request) => {
         const statusEmoji = getStatusEmoji(request.status);
         const statusText = getStatusText(request.status);
@@ -133,7 +121,6 @@ export function registerPhysicalBooksHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Перегляд конкретної заявки
   bot.action(/view_request_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -156,7 +143,6 @@ export function registerPhysicalBooksHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      // Перевіряємо що це заявка користувача
       if (request.user_id !== userId) {
         await ctx.answerCbQuery('❌ Це не ваша заявка', { show_alert: true });
         return;
@@ -195,7 +181,6 @@ export function registerPhysicalBooksHandlers(bot: Telegraf<BotContext>): void {
 
       const keyboard = [];
 
-      // Дозволяємо скасувати тільки pending заявки
       if (request.status === 'pending') {
         keyboard.push([
           Markup.button.callback('❌ Скасувати заявку', `cancel_request_${request.id}`),
@@ -220,7 +205,6 @@ export function registerPhysicalBooksHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Скасувати заявку
   bot.action(/cancel_request_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -253,7 +237,6 @@ export function registerPhysicalBooksHandlers(bot: Telegraf<BotContext>): void {
         return;
       }
 
-      // Показуємо підтвердження
       await ctx.editMessageText(
         '❓ <b>СКАСУВАННЯ ЗАЯВКИ</b>\n\n' +
           '━━━━━━━━━━━━━━━━━━━\n\n' +
@@ -280,7 +263,6 @@ export function registerPhysicalBooksHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Підтвердження скасування
   bot.action(/confirm_cancel_(\d+)/, async (ctx: BotContext) => {
     try {
       const match = ctx.match;
@@ -328,7 +310,6 @@ export function registerPhysicalBooksHandlers(bot: Telegraf<BotContext>): void {
     }
   });
 
-  // Правила
   bot.action('physical_books_rules', async (ctx: BotContext) => {
     await ctx.answerCbQuery();
 
@@ -368,13 +349,6 @@ export function registerPhysicalBooksHandlers(bot: Telegraf<BotContext>): void {
   });
 }
 
-// ==========================================
-// HELPER FUNCTIONS
-// ==========================================
-
-/**
- * Отримати емодзі для статусу
- */
 function getStatusEmoji(status: string): string {
   switch (status) {
     case 'pending':
@@ -392,9 +366,6 @@ function getStatusEmoji(status: string): string {
   }
 }
 
-/**
- * Отримати текст статусу
- */
 function getStatusText(status: string): string {
   switch (status) {
     case 'pending':
@@ -412,9 +383,6 @@ function getStatusText(status: string): string {
   }
 }
 
-/**
- * Форматувати дату
- */
 function formatDate(dateStr: string | undefined): string {
   if (!dateStr) return 'Невідомо';
 

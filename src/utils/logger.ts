@@ -1,8 +1,3 @@
-/**
- * Logger Service - централізоване логування
- * Замінює console.log/console.error по всьому проекту
- */
-
 enum LogLevel {
   DEBUG = 'DEBUG',
   INFO = 'INFO',
@@ -10,10 +5,6 @@ enum LogLevel {
   ERROR = 'ERROR',
 }
 
-/**
- * Metadata for log messages
- * Replaces 'any' with structured type
- */
 export type LogMetadata = Record<string, unknown>;
 
 class Logger {
@@ -111,9 +102,6 @@ class Logger {
     this.debug('Database query', { query, params });
   }
 
-  /**
-   * Логування AI запитів
-   */
   aiRequest(userId: number, question: string, response: string): void {
     this.info('AI request', {
       userId,
@@ -123,8 +111,6 @@ class Logger {
   }
 }
 
-// Singleton instance
 export const logger = new Logger();
 
-// Експортуємо також клас для можливого extends
 export { Logger, LogLevel };

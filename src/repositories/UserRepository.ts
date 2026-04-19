@@ -1,10 +1,3 @@
-/**
- * User Repository
- * REFACTOR-002: Repository Layer Separation
- *
- * All database operations related to users
- */
-
 import { DatabaseWrapper } from '../database/dbWrapper';
 import { BaseRepository } from './BaseRepository';
 import { logger } from '../utils/logger';
@@ -27,12 +20,6 @@ export class UserRepository extends BaseRepository<User> {
     super(db, 'users');
   }
 
-  /**
-   * Create a new user
-   * @param userData - User data without id, created_at, and last_seen
-   * @returns Promise with the new user ID
-   * @throws Error if creation fails
-   */
   async create(userData: Omit<User, 'id' | 'created_at' | 'last_seen'>): Promise<number> {
     try {
       const {
@@ -69,12 +56,6 @@ export class UserRepository extends BaseRepository<User> {
     }
   }
 
-  /**
-   * Get user by Telegram user ID
-   * @param userId - Telegram user ID
-   * @returns Promise with user object or undefined if not found
-   * @throws Error if query fails
-   */
   async getByTelegramId(userId: number): Promise<User | undefined> {
     try {
       const query = 'SELECT * FROM users WHERE user_id = ?';
@@ -88,13 +69,6 @@ export class UserRepository extends BaseRepository<User> {
     }
   }
 
-  /**
-   * Update user data
-   * @param userId - Telegram user ID
-   * @param updates - Partial user data to update
-   * @returns Promise with number of rows changed
-   * @throws Error if update fails
-   */
   async update(
     userId: number,
     updates: Partial<Omit<User, 'id' | 'user_id' | 'created_at'>>
@@ -104,13 +78,16 @@ export class UserRepository extends BaseRepository<User> {
         return 0;
       }
 
-      // ✅ Whitelist разрешенных полей для защиты от SQL injection
       const allowedFields = [
-        'username', 'first_name', 'last_name', 'language_code',
-        'is_admin', 'is_new', 'last_seen'
+        'username',
+        'first_name',
+        'last_name',
+        'language_code',
+        'is_admin',
+        'is_new',
+        'last_seen',
       ];
 
-      // Фильтруем только разрешенные поля
       const validUpdates: Record<string, any> = {};
       for (const [key, value] of Object.entries(updates)) {
         if (allowedFields.includes(key)) {
@@ -124,9 +101,8 @@ export class UserRepository extends BaseRepository<User> {
         return 0;
       }
 
-      // Экранируем названия полей через whitelist
       const fields = Object.keys(validUpdates)
-        .map((key) => `"${key}" = ?`)  // ✅ Используем whitelist
+        .map((key) => `"${key}" = ?`)
         .join(', ');
       const values = Object.values(validUpdates);
 
@@ -146,9 +122,6 @@ export class UserRepository extends BaseRepository<User> {
     }
   }
 
-  /**
-   * Check if user is new
-   */
   async isNew(userId: number): Promise<boolean> {
     try {
       const user = await this.getByTelegramId(userId);
@@ -162,9 +135,6 @@ export class UserRepository extends BaseRepository<User> {
     }
   }
 
-  /**
-   * Mark user as no longer new
-   */
   async markAsNotNew(userId: number): Promise<number> {
     try {
       const query = 'UPDATE users SET is_new = 0 WHERE user_id = ?';
@@ -178,9 +148,6 @@ export class UserRepository extends BaseRepository<User> {
     }
   }
 
-  /**
-   * Update last seen timestamp
-   */
   async updateLastSeen(userId: number): Promise<number> {
     try {
       const query = 'UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE user_id = ?';
@@ -194,9 +161,6 @@ export class UserRepository extends BaseRepository<User> {
     }
   }
 
-  /**
-   * Get all admins
-   */
   async getAllAdmins(): Promise<User[]> {
     try {
       const query = 'SELECT * FROM users WHERE is_admin = 1 ORDER BY created_at DESC';
@@ -210,9 +174,6 @@ export class UserRepository extends BaseRepository<User> {
     }
   }
 
-  /**
-   * Get total user count
-   */
   async getTotalCount(): Promise<number> {
     try {
       return await this.count();
@@ -225,9 +186,6 @@ export class UserRepository extends BaseRepository<User> {
     }
   }
 
-  /**
-   * Get active users count
-   */
   async getActiveCount(daysBack: number = 7): Promise<number> {
     try {
       const query = `
@@ -245,9 +203,6 @@ export class UserRepository extends BaseRepository<User> {
     }
   }
 
-  /**
-   * Get new users since date
-   */
   async getNewSince(date: Date): Promise<User[]> {
     try {
       const query = `
@@ -265,9 +220,6 @@ export class UserRepository extends BaseRepository<User> {
     }
   }
 
-  /**
-   * Search users
-   */
   async search(searchTerm: string, limit: number = 20): Promise<User[]> {
     try {
       const pattern = `%${searchTerm}%`;
@@ -289,9 +241,6 @@ export class UserRepository extends BaseRepository<User> {
     }
   }
 
-  /**
-   * Aliases for compatibility with services
-   */
   async findByTelegramId(userId: number): Promise<User | undefined> {
     return this.getByTelegramId(userId);
   }

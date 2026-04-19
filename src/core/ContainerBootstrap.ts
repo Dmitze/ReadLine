@@ -1,33 +1,19 @@
-/**
- * Container Bootstrap
- * REFACTOR-008: ServiceContainer Everywhere
- *
- * Централізована реєстрація всіх сервісів, репозиторіїв та утиліт
- */
-
 import { ServiceContainer } from './ServiceContainer';
 import { logger } from '../utils/logger';
 import { db } from '../database/models';
 import { DatabaseWrapper } from '../database/dbWrapper';
 import { TransactionManager } from '../database/TransactionManager';
 
-/**
- * Bootstrap container з усіма сервісами
- */
 export async function bootstrapContainer(container: ServiceContainer): Promise<void> {
   logger.info('Bootstrapping service container...');
 
   try {
-    // ======= Core Services =======
-
     container.registerSingleton('logger', () => logger);
 
     container.registerSingleton('config', () => ({
       get: (key: string) => process.env[key],
       getAll: () => process.env,
     }));
-
-    // ======= Database Services =======
 
     container.registerSingleton('database', () => db);
 
@@ -38,14 +24,10 @@ export async function bootstrapContainer(container: ServiceContainer): Promise<v
       return new TransactionManager(wrapper);
     });
 
-    // ======= Utilities =======
-
     container.registerSingleton('cache', () => {
       const { cache } = require('../utils/cache');
       return cache;
     });
-
-    // ======= Repositories =======
 
     container.registerSingleton('BookRepository', () => {
       const { BookRepository } = require('../repositories/BookRepository');
@@ -82,8 +64,6 @@ export async function bootstrapContainer(container: ServiceContainer): Promise<v
       return new AudioRepository();
     });
 
-    // ======= Services =======
-
     container.registerSingleton('BookService', () => {
       const { BookService } = require('../services/BookService');
       return new BookService(
@@ -110,9 +90,6 @@ export async function bootstrapContainer(container: ServiceContainer): Promise<v
   }
 }
 
-/**
- * Зареєструвати repository в контейнері
- */
 export function registerRepository<T>(
   container: ServiceContainer,
   name: string,
@@ -122,9 +99,6 @@ export function registerRepository<T>(
   logger.debug(`Registered repository: ${name}`);
 }
 
-/**
- * Зареєструвати service в контейнері
- */
 export function registerService<T>(
   container: ServiceContainer,
   name: string,
@@ -139,11 +113,7 @@ export function registerService<T>(
   logger.debug(`Registered service: ${name} (${lifetime})`);
 }
 
-/**
- * Отримати інстанс контейнера
- */
 export function getContainer(): ServiceContainer {
-  // Використовуємо singleton pattern
   if (!(globalThis as any).__serviceContainer) {
     (globalThis as any).__serviceContainer = new ServiceContainer();
   }

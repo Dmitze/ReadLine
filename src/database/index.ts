@@ -1,9 +1,3 @@
-/**
- * Database barrel export
- * REFACTOR-016: SQL Injection Protection
- * REFACTOR-012: Database Query Optimization
- */
-
 export {
   QueryBuilder,
   InsertBuilder,

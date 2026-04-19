@@ -1,7 +1,3 @@
-/**
- * Script to add users table for tracking onboarding status
- */
-
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
@@ -11,8 +7,8 @@ const db = new sqlite3.Database(dbPath);
 console.log('📊 Adding users table...');
 
 db.serialize(() => {
-  // Create users table
-  db.run(`
+  db.run(
+    `
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER UNIQUE NOT NULL,
@@ -24,24 +20,28 @@ db.serialize(() => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       last_active_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
-  `, (err) => {
-    if (err) {
-      console.error('❌ Error creating users table:', err);
-    } else {
-      console.log('✅ Users table created successfully');
+  `,
+    (err) => {
+      if (err) {
+        console.error('❌ Error creating users table:', err);
+      } else {
+        console.log('✅ Users table created successfully');
+      }
     }
-  });
+  );
 
-  // Create index on user_id for faster lookups
-  db.run(`
+  db.run(
+    `
     CREATE INDEX IF NOT EXISTS idx_users_user_id ON users(user_id)
-  `, (err) => {
-    if (err) {
-      console.error('❌ Error creating index:', err);
-    } else {
-      console.log('✅ Index on user_id created');
+  `,
+    (err) => {
+      if (err) {
+        console.error('❌ Error creating index:', err);
+      } else {
+        console.log('✅ Index on user_id created');
+      }
     }
-  });
+  );
 });
 
 db.close((err) => {

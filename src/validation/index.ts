@@ -1,8 +1,3 @@
-/**
- * Validation barrel export
- * REFACTOR-014: Comprehensive Input Validation
- */
-
 export {
   Validator,
   ValidationBuilder,

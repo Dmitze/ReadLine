@@ -1,7 +1,3 @@
-/**
- * Transaction Manager Tests
- */
-
 import { TransactionManager, TransactionPatterns } from '../../database/TransactionManager';
 import { DatabaseWrapper } from '../../database/dbWrapper';
 
@@ -41,7 +37,6 @@ describe('Transaction Manager', () => {
         return 'success';
       });
 
-      // Mock transaction method
       dbWrapper.transaction = jest.fn(async (callback) => {
         return await callback();
       });
@@ -117,7 +112,7 @@ describe('Transaction Manager', () => {
         try {
           return await callback();
         } catch (error) {
-          throw error; // Transaction will rollback
+          throw error;
         }
       });
 

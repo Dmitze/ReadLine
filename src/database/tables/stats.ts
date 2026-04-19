@@ -1,18 +1,9 @@
-/**
- * Stats Table Operations
- * REFACTOR-009: Split models.ts - Stats module
- */
-
 import { db } from './db';
 import { logger } from '../../utils/logger';
 
-/**
- * Get detailed book statistics
- */
 export const getBookDetailedStats = (bookId: number): Promise<any> => {
   return new Promise(async (resolve, reject) => {
     try {
-      // Get book info
       const book = await new Promise<any>((res, rej) => {
         db.get('SELECT * FROM books WHERE id = ?', [bookId], (err, row) => {
           if (err) rej(err);
@@ -25,7 +16,6 @@ export const getBookDetailedStats = (bookId: number): Promise<any> => {
         return;
       }
 
-      // Get rating distribution
       const ratingDistribution = await new Promise<any>((res, rej) => {
         db.all(
           `SELECT rating, COUNT(*) as count FROM reviews 
@@ -59,7 +49,6 @@ export const getBookDetailedStats = (bookId: number): Promise<any> => {
         );
       });
 
-      // Get readers count
       const readersCount = await new Promise<number>((res, rej) => {
         db.get(
           'SELECT COUNT(*) as count FROM saved_books WHERE book_id = ?',
@@ -71,7 +60,6 @@ export const getBookDetailedStats = (bookId: number): Promise<any> => {
         );
       });
 
-      // Get popular quotes
       const popularQuotes = await new Promise<string[]>((res, rej) => {
         db.all(
           `SELECT comment FROM reviews 

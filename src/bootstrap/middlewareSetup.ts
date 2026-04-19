@@ -15,19 +15,14 @@ export function setupMiddleware(bot: Telegraf<BotContext>) {
   bot.use(rateLimitCommand);
   bot.on('callback_query', rateLimitCallback);
 
-  // 🔥 КРИТИЧНО: Middleware що ЗАВЖДИ додає головне меню
   bot.use(async (ctx, next) => {
-    // Зберігаємо оригінальний метод reply
     const originalReply = ctx.reply.bind(ctx);
 
-    // Перевизначаємо reply щоб завжди додавати головне меню
     ctx.reply = async (text: string, extra?: any) => {
-      // Якщо вже є reply_markup, не змінюємо його (для inline клавіатур)
       if (extra?.reply_markup && extra.reply_markup.inline_keyboard) {
         return originalReply(text, extra);
       }
 
-      // Інакше додаємо головне меню
       return originalReply(text, {
         ...extra,
         reply_markup: extra?.reply_markup || getMainMenuKeyboard(),
